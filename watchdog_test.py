@@ -2,17 +2,18 @@ import re
 import os
 import queue
 import logging
-import datetime
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import tkinter as tk
 from tkinter import simpledialog, messagebox
+from tkinter import Toplevel, Label, Entry, Button
+from datetime import datetime
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Define the regular expression pattern for the required file naming convention.
-pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z]+_[A-Za-z]+_[A-Za-z0-9-]+_\d{8}$')
+pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z]+_[A-Za-z]+_[A-Za-z0-9]+_\d{8}$')
 
 class FileNamingHandler(FileSystemEventHandler):
     """
@@ -26,105 +27,6 @@ class FileNamingHandler(FileSystemEventHandler):
         if not event.is_directory:
             # Add the file path to the queue
             self.event_queue.put(event.src_path)
-
-class EntryWithPlaceholder(tk.Entry):
-    """
-    Custom Entry widget with placeholder text.
-    """
-    def __init__(self, master=None, placeholder="PLACEHOLDER", color='grey', *args, **kwargs):
-        super().__init__(master, *args, **kwargs)
-
-        self.placeholder = placeholder
-        self.placeholder_color = color
-        self.default_fg_color = self['fg']
-
-        # Remove focus-in binding
-        # self.bind("<FocusIn>", self._focus_in)
-        self.bind("<FocusOut>", self._focus_out)
-        self.bind("<Key>", self._key_pressed)  # Bind to key press event
-
-        self._show_placeholder()
-
-    def _show_placeholder(self):
-        if not super().get():
-            self.insert(0, self.placeholder)
-            self['fg'] = self.placeholder_color
-
-    def _hide_placeholder(self):
-        if self['fg'] == self.placeholder_color:
-            self.delete(0, 'end')
-            self['fg'] = self.default_fg_color
-
-    def _key_pressed(self, event):
-        # Hide placeholder on key press
-        if self['fg'] == self.placeholder_color:
-            self.delete(0, 'end')
-            self['fg'] = self.default_fg_color
-
-    def _focus_out(self, event):
-        # Show placeholder if entry is empty
-        if not super().get():
-            self._show_placeholder()
-
-    def get(self):
-        # Override get method to return empty string if placeholder is visible
-        content = super().get()
-        if self['fg'] == self.placeholder_color:
-            return ''
-        else:
-            return content
-
-class MultiFieldDialog(simpledialog.Dialog):
-    """
-    Custom dialog to collect Name, Institute, and Data Qualifier.
-    """
-    def __init__(self, parent, title=None):
-        super().__init__(parent, title)
-        # Remove self.lift() and self.wm_attributes("-topmost", True) from here
-
-    def body(self, master):
-        tk.Label(master, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=2)
-        tk.Label(master, text="Institute:").grid(row=1, column=0, sticky='e', padx=5, pady=2)
-        tk.Label(master, text="Data Qualifier:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
-        
-        self.name_var = tk.StringVar()
-        self.institute_var = tk.StringVar()
-        self.data_qualifier_var = tk.StringVar()
-        
-        # Use EntryWithPlaceholder
-        self.name_entry = EntryWithPlaceholder(master, "Ex: MuS", textvariable=self.name_var)
-        self.institute_entry = EntryWithPlaceholder(master, "Ex: IPAT", textvariable=self.institute_var)
-        self.data_qualifier_entry = EntryWithPlaceholder(master, "Ex: Cathode-90s", textvariable=self.data_qualifier_var)
-        
-        self.name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=2)
-        self.institute_entry.grid(row=1, column=1, sticky='we', padx=5, pady=2)
-        self.data_qualifier_entry.grid(row=2, column=1, sticky='we', padx=5, pady=2)
-        
-        # Configure column weights
-        master.grid_columnconfigure(0, weight=0)
-        master.grid_columnconfigure(1, weight=1)
-
-        # Schedule lift and topmost attributes to be set after window is created
-        self.after(0, self._bring_to_front)
-        
-        return self.name_entry  # initial focus
-    
-    def _bring_to_front(self):
-        self.lift()
-        self.wm_attributes("-topmost", True)
-
-    def apply(self):
-        # Ensure placeholders are not included in the result
-        name = self.name_var.get()
-        institute = self.institute_var.get()
-        data_qualifier = self.data_qualifier_var.get()
-        
-        self.result = {
-            'name': name,
-            'institute': institute,
-            'data_qualifier': data_qualifier,
-        }
-
 
 class FileMonitorApp:
     """
@@ -173,51 +75,61 @@ class FileMonitorApp:
         """
         message = (
             f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: Name_Institute_DataQualifier_Date (e.g., Name_Institute_DataQualifier_YYYYMMDD)"
+            f"The required naming format is: device_name_institute_data-qualifier_date (e.g., Name_Institute_Data-Qualifier)"
         )
 
         messagebox.showwarning("Invalid File Name", message)
 
-        while True:
-            dialog = MultiFieldDialog(self.root, "Rename File")
-            if dialog.result is None:
-                # User cancelled the dialog
+        base_name, extension = os.path.splitext(filename)
+        new_name = base_name
+
+        
+        rename_window = Toplevel(self.root)
+        rename_window.title("Rename File")
+
+        Label(rename_window, text="Enter Initials: \n Ex: MuS").grid(row=0, column=0, padx=10, pady=5)
+        name_entry = Entry(rename_window)
+        name_entry.grid(row=0, column=1, padx=10, pady=5)
+
+        Label(rename_window, text="Enter Institute: \n Ex: IPAT").grid(row=1, column=0, padx=10, pady=5)
+        institute_entry = Entry(rename_window)
+        institute_entry.grid(row=1, column=1, padx=10, pady=5)
+
+        Label(rename_window, text="Enter Data Qualifier: \n Cathode-90s").grid(row=2, column=0, padx=10, pady=5)
+        data_qualifier_entry = Entry(rename_window)
+        data_qualifier_entry.grid(row=2, column=1, padx=10, pady=5)
+
+        def on_submit():
+            name = name_entry.get()
+            institute = institute_entry.get()
+            data_qualifier = data_qualifier_entry.get()
+
+            if not name or not institute or not data_qualifier:
                 self.move_to_rename_folder(file_path, filename)
+                rename_window.destroy()
                 return
 
-            name = dialog.result['name']
-            institute = dialog.result['institute']
-            data_qualifier = dialog.result['data_qualifier']
+            # Extract the creation date of the file
+            creation_time = os.path.getctime(file_path)
+            creation_date = datetime.fromtimestamp(creation_time).strftime('%Y%m%d')
 
-            # Check that none of the fields are empty
-            if not name or not institute or not data_qualifier:
-                messagebox.showwarning(
-                    "Incomplete Information",
-                    "All fields are required. Please fill in all fields."
-                )
-                continue
+            # Construct the new file name
+            base_name, extension = os.path.splitext(filename)
+            new_base_name = f"{self.device_name}_{name}_{institute}_{data_qualifier}_{creation_date}"
+            new_name = f"{new_base_name}{extension}"
 
-            # Remove spaces and special characters to ensure the filename is valid
-            name = re.sub(r'\W+', '', name)
-            institute = re.sub(r'\W+', '', institute)
-            data_qualifier = re.sub(r'\W+', '', data_qualifier)
-
-            # Generate date string
-            date_str = datetime.datetime.now().strftime('%Y%m%d')
-            # Construct the new base name
-            new_base_name = f"{self.device_name}_{name}_{institute}_{data_qualifier}_{date_str}"
-
-            # Now, check if new_base_name matches the pattern
             if pattern.match(new_base_name):
-                new_name = new_base_name + os.path.splitext(filename)[1]
-                break
+                # Valid new name provided
+                self.rename_file(file_path, new_name)
+                rename_window.destroy()
             else:
                 messagebox.showwarning(
                     "Invalid File Name",
-                    "The new file name does not match the required format or contains invalid characters. Please try again."
+                    "The new file name does not match the required format. Please try again."
                 )
 
-        self.rename_file(file_path, new_name)
+        submit_button = Button(rename_window, text="Submit", command=on_submit)
+        submit_button.grid(row=3, column=0, columnspan=2, pady=10)
 
     def move_to_rename_folder(self, file_path, filename):
         """
@@ -306,5 +218,6 @@ class FileMonitorApp:
 
 if __name__ == "__main__":
     path_to_watch = r"D:/Monitored_Folders/SEM"
-    app = FileMonitorApp(path_to_watch, device_name="SEM")
+    device_name = "Device123"  # Example device name, you can adjust as needed
+    app = FileMonitorApp(path_to_watch, device_name)
     app.run()
