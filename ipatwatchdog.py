@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 import queue
 import logging
 import datetime
@@ -84,7 +85,7 @@ class MultiFieldDialog(simpledialog.Dialog):
     def body(self, master):
         tk.Label(master, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=2)
         tk.Label(master, text="Institute:").grid(row=1, column=0, sticky='e', padx=5, pady=2)
-        tk.Label(master, text="Data Qualifier:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
+        tk.Label(master, text="Sample-Name:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
         
         self.name_var = tk.StringVar()
         self.institute_var = tk.StringVar()
@@ -92,7 +93,7 @@ class MultiFieldDialog(simpledialog.Dialog):
 
         self.example_name = "Ex: MuS"
         self.example_institute = "Ex: IPAT"
-        self.example_data_qualifier = "Ex: Cathode-90s"
+        self.example_data_qualifier = "Ex: Cathode-20XD6-SO4"
         
         # Use EntryWithPlaceholder
         self.name_entry = EntryWithPlaceholder(master, self.example_name, textvariable=self.name_var)
@@ -149,6 +150,11 @@ class FileMonitorApp:
         self.root = tk.Tk()
         self.root.withdraw()  # Hide the root window
 
+        # Create a dialog parent window
+        self.dialog_parent = tk.Toplevel(self.root)
+        self.dialog_parent.withdraw()
+        self.dialog_parent.attributes("-topmost", True)
+
         # Initialize event queue
         self.event_queue = queue.Queue()
 
@@ -164,6 +170,21 @@ class FileMonitorApp:
 
         # Set up the window close protocol
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Set the exception handler for Tkinter
+        self.root.report_callback_exception = self.handle_exception
+
+    def handle_exception(self, exc_type, exc_value, exc_traceback):
+        """
+        Handles unexpected exceptions by displaying an error message and logging the exception.
+        """
+        logging.error("An unexpected error occurred", exc_info=(exc_type, exc_value, exc_traceback))
+        messagebox.showerror(
+            "Application Error",
+            "The filename monitor has encountered unexpected error occurred. Please contact the administrator.",
+            parent=self.dialog_parent
+        )
+        self.on_closing()
 
     def check_file_name(self, file_path):
         """
@@ -184,10 +205,10 @@ class FileMonitorApp:
         """
         message = (
             f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: Name_Institute_DataQualifier_Date (e.g., Name_Institute_Data-Qualifier)"
+            f"The required naming format is: Name_Institute_DataQualifier (e.g., MuS_IPAT_Sample-Name)",
         )
 
-        messagebox.showwarning("Invalid File Name", message)
+        messagebox.showwarning("Invalid File Name", message, parent=self.dialog_parent)
 
         while True:
             dialog = MultiFieldDialog(self.root, "Rename File")
@@ -204,7 +225,8 @@ class FileMonitorApp:
             if not name or not institute or not data_qualifier:
                 messagebox.showwarning(
                     "Incomplete Information",
-                    "All fields are required. Please fill in all fields."
+                    "All fields are required. Please fill in all fields.",
+                    parent=self.dialog_parent
                 )
                 continue
 
@@ -225,7 +247,8 @@ class FileMonitorApp:
             else:
                 messagebox.showwarning(
                     "Invalid File Name",
-                    "The new file name does not match the required format or contains invalid characters. Please try again."
+                    "The new file name does not match the required format or contains invalid characters. Please try again.",
+                    parent=self.dialog_parent
                 )
 
         self.rename_file(file_path, new_name)
@@ -241,16 +264,23 @@ class FileMonitorApp:
             try:
                 os.makedirs(rename_folder)
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to create 'rename' folder: {e}")
+                messagebox.showerror("Error", f"Failed to create 'rename' folder: {e}", parent=self.dialog_parent)
                 return
 
-        new_path = self.get_unique_path(rename_folder, filename)
+        # Get the file extension
+        _, extension = os.path.splitext(filename)
+        # Get the current date
+        date_str = datetime.datetime.now().strftime('%Y%m%d')
+        # Construct the new filename
+        new_filename = f"{self.device_name}_rename-file_{date_str}{extension}"
+
+        new_path = self.get_unique_path(rename_folder, new_filename)
 
         try:
             os.rename(file_path, new_path)
             messagebox.showinfo(
                 "File Moved",
-                f"File renaming was cancelled. The file has been moved to: {new_path}"
+                f"File renaming was cancelled. The file has been moved to: {new_path}", parent=self.dialog_parent
             )
             logging.info(f"File moved to '{new_path}'.")
         except Exception as e:
@@ -266,10 +296,10 @@ class FileMonitorApp:
 
         try:
             os.rename(file_path, new_path)
-            messagebox.showinfo("Success", f"File renamed to '{os.path.basename(new_path)}'")
+            messagebox.showinfo("Success", f"File renamed to '{os.path.basename(new_path)}'", parent=self.dialog_parent)
             logging.info(f"File '{file_path}' renamed to '{new_path}'.")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to rename file: {e}")
+            messagebox.showerror("Error", f"Failed to rename file: {e}", parent=self.dialog_parent)
             logging.error(f"Failed to rename file '{file_path}' to '{new_path}': {e}")
 
     def get_unique_path(self, directory, filename):
@@ -303,6 +333,7 @@ class FileMonitorApp:
         """
         self.observer.stop()
         self.observer.join()
+        self.dialog_parent.destroy()
         self.root.destroy()
         logging.info("Monitoring stopped.")
 
@@ -314,6 +345,8 @@ class FileMonitorApp:
             self.root.mainloop()
         except KeyboardInterrupt:
             self.on_closing()
+        except Exception:
+            self.handle_exception(*sys.exc_info())
 
 if __name__ == "__main__":
     path_to_watch = r"D:/Monitored_Folders/SEM"
