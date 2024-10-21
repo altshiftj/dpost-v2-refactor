@@ -90,14 +90,14 @@ class MultiFieldDialog(simpledialog.Dialog):
         self.institute_var = tk.StringVar()
         self.data_qualifier_var = tk.StringVar()
 
-        self.name_ex = "Ex: MuS"
-        self.institute_ex = "Ex: IPAT"
-        self.data_qualifier_ex = "Ex: Cathode-90s"
+        self.example_name = "Ex: MuS"
+        self.example_institute = "Ex: IPAT"
+        self.example_data_qualifier = "Ex: Cathode-90s"
         
         # Use EntryWithPlaceholder
-        self.name_entry = EntryWithPlaceholder(master, self.name_ex, textvariable=self.name_var)
-        self.institute_entry = EntryWithPlaceholder(master, self.institute_ex, textvariable=self.institute_var)
-        self.data_qualifier_entry = EntryWithPlaceholder(master, self.data_qualifier_ex, textvariable=self.data_qualifier_var)
+        self.name_entry = EntryWithPlaceholder(master, self.example_name, textvariable=self.name_var)
+        self.institute_entry = EntryWithPlaceholder(master, self.example_institute, textvariable=self.institute_var)
+        self.data_qualifier_entry = EntryWithPlaceholder(master, self.example_data_qualifier, textvariable=self.data_qualifier_var)
         
         self.name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=2)
         self.institute_entry.grid(row=1, column=1, sticky='we', padx=5, pady=2)
@@ -123,11 +123,11 @@ class MultiFieldDialog(simpledialog.Dialog):
         data_qualifier = self.data_qualifier_var.get()
 
         # Validate that the placeholders are not submitted
-        if name == self.name_ex:
+        if name == self.example_name:
             name = ""
-        if institute == self.institute_ex:
+        if institute == self.example_institute:
             institute = ""
-        if data_qualifier == self.data_qualifier_ex:
+        if data_qualifier == self.example_data_qualifier:
             data_qualifier = ""
         
         self.result = {
