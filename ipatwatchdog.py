@@ -80,7 +80,6 @@ class MultiFieldDialog(simpledialog.Dialog):
     """
     def __init__(self, parent, title=None):
         super().__init__(parent, title)
-        # Remove self.lift() and self.wm_attributes("-topmost", True) from here
 
     def body(self, master):
         tk.Label(master, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=2)
@@ -90,11 +89,15 @@ class MultiFieldDialog(simpledialog.Dialog):
         self.name_var = tk.StringVar()
         self.institute_var = tk.StringVar()
         self.data_qualifier_var = tk.StringVar()
+
+        self.name_ex = "Ex: MuS"
+        self.institute_ex = "Ex: IPAT"
+        self.data_qualifier_ex = "Ex: Cathode-90s"
         
         # Use EntryWithPlaceholder
-        self.name_entry = EntryWithPlaceholder(master, "Ex: MuS", textvariable=self.name_var)
-        self.institute_entry = EntryWithPlaceholder(master, "Ex: IPAT", textvariable=self.institute_var)
-        self.data_qualifier_entry = EntryWithPlaceholder(master, "Ex: Cathode-90s", textvariable=self.data_qualifier_var)
+        self.name_entry = EntryWithPlaceholder(master, self.name_ex, textvariable=self.name_var)
+        self.institute_entry = EntryWithPlaceholder(master, self.institute_ex, textvariable=self.institute_var)
+        self.data_qualifier_entry = EntryWithPlaceholder(master, self.data_qualifier_ex, textvariable=self.data_qualifier_var)
         
         self.name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=2)
         self.institute_entry.grid(row=1, column=1, sticky='we', padx=5, pady=2)
@@ -118,6 +121,14 @@ class MultiFieldDialog(simpledialog.Dialog):
         name = self.name_var.get()
         institute = self.institute_var.get()
         data_qualifier = self.data_qualifier_var.get()
+
+        # Validate that the placeholders are not submitted
+        if name == self.name_ex:
+            name = ""
+        if institute == self.institute_ex:
+            institute = ""
+        if data_qualifier == self.data_qualifier_ex:
+            data_qualifier = ""
         
         self.result = {
             'name': name,
@@ -173,7 +184,7 @@ class FileMonitorApp:
         """
         message = (
             f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: Name_Institute_DataQualifier_Date (e.g., Name_Institute_DataQualifier_YYYYMMDD)"
+            f"The required naming format is: Name_Institute_DataQualifier_Date (e.g., Name_Institute_Data-Qualifier)"
         )
 
         messagebox.showwarning("Invalid File Name", message)
@@ -200,7 +211,7 @@ class FileMonitorApp:
             # Remove spaces and special characters to ensure the filename is valid
             name = re.sub(r'\W+', '', name)
             institute = re.sub(r'\W+', '', institute)
-            data_qualifier = re.sub(r'\W+', '', data_qualifier)
+            data_qualifier = re.sub(r'[^\w-]+', '', data_qualifier)
 
             # Generate date string
             date_str = datetime.datetime.now().strftime('%Y%m%d')
