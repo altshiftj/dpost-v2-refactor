@@ -27,6 +27,8 @@ class FileNamingHandler(FileSystemEventHandler):
         if not event.is_directory:
             # Add the file path to the queue
             self.event_queue.put(event.src_path)
+            # Log the event
+            logging.info(f"New file detected: {event.src_path}")
 
 class EntryWithPlaceholder(tk.Entry):
     """
@@ -142,9 +144,15 @@ class FileMonitorApp:
     """
     Main application class that monitors a directory and ensures files adhere to a naming convention.
     """
-    def __init__(self, path_to_watch, device_name):
+    def __init__(self, path_to_watch, device_name, processed_dir, rename_folder):
         self.path_to_watch = path_to_watch
         self.device_name = device_name
+        self.processed_dir = processed_dir
+        self.rename_folder = rename_folder
+
+        # Ensure the processed and rename directories exist
+        os.makedirs(self.processed_dir, exist_ok=True)
+        os.makedirs(self.rename_folder, exist_ok=True)
 
         # Initialize Tkinter root
         self.root = tk.Tk()
@@ -257,15 +265,7 @@ class FileMonitorApp:
         """
         Moves the file to a 'rename' folder if the user cancels the renaming process.
         """
-        dir_path = os.path.dirname(file_path)
-        rename_folder = os.path.join(dir_path, 'rename')
-
-        if not os.path.exists(rename_folder):
-            try:
-                os.makedirs(rename_folder)
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to create 'rename' folder: {e}", parent=self.dialog_parent)
-                return
+        rename_folder = self.rename_folder
 
         # Get the file extension
         _, extension = os.path.splitext(filename)
@@ -291,8 +291,7 @@ class FileMonitorApp:
         """
         Renames the file to the new name provided by the user.
         """
-        dir_path = os.path.dirname(file_path)
-        new_path = self.get_unique_path(dir_path, new_name)
+        new_path = self.get_unique_path(self.processed_dir, new_name)
 
         try:
             os.rename(file_path, new_path)
@@ -350,5 +349,7 @@ class FileMonitorApp:
 
 if __name__ == "__main__":
     path_to_watch = r"D:/Monitored_Folders/SEM"
-    app = FileMonitorApp(path_to_watch, device_name="SEM")
+    rename_folder = os.path.join(path_to_watch, 'To_Rename')
+    processed_dir = os.path.join(path_to_watch, 'Processed')
+    app = FileMonitorApp(path_to_watch, device_name="SEM", processed_dir=processed_dir, rename_folder=rename_folder)
     app.run()
