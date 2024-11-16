@@ -1,0 +1,159 @@
+{
+    "ImageMetadata": {
+      "ImageWidth": 3840,
+      "ImageLength": 2295,
+      "Time": "2024-01-26T13:19:54",
+      "databarHeight": 135,
+      "databarFields": 4091,
+      "databarLabel": "240124-NCM622-V1-60-6-P-",
+      "displayWidth": 0.697,
+      "pixelWidth": {
+        "value": 18.151,
+        "unit": "nm"
+      },
+      "pixelHeight": {
+        "value": 18.151,
+        "unit": "nm"
+      },
+      "integrations": 16,
+      "cropHint": {
+        "left": 1,
+        "top": 1,
+        "right": 3840,
+        "bottom": 2155
+      },
+      "appliedContrast": 0.265482,
+      "appliedBrightness": 0.314266,
+      "appliedGamma": 1,
+      "displayBlackLevel": 0,
+      "displayWhiteLevel": 1,
+      "samplePosition": {
+        "x": -0.0157743,
+        "y": 0.0157831
+      },
+      "samplePressureEstimate": 0.1,
+      "workingDistance": {
+        "value": 6.01685,
+        "unit": "mm"
+      }
+    },
+    "InstrumentMetadata": {
+      "instrument": {
+        "type": "PhenomXL",
+        "softwareVersion": "6.5.1.rel.60c29087a0.27129",
+        "uniqueID": "MVE052619-10046-L",
+        "edition": "XL2",
+        "sampleHolder": {
+          "type": 100,
+          "id": "019b1d1a19000003"
+        }
+      },
+      "applicationID": "Phenom User Interface 1.8.8-rel",
+      "PPI": {
+        "version": "1.20.0_rc4"
+      },
+      "acquisition": {
+        "scan": {
+          "scanHW": "ZYNQ",
+          "acqHW": "ZYNQ",
+          "dwellTime": {
+            "value": 200,
+            "unit": "ns"
+          },
+          "spotSize": 3.3,
+          "spotPresetName": "Image",
+          "rotation": 0,
+          "interlace": 1,
+          "detector": "mix",
+          "detectorMixFactors": {
+            "bsdA": 0.125,
+            "bsdB": 0.125,
+            "bsdC": 0.125,
+            "bsdD": 0.125,
+            "sed": 0.5
+          },
+          "detectors": {
+            "QBSD": {
+              "A": "+",
+              "B": "+",
+              "C": "+",
+              "D": "+",
+              "gain": 48,
+              "offset": -1.62797,
+              "mixFactor": 0.5
+            },
+            "SED": {
+              "gain": 0.210085,
+              "offset": 2.81098,
+              "scintillatorVoltage": 4931.64,
+              "mixFactor": 0.5
+            }
+          },
+          "beamShift": {
+            "x": 6.66972e-07,
+            "y": 2.31357e-05
+          },
+          "sourceTilt": {
+            "x": 0.03841939941048622,
+            "y": 0.01472620014101267
+          },
+          "stigmator": {
+            "x": -0.01208570040762424,
+            "y": -0.01148349978029728
+          },
+          "sourceTime": {
+            "value": 1018,
+            "unit": "h"
+          },
+          "sourceId": 9202,
+          "highVoltage": {
+            "value": -5.3,
+            "unit": "kV"
+          },
+          "emissionCurrent": {
+            "value": 40.3,
+            "unit": "μA"
+          },
+          "emissionCurrentPresetName": "Nominal",
+          "filamentPower": {
+            "value": 4.64,
+            "unit": "W"
+          },
+          "scanCenter": {
+            "x": 0,
+            "y": 0
+          },
+          "scanScale": 1
+        }
+      },
+      "multiStage": {
+        "axis": {
+          "X": 0.015775,
+          "Y": -0.01576
+        },
+        "sampleRadius": {
+          "value": 0,
+          "unit": "m"
+        },
+        "sampleHeight": {
+          "value": 0,
+          "unit": "m"
+        }
+      }
+    },
+    "AdvancedMetadata": {
+      "NewSubfileType": 0,
+      "Compression": 5,
+      "Predictor": 2,
+      "BitsPerSample": 8,
+      "SamplesPerPixel": 1,
+      "RowsPerStrip": 3,
+      "StripOffsets": "list of values",
+      "StripByteCounts": "list of values",
+      "PhotometricInterpretation": 1,
+      "ResolutionUnit": 2,
+      "XResolution": [96000, 1000],
+      "YResolution": [96000, 1000]
+    }
+  }
+  

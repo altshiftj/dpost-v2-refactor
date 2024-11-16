@@ -350,6 +350,6 @@ class FileMonitorApp:
 if __name__ == "__main__":
     path_to_watch = r"D:/Monitored_Folders/SEM"
     rename_folder = os.path.join(path_to_watch, 'To_Rename')
-    processed_dir = os.path.join(path_to_watch, 'Processed')
+    processed_dir = os.path.join(path_to_watch, 'Validated')
     app = FileMonitorApp(path_to_watch, device_name="SEM", processed_dir=processed_dir, rename_folder=rename_folder)
     app.run()

@@ -28,39 +28,43 @@ class NewTIFFHandler(FileSystemEventHandler):
 
 def extract_metadata(file_path):
     """
-    Extracts metadata from a TIFF file and returns it as a dictionary.
+    Extracts metadata from an SEM TIFF file and returns it as a dictionary organized into categories.
     """
-    metadata = {}
+    metadata = {
+        "Image Metadata": {},
+        "Instrument Metadata": {},
+        "Advanced Metadata": {}
+    }
     try:
         with tifffile.TiffFile(file_path) as tif:
-            # Extract tags from all pages
-            for page_number, page in enumerate(tif.pages):
-                tags = page.tags
-                for tag in tags.values():
-                    tag_name = tag.name
-                    tag_value = tag.value
-                    # Convert bytes to string if necessary
-                    if isinstance(tag_value, bytes):
-                        try:
-                            tag_value = tag_value.decode('utf-8')
-                        except UnicodeDecodeError:
-                            tag_value = tag_value.decode('latin-1')
-                    
-                    metadata[f"{tag_name}"] = tag_value
-                    
-                    # Potentially use page number to avoid overwriting tags from different pages
-                    # TODO: Verify if this is necessary
-                    # metadata[f"{tag_name}_page{page_number}"] = tag_value
+            # Extract tags from the first page
+            page = tif.pages[0]
+            tags = page.tags
 
-            # If there's embedded XML, extract and parse it
-            for key in metadata.keys():
-                if 'ImageDescription' in key:
-                    xml_data = metadata[key]
-                    xml_metadata = parse_xml_metadata(xml_data)
-                    metadata.update(xml_metadata)
-                    # Optionally remove the raw XML data
-                    # del metadata[key]
-                    break  # Assuming only one ImageDescription is needed
+            # Process TIFF tags
+            for tag in tags.values():
+                tag_name = tag.name
+                tag_value = tag.value
+                # Convert bytes to string if necessary
+                if isinstance(tag_value, bytes):
+                    try:
+                        tag_value = tag_value.decode('utf-8')
+                    except UnicodeDecodeError:
+                        tag_value = tag_value.decode('latin-1')
+
+                # Organize tags into categories
+                if tag_name in ["ImageWidth", "ImageLength"]:
+                    metadata["Image Metadata"][tag_name] = tag_value
+                elif tag_name == "DateTime":
+                    metadata["Image Metadata"]["Time"] = tag_value
+                elif tag_name == "FEI_TITAN":
+                    # Parse embedded XML
+                    xml_metadata = parse_xml_metadata(tag_value)
+                    organize_xml_metadata(xml_metadata, metadata)
+                else:
+                    # Store other TIFF tags in Advanced Metadata
+                    metadata["Advanced Metadata"][tag_name] = tag_value
+
     except Exception as e:
         logging.error(f"Failed to extract metadata from {file_path}: {e}")
         return None
@@ -78,32 +82,103 @@ def parse_xml_metadata(xml_string):
         logging.error(f"Failed to parse XML metadata: {e}")
         return {}
 
-def etree_to_dict(t):
+def etree_to_dict(element):
     """
-    Converts an ElementTree object to a dictionary.
+    Converts an ElementTree element into a nested dictionary, capturing units where applicable.
     """
-    d = {t.tag: {} if t.attrib else None}
-    children = list(t)
+    d = {element.tag: {} if element.attrib else None}
+
+    # If the element has attributes, add them to the dictionary with `@` prefix
+    if element.attrib:
+        for k, v in element.attrib.items():
+            # Check if there's a 'unit' attribute and treat it as such
+            if k == "unit":
+                d[element.tag] = {"value": element.text.strip() if element.text else None, "unit": v}
+            else:
+                d[element.tag]['@' + k] = v
+
+    # If the element has child elements, recurse and add them as nested dictionaries
+    children = list(element)
     if children:
-        dd = {}
-        for dc in map(etree_to_dict, children):
-            for k, v in dc.items():
-                if k in dd:
-                    if not isinstance(dd[k], list):
-                        dd[k] = [dd[k]]
-                    dd[k].append(v)
-                else:
-                    dd[k] = v
-        d = {t.tag: dd}
-    if t.attrib:
-        d[t.tag].update(('@' + k, v) for k, v in t.attrib.items())
-    if t.text and t.text.strip():
-        text = t.text.strip()
-        if children or t.attrib:
-            d[t.tag]['#text'] = text
-        else:
-            d[t.tag] = text
+        child_dict = {}
+        for child in children:
+            child_dict.update(etree_to_dict(child))
+        d[element.tag] = child_dict
+    else:
+        # If no children and no specific unit handling above, add the element text
+        if "unit" not in element.attrib:
+            d[element.tag] = element.text.strip() if element.text else None
+
     return d
+
+def organize_xml_metadata(xml_dict, metadata):
+    """
+    Organizes XML metadata into Image Metadata and Instrument Metadata categories.
+    """
+    # Extract Image Metadata
+    image_meta_keys = [
+        'databarHeight', 'databarFields', 'databarLabel', 'displayWidth',
+        'pixelWidth', 'pixelHeight', 'time', 'integrations', 'cropHint',
+        'appliedContrast', 'appliedBrightness', 'appliedGamma', 'displayBlackLevel',
+        'displayWhiteLevel', 'samplePosition', 'samplePressureEstimate',
+        'workingDistance'
+    ]
+
+    fei_image = xml_dict.get('FeiImage', {})
+
+    for key in image_meta_keys:
+        if key in fei_image:
+            metadata["Image Metadata"][key] = fei_image[key]
+
+    # Extract Instrument Metadata
+    instrument_meta_keys = [
+        'instrument', 'applicationID', 'PPI', 'acquisition', 'multiStage'
+    ]
+
+    for key in instrument_meta_keys:
+        if key in fei_image:
+            metadata["Instrument Metadata"][key] = fei_image[key]
+
+    # if there are any other keys in the XML, add them to Advanced Metadata
+    # and log them for further investigation
+    for key, value in fei_image.items():
+        if key not in image_meta_keys and key not in instrument_meta_keys:
+            metadata["Advanced Metadata"][key] = value
+            logging.warning(f"Unknown key in XML metadata: {key}")
+
+    # Handle units and attributes in tags
+    metadata["Image Metadata"] = handle_units_and_attributes(metadata["Image Metadata"])
+    metadata["Instrument Metadata"] = handle_units_and_attributes(metadata["Instrument Metadata"])
+
+def handle_units_and_attributes(data):
+    """
+    Processes units and attributes in the metadata.
+    """
+    if isinstance(data, dict):
+        new_data = {}
+        for key, value in data.items():
+            if isinstance(value, dict):
+                # Handle units in attributes
+                unit = value.get('unit')
+                if unit:
+                    new_key = f"{key} (unit=\"{unit}\")"
+                    new_value = value.get('value', '')
+                    new_data[new_key] = handle_units_and_attributes(new_value)
+                elif '@id' in value:
+                    # Handle id in attributes
+                    id_value = value['@id']
+                    new_key = f"{key} (id=\"{id_value}\")"
+                    value.pop('@id')
+                    new_data[new_key] = handle_units_and_attributes(value)
+                else:
+                    new_data[key] = handle_units_and_attributes(value)
+            else:
+                new_data[key] = value
+        return new_data
+    elif isinstance(data, list):
+        return [handle_units_and_attributes(item) for item in data]
+    else:
+        return data
 
 def metadata_to_json(metadata):
     """
@@ -137,6 +212,8 @@ def is_file_stable(file_path, check_interval=1, retries=3):
     Checks if the file size remains constant over a period of time.
     """
     previous_size = -1
+
+    # Retry a few times to ensure stability
     for _ in range(retries):
         if not os.path.exists(file_path):
             return False
@@ -256,7 +333,7 @@ if __name__ == "__main__":
     import sys
 
     # Replace these paths with your actual directories
-    input_dir = r"D:/Monitored_Folders/SEM/Processed"
+    input_dir = r"D:/Monitored_Folders/SEM/Validated"
     output_dir = r"D:/Monitored_Folders/SEM/Metadata"
 
     # Ensure directories exist
