@@ -18,8 +18,14 @@ import xml.etree.ElementTree as ET
 
 from kadi_apy import KadiManager
 
+watch_dir = r"test_monitor"
+rename_folder = os.path.join(watch_dir, 'To_Rename')
+processed_dir = os.path.join(watch_dir, 'Validated')
+archive_dir = os.path.join(watch_dir, 'Archive')
+
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='watchdog.log',level=logging.INFO, format='%(asctime)s - %(message)s')
+
 
 # Regular expression pattern for the required file naming convention.
 pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{4}-\d{2}-\d{2}$')
@@ -590,7 +596,7 @@ class DeviceWatchdogApp:
         # Check if the base name matches the pattern
         if pattern.match(base_name):
             # The file name matches the pattern; proceed to rename ensuring uniqueness
-            self.rename_file(file_path, filename)
+            self.rename_file(file_path, filename, notify=False)
         else:
             logging.info(f"File '{filename}' does not match the naming convention.")
             self.prompt_rename(file_path, filename)
@@ -640,7 +646,7 @@ class DeviceWatchdogApp:
             # Now, check if new_base_name matches the pattern
             if pattern.match(new_base_name):
                 new_name = new_base_name + os.path.splitext(filename)[1]
-                self.rename_file(file_path, new_name)
+                self.rename_file(file_path, new_name, notify=True)
                 break
             else:
                 messagebox.showwarning(
@@ -675,7 +681,7 @@ class DeviceWatchdogApp:
             messagebox.showerror("Error", f"Failed to move file: {e}")
             logging.error(f"Failed to move file '{file_path}' to '{new_path}': {e}")
 
-    def rename_file(self, file_path, new_name):
+    def rename_file(self, file_path, new_name, notify=True):
         """
         Renames the file to the new name provided by the user, ensuring uniqueness.
         """
@@ -684,7 +690,8 @@ class DeviceWatchdogApp:
 
         try:
             os.rename(file_path, new_path)
-            messagebox.showinfo("Success", f"File renamed to '{os.path.basename(new_path)}'", parent=self.dialog_parent)
+            if notify:
+                messagebox.showinfo("Success", f"File renamed to '{os.path.basename(new_path)}'", parent=self.dialog_parent)
             logging.info(f"File '{file_path}' renamed to '{new_path}'.")
 
             # After renaming and moving the file, extract metadata
@@ -741,11 +748,6 @@ class DeviceWatchdogApp:
             self.handle_exception(*sys.exc_info())
 
 if __name__ == "__main__":
-    watch_dir = r"test_monitor"
-    rename_folder = os.path.join(watch_dir, 'To_Rename')
-    processed_dir = os.path.join(watch_dir, 'Validated')
-    archive_dir = os.path.join(watch_dir, 'Archive')
-
     app = DeviceWatchdogApp(
         watch_dir=watch_dir,
         device_name="SEM",

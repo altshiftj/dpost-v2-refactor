@@ -16,13 +16,13 @@ Current issues/improvements to keep in mind:
 - session_watchdog.py
     - remove dictionary conversion code, leave this to metadata_watchdog.py...?
 
-General:
+- General:
     - upload the aggregated metadata dictionary to the kadidb as a separate file, rather than extra metadata.
     - consider if there are any metadata values that should be added as extra metadata.
     - improve readability of tkinter GUIs.
     - add functionality for .elid folders
 
-Important functionality before I-Sem:
+- Important functionality before I-Sem:
     - none?
     - what to talk about then...?
         - the watchdog concept, a timeframe for the project, and the current state of the project.
@@ -32,3 +32,11 @@ Important functionality before I-Sem:
         - asking for device users/owners to contribute with knowledge of their devices.
         - MYData campaign
             - mind your data
+
+- Lots of functionality after fullWatchdog implementation, now consider:
+    - metadata archive and looking at what records exist already
+    - updating records if new files arrive in a new session
+    - extras that might be valuable to include in sync. PERHAPS DONT EVEN THINK ABOUT IT
+    - elid folders. not surface profile folders yet
+    - name cleansing and policing
+    - project cleanup
