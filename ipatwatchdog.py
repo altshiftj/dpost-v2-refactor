@@ -202,9 +202,27 @@ class FileMonitorApp:
         filename = os.path.basename(file_path)
         base_name, extension = os.path.splitext(filename)
 
+        # if the file is a json file do not check the naming convention
+        if extension.lower() == '.json':
+            logging.info(f"File '{filename}' is a JSON file.")
+            return
+
+        # if the file is not a tiff file, alert the user and move the file to a 'rename' folder
+        if extension.lower() != '.tiff':
+            logging.info(f"File '{filename}' is not a TIFF file.")
+            self.move_to_rename_folder(file_path, filename)
+            return
+
         if not pattern.match(base_name):
             logging.info(f"File '{filename}' does not match the naming convention.")
             self.prompt_rename(file_path, filename)
+
+        # if the file name already exists in the processed directory, get a unique name
+        else:
+            new_path = self.get_unique_path(self.processed_dir, filename)
+            if new_path != file_path:
+                os.rename(file_path, new_path)
+                logging.info(f"File '{filename}' moved to '{new_path}'.")
 
     def prompt_rename(self, file_path, filename):
         """
@@ -348,8 +366,8 @@ class FileMonitorApp:
             self.handle_exception(*sys.exc_info())
 
 if __name__ == "__main__":
-    path_to_watch = r"D:/Monitored_Folders/SEM"
+    path_to_watch = r"test_monitor"
     rename_folder = os.path.join(path_to_watch, 'To_Rename')
-    processed_dir = os.path.join(path_to_watch, 'Validated')
+    processed_dir = r"test_monitor\Validated"
     app = FileMonitorApp(path_to_watch, device_name="SEM", processed_dir=processed_dir, rename_folder=rename_folder)
     app.run()

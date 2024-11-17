@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 import tifffile
+import hashlib
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import xml.etree.ElementTree as ET
@@ -26,14 +27,36 @@ class NewTIFFHandler(FileSystemEventHandler):
             self.event_queue.put(event.src_path)
             logging.info(f"New TIFF file detected: {event.src_path}")
 
+def hash_file(file_path):
+    """
+    Generates a hash for the file at the specified path.
+    """
+    try:
+        hasher = hashlib.md5()
+        with open(file_path, 'rb') as file:
+            while True:
+                data = file.read(65536)  # 64 KB chunks
+                if not data:
+                    break
+                hasher.update(data)
+        return hasher.hexdigest()
+    except Exception as e:
+        logging.error(f"Failed to hash file {file_path}: {e}")
+        return None
+
 def extract_metadata(file_path):
     """
     Extracts metadata from an SEM TIFF file and returns it as a dictionary organized into categories.
     """
+    base_name = os.path.basename(file_path)
+    file_hash = hash_file(file_path)
+
     metadata = {
+        "File Name": base_name,
         "Image Metadata": {},
         "Instrument Metadata": {},
-        "Advanced Metadata": {}
+        "Advanced Metadata": {},
+        "File Hash": file_hash
     }
     try:
         with tifffile.TiffFile(file_path) as tif:
@@ -198,7 +221,7 @@ def save_json(json_data, original_file_path, output_dir):
     try:
         base_name = os.path.basename(original_file_path)
         name, _ = os.path.splitext(base_name)
-        json_file_name = f"{name}_metadata.json"
+        json_file_name = f"{name}.json"
         json_file_path = os.path.join(output_dir, json_file_name)
 
         with open(json_file_path, 'w') as json_file:
@@ -229,10 +252,6 @@ class MetadataExtractorApp:
         self.input_dir = input_dir
         self.output_dir = output_dir
         self.stop_event = threading.Event()
-
-        # Ensure directories exist
-        os.makedirs(self.input_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
 
         # Initialize event queue
         self.event_queue = queue.Queue()
@@ -290,13 +309,23 @@ class MetadataExtractorApp:
 
     def move_processed_file(self, file_path):
         """
-        Moves or deletes the processed file.
+        Moves or deletes the processed file, appending a counter if a file with the same name exists.
         """
         try:
             # Example: Move the processed file to an archive directory
-            archive_dir = os.path.join(self.input_dir, 'Processed')
+            archive_dir = self.output_dir
             os.makedirs(archive_dir, exist_ok=True)
-            destination = os.path.join(archive_dir, os.path.basename(file_path))
+            base_name = os.path.basename(file_path)
+            destination = os.path.join(archive_dir, base_name)
+
+            # Check if the file already exists and append a counter if necessary
+            counter = 1
+            while os.path.exists(destination):
+                name, ext = os.path.splitext(base_name)
+                new_name = f"{name}_{counter}{ext}"
+                destination = os.path.join(archive_dir, new_name)
+                counter += 1
+
             os.rename(file_path, destination)
             logging.info(f"Moved processed file to {destination}")
             # Or, to delete the file:
@@ -333,12 +362,8 @@ if __name__ == "__main__":
     import sys
 
     # Replace these paths with your actual directories
-    input_dir = r"D:/Monitored_Folders/SEM/Validated"
-    output_dir = r"D:/Monitored_Folders/SEM/Metadata"
-
-    # Ensure directories exist
-    os.makedirs(input_dir, exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
+    input_dir = r"test_monitor\Validated"
+    output_dir = r"test_monitor\Processed"
 
     app = MetadataExtractorApp(input_dir, output_dir)
     app.run()
