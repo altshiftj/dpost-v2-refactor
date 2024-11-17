@@ -2,10 +2,9 @@ import os
 import sys
 import queue
 import logging
-import datetime
 import threading
-import json
 import re
+import json  # Added import for JSON handling
 from collections import defaultdict
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -21,139 +20,22 @@ def get_base_name(file_name):
     """
     Extracts the base name of a file, treating it as a base if it lacks a '_number' suffix.
     If the file has a '_number' suffix (1-2 digits), removes the suffix to get the base name.
-    
+
     Args:
         file_name (str): The name of the file.
-    
+
     Returns:
         str: The base name of the file.
     """
     # Regex to detect '_number' suffix at the end of the filename (1 or 2 digits)
-    suffix_pattern = re.compile(r'_(\d{1,2})\.(json|tiff)$')
+    suffix_pattern = re.compile(r'_(\d{1,2})\.(tiff|json)$')
     match = suffix_pattern.search(file_name)
     if match:
-        # If suffix exists, derive the base name by removing '_number'
+        # If suffix exists, derive the base name by removing '_number' and extension
         return file_name[:match.start()]
     else:
         # If no suffix, remove the file extension
         return os.path.splitext(file_name)[0]
-
-def combine_json_files(folder_path, base_name):
-    """
-    Combines JSON files in the specified folder into separate combined files.
-    A file is treated as the base if it lacks a '_number' suffix at the end.
-    Related files sharing the same base are grouped together.
-    
-    Args:
-        folder_path (str): The path to the folder containing JSON files.
-    
-    Returns:
-        list: List of paths to the combined JSON files.
-    """
-    try:
-        # List all JSON files in the folder
-        json_files = [f for f in os.listdir(folder_path) if f.endswith('.json')]
-        json_files.sort()  # Ensure consistent ordering
-
-        if not json_files:
-            logging.error("No JSON files found in the specified folder.")
-            raise ValueError("No JSON files found in the specified folder.")
-
-        # Group files by base name
-        grouped_files = defaultdict(list)
-        for file in json_files:
-            grouped_files[base_name].append(file)
-
-        combined_files = []
-
-        # Process each group
-        for base_name, files in grouped_files.items():
-            combined_data = []
-            for file in files:
-                file_path = os.path.join(folder_path, file)
-                try:
-                    with open(file_path, 'r') as f:
-                        file_data = json.load(f)
-                        combined_data.append([file_data])  # Wrap each file's data in a list
-                        logging.info(f"Successfully read file: {file}")
-                except (json.JSONDecodeError, OSError) as e:
-                    logging.error(f"Error reading or parsing file '{file}': {e}")
-                    continue  # Skip the problematic file and proceed
-
-            # Skip creating a combined file if no valid data
-            if not combined_data:
-                logging.warning(f"No valid data to combine for base name '{base_name}'. Skipping.")
-                continue
-
-            # Create a combined file for this group
-            output_file = os.path.join(folder_path, f"{base_name}_combined.json")
-            try:
-                with open(output_file, 'w') as f:
-                    json.dump(combined_data, f, indent=4)
-                logging.info(f"Combined data for base '{base_name}' saved to {output_file}")
-                combined_files.append(output_file)
-            except OSError as e:
-                logging.error(f"Error writing combined file '{output_file}': {e}")
-
-        # delete the original json files
-        for file in json_files:
-            file_path = os.path.join(folder_path, file)
-            try:
-                os.remove(file_path)
-                logging.info(f"Deleted file: {file}")
-            except OSError as e:
-                logging.error(f"Error deleting file '{file}': {e}")
-
-        return combined_files
-
-    except Exception as e:
-        logging.critical(f"An unexpected error occurred: {e}")
-        raise
-
-def flatten_json(json_file_path):
-    """
-    Flattens nested dictionaries in a JSON file and returns the flattened structure.
-
-    :param json_file_path: Path to the JSON file to be flattened.
-    :type json_file_path: str
-    :return: A list of flattened dictionaries if the JSON contains multiple records.
-    :rtype: list[dict]
-    """
-    def flatten_dict(d, parent_key='', sep='_'):
-        """
-        Helper function to recursively flatten a dictionary.
-
-        :param d: Dictionary to flatten.
-        :type d: dict
-        :param parent_key: Key prefix for the current recursion level.
-        :type parent_key: str
-        :param sep: Separator to use in flattened keys.
-        :type sep: str
-        :return: Flattened dictionary.
-        :rtype: dict
-        """
-        items = []
-        for k, v in d.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            if isinstance(v, dict):
-                items.extend(flatten_dict(v, new_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-        return dict(items)
-
-    # Load JSON file
-    with open(json_file_path, 'r') as file:
-        data = json.load(file)
-
-    # Handle both single dictionary and list of dictionaries in JSON
-    if isinstance(data, list):
-        # Flatten each dictionary in the list
-        return [flatten_dict(item) for item in data]
-    elif isinstance(data, dict):
-        # Flatten single dictionary
-        return [flatten_dict(data)]
-    else:
-        raise ValueError("JSON file must contain a dictionary or a list of dictionaries.")
 
 class FileSessionHandler(FileSystemEventHandler):
     """
@@ -216,6 +98,41 @@ class FileMonitorApp:
         # Set the exception handler for Tkinter
         self.root.report_callback_exception = self.handle_exception
 
+        # Initialize a dictionary to store metadata
+        self.metadata_store = {}
+
+        # Initialize the processed files dictionary
+        self.processed_files = self.load_processed_files()  # New line
+
+    def load_processed_files(self):
+        """
+        Loads the dictionary of processed files from a JSON file, if it exists.
+        """
+        processed_files_path = os.path.join(self.processed_dir, 'processed_files.json')
+        if os.path.exists(processed_files_path):
+            try:
+                with open(processed_files_path, 'r') as f:
+                    processed_files = json.load(f)
+                logging.info("Loaded processed files data.")
+                return processed_files
+            except Exception as e:
+                logging.error(f"Failed to load processed files data: {e}")
+                return {}
+        else:
+            return {}
+
+    def save_processed_files(self):
+        """
+        Saves the dictionary of processed files to a JSON file.
+        """
+        processed_files_path = os.path.join(self.processed_dir, 'processed_files.json')
+        try:
+            with open(processed_files_path, 'w') as f:
+                json.dump(self.processed_files, f, indent=4)
+            logging.info("Processed files data saved.")
+        except Exception as e:
+            logging.error(f"Failed to save processed files data: {e}")
+
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         """
         Handles unexpected exceptions by displaying an error message and logging the exception.
@@ -257,7 +174,7 @@ class FileMonitorApp:
             self.session_timer.cancel()
         logging.info("Session ended.")
 
-        # Sync files to the database (Placeholder function)
+        # Sync files to the database
         self.sync_files_to_database()
 
         # Move files to the processed directory
@@ -269,38 +186,97 @@ class FileMonitorApp:
 
     def sync_files_to_database(self):
         """
-        Placeholder function for syncing files to a database.
+        Syncs files to the database and updates the processed files tracking dictionary.
         """
+        # Sync files to the database
         logging.info("Syncing files to the database...")
 
         with KadiManager() as manager:
-            # group the tiff files by the base name, they will be synced into the database as a single record
+            # Group the files by base name
             grouped_files = defaultdict(list)
             for file in os.listdir(self.path_to_watch):
-                if file.endswith('.tiff'):
-                    base_name = get_base_name(file)
-                    grouped_files[base_name].append(file)
+                base_name = get_base_name(file)
+                grouped_files[base_name].append(file)
 
-            # combine json files in the session folder
+            # Combine the JSON files in each group into a single file
             for base_name, files in grouped_files.items():
-                combined_files = combine_json_files(self.path_to_watch, base_name)
-                if combined_files:
-                    logging.info(f"Combined files for base '{base_name}': {combined_files}")
-                
+                combined_data = []
+                for file in files:
+                    if file.endswith('.json'):
+                        # Ensure the file's base name matches the group base_name
+                        file_base_name = get_base_name(file)
+                        if file_base_name != base_name:
+                            continue  # Skip JSON files that don't match the base name
+                        file_path = os.path.join(self.path_to_watch, file)
+                        try:
+                            with open(file_path, 'r') as f:
+                                file_data = json.load(f)
+                                combined_data.append(file_data)  # Corrected: remove extra list wrapping
+                                logging.info(f"Successfully read file: {file}")
+                        except (json.JSONDecodeError, OSError) as e:
+                            logging.error(f"Error reading or parsing file '{file}': {e}")
+                            continue
+
+                # Skip creating a combined file if no valid data
+                if not combined_data:
+                    logging.warning(f"No valid data to combine for base name '{base_name}'. Skipping.")
+                    continue
+
+                # Create a combined file for this group
+                output_file = os.path.join(self.path_to_watch, f"{base_name}_metadata.json")
+                try:
+                    with open(output_file, 'w') as f:
+                        json.dump(combined_data, f, indent=4)
+                    logging.info(f"Combined data for base '{base_name}' saved to {output_file}")
+                    grouped_files[base_name].append(f"{base_name}_metadata.json")
+                except OSError as e:
+                    logging.error(f"Error writing combined file '{output_file}': {e}")
+
+                # Remove individual JSON files after combining
+                for file in files:
+                    if file.endswith('.json') and get_base_name(file) == base_name:
+                        file_path = os.path.join(self.path_to_watch, file)
+                        try:
+                            # Remove the individual JSON file from the group
+                            grouped_files[base_name].remove(file)
+                            os.remove(file_path)
+                            logging.info(f"Removed individual JSON file: {file}")
+                        except OSError as e:
+                            logging.error(f"Error removing file '{file}': {e}")
+
+            # Continue with uploading files and processing metadata
+            for base_name, files in grouped_files.items():
                 record = manager.record(
-                    create = True,
-                    identifier = base_name,
+                    create=True,
+                    identifier=base_name,
                 )
 
                 for file in files:
                     file_path = os.path.join(self.path_to_watch, file)
                     record.upload_file(file_path)
                     logging.info(f"Uploaded file: {file}")
-                
-                combined_files = flatten_json(combined_files)
 
-                record.add_metadata(combined_files)
-        logging.info("Files have been synced to the database.")
+                # Retrieve metadata for the base_name
+                metadata = self.metadata_store.get(base_name)
+                if metadata:
+                    record.add_metadata(metadata)
+                    logging.info(f"Added metadata for base '{base_name}'.")
+                else:
+                    logging.warning(f"No metadata found for base '{base_name}'.")
+
+                # Update the processed files dictionary
+                num_files = len(files)
+                if base_name in self.processed_files:
+                    self.processed_files[base_name] += num_files
+                    logging.info(f"Updated count for base '{base_name}': {self.processed_files[base_name]} files.")
+                else:
+                    self.processed_files[base_name] = num_files
+                    logging.info(f"Added new base '{base_name}' with count: {num_files} files.")
+
+            # Save the processed files dictionary after syncing all files
+            self.save_processed_files()
+
+            logging.info("Files have been synced to the database.")
 
     def archive_files(self):
         """
@@ -357,6 +333,17 @@ class FileMonitorApp:
         """
         while not self.event_queue.empty():
             file_path = self.event_queue.get()
+            base_name = get_base_name(os.path.basename(file_path))
+
+            # Assume that the metadata is already prepared and can be stored
+            # For example, we can extract metadata here and store it
+            metadata = extract_metadata(file_path)
+            if metadata:
+                self.metadata_store[base_name] = metadata
+                logging.info(f"Metadata stored for base '{base_name}'.")
+            else:
+                logging.warning(f"No metadata extracted from '{file_path}'.")
+
             if not self.session_active:
                 self.start_session()
             else:
@@ -385,6 +372,19 @@ class FileMonitorApp:
             self.on_closing()
         except Exception:
             self.handle_exception(*sys.exc_info())
+
+def extract_metadata(file_path):
+    """
+    Extracts metadata from the TIFF file and returns it as a dictionary.
+    This function assumes that the metadata extraction is handled here.
+    """
+    # Placeholder for actual metadata extraction logic
+    # For example, use tifffile or other libraries to extract metadata
+    metadata = {}
+
+    # Since dictionaries are to be settled before arriving here,
+    # you should implement the actual metadata extraction elsewhere
+    return metadata
 
 if __name__ == "__main__":
     path_to_watch = r"test_monitor\Processed"

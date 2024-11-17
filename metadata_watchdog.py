@@ -44,20 +44,41 @@ def hash_file(file_path):
         logging.error(f"Failed to hash file {file_path}: {e}")
         return None
 
+def flatten_dictionary(d, parent_key='', sep='_'):
+    """
+    Recursively flattens a nested dictionary.
+
+    Parameters:
+        d (dict): The dictionary to flatten.
+        parent_key (str): The base key for the current level (used in recursion).
+        sep (str): Separator to use when concatenating keys.
+
+    Returns:
+        dict: A flattened dictionary with keys representing the hierarchy.
+    """
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dictionary(v, new_key, sep=sep).items())
+        elif isinstance(v, (list, tuple)):
+            for i, item in enumerate(v):
+                items.extend(flatten_dictionary({f"{k}_{i}": item}, parent_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
 def extract_metadata(file_path):
     """
-    Extracts metadata from an SEM TIFF file and returns it as a dictionary organized into categories.
+    Extracts metadata from an SEM TIFF file and returns it as a flat dictionary with keys formatted as
+    'basename_tagname_unit'.
     """
     base_name = os.path.basename(file_path)
+    file_name, ext = os.path.splitext(base_name)
     file_hash = hash_file(file_path)
 
-    metadata = {
-        "File Name": base_name,
-        "Image Metadata": {},
-        "Instrument Metadata": {},
-        "Advanced Metadata": {},
-        "File Hash": file_hash
-    }
+    metadata = {}
     try:
         with tifffile.TiffFile(file_path) as tif:
             # Extract tags from the first page
@@ -75,133 +96,72 @@ def extract_metadata(file_path):
                     except UnicodeDecodeError:
                         tag_value = tag_value.decode('latin-1')
 
-                # Organize tags into categories
-                if tag_name in ["ImageWidth", "ImageLength"]:
-                    metadata["Image Metadata"][tag_name] = tag_value
-                elif tag_name == "DateTime":
-                    metadata["Image Metadata"]["Time"] = tag_value
-                elif tag_name == "FEI_TITAN":
+                # For TIFF tags, unit is 'no-unit' by default
+                key = f"{file_name}_{tag_name}_no-unit"
+                metadata[key] = tag_value
+
+                # Check if tag_name is 'FEI_TITAN' to parse embedded XML
+                if tag_name == "FEI_TITAN":
                     # Parse embedded XML
-                    xml_metadata = parse_xml_metadata(tag_value)
-                    organize_xml_metadata(xml_metadata, metadata)
-                else:
-                    # Store other TIFF tags in Advanced Metadata
-                    metadata["Advanced Metadata"][tag_name] = tag_value
+                    xml_metadata = parse_xml_metadata(tag_value, file_name)
+                    
+                    # delete the top key:value pair from the dictionary
+                    FeiImage_key = next(iter(xml_metadata))
+                    xml_metadata.pop(FeiImage_key)
+
+                    # Update metadata dictionary with the parsed XML metadata
+                    metadata.update(xml_metadata)
+
+        # Add file hash to metadata
+        metadata[f"{file_name}_filehash_no-unit"] = file_hash
+
+        # Flatten the metadata dictionary
+        metadata = flatten_dictionary(metadata)
 
     except Exception as e:
         logging.error(f"Failed to extract metadata from {file_path}: {e}")
         return None
     return metadata
 
-def parse_xml_metadata(xml_string):
+def parse_xml_metadata(xml_string, file_name):
     """
-    Parses XML string and returns a nested dictionary.
+    Parses XML string and returns a flat dictionary with keys formatted as 'basename_tagname_unit'.
     """
     try:
         root = ET.fromstring(xml_string)
-        xml_dict = etree_to_dict(root)
+        xml_dict = etree_to_dict(root, file_name)
         return xml_dict
     except Exception as e:
         logging.error(f"Failed to parse XML metadata: {e}")
         return {}
 
-def etree_to_dict(element):
+def etree_to_dict(element, file_name, parent_key='', sep='_'):
     """
-    Converts an ElementTree element into a nested dictionary, capturing units where applicable.
+    Converts an ElementTree element into a flat dictionary with keys formatted as 'basename_tagname_unit'.
     """
-    d = {element.tag: {} if element.attrib else None}
+    items = {}
+    unit = element.attrib.get('unit', 'no-unit')
+    tag_name = element.tag
+    key = tag_name
 
-    # If the element has attributes, add them to the dictionary with `@` prefix
-    if element.attrib:
-        for k, v in element.attrib.items():
-            # Check if there's a 'unit' attribute and treat it as such
-            if k == "unit":
-                d[element.tag] = {"value": element.text.strip() if element.text else None, "unit": v}
-            else:
-                d[element.tag]['@' + k] = v
+    full_key = f"{file_name}_{key}_{unit}"
 
-    # If the element has child elements, recurse and add them as nested dictionaries
-    children = list(element)
-    if children:
-        child_dict = {}
-        for child in children:
-            child_dict.update(etree_to_dict(child))
-        d[element.tag] = child_dict
-    else:
-        # If no children and no specific unit handling above, add the element text
-        if "unit" not in element.attrib:
-            d[element.tag] = element.text.strip() if element.text else None
+    # If the element has text, use it as the value
+    text = element.text.strip() if element.text else None
+    if text:
+        items[full_key] = text
 
-    return d
+    # Process attributes (other than 'unit')
+    for attr_name, attr_value in element.attrib.items():
+        if attr_name != 'unit':
+            attr_key = f"{file_name}_{key}{sep}{attr_name}_no-unit"
+            items[attr_key] = attr_value
 
-def organize_xml_metadata(xml_dict, metadata):
-    """
-    Organizes XML metadata into Image Metadata and Instrument Metadata categories.
-    """
-    # Extract Image Metadata
-    image_meta_keys = [
-        'databarHeight', 'databarFields', 'databarLabel', 'displayWidth',
-        'pixelWidth', 'pixelHeight', 'time', 'integrations', 'cropHint',
-        'appliedContrast', 'appliedBrightness', 'appliedGamma', 'displayBlackLevel',
-        'displayWhiteLevel', 'samplePosition', 'samplePressureEstimate',
-        'workingDistance'
-    ]
+    # Recursively process child elements
+    for child in element:
+        items.update(etree_to_dict(child, file_name, key, sep))
 
-    fei_image = xml_dict.get('FeiImage', {})
-
-    for key in image_meta_keys:
-        if key in fei_image:
-            metadata["Image Metadata"][key] = fei_image[key]
-
-    # Extract Instrument Metadata
-    instrument_meta_keys = [
-        'instrument', 'applicationID', 'PPI', 'acquisition', 'multiStage'
-    ]
-
-    for key in instrument_meta_keys:
-        if key in fei_image:
-            metadata["Instrument Metadata"][key] = fei_image[key]
-
-    # if there are any other keys in the XML, add them to Advanced Metadata
-    # and log them for further investigation
-    for key, value in fei_image.items():
-        if key not in image_meta_keys and key not in instrument_meta_keys:
-            metadata["Advanced Metadata"][key] = value
-            logging.warning(f"Unknown key in XML metadata: {key}")
-
-    # Handle units and attributes in tags
-    metadata["Image Metadata"] = handle_units_and_attributes(metadata["Image Metadata"])
-    metadata["Instrument Metadata"] = handle_units_and_attributes(metadata["Instrument Metadata"])
-
-def handle_units_and_attributes(data):
-    """
-    Processes units and attributes in the metadata.
-    """
-    if isinstance(data, dict):
-        new_data = {}
-        for key, value in data.items():
-            if isinstance(value, dict):
-                # Handle units in attributes
-                unit = value.get('unit')
-                if unit:
-                    new_key = f"{key} (unit=\"{unit}\")"
-                    new_value = value.get('value', '')
-                    new_data[new_key] = handle_units_and_attributes(new_value)
-                elif '@id' in value:
-                    # Handle id in attributes
-                    id_value = value['@id']
-                    new_key = f"{key} (id=\"{id_value}\")"
-                    value.pop('@id')
-                    new_data[new_key] = handle_units_and_attributes(value)
-                else:
-                    new_data[key] = handle_units_and_attributes(value)
-            else:
-                new_data[key] = value
-        return new_data
-    elif isinstance(data, list):
-        return [handle_units_and_attributes(item) for item in data]
-    else:
-        return data
+    return items
 
 def metadata_to_json(metadata):
     """
@@ -294,7 +254,7 @@ class MetadataExtractorApp:
                         if json_data:
                             save_json(json_data, file_path, self.output_dir)
                             # Optionally move or delete the processed file
-                            # self.move_processed_file(file_path)
+                            self.move_processed_file(file_path)
                     else:
                         logging.error(f"No metadata extracted from {file_path}")
                 else:
