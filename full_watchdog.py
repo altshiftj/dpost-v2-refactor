@@ -33,7 +33,7 @@ pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{4
 def get_base_name(file_name):
     """
     Extracts the base name of a file, treating it as a base if it lacks a '_number' suffix.
-    If the file has a '_number' suffix (1-2 digits), removes the suffix to get the base name.
+    If the file has a '_number' suffix (1-2 digits), this method removes the suffix to get the base name.
 
     Args:
         file_name (str): The name of the file.
@@ -128,12 +128,12 @@ class MultiFieldDialog(simpledialog.Dialog):
 
         self.example_name = "Ex: MuS"
         self.example_institute = "Ex: IPAT"
-        self.example_data_qualifier = "Ex: Cathode-20XD6-SO4"
+        self.example_sample_name = "Ex: Cathode-20XD6-SO4"
         
         # Use EntryWithPlaceholder
         self.name_entry = EntryWithPlaceholder(master, self.example_name, textvariable=self.userID_var)
         self.institute_entry = EntryWithPlaceholder(master, self.example_institute, textvariable=self.institute_var)
-        self.data_qualifier_entry = EntryWithPlaceholder(master, self.example_data_qualifier, textvariable=self.data_qualifier_var)
+        self.data_qualifier_entry = EntryWithPlaceholder(master, self.example_sample_name, textvariable=self.data_qualifier_var)
         
         self.name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=2)
         self.institute_entry.grid(row=1, column=1, sticky='we', padx=5, pady=2)
@@ -156,20 +156,20 @@ class MultiFieldDialog(simpledialog.Dialog):
         # Ensure placeholders are not included in the result
         userID = self.userID_var.get()
         institute = self.institute_var.get()
-        data_qualifier = self.data_qualifier_var.get()
+        sample_name = self.data_qualifier_var.get()
 
         # Validate that the placeholders are not submitted
         if userID == self.example_name:
             userID = ""
         if institute == self.example_institute:
             institute = ""
-        if data_qualifier == self.example_data_qualifier:
-            data_qualifier = ""
+        if sample_name == self.example_sample_name:
+            sample_name = ""
         
         self.result = {
             'name': userID,
             'institute': institute,
-            'data_qualifier': data_qualifier,
+            'sample_name': sample_name,
         }
 
 class MetadataExtractor:

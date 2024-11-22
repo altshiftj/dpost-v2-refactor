@@ -40,3 +40,5 @@ Current issues/improvements to keep in mind:
     - elid folders. not surface profile folders yet
     - name cleansing and policing
     - project cleanup
+    - asking user if they want to update a record if a file is already in the db, or if they want to create a new record, prompting for a new name.
+    - granting data access to the device users by extracting user name from the file name.
