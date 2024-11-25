@@ -61,13 +61,13 @@ class FileEventHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if not event.is_directory:
-            # Add the file path to the queue
+            # Add a newly added file path to the queue
             self.app.event_queue.put(event.src_path)
             logging.info(f"New file detected: {event.src_path}")
 
 class EntryWithPlaceholder(tk.Entry):
     """
-    Custom Entry widget with placeholder text.
+    Custom Entry widget with placeholder text. This fills the rename dialog fields with placeholder name, institute, and sample name.
     """
     def __init__(self, master=None, placeholder="PLACEHOLDER", color='grey', *args, **kwargs):
         super().__init__(master, *args, **kwargs)
@@ -122,19 +122,19 @@ class MultiFieldDialog(simpledialog.Dialog):
         tk.Label(master, text="Institute:").grid(row=1, column=0, sticky='e', padx=5, pady=2)
         tk.Label(master, text="Sample-Name:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
         
-        self.userID_var = tk.StringVar()
+        self.user_ID_var = tk.StringVar()
         self.institute_var = tk.StringVar()
-        self.data_qualifier_var = tk.StringVar()
+        self.sample_ID_var = tk.StringVar()
 
-        self.example_name = "Ex: MuS"
+        self.example_user_ID = "Ex: MuS"
         self.example_institute = "Ex: IPAT"
-        self.example_sample_name = "Ex: Cathode-20XD6-SO4"
+        self.example_sample_ID = "Ex: Cathode-20XD6-SO4"
         
-        # Use EntryWithPlaceholder
-        self.name_entry = EntryWithPlaceholder(master, self.example_name, textvariable=self.userID_var)
+        # Use EntryWithPlaceholder to fill the fields with placeholder text
+        self.name_entry = EntryWithPlaceholder(master, self.example_user_ID, textvariable=self.user_ID_var)
         self.institute_entry = EntryWithPlaceholder(master, self.example_institute, textvariable=self.institute_var)
-        self.data_qualifier_entry = EntryWithPlaceholder(master, self.example_sample_name, textvariable=self.data_qualifier_var)
-        
+        self.data_qualifier_entry = EntryWithPlaceholder(master, self.example_sample_ID, textvariable=self.sample_ID_var)
+        # define the grid layout of the rename dialog
         self.name_entry.grid(row=0, column=1, sticky='we', padx=5, pady=2)
         self.institute_entry.grid(row=1, column=1, sticky='we', padx=5, pady=2)
         self.data_qualifier_entry.grid(row=2, column=1, sticky='we', padx=5, pady=2)
@@ -154,22 +154,22 @@ class MultiFieldDialog(simpledialog.Dialog):
 
     def apply(self):
         # Ensure placeholders are not included in the result
-        userID = self.userID_var.get()
+        userID = self.user_ID_var.get()
         institute = self.institute_var.get()
-        sample_name = self.data_qualifier_var.get()
+        sample_ID = self.sample_ID_var.get()
 
         # Validate that the placeholders are not submitted
-        if userID == self.example_name:
+        if userID == self.example_user_ID:
             userID = ""
         if institute == self.example_institute:
             institute = ""
-        if sample_name == self.example_sample_name:
-            sample_name = ""
+        if sample_ID == self.example_sample_ID:
+            sample_ID = ""
         
         self.result = {
             'name': userID,
             'institute': institute,
-            'sample_name': sample_name,
+            'sample_ID': sample_ID,
         }
 
 class MetadataExtractor:
@@ -532,10 +532,12 @@ class DeviceWatchdogApp:
                     logging.error(f"Failed to move file '{file_name}': {e}")
         logging.info("Archiving completed.")
 
+    # TODO: Consider this method a helper function and move outside the class (if appropriate)
     def get_unique_path(self, dest_path):
         """
         Generates a unique file path to avoid overwriting existing files.
         """
+        # TODO: Always add a counter to the filename to ensure uniqueness, and improve findability
         directory, filename = os.path.split(dest_path)
         base, extension = os.path.splitext(filename)
         counter = 1
@@ -567,7 +569,7 @@ class DeviceWatchdogApp:
 
     def process_events(self):
         """
-        Processes file events from the queue.
+        Processes file events from the queue. Thi method is called periodically, and looks for new files to process.
         """
         while not self.event_queue.empty():
             file_path = self.event_queue.get()
@@ -596,6 +598,7 @@ class DeviceWatchdogApp:
         # Check if the base name matches the pattern
         if pattern.match(base_name):
             # The file name matches the pattern; proceed to rename ensuring uniqueness
+            # TODO: Add functionality to ensure that a validated file is not lost here in the event of an exception
             self.rename_file(file_path, filename, notify=False)
         else:
             logging.info(f"File '{filename}' does not match the naming convention.")
@@ -613,6 +616,7 @@ class DeviceWatchdogApp:
 
         messagebox.showwarning("Invalid File Name", message, parent=self.dialog_parent)
 
+        # TODO: Add context manager to ensure any failure in renaming sends the file to the 'rename' folder
         while True:
             dialog = MultiFieldDialog(self.root, "Rename File")
             if dialog.result is None:
@@ -622,7 +626,7 @@ class DeviceWatchdogApp:
 
             user_ID = dialog.result['name']
             institute = dialog.result['institute']
-            sample_ID = dialog.result['data_qualifier']
+            sample_ID = dialog.result['sample_ID']
 
             # Check that none of the fields are empty
             if not user_ID or not institute or not sample_ID:
@@ -634,6 +638,7 @@ class DeviceWatchdogApp:
                 continue
 
             # Remove spaces and special characters to ensure the filename is valid
+            # TODO: Consider requirements for cleansing the input fields
             user_ID = re.sub(r'\W+', '', user_ID)
             institute = re.sub(r'\W+', '', institute)
             sample_ID = re.sub(r'[^\w-]+', '', sample_ID)
