@@ -18,14 +18,14 @@ import xml.etree.ElementTree as ET
 
 from kadi_apy import KadiManager
 
+# TODO: Create an exceptions folder for storing any files that are in transit when an exception occurs
 watch_dir = r"test_monitor"
 rename_folder = os.path.join(watch_dir, 'To_Rename')
 processed_dir = os.path.join(watch_dir, 'Validated')
 archive_dir = os.path.join(watch_dir, 'Archive')
 
 # Configure logging
-logging.basicConfig(filename='watchdog.log',level=logging.INFO, format='%(asctime)s - %(message)s')
-
+logging.basicConfig(filename='watchdog.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 # Regular expression pattern for the required file naming convention.
 pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{4}-\d{2}-\d{2}$')
@@ -50,6 +50,27 @@ def get_base_name(file_name):
     else:
         # If no suffix, remove the file extension
         return os.path.splitext(file_name)[0]
+
+def get_unique_path(dest_path):
+    """
+    Generates a unique file path to avoid overwriting existing files.
+    Always adds a counter to the filename to ensure uniqueness and improve findability.
+    """
+    directory, filename = os.path.split(dest_path)
+    base, extension = os.path.splitext(filename)
+    counter = 1
+    unique_filename = f"{base}_{counter}{extension}"
+    while os.path.exists(os.path.join(directory, unique_filename)):
+        counter += 1
+        unique_filename = f"{base}_{counter}{extension}"
+    return os.path.join(directory, unique_filename)
+
+def cleanse_input(input_str):
+    """
+    Cleanses the input string by removing invalid characters for filenames.
+    Allows letters, numbers, underscores, and hyphens.
+    """
+    return re.sub(r'[^A-Za-z0-9_-]+', '', input_str)
 
 class FileEventHandler(FileSystemEventHandler):
     """
@@ -308,6 +329,74 @@ class MetadataExtractor:
             return None
         return metadata
 
+class LocalRecord:
+    """
+    Represents a collection of files with the same base_name and their associated metadata.
+    """
+    def __init__(self, base_name):
+        self.base_name = base_name
+        self.files = []  # List of file paths
+        self.metadata_files = []  # List of metadata file paths
+        self.metadata = []  # List of metadata dictionaries
+
+    def add_file(self, file_path):
+        self.files.append(file_path)
+        if file_path.endswith('.json'):
+            self.metadata_files.append(file_path)
+
+    def extract_and_combine_metadata(self):
+        """
+        Combines individual JSON metadata files into a single metadata file.
+        """
+        combined_data = []
+        for json_file in self.metadata_files:
+            try:
+                with open(json_file, 'r') as f:
+                    data = json.load(f)
+                    combined_data.append(data)
+            except Exception as e:
+                logging.error(f"Error reading or parsing metadata file '{json_file}': {e}")
+        if combined_data:
+            output_file = os.path.join(os.path.dirname(self.files[0]), f"{self.base_name}_metadata.json")
+            try:
+                with open(output_file, 'w') as f:
+                    json.dump(combined_data, f, indent=4)
+                logging.info(f"Combined metadata for base '{self.base_name}' saved to {output_file}")
+                # Add the combined metadata file to the list of files
+                self.files.append(output_file)
+            except Exception as e:
+                logging.error(f"Error writing combined metadata file '{output_file}': {e}")
+        else:
+            logging.warning(f"No valid metadata to combine for base name '{self.base_name}'. Skipping.")
+
+    def upload_to_database(self, manager):
+        """
+        Uploads files to the database.
+        """
+        record = manager.record(create=True, identifier=self.base_name)
+        for file_path in self.files:
+            record.upload_file(file_path)
+            logging.info(f"Uploaded file: {os.path.basename(file_path)}")
+
+    def archive_files(self, archive_dir):
+        """
+        Moves all files to the archive directory.
+        """
+        for file_path in self.files:
+            dest_path = os.path.join(archive_dir, os.path.basename(file_path))
+            try:
+                os.rename(file_path, dest_path)
+                logging.info(f"Moved '{os.path.basename(file_path)}' to '{archive_dir}'.")
+            except Exception as e:
+                logging.error(f"Failed to move file '{file_path}' to '{dest_path}': {e}")
+                # Optionally handle exceptions, e.g., move to exceptions folder
+
+    def get_file_count(self):
+        """
+        Returns the number of files (excluding metadata files).
+        """
+        return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
+
 class DeviceWatchdogApp:
     """
     Main application class that combines file naming monitoring, metadata extraction,
@@ -359,6 +448,9 @@ class DeviceWatchdogApp:
 
         # Initialize the processed files dictionary
         self.processed_files = self.load_processed_files()
+
+        # Initialize the records dictionary
+        self.records_dict = {}  # Maps base_name to LocalRecord instances
 
     def load_processed_files(self):
         """
@@ -424,128 +516,78 @@ class DeviceWatchdogApp:
     def end_session(self):
         """
         Ends the current session, syncs files, and moves them to the archive folder.
+        Ensures that all operations are completed atomically.
         """
-        self.session_active = False
-        if self.session_timer:
-            self.session_timer.cancel()
-        logging.info("Session ended.")
+        try:
+            self.session_active = False
+            if self.session_timer:
+                self.session_timer.cancel()
+            logging.info("Session ended.")
 
-        # Sync files to the database
-        self.sync_files_to_database()
+            # Sync files to the database
+            self.sync_files_to_database()
 
-        # Move files to the archive directory
-        self.archive_files()
-
-        # Close the "Done" dialog if it's open
-        if hasattr(self, 'done_dialog') and self.done_dialog.winfo_exists():
-            self.done_dialog.destroy()
+        except Exception as e:
+            logging.error(f"An error occurred during session end: {e}")
+            messagebox.showerror("Session End Error", f"An error occurred during session end: {e}", parent=self.dialog_parent)
+        finally:
+            # Ensure that the session is properly closed
+            if hasattr(self, 'done_dialog') and self.done_dialog.winfo_exists():
+                self.done_dialog.destroy()
 
     def sync_files_to_database(self):
         """
         Syncs files to the database and updates the processed files tracking dictionary.
         """
         logging.info("Syncing files to the database...")
+        aggregated_metadata = []
         with KadiManager() as manager:
-            grouped_files = self.group_files_by_base_name()
-            self.combine_json_files(grouped_files)
-            self.upload_files_to_database(manager, grouped_files)
+            for LocalRecord in self.records_dict.items():
+                LocalRecord.extract_and_combine_metadata()
+                LocalRecord.upload_to_database(manager)
+                # Update the processed files dictionary
+                num_files = LocalRecord.get_file_count()
+                self.processed_files[LocalRecord.base_name] = self.processed_files.get(LocalRecord.base_name, 0) + num_files
+                logging.info(f"Updated count for base '{LocalRecord.base_name}': {self.processed_files[LocalRecord.base_name]} files.")
+                # Collect metadata for aggregation
+                if LocalRecord.metadata_files:
+                    combined_metadata_file = os.path.join(os.path.dirname(LocalRecord.files[0]), f"{LocalRecord.base_name}_metadata.json")
+                    if os.path.exists(combined_metadata_file):
+                        try:
+                            with open(combined_metadata_file, 'r') as f:
+                                data = json.load(f)
+                                aggregated_metadata.extend(data)
+                        except Exception as e:
+                            logging.error(f"Error reading combined metadata file '{combined_metadata_file}': {e}")
+                # Archive files
+                LocalRecord.archive_files(self.archive_dir)
+            # Clear records after processing
+            self.records_dict.clear()
         self.save_processed_files()
         logging.info("Files have been synced to the database.")
+        # After processing all records, save aggregated metadata
+        self.save_aggregated_metadata(aggregated_metadata)
 
-    def group_files_by_base_name(self):
+    def save_aggregated_metadata(self, aggregated_metadata):
         """
-        Groups files in the processed directory by their base name.
+        Saves aggregated metadata to a file in the archive directory.
         """
-        grouped_files = defaultdict(list)
-        for file in os.listdir(self.processed_dir):
-            base_name = get_base_name(file)
-            grouped_files[base_name].append(file)
-        return grouped_files
+        if not aggregated_metadata:
+            logging.info("No metadata to aggregate.")
+            return
+        aggregated_metadata_path = os.path.join(self.archive_dir, 'aggregated_metadata.json')
+        try:
+            if os.path.exists(aggregated_metadata_path):
+                # If the file exists, load existing data and append
+                with open(aggregated_metadata_path, 'r') as f:
+                    existing_data = json.load(f)
+                aggregated_metadata = existing_data + aggregated_metadata
 
-    def combine_json_files(self, grouped_files):
-        """
-        Combines individual JSON files into a single metadata file for each base name.
-        """
-        for base_name, files in grouped_files.items():
-            combined_data = []
-            for file in files:
-                if file.endswith('.json') and get_base_name(file) == base_name:
-                    file_path = os.path.join(self.processed_dir, file)
-                    try:
-                        with open(file_path, 'r') as f:
-                            file_data = json.load(f)
-                            combined_data.append(file_data)
-                            logging.info(f"Successfully read file: {file}")
-                    except (json.JSONDecodeError, OSError) as e:
-                        logging.error(f"Error reading or parsing file '{file}': {e}")
-            if combined_data:
-                output_file = os.path.join(self.processed_dir, f"{base_name}_metadata.json")
-                try:
-                    with open(output_file, 'w') as f:
-                        json.dump(combined_data, f, indent=4)
-                    logging.info(f"Combined data for base '{base_name}' saved to {output_file}")
-                    grouped_files[base_name].append(f"{base_name}_metadata.json")
-                except OSError as e:
-                    logging.error(f"Error writing combined file '{output_file}': {e}")
-                # Remove individual JSON files after combining
-                for file in files.copy():
-                    if file.endswith('.json') and get_base_name(file) == base_name:
-                        file_path = os.path.join(self.processed_dir, file)
-                        try:
-                            os.remove(file_path)
-                            grouped_files[base_name].remove(file)
-                            logging.info(f"Removed individual JSON file: {file}")
-                        except OSError as e:
-                            logging.error(f"Error removing file '{file}': {e}")
-            else:
-                logging.warning(f"No valid data to combine for base name '{base_name}'. Skipping.")
-
-    def upload_files_to_database(self, manager, grouped_files):
-        """
-        Uploads files to the database and updates the processed files dictionary.
-        """
-        for base_name, files in grouped_files.items():
-            record = manager.record(create=True, identifier=base_name)
-            for file in files:
-                file_path = os.path.join(self.processed_dir, file)
-                record.upload_file(file_path)
-                logging.info(f"Uploaded file: {file}")
-            # Update the processed files dictionary
-            num_files = len(files)
-            self.processed_files[base_name] = self.processed_files.get(base_name, 0) + num_files
-            logging.info(f"Updated count for base '{base_name}': {self.processed_files[base_name]} files.")
-
-    def archive_files(self):
-        """
-        Moves files from the processed folder to the archive folder.
-        """
-        logging.info("Archiving files...")
-        for file_name in os.listdir(self.processed_dir):
-            file_path = os.path.join(self.processed_dir, file_name)
-            if os.path.isfile(file_path):
-                dest_path = os.path.join(self.archive_dir, file_name)
-                dest_path = self.get_unique_path(dest_path)
-                try:
-                    os.rename(file_path, dest_path)
-                    logging.info(f"Moved '{file_name}' to '{self.archive_dir}'.")
-                except Exception as e:
-                    logging.error(f"Failed to move file '{file_name}': {e}")
-        logging.info("Archiving completed.")
-
-    # TODO: Consider this method a helper function and move outside the class (if appropriate)
-    def get_unique_path(self, dest_path):
-        """
-        Generates a unique file path to avoid overwriting existing files.
-        """
-        # TODO: Always add a counter to the filename to ensure uniqueness, and improve findability
-        directory, filename = os.path.split(dest_path)
-        base, extension = os.path.splitext(filename)
-        counter = 1
-        unique_filename = filename
-        while os.path.exists(os.path.join(directory, unique_filename)):
-            unique_filename = f"{base}_{counter}{extension}"
-            counter += 1
-        return os.path.join(directory, unique_filename)
+            with open(aggregated_metadata_path, 'w') as f:
+                json.dump(aggregated_metadata, f, indent=4)
+            logging.info(f"Aggregated metadata saved to '{aggregated_metadata_path}'")
+        except Exception as e:
+            logging.error(f"Error saving aggregated metadata: {e}")
 
     def show_done_dialog(self):
         """
@@ -569,7 +611,7 @@ class DeviceWatchdogApp:
 
     def process_events(self):
         """
-        Processes file events from the queue. Thi method is called periodically, and looks for new files to process.
+        Processes file events from the queue. This method is called periodically, and looks for new files to process.
         """
         while not self.event_queue.empty():
             file_path = self.event_queue.get()
@@ -598,7 +640,6 @@ class DeviceWatchdogApp:
         # Check if the base name matches the pattern
         if pattern.match(base_name):
             # The file name matches the pattern; proceed to rename ensuring uniqueness
-            # TODO: Add functionality to ensure that a validated file is not lost here in the event of an exception
             self.rename_file(file_path, filename, notify=False)
         else:
             logging.info(f"File '{filename}' does not match the naming convention.")
@@ -611,12 +652,11 @@ class DeviceWatchdogApp:
         """
         message = (
             f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: DeviceName_Institute_Name_DataQualifier_Date (e.g., SEM_IPAT_MuS_Sample-Name_2023-10-19)"
+            f"The required naming format is: Device_Institute_UserName_Sample-Name_Date (e.g., SEM_IPAT_MuS_Sample-Name_2023-10-01)"
         )
 
         messagebox.showwarning("Invalid File Name", message, parent=self.dialog_parent)
 
-        # TODO: Add context manager to ensure any failure in renaming sends the file to the 'rename' folder
         while True:
             dialog = MultiFieldDialog(self.root, "Rename File")
             if dialog.result is None:
@@ -637,11 +677,10 @@ class DeviceWatchdogApp:
                 )
                 continue
 
-            # Remove spaces and special characters to ensure the filename is valid
-            # TODO: Consider requirements for cleansing the input fields
-            user_ID = re.sub(r'\W+', '', user_ID)
-            institute = re.sub(r'\W+', '', institute)
-            sample_ID = re.sub(r'[^\w-]+', '', sample_ID)
+            # Remove invalid characters to ensure the filename is valid
+            user_ID = cleanse_input(user_ID)
+            institute = cleanse_input(institute)
+            sample_ID = cleanse_input(sample_ID)
 
             # Generate date string
             date_str = datetime.datetime.now().strftime('%Y-%m-%d')
@@ -673,7 +712,7 @@ class DeviceWatchdogApp:
         # Construct the new filename
         new_filename = f"{self.device_name}_rename-file_{date_str}{extension}"
 
-        new_path = self.get_unique_path(os.path.join(rename_folder, new_filename))
+        new_path = get_unique_path(os.path.join(rename_folder, new_filename))
 
         try:
             os.rename(file_path, new_path)
@@ -684,6 +723,9 @@ class DeviceWatchdogApp:
             logging.info(f"File moved to '{new_path}'.")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to move file: {e}")
+
+            # TODO: Move the file to the 'exceptions' folder to prevent it from being lost
+
             logging.error(f"Failed to move file '{file_path}' to '{new_path}': {e}")
 
     def rename_file(self, file_path, new_name, notify=True):
@@ -691,7 +733,7 @@ class DeviceWatchdogApp:
         Renames the file to the new name provided by the user, ensuring uniqueness.
         """
         new_path = os.path.join(self.processed_dir, new_name)
-        new_path = self.get_unique_path(new_path)
+        new_path = get_unique_path(new_path)
 
         try:
             os.rename(file_path, new_path)
@@ -702,6 +744,12 @@ class DeviceWatchdogApp:
             # After renaming and moving the file, extract metadata
             self.extract_and_save_metadata(new_path)
 
+            # Add the file to the corresponding LocalRecord
+            base_name = get_base_name(os.path.basename(new_path))
+            if base_name not in self.records_dict:
+                self.records_dict[base_name] = LocalRecord(base_name)
+            self.records_dict[base_name].add_file(new_path)
+
             # Start or restart session timer
             if not self.session_active:
                 self.start_session()
@@ -711,6 +759,8 @@ class DeviceWatchdogApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to rename file: {e}", parent=self.dialog_parent)
             logging.error(f"Failed to rename file '{file_path}' to '{new_path}': {e}")
+            # Move the file to the 'rename' folder to prevent it from being lost
+            self.move_to_rename_folder(file_path, os.path.basename(file_path))
 
     def extract_and_save_metadata(self, file_path):
         """
@@ -724,6 +774,11 @@ class DeviceWatchdogApp:
                 with open(json_file_path, 'w') as json_file:
                     json.dump(metadata, json_file, indent=4)
                 logging.info(f"Metadata extracted and saved to {json_file_path}")
+                # Add the metadata file to the corresponding LocalRecord
+                base_name = get_base_name(os.path.basename(file_path))
+                if base_name not in self.records_dict:
+                    self.records_dict[base_name] = LocalRecord(base_name)
+                self.records_dict[base_name].add_file(json_file_path)
             except Exception as e:
                 logging.error(f"Failed to save JSON data: {e}")
         else:
