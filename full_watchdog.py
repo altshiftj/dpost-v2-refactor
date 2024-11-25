@@ -133,7 +133,7 @@ class EntryWithPlaceholder(tk.Entry):
 
 class MultiFieldDialog(simpledialog.Dialog):
     """
-    Custom dialog to collect Name, Institute, and Data Qualifier.
+    Custom dialog to collect Name, Institute, and Sample Name.
     """
     def __init__(self, parent, title=None):
         super().__init__(parent, title)
@@ -360,14 +360,15 @@ class LocalRecord:
         except Exception as e:
             logging.error(f"Failed to save metadata to '{metadata_path}': {e}")
 
-    def upload_to_database(self, db_manager: KadiManager):
+    def upload_to_database(self):
         """
         Uploads files to the database.
         """
-        kadi_record = db_manager.record(create=True, identifier=self.base_name)
-        for file_path in self.files:
-            kadi_record.upload_file(file_path)
-            logging.info(f"Uploaded file: {os.path.basename(file_path)}")
+        with KadiManager as db_manager:
+            kadi_record = db_manager.record(create=True, identifier=self.base_name)
+            for file_path in self.files:
+                kadi_record.upload_file(file_path)
+                logging.info(f"Uploaded file: {os.path.basename(file_path)}")
 
     def archive_files(self, archive_dir):
         """
@@ -394,7 +395,7 @@ class LocalRecord:
         Archives files and uploads them to the database.
         """
         self.archive_files(archive_dir)
-        self.upload_to_database(db_manager)
+        self.upload_to_database()
 
     def get_file_count(self):
         """
@@ -544,26 +545,6 @@ class DeviceWatchdogApp:
         )
         self.on_closing()
 
-    def start_session(self):
-        """
-        Starts a new session and initializes the session timer.
-        """
-        if not self.session_active:
-            self.session_active = True
-            logging.info("Session started.")
-            self.start_timer()
-            self.show_done_dialog()
-
-    def start_timer(self):
-        """
-        Starts or restarts the session timer.
-        """
-        if self.session_timer:
-            self.session_timer.cancel()
-        self.session_timer = threading.Timer(self.session_timeout, self.end_session)
-        self.session_timer.start()
-        logging.info("Session timer started/restarted.")
-
     def end_session(self):
         """
         Ends the current session, syncs files, and moves them to the archive folder.
@@ -595,18 +576,12 @@ class DeviceWatchdogApp:
         for local_record in self.records_dict.values():
             local_record: LocalRecord
             
-            # Archive files
-            local_record.archive_files(self.archive_dir)
-            
-            # Upload files to the database
-            with KadiManager() as manager:    
-                local_record.upload_to_database(manager)
+            local_record.sync_to_database(self.archive_dir)
             
             # Update the processed files dictionary
             num_files = local_record.get_file_count()
             self.processed_files[local_record.base_name] = self.processed_files.get(local_record.base_name, 0) + num_files
             logging.info(f"Updated count for base '{local_record.base_name}': {self.processed_files[local_record.base_name]} files.")
-
 
         # Clear records after processing
         self.records_dict.clear()
