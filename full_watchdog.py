@@ -339,7 +339,7 @@ class LocalRecord:
         self.metadata_files = []  # List of metadata file paths
         self.metadata = []  # List of metadata dictionaries
 
-    def add_file(self, file_path):
+    def add_file(self, file_path: str):
         self.files.append(file_path)
         if file_path.endswith('.json'):
             self.metadata_files.append(file_path)
@@ -369,13 +369,13 @@ class LocalRecord:
         else:
             logging.warning(f"No valid metadata to combine for base name '{self.base_name}'. Skipping.")
 
-    def upload_to_database(self, manager):
+    def upload_to_database(self, db_manager: KadiManager):
         """
         Uploads files to the database.
         """
-        record = manager.record(create=True, identifier=self.base_name)
+        kadi_record = db_manager.record(create=True, identifier=self.base_name)
         for file_path in self.files:
-            record.upload_file(file_path)
+            kadi_record.upload_file(file_path)
             logging.info(f"Uploaded file: {os.path.basename(file_path)}")
 
     def archive_files(self, archive_dir):
