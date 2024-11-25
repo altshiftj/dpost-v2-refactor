@@ -389,11 +389,61 @@ class LocalRecord:
                 logging.error(f"Failed to move file '{file_path}' to '{dest_path}': {e}")
                 # Optionally handle exceptions, e.g., move to exceptions folder
 
+    def sync_to_database(self, db_manager: KadiManager, archive_dir):
+        """
+        Archives files and uploads them to the database.
+        """
+        self.archive_files(archive_dir)
+        self.upload_to_database(db_manager)
+
     def get_file_count(self):
         """
         Returns the number of files (excluding metadata files).
         """
         return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
+
+class SessionManager:
+    """
+    Manages the session lifecycle, including timing and syncing of files.
+    """
+    def __init__(self, session_timeout, end_session_callback):
+        self.session_timeout = session_timeout  # Timeout in seconds
+        self.session_active = False
+        self.session_timer = None
+        self.end_session_callback = end_session_callback
+
+    def start_session(self):
+        if not self.session_active:
+            self.session_active = True
+            logging.info("Session started.")
+            self.start_timer()
+            # Optionally, show a dialog or notify the user
+
+    def start_timer(self):
+        if self.session_timer:
+            self.session_timer.cancel()
+        self.session_timer = threading.Timer(self.session_timeout, self.end_session)
+        self.session_timer.start()
+        logging.info("Session timer started/restarted.")
+
+    def end_session(self):
+        self.session_active = False
+        if self.session_timer:
+            self.session_timer.cancel()
+        logging.info("Session ended.")
+        # Call the callback to perform syncing
+        self.end_session_callback()
+
+    def reset_timer(self):
+        if self.session_active:
+            self.start_timer()
+
+    def is_active(self):
+        return self.session_active
+
+    def cancel(self):
+        if self.session_timer:
+            self.session_timer.cancel()
 
 class DeviceWatchdogApp:
     """
@@ -407,6 +457,9 @@ class DeviceWatchdogApp:
         self.processed_dir = processed_dir
         self.archive_dir = archive_dir
         self.session_timeout = session_timeout  # Session timeout in seconds
+
+        # Initialize SessionManager
+        self.session_manager = SessionManager(session_timeout, self.end_session)
 
         # Ensure the necessary directories exist
         os.makedirs(self.rename_folder, exist_ok=True)
@@ -719,10 +772,10 @@ class DeviceWatchdogApp:
             self.records_dict[base_name].add_file(new_path)
 
             # Start or restart session timer
-            if not self.session_active:
-                self.start_session()
+            if not self.session_manager.is_active():
+                self.session_manager.start_session()
             else:
-                self.start_timer()
+                self.session_manager.reset_timer()
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to rename file: {e}", parent=self.dialog_parent)
