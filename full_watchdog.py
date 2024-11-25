@@ -336,38 +336,29 @@ class LocalRecord:
     def __init__(self, base_name):
         self.base_name = base_name
         self.files = []  # List of file paths
-        self.metadata_files = []  # List of metadata file paths
-        self.metadata = []  # List of metadata dictionaries
+        self.metadata = {}
 
     def add_file(self, file_path: str):
         self.files.append(file_path)
-        if file_path.endswith('.json'):
-            self.metadata_files.append(file_path)
+        
+        # If the file is not a JSON file, extract metadata
+        if not file_path.endswith('.json'):
+            self.metadata.update(MetadataExtractor.extract_metadata(file_path))
 
-    def extract_and_combine_metadata(self):
+    def save_metadata_to_json(self, dest_folder):
         """
-        Combines individual JSON metadata files into a single metadata file.
+        Saves the aggregate metadata to a JSON file in the same directory as the file.
         """
-        combined_data = []
-        for json_file in self.metadata_files:
-            try:
-                with open(json_file, 'r') as f:
-                    data = json.load(f)
-                    combined_data.append(data)
-            except Exception as e:
-                logging.error(f"Error reading or parsing metadata file '{json_file}': {e}")
-        if combined_data:
-            output_file = os.path.join(os.path.dirname(self.files[0]), f"{self.base_name}_metadata.json")
-            try:
-                with open(output_file, 'w') as f:
-                    json.dump(combined_data, f, indent=4)
-                logging.info(f"Combined metadata for base '{self.base_name}' saved to {output_file}")
-                # Add the combined metadata file to the list of files
-                self.files.append(output_file)
-            except Exception as e:
-                logging.error(f"Error writing combined metadata file '{output_file}': {e}")
-        else:
-            logging.warning(f"No valid metadata to combine for base name '{self.base_name}'. Skipping.")
+        # define the metadata path (directory = filepath, filename is the record base_name + '_metadata.json' suffix)
+        metadata_path = os.path.join(dest_folder, f"{self.base_name}_metadata.json")
+
+        try:
+            with open(metadata_path, 'w') as f:
+                json.dump(self.metadata, f, indent=4)
+                self.add_file(metadata_path)
+            logging.info(f"Metadata saved to '{metadata_path}'")
+        except Exception as e:
+            logging.error(f"Failed to save metadata to '{metadata_path}': {e}")
 
     def upload_to_database(self, db_manager: KadiManager):
         """
@@ -382,10 +373,17 @@ class LocalRecord:
         """
         Moves all files to the archive directory.
         """
+        
+        self.save_metadata_to_json(archive_dir)
+
         for file_path in self.files:
             dest_path = os.path.join(archive_dir, os.path.basename(file_path))
             try:
                 os.rename(file_path, dest_path)
+                
+                # change the file path in the local record to the new path
+                self.files[self.files.index(file_path)] = dest_path
+                
                 logging.info(f"Moved '{os.path.basename(file_path)}' to '{archive_dir}'.")
             except Exception as e:
                 logging.error(f"Failed to move file '{file_path}' to '{dest_path}': {e}")
@@ -540,33 +538,27 @@ class DeviceWatchdogApp:
         Syncs files to the database and updates the processed files tracking dictionary.
         """
         logging.info("Syncing files to the database...")
-        aggregated_metadata = []
-        with KadiManager() as manager:
-            for LocalRecord in self.records_dict.items():
-                LocalRecord.extract_and_combine_metadata()
-                LocalRecord.upload_to_database(manager)
-                # Update the processed files dictionary
-                num_files = LocalRecord.get_file_count()
-                self.processed_files[LocalRecord.base_name] = self.processed_files.get(LocalRecord.base_name, 0) + num_files
-                logging.info(f"Updated count for base '{LocalRecord.base_name}': {self.processed_files[LocalRecord.base_name]} files.")
-                # Collect metadata for aggregation
-                if LocalRecord.metadata_files:
-                    combined_metadata_file = os.path.join(os.path.dirname(LocalRecord.files[0]), f"{LocalRecord.base_name}_metadata.json")
-                    if os.path.exists(combined_metadata_file):
-                        try:
-                            with open(combined_metadata_file, 'r') as f:
-                                data = json.load(f)
-                                aggregated_metadata.extend(data)
-                        except Exception as e:
-                            logging.error(f"Error reading combined metadata file '{combined_metadata_file}': {e}")
-                # Archive files
-                LocalRecord.archive_files(self.archive_dir)
-            # Clear records after processing
-            self.records_dict.clear()
+        
+        for local_record in self.records_dict.values():
+            local_record: LocalRecord
+            
+            # Archive files
+            local_record.archive_files(self.archive_dir)
+            
+            # Upload files to the database
+            with KadiManager() as manager:    
+                local_record.upload_to_database(manager)
+            
+            # Update the processed files dictionary
+            num_files = local_record.get_file_count()
+            self.processed_files[local_record.base_name] = self.processed_files.get(local_record.base_name, 0) + num_files
+            logging.info(f"Updated count for base '{local_record.base_name}': {self.processed_files[local_record.base_name]} files.")
+
+
+        # Clear records after processing
+        self.records_dict.clear()
         self.save_processed_files()
         logging.info("Files have been synced to the database.")
-        # After processing all records, save aggregated metadata
-        self.save_aggregated_metadata(aggregated_metadata)
 
     def save_aggregated_metadata(self, aggregated_metadata):
         """
@@ -741,9 +733,6 @@ class DeviceWatchdogApp:
                 messagebox.showinfo("Success", f"File renamed to '{os.path.basename(new_path)}'", parent=self.dialog_parent)
             logging.info(f"File '{file_path}' renamed to '{new_path}'.")
 
-            # After renaming and moving the file, extract metadata
-            self.extract_and_save_metadata(new_path)
-
             # Add the file to the corresponding LocalRecord
             base_name = get_base_name(os.path.basename(new_path))
             if base_name not in self.records_dict:
@@ -761,28 +750,6 @@ class DeviceWatchdogApp:
             logging.error(f"Failed to rename file '{file_path}' to '{new_path}': {e}")
             # Move the file to the 'rename' folder to prevent it from being lost
             self.move_to_rename_folder(file_path, os.path.basename(file_path))
-
-    def extract_and_save_metadata(self, file_path):
-        """
-        Extracts metadata from a TIFF file and saves it as a JSON file.
-        """
-        metadata = MetadataExtractor.extract_metadata(file_path)
-        if metadata:
-            json_file_name = os.path.splitext(os.path.basename(file_path))[0] + '.json'
-            json_file_path = os.path.join(self.processed_dir, json_file_name)
-            try:
-                with open(json_file_path, 'w') as json_file:
-                    json.dump(metadata, json_file, indent=4)
-                logging.info(f"Metadata extracted and saved to {json_file_path}")
-                # Add the metadata file to the corresponding LocalRecord
-                base_name = get_base_name(os.path.basename(file_path))
-                if base_name not in self.records_dict:
-                    self.records_dict[base_name] = LocalRecord(base_name)
-                self.records_dict[base_name].add_file(json_file_path)
-            except Exception as e:
-                logging.error(f"Failed to save JSON data: {e}")
-        else:
-            logging.error(f"No metadata extracted from {file_path}")
 
     def on_closing(self):
         """
