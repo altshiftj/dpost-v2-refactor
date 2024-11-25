@@ -560,27 +560,6 @@ class DeviceWatchdogApp:
         self.save_processed_files()
         logging.info("Files have been synced to the database.")
 
-    def save_aggregated_metadata(self, aggregated_metadata):
-        """
-        Saves aggregated metadata to a file in the archive directory.
-        """
-        if not aggregated_metadata:
-            logging.info("No metadata to aggregate.")
-            return
-        aggregated_metadata_path = os.path.join(self.archive_dir, 'aggregated_metadata.json')
-        try:
-            if os.path.exists(aggregated_metadata_path):
-                # If the file exists, load existing data and append
-                with open(aggregated_metadata_path, 'r') as f:
-                    existing_data = json.load(f)
-                aggregated_metadata = existing_data + aggregated_metadata
-
-            with open(aggregated_metadata_path, 'w') as f:
-                json.dump(aggregated_metadata, f, indent=4)
-            logging.info(f"Aggregated metadata saved to '{aggregated_metadata_path}'")
-        except Exception as e:
-            logging.error(f"Error saving aggregated metadata: {e}")
-
     def show_done_dialog(self):
         """
         Displays a dialog with a "Done" button for the user to manually end the session.
