@@ -3,36 +3,33 @@ import re
 import sys
 import json
 import queue
-import time
 import logging
 import threading
 import datetime
 import hashlib
 import tifffile
 import tkinter as tk
+import xmltodict
 from tkinter import simpledialog, messagebox
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from typing import Dict
-import xml.etree.ElementTree as ET
 
 from kadi_apy import KadiManager
 
 DEVICE_NAME = "SEM"
 
-# TODO: Create an exceptions folder for storing any files that are in transit when an exception occurs
-watch_dir = r"test_monitor"
-rename_folder = os.path.join(watch_dir, 'To_Rename')
-processed_dir = os.path.join(watch_dir, 'Validated')
-archive_dir = os.path.join(watch_dir, 'Archive')
+WATCH_DIR = r"test_monitor"
+RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
+STAGING_DIR = os.path.join(WATCH_DIR, 'Staging')
+ARCHIVE_DIR = os.path.join(WATCH_DIR, 'Archive')
+EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions') # TODO: Implement exceptions folder in file handling
+
+FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
 
 # Configure logging
 logging.basicConfig(filename='watchdog.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Regular expression pattern for the required file naming convention.
-input_pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
-appended_pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+_\d{4}-\d{2}-\d{2}$')
 
 class FileEventHandler(FileSystemEventHandler):
     """
@@ -47,6 +44,87 @@ class FileEventHandler(FileSystemEventHandler):
             # Add a newly added file path to the queue
             self.event_queue.put(event.src_path)
             logger.info(f"New file detected: {event.src_path}")
+
+
+class SessionManager:
+    def __init__(self, session_timeout, end_session_callback, root: tk.Tk):
+        self.session_timeout = session_timeout * 1000  # Convert seconds to milliseconds
+        self.session_active = False
+        self.end_session_callback = end_session_callback
+        self.root = root
+        self.session_timer_id = None
+
+    def start_session(self):
+        if not self.session_active:
+            self.session_active = True
+            logger.info("Session started.")
+            self.start_timer()
+
+    def start_timer(self):
+        if self.session_timer_id is not None:
+            self.root.after_cancel(self.session_timer_id)
+        self.session_timer_id = self.root.after(self.session_timeout, self.end_session)
+        logger.info("Session timer started/restarted.")
+
+    def reset_timer(self):
+        if self.session_active:
+            self.start_timer()
+
+    def end_session(self):
+        self.session_active = False
+        if self.session_timer_id is not None:
+            self.root.after_cancel(self.session_timer_id)
+            self.session_timer_id = None
+        logger.info("Session ended.")
+        # Call the callback to perform syncing
+        self.end_session_callback()
+
+    def cancel(self):
+        if self.session_timer_id is not None:
+            self.root.after_cancel(self.session_timer_id)
+            self.session_timer_id = None
+
+
+class GUIManager:
+    """
+    Manages all GUI-related interactions using Tkinter.
+    """
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.withdraw()  # Hide the root window
+
+        # Create a dialog parent window
+        self.dialog_parent = tk.Toplevel(self.root)
+        self.dialog_parent.withdraw()
+        self.dialog_parent.attributes("-topmost", True)
+
+    def show_warning(self, title, message):
+        messagebox.showwarning(title, message, parent=self.dialog_parent)
+
+    def show_info(self, title, message):
+        messagebox.showinfo(title, message, parent=self.dialog_parent)
+
+    def show_error(self, title, message):
+        messagebox.showerror(title, message, parent=self.dialog_parent)
+
+    def prompt_rename(self):
+        dialog = MultiFieldDialog(self.root, "Rename File")
+        return dialog.result
+
+    def show_done_dialog(self, end_session_callback):
+        self.done_dialog = tk.Toplevel(self.root)
+        self.done_dialog.title("Session Active")
+        self.done_dialog.attributes("-topmost", True)
+        label = tk.Label(self.done_dialog, text="A session is in progress. Click 'Done' when finished.")
+        label.pack(padx=20, pady=10)
+        done_button = tk.Button(self.done_dialog, text="Done", command=end_session_callback)
+        done_button.pack(pady=10)
+        # Handle dialog close event
+        self.done_dialog.protocol("WM_DELETE_WINDOW", lambda: None)  # Do nothing on close
+
+    def destroy(self):
+        self.dialog_parent.destroy()
+        self.root.destroy()
 
 
 class EntryWithPlaceholder(tk.Entry):
@@ -158,143 +236,6 @@ class MultiFieldDialog(simpledialog.Dialog):
         }
 
 
-class MetadataExtractor:
-    """
-    Class to handle metadata extraction from TIFF files.
-    """
-    @staticmethod
-    def hash_file(file_path):
-        """
-        Generates a hash for the file at the specified path.
-        """
-        try:
-            hasher = hashlib.sha256()
-            with open(file_path, 'rb') as file:
-                while True:
-                    data = file.read(65536)  # 64 KB chunks
-                    if not data:
-                        break
-                    hasher.update(data)
-            return hasher.hexdigest()
-        except Exception as e:
-            logger.exception(f"Failed to hash file {file_path}: {e}")
-            return None
-
-    @staticmethod
-    def flatten_dictionary(d, parent_key='', sep='_'):
-        """
-        Recursively flattens a nested dictionary.
-        """
-        items = []
-        for k, v in d.items():
-            new_key = f"{parent_key}{sep}{k}" if parent_key else k
-            if isinstance(v, dict):
-                items.extend(MetadataExtractor.flatten_dictionary(v, new_key, sep=sep).items())
-            elif isinstance(v, (list, tuple)):
-                for i, item in enumerate(v):
-                    items.extend(MetadataExtractor.flatten_dictionary({f"{k}_{i}": item}, parent_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-        return dict(items)
-
-    @staticmethod
-    def parse_xml_metadata(xml_string, file_name):
-        """
-        Parses XML string and returns a flat dictionary.
-        """
-        try:
-            root = ET.fromstring(xml_string)
-            xml_dict = MetadataExtractor.etree_to_dict(root, file_name)
-            return xml_dict
-        except Exception as e:
-            logger.exception(f"Failed to parse XML metadata: {e}")
-            return {}
-
-    @staticmethod
-    def etree_to_dict(element, file_name, parent_key='', sep='_'):
-        """
-        Converts an ElementTree element into a flat dictionary.
-        """
-        items = {}
-        unit = element.attrib.get('unit', 'no-unit')
-        tag_name = element.tag
-        key = tag_name
-
-        full_key = f"{file_name}_{key}_{unit}"
-
-        # If the element has text, use it as the value
-        text = element.text.strip() if element.text else None
-        if text:
-            items[full_key] = text
-
-        # Process attributes (other than 'unit')
-        for attr_name, attr_value in element.attrib.items():
-            if attr_name != 'unit':
-                attr_key = f"{file_name}_{key}{sep}{attr_name}_no-unit"
-                items[attr_key] = attr_value
-
-        # Recursively process child elements
-        for child in element:
-            items.update(MetadataExtractor.etree_to_dict(child, file_name, key, sep))
-
-        return items
-
-    @staticmethod
-    def extract_metadata(file_path):
-        """
-        Extracts metadata from an SEM TIFF file and returns it as a flat dictionary.
-        """
-        base_name = os.path.basename(file_path)
-        file_name, ext = os.path.splitext(base_name)
-        file_hash = MetadataExtractor.hash_file(file_path)
-
-        metadata = {}
-        try:
-            with tifffile.TiffFile(file_path) as tif:
-                # Extract tags from the first page
-                page = tif.pages[0]
-                tags = page.tags
-
-                # Process TIFF tags
-                for tag in tags.values():
-                    tag_name = tag.name
-                    tag_value = tag.value
-                    # Convert bytes to string if necessary
-                    if isinstance(tag_value, bytes):
-                        try:
-                            tag_value = tag_value.decode('utf-8')
-                        except UnicodeDecodeError:
-                            tag_value = tag_value.decode('latin-1')
-
-                    # For TIFF tags, unit is 'no-unit' by default
-                    key = f"{file_name}_{tag_name}_no-unit"
-                    metadata[key] = tag_value
-
-                    # Check if tag_name is 'FEI_TITAN' to parse embedded XML
-                    if tag_name == "FEI_TITAN":
-                        # Parse embedded XML
-                        xml_metadata = MetadataExtractor.parse_xml_metadata(tag_value, file_name)
-
-                        # Remove the top-level key, as it is extraneous from the SEM output
-                        if xml_metadata:
-                            FeiImage_key = next(iter(xml_metadata))
-                            xml_metadata.pop(FeiImage_key)
-
-                            # Update metadata dictionary with the parsed XML metadata
-                            metadata.update(xml_metadata)
-
-            # Add file hash to metadata
-            metadata[f"{file_name}_filehash_no-unit"] = file_hash
-
-            # Flatten the metadata dictionary
-            metadata = MetadataExtractor.flatten_dictionary(metadata)
-
-        except Exception as e:
-            logger.exception(f"Failed to extract metadata from {file_path}: {e}")
-            return None
-        return metadata
-
-
 class LocalRecord:
     """
     Represents a collection of files with the same base_name and their associated metadata.
@@ -371,85 +312,159 @@ class LocalRecord:
         return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
 
 
-class SessionManager:
-    def __init__(self, session_timeout, end_session_callback, root: tk.Tk):
-        self.session_timeout = session_timeout * 1000  # Convert seconds to milliseconds
-        self.session_active = False
-        self.end_session_callback = end_session_callback
-        self.root = root
-        self.session_timer_id = None
-
-    def start_session(self):
-        if not self.session_active:
-            self.session_active = True
-            logger.info("Session started.")
-            self.start_timer()
-
-    def start_timer(self):
-        if self.session_timer_id is not None:
-            self.root.after_cancel(self.session_timer_id)
-        self.session_timer_id = self.root.after(self.session_timeout, self.end_session)
-        logger.info("Session timer started/restarted.")
-
-    def reset_timer(self):
-        if self.session_active:
-            self.start_timer()
-
-    def end_session(self):
-        self.session_active = False
-        if self.session_timer_id is not None:
-            self.root.after_cancel(self.session_timer_id)
-            self.session_timer_id = None
-        logger.info("Session ended.")
-        # Call the callback to perform syncing
-        self.end_session_callback()
-
-    def cancel(self):
-        if self.session_timer_id is not None:
-            self.root.after_cancel(self.session_timer_id)
-            self.session_timer_id = None
-
-
-class GUIManager:
+class MetadataExtractor:
     """
-    Manages all GUI-related interactions using Tkinter.
+    Class to handle metadata extraction from TIFF files.
     """
-    def __init__(self):
-        self.root = tk.Tk()
-        self.root.withdraw()  # Hide the root window
 
-        # Create a dialog parent window
-        self.dialog_parent = tk.Toplevel(self.root)
-        self.dialog_parent.withdraw()
-        self.dialog_parent.attributes("-topmost", True)
+    @staticmethod
+    def hash_file(file_path, chunk_size=65536):
+        """
+        Generates a hash for the file at the specified path.
+        """
+        try:
+            hasher = hashlib.sha256()
+            with open(file_path, 'rb') as file:
+                while True:
+                    data = file.read(chunk_size)  # 64 KB chunks
+                    if not data:
+                        break
+                    hasher.update(data)
+            return hasher.hexdigest()
+        except Exception as e:
+            logger.exception(f"Failed to hash file {file_path}: {e}")
+            return None
 
-    def show_warning(self, title, message):
-        messagebox.showwarning(title, message, parent=self.dialog_parent)
+    @staticmethod
+    def flatten_xml_dict(d, parent_key='', sep='_'):
+        """
+        Recursively flattens a nested dictionary, handling XML attributes and units.
+        """
+        items = {}
 
-    def show_info(self, title, message):
-        messagebox.showinfo(title, message, parent=self.dialog_parent)
+        # if parent key contains FEI_Image, remove it
+        if parent_key.startswith('FeiImage'):
+            parent_key = parent_key.replace('FeiImage', '')
 
-    def show_error(self, title, message):
-        messagebox.showerror(title, message, parent=self.dialog_parent)
+        for k, v in d.items():
 
-    def prompt_rename(self):
-        dialog = MultiFieldDialog(self.root, "Rename File")
-        return dialog.result
+            # Check if the key is an XML attribute or element
+            if k.startswith('@'):
+                # Attribute
+                attr_name = k[1:]  # Remove '@'
+                new_key = f"{parent_key}{sep}{attr_name}" if parent_key else attr_name
+                items[new_key] = v
+            
+            # Check if the key is a unit
+            elif k == '#text':
+                # Text content
+                if v.strip():
+                    new_key = parent_key if parent_key else 'text'
+                    items[new_key] = v.strip()
+            else:
+                # Element
+                new_parent_key = f"{parent_key}{sep}{k}" if parent_key else k
+                if isinstance(v, dict):
+                    items.update(MetadataExtractor.flatten_xml_dict(v, new_parent_key, sep=sep))
+                elif isinstance(v, list):
+                    for i, item in enumerate(v):
+                        items.update(MetadataExtractor.flatten_xml_dict(item, f"{new_parent_key}{sep}{i}", sep=sep))
+                elif isinstance(v, tuple):
+                    for i, item in enumerate(v):
+                        items.update(MetadataExtractor.flatten_xml_dict(item, f"{new_parent_key}{sep}{i}", sep=sep))
+                else:
+                    # Leaf node
+                    new_key = new_parent_key
+                    items[new_key] = v
+        return items
+    
+    @staticmethod
+    def parse_xml_metadata(xml_string):
+        """
+        Parses XML string and returns a flat dictionary using xmltodict.
+        """
+        try:
+            # Parse the XML string to a dictionary
+            xml_dict = xmltodict.parse(xml_string)
+            # Flatten the dictionary
+            flat_dict = MetadataExtractor.flatten_xml_dict(xml_dict)
+            return flat_dict
+        except Exception as e:
+            logger.exception(f"Failed to parse XML metadata: {e}")
+            return {}
 
-    def show_done_dialog(self, end_session_callback):
-        self.done_dialog = tk.Toplevel(self.root)
-        self.done_dialog.title("Session Active")
-        self.done_dialog.attributes("-topmost", True)
-        label = tk.Label(self.done_dialog, text="A session is in progress. Click 'Done' when finished.")
-        label.pack(padx=20, pady=10)
-        done_button = tk.Button(self.done_dialog, text="Done", command=end_session_callback)
-        done_button.pack(pady=10)
-        # Handle dialog close event
-        self.done_dialog.protocol("WM_DELETE_WINDOW", lambda: None)  # Do nothing on close
+    @staticmethod
+    def extract_metadata(file_path):
+        """
+        Extracts metadata from an SEM TIFF file and returns it as a flat dictionary.
+        """
+        base_name = os.path.basename(file_path)
+        file_name, ext = os.path.splitext(base_name)
+        file_hash = MetadataExtractor.hash_file(file_path)
 
-    def destroy(self):
-        self.dialog_parent.destroy()
-        self.root.destroy()
+        metadata = {}
+        flattened_data = {}
+        try:
+            with tifffile.TiffFile(file_path) as tif:
+                # Extract tags from the first page
+                page = tif.pages[0]
+                tags = page.tags
+
+                # Process TIFF tags
+                for tag in tags.values():
+                    tag_name = tag.name
+                    tag_value = tag.value
+
+                    if isinstance(tag_value, tuple):
+                        flattened_data = {f"{tag_name}_{i}": value for i, value in enumerate(tag_value)}
+
+                    # Convert bytes to string if necessary
+                    if isinstance(tag_value, bytes):
+                        try:
+                            tag_value = tag_value.decode('utf-8')
+                        except UnicodeDecodeError:
+                            tag_value = tag_value.decode('latin-1')
+
+                    if flattened_data:
+                        metadata.update(flattened_data)
+                        flattened_data = {}
+                    else:
+                        metadata[tag_name] = tag_value
+
+                    # Check if tag_name is 'FEI_TITAN' to parse embedded XML
+                    if tag_name == "FEI_TITAN":
+                        # Parse embedded XML
+                        xml_metadata = MetadataExtractor.parse_xml_metadata(tag_value)
+
+                        # convert any values that are number stored as strings to integers or floats
+                        # and convert any 'None' values to string 'null'
+                        for k, v in xml_metadata.items():
+                            if v is None:
+                                xml_metadata[k] = 'null'
+                            elif re.match(r'^-?\d+$', v):  # Matches positive/negative integers
+                                xml_metadata[k] = int(v)
+                            elif re.match(r'^-?\d+(\.\d+)?$', v):  # Matches positive/negative floats
+                                xml_metadata[k] = float(v)
+                            elif re.match(r'^-?\d+(\.\d+)?[eE][-+]?\d+$', v):  # Matches scientific notation
+                                xml_metadata[k] = float(v)
+
+                        metadata.update(xml_metadata)
+
+            # remove the extraneous key:value pairs from the metadata
+            metadata.pop('FEI_TITAN', None)
+            metadata.pop('xmlns:xsi', None)
+            metadata.pop('xsi:noNamespaceSchemaLocation', None)
+
+            # Add file hash to metadata
+            metadata[f"filehash"] = file_hash
+
+            # finally, append the filename to the keys in the metadata dictionary
+            metadata = {f"{file_name}|{k}": v for k, v in metadata.items()}
+
+        except Exception as e:
+            logger.exception(f"Failed to extract metadata from {file_path}: {e}")
+            return None
+        return metadata
 
 
 class FileProcessor:
@@ -472,7 +487,8 @@ class FileProcessor:
     def is_valid_filename(self, base_name):
         return self.input_pattern.match(base_name) is not None
 
-    def cleanse_input(self, input_str):
+    # TODO: Consider input scrubbing, what characters are allowed in the filename, should we simply replace them or notify user?
+    def scrub_input(self, input_str):
         """
         Cleanses the input string by replacing invalid characters for filenames with underscores.
         Allows letters, numbers, underscores, and hyphens.
@@ -493,6 +509,7 @@ class FileProcessor:
             unique_filename = f"{base}_{counter}{extension}"
         return os.path.join(directory, unique_filename)
 
+    # FIXME: Bug with rename folder files, date is incremented rather than _counter, then the counter is added (always _1)
     def generate_rename_filename(self, original_filename):
         _, extension = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
@@ -549,7 +566,7 @@ class FileProcessor:
 
     def construct_new_filename(self, base_name, extension):
         date_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        base_name = self.cleanse_input(base_name)
+        base_name = self.scrub_input(base_name)
         new_base_name = f"{self.device_name}_{base_name}_{date_str}"
         
         # Prepare path without counter
@@ -660,7 +677,7 @@ class DeviceWatchdogApp:
             device_name=self.device_name,
             rename_folder=self.rename_folder,
             processed_dir=self.processed_dir,
-            input_pattern=input_pattern,
+            input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
             records_dict=self.records_dict,
             session_manager=self.session_manager
@@ -806,11 +823,11 @@ class DeviceWatchdogApp:
 if __name__ == "__main__":
     logger.info("Starting Device Watchdog application...")
     app = DeviceWatchdogApp(
-        watch_dir=watch_dir,
+        watch_dir=WATCH_DIR,
         device_name=DEVICE_NAME,
-        rename_folder=rename_folder,
-        processed_dir=processed_dir,
-        archive_dir=archive_dir,
+        rename_folder=RENAME_DIR,
+        processed_dir=STAGING_DIR,
+        archive_dir=ARCHIVE_DIR,
         session_timeout=60  # Timeout in seconds
     )
     try:
