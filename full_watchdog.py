@@ -111,6 +111,9 @@ class GUIManager:
         dialog = MultiFieldDialog(self.root, "Rename File")
         return dialog.result
 
+    def prompt_append_record(self, record_name):
+        return messagebox.askyesno("Append to Existing Record", f"Record '{record_name}' has been previously synced. Append to existing record?", parent=self.dialog_parent)
+
     def show_done_dialog(self, end_session_callback):
         self.done_dialog = tk.Toplevel(self.root)
         self.done_dialog.title("Session Active")
@@ -471,14 +474,15 @@ class FileProcessor:
     """
     Handles file validation, renaming, and moving.
     """
-    def __init__(self, device_name, rename_folder, processed_dir, input_pattern, gui_manager: GUIManager, records_dict, session_manager: SessionManager):
+    def __init__(self, device_name, rename_folder, processed_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
         self.device_name = device_name
         self.rename_folder = rename_folder
         self.processed_dir = processed_dir
         self.input_pattern = input_pattern
         self.gui_manager = gui_manager
-        self.records_dict = records_dict
         self.session_manager = session_manager
+
+        self.records_dict = {}
 
     #region Utility Methods
     def is_tiff_file(self, filename):
@@ -509,7 +513,6 @@ class FileProcessor:
             unique_filename = f"{base}_{counter}{extension}"
         return os.path.join(directory, unique_filename)
 
-    # FIXME: Bug with rename folder files, date is incremented rather than _counter, then the counter is added (always _1)
     def generate_rename_filename(self, original_filename):
         _, extension = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
@@ -519,7 +522,6 @@ class FileProcessor:
         return unique_new_path
 
     def update_records(self, record_name, file_path):
-        filename = os.path.basename(file_path)
         if record_name not in self.records_dict:
             self.records_dict[record_name] = LocalRecord(record_name)
         self.records_dict[record_name].add_file(file_path)
@@ -545,6 +547,21 @@ class FileProcessor:
             return False, "All fields are required. Please fill in all fields."
 
         return True, (user_ID, institute, sample_ID)
+    
+    def record_in_archive(self, record_name, archive_json):
+        """
+        Checks if the record has been archived before.
+        """
+        if record_name in archive_json:
+            return True
+        return False
+    
+    def get_record_dict_for_sync(self):
+        return self.records_dict
+    
+    def clear_records_dict(self):
+        self.records_dict.clear()
+
     #endregion
 
     #region Main Methods
@@ -567,13 +584,13 @@ class FileProcessor:
     def construct_new_filename(self, base_name, extension):
         date_str = datetime.datetime.now().strftime('%Y-%m-%d')
         base_name = self.scrub_input(base_name)
-        new_base_name = f"{self.device_name}_{base_name}_{date_str}"
+        record_name = f"{self.device_name}_{base_name}_{date_str}"
         
         # Prepare path without counter
-        new_path = os.path.join(self.processed_dir, new_base_name + extension)
+        new_path = os.path.join(self.processed_dir, record_name + extension)
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
-        return new_base_name, unique_new_path
+        return record_name, unique_new_path
 
     def rename_file(self, file_path, base_name, extension, notify=True):
         """
@@ -589,26 +606,43 @@ class FileProcessor:
                 self.gui_manager.show_info("Success", f"File renamed to '{os.path.basename(new_file_path)}'")
             logger.info(f"File '{file_path}' renamed to '{new_file_path}'.")
 
-            # Update records and manage session
-            self.update_records(record_name, new_file_path)
-            self.manage_session()
+            # TODO: Code and verify the record archive check and append functionality
+            # if the record is already in the archive, prompt the user to append to the existing record
+            if self.record_in_archive:
+                if self.gui_manager.prompt_append_record(record_name):
+                    self.update_records(record_name, new_file_path)
+                    self.manage_session()
+                else:
+                    self.prompt_rename(file_path, os.path.basename(file_path), existing_record=True)
+            else:
+                self.update_records(record_name, new_file_path)
+                self.manage_session()
 
         except Exception as e:
             self.gui_manager.show_error("Error", f"Failed to rename file: {e}")
             logger.exception(f"Failed to rename file '{file_path}' to '{new_file_path}': {e}")
             self.move_to_rename_folder(file_path, os.path.basename(file_path))
 
-    def prompt_rename(self, file_path, filename):
-        message = (
-            f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: Institute_UserName_Sample-Name (e.g., IPAT_MuS_Sample-Name)"
-        )
+    def prompt_rename(self, file_path, filename, existing_record=False):
+        
+        if existing_record:
+            message = (
+                f"Rename '{filename}' to create new record.\n"
+            )
+            self.gui_manager.show_info("Rename for New Record", message)
+        else:
+            message = (
+                f"The file '{filename}' does not adhere to the naming convention.\n"
+                f"The required naming format is: Institute_UserName_Sample-Name (e.g., IPAT_MuS_Sample-Name)"
+            )
+            self.gui_manager.show_warning("Invalid File Name", message)            
 
-        self.gui_manager.show_warning("Invalid File Name", message)
         extension = os.path.splitext(filename)[1]
 
         while True:
+            
             dialog_result = self.gui_manager.prompt_rename()
+            
             is_valid, result = self.validate_user_input(dialog_result)
             if not is_valid:
                 if result == "User cancelled the dialog.":
@@ -669,9 +703,6 @@ class DeviceWatchdogApp:
         # Initialize the processed files dictionary
         self.processed_files = self.load_archived_files_list()
 
-        # Initialize the records dictionary
-        self.records_dict = {}  # Maps base_name to LocalRecord instances
-
         # Initialize FileProcessor
         self.file_processor = FileProcessor(
             device_name=self.device_name,
@@ -679,7 +710,6 @@ class DeviceWatchdogApp:
             processed_dir=self.processed_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
-            records_dict=self.records_dict,
             session_manager=self.session_manager
         )
 
@@ -704,23 +734,6 @@ class DeviceWatchdogApp:
 
         # Set the exception handler for Tkinter
         self.gui_manager.root.report_callback_exception = self.handle_exception
-
-    def load_archived_files_list(self):
-        """
-        Loads the dictionary of processed files from a JSON file, if it exists.
-        """
-        archived_files_path = os.path.join(self.archive_dir, 'processed_files.json')
-        if os.path.exists(archived_files_path):
-            try:
-                with open(archived_files_path, 'r') as f:
-                    processed_files = json.load(f)
-                logger.info("Loaded processed files data.")
-                return processed_files
-            except Exception as e:
-                logger.exception(f"Failed to load processed files data: {e}")
-                return {}
-        else:
-            return {}
 
     def update_archived_files_list(self):
         """
@@ -773,7 +786,9 @@ class DeviceWatchdogApp:
         """
         logger.info("Syncing files to the database...")
 
-        for local_record in self.records_dict.values():
+        records_dict = self.file_processor.get_record_dict_for_sync()
+
+        for local_record in records_dict.values():
             local_record: LocalRecord
 
             local_record.sync_to_database(self.archive_dir)
@@ -784,7 +799,7 @@ class DeviceWatchdogApp:
             logger.info(f"Updated count for base '{local_record.base_name}': {self.processed_files[local_record.base_name]} files.")
 
         # Clear records after processing
-        self.records_dict.clear()
+        self.file_processor.clear_records_dict()
         self.update_archived_files_list()
         logger.info("Files have been synced to the database.")
 
