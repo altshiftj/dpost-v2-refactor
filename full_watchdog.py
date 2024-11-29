@@ -41,10 +41,9 @@ class FileEventHandler(FileSystemEventHandler):
         self.event_queue = event_queue
 
     def on_created(self, event):
-        if not event.is_directory:
-            # Add a newly added file path to the queue
-            self.event_queue.put(event.src_path)
-            logger.info(f"New file detected: {event.src_path}")
+        # Add a newly added file path to the queue
+        self.event_queue.put(event.src_path)
+        logger.info(f"New file detected: {event.src_path}")
 
 # SessionManager deals with session starts, ends, and timing out
 class SessionManager:
@@ -503,6 +502,18 @@ class FileProcessor:
 
     def is_tiff_file(self, filename):
         return filename.lower().endswith(('.tiff', '.tif'))
+    
+    def is_elid_folder(self, foldername):
+        # check if it was a folder added to the watch directory
+        if os.path.isdir(foldername):
+            
+            # validate that the folder contains a file with the .elid extension
+            for file in os.listdir(foldername):
+                if file.endswith('.elid'):
+                    return True
+
+        return False
+
 
     def is_valid_filename(self, base_name):
         return self.input_pattern.match(base_name) is not None
@@ -510,7 +521,7 @@ class FileProcessor:
     # TODO: Consider input scrubbing, what characters are allowed in the filename, should we simply replace them or notify user?
     def scrub_input(self, input_str):
         """
-        Cleanses the input string by replacing invalid characters for filenames with underscores.
+        Scrubs the input string by replacing invalid characters for filenames with underscores.
         Allows letters, numbers, underscores, and hyphens.
         """
         return re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
@@ -589,10 +600,17 @@ class FileProcessor:
     def process_file(self, file_path):
         filename = os.path.basename(file_path)
         base_name, extension = os.path.splitext(filename)
-
+        
         if not self.is_tiff_file(filename):
             logger.info(f"File '{filename}' is not a TIFF file.")
             self.move_to_rename_folder(file_path, filename)
+            # move the file to the exceptions folder
+            new_path = os.path.join(EXCEPTIONS_DIR, file_path)
+            try:
+                os.rename(file_path, new_path)
+                logger.info(f"file moved from '{file_path}' to '{new_path}'.")
+            except Exception as e:
+                logger.exception(f"Failed to move file '{file_path}' to '{new_path}': {e}")
             return
 
         if self.is_valid_filename(base_name):
@@ -704,12 +722,9 @@ class DeviceWatchdogApp:
     Main application class that combines file naming monitoring, metadata extraction,
     and session management.
     """
-    def __init__(self, watch_dir, device_name, rename_folder, processed_dir, archive_dir, session_timeout=60):
+    def __init__(self, watch_dir, device_name, rename_folder, processed_dir, archive_dir, exceptions_dir, session_timeout=60):
         self.watch_dir = watch_dir
-        self.device_name = device_name
-        self.rename_folder = rename_folder
-        self.processed_dir = processed_dir
-        self.archive_dir = archive_dir
+
         self.session_timeout = session_timeout  # Session timeout in seconds
 
         # Initialize GUIManager
@@ -719,18 +734,20 @@ class DeviceWatchdogApp:
         self.session_manager = SessionManager(session_timeout, self.end_session, self.gui_manager.root)
 
         # Ensure the necessary directories exist
-        os.makedirs(self.rename_folder, exist_ok=True)
-        os.makedirs(self.processed_dir, exist_ok=True)
-        os.makedirs(self.archive_dir, exist_ok=True)
+        os.makedirs(rename_folder, exist_ok=True)
+        os.makedirs(processed_dir, exist_ok=True)
+        os.makedirs(archive_dir, exist_ok=True)
+        os.makedirs(exceptions_dir, exist_ok=True)
 
         # Initialize the processed files dictionary
         self.processed_files = {}
 
         # Initialize FileProcessor
         self.file_processor = FileProcessor(
-            device_name=self.device_name,
-            rename_folder=self.rename_folder,
-            processed_dir=self.processed_dir,
+            device_name=device_name,
+            rename_folder=rename_folder,
+            processed_dir=processed_dir,
+            exceptions_dir=exceptions_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
             session_manager=self.session_manager
