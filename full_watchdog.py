@@ -23,6 +23,7 @@ RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
 STAGING_DIR = os.path.join(WATCH_DIR, 'Staging')
 ARCHIVE_DIR = os.path.join(WATCH_DIR, 'Archive')
 EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions') # TODO: Implement exceptions folder in file handling
+ARCHIVED_FILES_JSON = os.path.join(ARCHIVE_DIR, 'processed_files.json')
 
 FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
 
@@ -30,7 +31,7 @@ FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
 logging.basicConfig(filename='watchdog.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-
+# FileEventHandler deals with new files as they arrive, and places them in the event queue for processing
 class FileEventHandler(FileSystemEventHandler):
     """
     Event handler that processes new files.
@@ -40,12 +41,11 @@ class FileEventHandler(FileSystemEventHandler):
         self.event_queue = event_queue
 
     def on_created(self, event):
-        if not event.is_directory:
-            # Add a newly added file path to the queue
-            self.event_queue.put(event.src_path)
-            logger.info(f"New file detected: {event.src_path}")
+        # Add a newly added file path to the queue
+        self.event_queue.put(event.src_path)
+        logger.info(f"New file detected: {event.src_path}")
 
-
+# SessionManager deals with session starts, ends, and timing out
 class SessionManager:
     def __init__(self, session_timeout, end_session_callback, root: tk.Tk):
         self.session_timeout = session_timeout * 1000  # Convert seconds to milliseconds
@@ -84,7 +84,7 @@ class SessionManager:
             self.root.after_cancel(self.session_timer_id)
             self.session_timer_id = None
 
-
+# GuiManager manages all GUI-related interactions using Tkinter
 class GUIManager:
     """
     Manages all GUI-related interactions using Tkinter.
@@ -111,6 +111,9 @@ class GUIManager:
         dialog = MultiFieldDialog(self.root, "Rename File")
         return dialog.result
 
+    def prompt_append_record(self, record_name):
+        return messagebox.askyesno("Append to Existing Record", f"Record '{record_name}' has been previously synced. Add file to existing record?", parent=self.dialog_parent)
+
     def show_done_dialog(self, end_session_callback):
         self.done_dialog = tk.Toplevel(self.root)
         self.done_dialog.title("Session Active")
@@ -126,7 +129,7 @@ class GUIManager:
         self.dialog_parent.destroy()
         self.root.destroy()
 
-
+# Custom Entry widget with placeholder text
 class EntryWithPlaceholder(tk.Entry):
     """
     Custom Entry widget with placeholder text. This fills the rename dialog fields with placeholder name, institute, and sample name.
@@ -172,7 +175,7 @@ class EntryWithPlaceholder(tk.Entry):
         else:
             return content
 
-
+# Custom dialog using EntryWithPlaceholder to collect Name, Institute, and Sample Name from users when a file name is incorrect
 class MultiFieldDialog(simpledialog.Dialog):
     """
     Custom dialog to collect Name, Institute, and Sample Name.
@@ -235,22 +238,23 @@ class MultiFieldDialog(simpledialog.Dialog):
             'sample_ID': sample_ID,
         }
 
-
+# LocalRecord represents a collection of files with the same root_name (cf record name) and their associated metadata
 class LocalRecord:
     """
     Represents a collection of files with the same base_name and their associated metadata.
     """
-    def __init__(self, base_name):
+    def __init__(self, base_name, in_db=False):
         self.base_name = base_name
+        self.in_db = in_db
         self.files = []  # List of file paths
         self.metadata = {}
 
     def add_file(self, file_path: str):
         self.files.append(file_path)
 
-        # If the file is not a JSON file, extract metadata
-        if not file_path.endswith('.json'):
-            self.metadata.update(MetadataExtractor.extract_metadata(file_path))
+        # If the file is a .tiff or .tif file, extract metadata
+        if file_path.lower().endswith(('.tiff', '.tif')):
+            self.metadata.update(MetadataExtractor.extract_tiff_metadata(file_path))
 
     def save_metadata_to_json(self, dest_folder):
         """
@@ -273,7 +277,19 @@ class LocalRecord:
         """
         try:
             with KadiManager() as db_manager:
-                kadi_record = db_manager.record(create=True, identifier=self.base_name)
+                if self.in_db:
+                    metadata_staging_path = os.join(STAGING_DIR, f"{self.base_name}_metadata.json")
+                    kadi_record = db_manager.record(identifier=self.base_name)
+                    file_id = kadi_record.get_file_id(file_name=f"{self.base_name}_metadata.json")
+                    kadi_record.download_file(file_id=file_id, file_path=metadata_staging_path)
+                    with open(metadata_staging_path, 'r') as file:
+                        db_metadata = json.load(file)
+                    with open(db_metadata, 'w') as file:
+                        json.dump(self.metadata, file, indent=4)
+                    return
+                
+
+                kadi_record = db_manager.record(create=True, id=self.base_name, identifier=self.base_name)
                 for file_path in self.files:
                     kadi_record.upload_file(file_path)
                     logger.info(f"Uploaded file: {os.path.basename(file_path)}")
@@ -311,7 +327,7 @@ class LocalRecord:
         """
         return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
 
-
+# MetadataExtractor contains extraction methods for metadata from TIFF files, etc.
 class MetadataExtractor:
     """
     Class to handle metadata extraction from TIFF files.
@@ -394,7 +410,7 @@ class MetadataExtractor:
             return {}
 
     @staticmethod
-    def extract_metadata(file_path):
+    def extract_tiff_metadata(file_path):
         """
         Extracts metadata from an SEM TIFF file and returns it as a flat dictionary.
         """
@@ -466,23 +482,39 @@ class MetadataExtractor:
             return None
         return metadata
 
-
+# FileProcessor handles file validation, renaming, and moving, and interacts with the GUIManager to alert the user of naming issues
+# and interacts with the SessionManager to start sessions
 class FileProcessor:
     """
     Handles file validation, renaming, and moving.
     """
-    def __init__(self, device_name, rename_folder, processed_dir, input_pattern, gui_manager: GUIManager, records_dict, session_manager: SessionManager):
+    def __init__(self, device_name, rename_folder, processed_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
         self.device_name = device_name
         self.rename_folder = rename_folder
         self.processed_dir = processed_dir
+        self.exceptions_dir = exceptions_dir
         self.input_pattern = input_pattern
         self.gui_manager = gui_manager
-        self.records_dict = records_dict
         self.session_manager = session_manager
 
+        self.records_dict = {}
+
     #region Utility Methods
+
     def is_tiff_file(self, filename):
         return filename.lower().endswith(('.tiff', '.tif'))
+    
+    def is_elid_folder(self, foldername):
+        # check if it was a folder added to the watch directory
+        if os.path.isdir(foldername):
+            
+            # validate that the folder contains a file with the .elid extension
+            for file in os.listdir(foldername):
+                if file.endswith('.elid'):
+                    return True
+
+        return False
+
 
     def is_valid_filename(self, base_name):
         return self.input_pattern.match(base_name) is not None
@@ -490,7 +522,7 @@ class FileProcessor:
     # TODO: Consider input scrubbing, what characters are allowed in the filename, should we simply replace them or notify user?
     def scrub_input(self, input_str):
         """
-        Cleanses the input string by replacing invalid characters for filenames with underscores.
+        Scrubs the input string by replacing invalid characters for filenames with underscores.
         Allows letters, numbers, underscores, and hyphens.
         """
         return re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
@@ -509,7 +541,6 @@ class FileProcessor:
             unique_filename = f"{base}_{counter}{extension}"
         return os.path.join(directory, unique_filename)
 
-    # FIXME: Bug with rename folder files, date is incremented rather than _counter, then the counter is added (always _1)
     def generate_rename_filename(self, original_filename):
         _, extension = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
@@ -518,10 +549,9 @@ class FileProcessor:
         unique_new_path = self.get_unique_path(new_path)
         return unique_new_path
 
-    def update_records(self, record_name, file_path):
-        filename = os.path.basename(file_path)
+    def update_records(self, record_name, file_path, in_db=False):
         if record_name not in self.records_dict:
-            self.records_dict[record_name] = LocalRecord(record_name)
+            self.records_dict[record_name] = LocalRecord(record_name, in_db)
         self.records_dict[record_name].add_file(file_path)
 
     def manage_session(self):
@@ -545,16 +575,42 @@ class FileProcessor:
             return False, "All fields are required. Please fill in all fields."
 
         return True, (user_ID, institute, sample_ID)
+    
+    def record_in_archive(self, record_name, archive_json):
+        """
+        Checks if the record has been archived before.
+        """
+        if os.path.exists(archive_json):
+            with open(archive_json, 'r') as file:
+                archived_records = json.load(file)
+            if record_name in archived_records:
+                return True
+        else:
+            return False
+    
+    def get_record_dict_for_sync(self):
+        return self.records_dict
+    
+    def clear_records_dict(self):
+        self.records_dict.clear()
+
     #endregion
 
     #region Main Methods
+
     def process_file(self, file_path):
         filename = os.path.basename(file_path)
         base_name, extension = os.path.splitext(filename)
-
+        
         if not self.is_tiff_file(filename):
             logger.info(f"File '{filename}' is not a TIFF file.")
-            self.move_to_rename_folder(file_path, filename)
+            # move the file to the exceptions folder
+            new_path = os.path.join(self.exceptions_dir, file_path)
+            try:
+                os.rename(file_path, new_path)
+                logger.info(f"file moved from '{file_path}' to '{new_path}'.")
+            except Exception as e:
+                logger.exception(f"Failed to move file '{file_path}' to '{new_path}': {e}")
             return
 
         if self.is_valid_filename(base_name):
@@ -567,13 +623,13 @@ class FileProcessor:
     def construct_new_filename(self, base_name, extension):
         date_str = datetime.datetime.now().strftime('%Y-%m-%d')
         base_name = self.scrub_input(base_name)
-        new_base_name = f"{self.device_name}_{base_name}_{date_str}"
+        record_name = f"{self.device_name}_{base_name}_{date_str}"
         
         # Prepare path without counter
-        new_path = os.path.join(self.processed_dir, new_base_name + extension)
+        new_path = os.path.join(self.processed_dir, record_name + extension)
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
-        return new_base_name, unique_new_path
+        return record_name, unique_new_path
 
     def rename_file(self, file_path, base_name, extension, notify=True):
         """
@@ -589,26 +645,43 @@ class FileProcessor:
                 self.gui_manager.show_info("Success", f"File renamed to '{os.path.basename(new_file_path)}'")
             logger.info(f"File '{file_path}' renamed to '{new_file_path}'.")
 
-            # Update records and manage session
-            self.update_records(record_name, new_file_path)
-            self.manage_session()
+            # TODO: Code and verify the record archive check and append functionality
+            # if the record is already in the archive, prompt the user to append to the existing record
+            if self.record_in_archive(record_name, ARCHIVED_FILES_JSON):
+                if self.gui_manager.prompt_append_record(record_name):
+                    self.update_records(record_name, new_file_path)
+                    self.manage_session()
+                else:
+                    self.prompt_rename(file_path, os.path.basename(file_path), existing_record=True)
+            else:
+                self.update_records(record_name, new_file_path)
+                self.manage_session()
 
         except Exception as e:
             self.gui_manager.show_error("Error", f"Failed to rename file: {e}")
             logger.exception(f"Failed to rename file '{file_path}' to '{new_file_path}': {e}")
             self.move_to_rename_folder(file_path, os.path.basename(file_path))
 
-    def prompt_rename(self, file_path, filename):
-        message = (
-            f"The file '{filename}' does not adhere to the naming convention.\n"
-            f"The required naming format is: Institute_UserName_Sample-Name (e.g., IPAT_MuS_Sample-Name)"
-        )
+    def prompt_rename(self, file_path, filename, existing_record=False):
+        
+        if existing_record:
+            message = (
+                f"Rename '{filename}' to create new record.\n"
+            )
+            self.gui_manager.show_info("Rename for New Record", message)
+        else:
+            message = (
+                f"The file '{filename}' does not adhere to the naming convention.\n"
+                f"The required naming format is: Institute_UserName_Sample-Name (e.g., IPAT_MuS_Sample-Name)"
+            )
+            self.gui_manager.show_warning("Invalid File Name", message)            
 
-        self.gui_manager.show_warning("Invalid File Name", message)
         extension = os.path.splitext(filename)[1]
 
         while True:
+            
             dialog_result = self.gui_manager.prompt_rename()
+            
             is_valid, result = self.validate_user_input(dialog_result)
             if not is_valid:
                 if result == "User cancelled the dialog.":
@@ -639,20 +712,19 @@ class FileProcessor:
         except Exception as e:
             self.gui_manager.show_error("Error", f"Failed to move file: {e}")
             logger.exception(f"Failed to move file '{file_path}' to '{new_path}': {e}")
+    
     #endregion
 
-
+# DeviceWatchdogApp combines file naming monitoring, metadata extraction, and session management, orchestrating the entire process
+# it handles session ends, triggering file syncing, and maintaining an up-to-date list of processed records
 class DeviceWatchdogApp:
     """
     Main application class that combines file naming monitoring, metadata extraction,
     and session management.
     """
-    def __init__(self, watch_dir, device_name, rename_folder, processed_dir, archive_dir, session_timeout=60):
+    def __init__(self, watch_dir, device_name, rename_folder, processed_dir, archive_dir, exceptions_dir, session_timeout=60):
         self.watch_dir = watch_dir
-        self.device_name = device_name
-        self.rename_folder = rename_folder
-        self.processed_dir = processed_dir
-        self.archive_dir = archive_dir
+
         self.session_timeout = session_timeout  # Session timeout in seconds
 
         # Initialize GUIManager
@@ -662,24 +734,22 @@ class DeviceWatchdogApp:
         self.session_manager = SessionManager(session_timeout, self.end_session, self.gui_manager.root)
 
         # Ensure the necessary directories exist
-        os.makedirs(self.rename_folder, exist_ok=True)
-        os.makedirs(self.processed_dir, exist_ok=True)
-        os.makedirs(self.archive_dir, exist_ok=True)
+        os.makedirs(rename_folder, exist_ok=True)
+        os.makedirs(processed_dir, exist_ok=True)
+        os.makedirs(archive_dir, exist_ok=True)
+        os.makedirs(exceptions_dir, exist_ok=True)
 
         # Initialize the processed files dictionary
-        self.processed_files = self.load_archived_files_list()
-
-        # Initialize the records dictionary
-        self.records_dict = {}  # Maps base_name to LocalRecord instances
+        self.processed_files = {}
 
         # Initialize FileProcessor
         self.file_processor = FileProcessor(
-            device_name=self.device_name,
-            rename_folder=self.rename_folder,
-            processed_dir=self.processed_dir,
+            device_name=device_name,
+            rename_folder=rename_folder,
+            processed_dir=processed_dir,
+            exceptions_dir=exceptions_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
-            records_dict=self.records_dict,
             session_manager=self.session_manager
         )
 
@@ -704,23 +774,6 @@ class DeviceWatchdogApp:
 
         # Set the exception handler for Tkinter
         self.gui_manager.root.report_callback_exception = self.handle_exception
-
-    def load_archived_files_list(self):
-        """
-        Loads the dictionary of processed files from a JSON file, if it exists.
-        """
-        archived_files_path = os.path.join(self.archive_dir, 'processed_files.json')
-        if os.path.exists(archived_files_path):
-            try:
-                with open(archived_files_path, 'r') as f:
-                    processed_files = json.load(f)
-                logger.info("Loaded processed files data.")
-                return processed_files
-            except Exception as e:
-                logger.exception(f"Failed to load processed files data: {e}")
-                return {}
-        else:
-            return {}
 
     def update_archived_files_list(self):
         """
@@ -773,7 +826,9 @@ class DeviceWatchdogApp:
         """
         logger.info("Syncing files to the database...")
 
-        for local_record in self.records_dict.values():
+        records_dict = self.file_processor.get_record_dict_for_sync()
+
+        for local_record in records_dict.values():
             local_record: LocalRecord
 
             local_record.sync_to_database(self.archive_dir)
@@ -784,7 +839,7 @@ class DeviceWatchdogApp:
             logger.info(f"Updated count for base '{local_record.base_name}': {self.processed_files[local_record.base_name]} files.")
 
         # Clear records after processing
-        self.records_dict.clear()
+        self.file_processor.clear_records_dict()
         self.update_archived_files_list()
         logger.info("Files have been synced to the database.")
 
