@@ -10,6 +10,7 @@ import hashlib
 import tifffile
 import tkinter as tk
 import xmltodict
+import shutil
 from tkinter import simpledialog, messagebox
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
@@ -241,27 +242,34 @@ class MultiFieldDialog(simpledialog.Dialog):
 # LocalRecord represents a collection of files with the same root_name (cf record name) and their associated metadata
 class LocalRecord:
     """
-    Represents a collection of files with the same base_name and their associated metadata.
+    Represents a collection of files with the same base_name.
     """
-    def __init__(self, base_name, in_db=False):
-        self.base_name = base_name
+    def __init__(self, record_name, in_db=False):
+        self.record_name = record_name
         self.in_db = in_db
         self.files = []  # List of file paths
-        self.metadata = {}
+        metadata = {}
 
-    def add_file(self, file_path: str):
-        self.files.append(file_path)
+    def add_item(self, path: str):
+        if os.path.isfile(path):
+            self.files.append(path)
+        elif os.path.isdir(path):
+            # Add all files in the folder to self.files
+            for root, dirs, files in os.walk(path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    self.files.append(file_path)
+        else:
+            logger.warning(f"Path '{path}' is neither a file nor a directory.")
 
-        # If the file is a .tiff or .tif file, extract metadata
-        if file_path.lower().endswith(('.tiff', '.tif')):
-            self.metadata.update(MetadataExtractor.extract_tiff_metadata(file_path))
+        # TODO: Extract metadata from the file and add it to the metadata dictionary
 
     def save_metadata_to_json(self, dest_folder):
         """
         Saves the aggregate metadata to a JSON file in the same directory as the file.
         """
         # define the metadata path (directory = filepath, filename is the record base_name + '_metadata.json' suffix)
-        metadata_path = os.path.join(dest_folder, f"{self.base_name}_metadata.json")
+        metadata_path = os.path.join(dest_folder, f"{self.record_name}_metadata.json")
 
         try:
             with open(metadata_path, 'w') as f:
@@ -278,9 +286,9 @@ class LocalRecord:
         try:
             with KadiManager() as db_manager:
                 if self.in_db:
-                    metadata_staging_path = os.join(STAGING_DIR, f"{self.base_name}_metadata.json")
-                    kadi_record = db_manager.record(identifier=self.base_name)
-                    file_id = kadi_record.get_file_id(file_name=f"{self.base_name}_metadata.json")
+                    metadata_staging_path = os.join(STAGING_DIR, f"{self.record_name}_metadata.json")
+                    kadi_record = db_manager.record(identifier=self.record_name)
+                    file_id = kadi_record.get_file_id(file_name=f"{self.record_name}_metadata.json")
                     kadi_record.download_file(file_id=file_id, file_path=metadata_staging_path)
                     with open(metadata_staging_path, 'r') as file:
                         db_metadata = json.load(file)
@@ -289,7 +297,7 @@ class LocalRecord:
                     return
                 
 
-                kadi_record = db_manager.record(create=True, id=self.base_name, identifier=self.base_name)
+                kadi_record = db_manager.record(create=True, id=self.record_name, identifier=self.record_name)
                 for file_path in self.files:
                     kadi_record.upload_file(file_path)
                     logger.info(f"Uploaded file: {os.path.basename(file_path)}")
@@ -488,14 +496,16 @@ class FileProcessor:
     """
     Handles file validation, renaming, and moving.
     """
-    def __init__(self, device_name, rename_folder, processed_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
-        self.device_name = device_name
+    def __init__(self, device_ID, rename_folder, processed_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
+        self.device_ID = device_ID
         self.rename_folder = rename_folder
         self.processed_dir = processed_dir
         self.exceptions_dir = exceptions_dir
         self.input_pattern = input_pattern
         self.gui_manager = gui_manager
         self.session_manager = session_manager
+
+        self.daily_counter = 0
 
         self.records_dict = {}
 
@@ -504,28 +514,27 @@ class FileProcessor:
     def is_tiff_file(self, filename):
         return filename.lower().endswith(('.tiff', '.tif'))
     
-    def is_elid_folder(self, foldername):
-        # check if it was a folder added to the watch directory
-        if os.path.isdir(foldername):
-            
-            # validate that the folder contains a file with the .elid extension
-            for file in os.listdir(foldername):
+    def is_elid_folder(self, folder_path):
+        # Check if it is a directory
+        if os.path.isdir(folder_path):
+            # Validate that the folder contains a file with the .elid extension
+            for file in os.listdir(folder_path):
                 if file.endswith('.elid'):
                     return True
-
         return False
 
-
-    def is_valid_filename(self, base_name):
+    def is_valid_name(self, base_name):
         return self.input_pattern.match(base_name) is not None
 
-    # TODO: Consider input scrubbing, what characters are allowed in the filename, should we simply replace them or notify user?
     def scrub_input(self, input_str):
         """
         Scrubs the input string by replacing invalid characters for filenames with underscores.
         Allows letters, numbers, underscores, and hyphens.
         """
         return re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
+
+    def reset_daily_counter(self):
+        self.daily_counter = 0
 
     def get_unique_path(self, dest_path):
         """
@@ -544,15 +553,15 @@ class FileProcessor:
     def generate_rename_filename(self, original_filename):
         _, extension = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
-        new_filename = f"{self.device_name}_rename-file_{date_str}{extension}"
+        new_filename = f"{self.device_ID}_rename-file_{date_str}{extension}"
         new_path = os.path.join(self.rename_folder, new_filename)
         unique_new_path = self.get_unique_path(new_path)
         return unique_new_path
 
-    def update_records(self, record_name, file_path, in_db=False):
+    def update_records(self, record_name, record_ID, path, in_db=False):
         if record_name not in self.records_dict:
             self.records_dict[record_name] = LocalRecord(record_name, in_db)
-        self.records_dict[record_name].add_file(file_path)
+        self.records_dict[record_name].add_item(path)
 
     def manage_session(self):
         if not self.session_manager.session_active:
@@ -598,95 +607,128 @@ class FileProcessor:
 
     #region Main Methods
 
-    def process_file(self, file_path):
+    def process_incoming_file_or_folder(self, path):
+        if os.path.isfile(path):
+            self.process_tiff_file(path)
+        elif os.path.isdir(path):
+            self.process_elid_folder(path)
+
+    def process_tiff_file(self, file_path):
         filename = os.path.basename(file_path)
         base_name, extension = os.path.splitext(filename)
         
         if not self.is_tiff_file(filename):
             logger.info(f"File '{filename}' is not a TIFF file.")
             # move the file to the exceptions folder
-            new_path = os.path.join(self.exceptions_dir, file_path)
+            new_path = os.path.join(self.exceptions_dir, filename)
             try:
                 os.rename(file_path, new_path)
-                logger.info(f"file moved from '{file_path}' to '{new_path}'.")
+                logger.info(f"File moved from '{file_path}' to '{new_path}'.")
             except Exception as e:
                 logger.exception(f"Failed to move file '{file_path}' to '{new_path}': {e}")
             return
 
-        if self.is_valid_filename(base_name):
+        if self.is_valid_name(base_name):
             # File meets the standard, rename accordingly
-            self.rename_file(file_path, base_name, extension, notify=False)
+            self.rename_item(file_path, base_name, extension, is_folder=False, notify=False)
         else:
             logger.info(f"File '{filename}' does not match the naming convention.")
-            self.prompt_rename(file_path, filename)
+            self.prompt_rename(file_path, filename, is_folder=False)
 
-    def construct_new_filename(self, base_name, extension):
+    def process_elid_folder(self, folder_path):
+        # Get the folder name
+        folder_name = os.path.basename(folder_path)
+        if not self.is_elid_folder(folder_path):
+            logger.info(f"Folder '{folder_name}' does not contain an .elid file.")
+            # move the folder to the exceptions folder
+            new_path = os.path.join(self.exceptions_dir, folder_name)
+            try:
+                os.rename(folder_path, new_path)
+                logger.info(f"Folder moved from '{folder_path}' to '{new_path}'.")
+            except Exception as e:
+                logger.exception(f"Failed to move folder '{folder_path}' to '{new_path}': {e}")
+            return
+
+        if self.is_valid_name(folder_name):
+            # Folder meets the standard, rename accordingly
+            self.rename_item(folder_path, folder_name, is_folder=True, notify=False)
+        else:
+            logger.info(f"Folder '{folder_name}' does not match the naming convention.")
+            self.prompt_rename(folder_path, folder_name, is_folder=True)
+
+    def construct_names_and_id(self, base_name, extension):
         date_str = datetime.datetime.now().strftime('%Y-%m-%d')
+
+        # Scrub the base_name
         base_name = self.scrub_input(base_name)
-        record_name = f"{self.device_name}_{base_name}_{date_str}"
+
+        institute, user_ID, sample_ID = base_name.split('_')
+
+        # The name of the record is the sample name
+        record_name = sample_ID
+
+        # Construct the record ID (Device_ID-Date-Institute-User_ID)
+        record_ID = f"{self.device_ID}-{date_str}-{institute}-{user_ID}"
         
         # Prepare path without counter
         new_path = os.path.join(self.processed_dir, record_name + extension)
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
-        return record_name, unique_new_path
+        return record_name, record_ID, unique_new_path
 
-    def rename_file(self, file_path, base_name, extension, notify=True):
+    def rename_item(self, path, base_name, extension="", is_folder=False, notify=True):
         """
-        Renames the file by appending the device name prefix, date suffix, and counter.
-        Moves the file to the validated folder.
+        Renames a file or folder by appending the device name prefix, date suffix, and counter.
+        Moves the file or folder to the validated folder.
         """
-        # Construct the new filename
-        record_name, new_file_path = self.construct_new_filename(base_name, extension)
+        # Construct the new name
+        record_name, record_ID, new_path = self.construct_names_and_id(base_name, extension)
 
         try:
-            os.rename(file_path, new_file_path)
+            os.rename(path, new_path)
             if notify:
-                self.gui_manager.show_info("Success", f"File renamed to '{os.path.basename(new_file_path)}'")
-            logger.info(f"File '{file_path}' renamed to '{new_file_path}'.")
+                self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_path)}'")
+            logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_path}'.")
 
-            # TODO: Code and verify the record archive check and append functionality
-            # if the record is already in the archive, prompt the user to append to the existing record
+            # Check if the record is already in the archive
             if self.record_in_archive(record_name, ARCHIVED_FILES_JSON):
                 if self.gui_manager.prompt_append_record(record_name):
-                    self.update_records(record_name, new_file_path)
+                    self.update_records(record_name, record_ID, new_path)
                     self.manage_session()
                 else:
-                    self.prompt_rename(file_path, os.path.basename(file_path), existing_record=True)
+                    self.prompt_rename(path, os.path.basename(path), existing_record=True, is_folder=is_folder)
             else:
-                self.update_records(record_name, new_file_path)
+                self.update_records(record_name, record_ID, new_path)
                 self.manage_session()
 
         except Exception as e:
-            self.gui_manager.show_error("Error", f"Failed to rename file: {e}")
-            logger.exception(f"Failed to rename file '{file_path}' to '{new_file_path}': {e}")
-            self.move_to_rename_folder(file_path, os.path.basename(file_path))
+            self.gui_manager.show_error("Error", f"Failed to rename {'folder' if is_folder else 'file'}: {e}")
+            logger.exception(f"Failed to rename {'folder' if is_folder else 'file'} '{path}' to '{new_path}': {e}")
+            self.move_to_rename_folder(path, os.path.basename(path), is_folder=is_folder)
 
-    def prompt_rename(self, file_path, filename, existing_record=False):
-        
+    def prompt_rename(self, path, name, existing_record=False, is_folder=False):
         if existing_record:
             message = (
-                f"Rename '{filename}' to create new record.\n"
+                f"Rename '{name}' to create new record.\n"
             )
             self.gui_manager.show_info("Rename for New Record", message)
         else:
             message = (
-                f"The file '{filename}' does not adhere to the naming convention.\n"
+                f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
                 f"The required naming format is: Institute_UserName_Sample-Name (e.g., IPAT_MuS_Sample-Name)"
             )
-            self.gui_manager.show_warning("Invalid File Name", message)            
+            self.gui_manager.show_warning("Invalid Name", message)
 
-        extension = os.path.splitext(filename)[1]
+        extension = os.path.splitext(name)[1] if not is_folder else ""
 
         while True:
-            
             dialog_result = self.gui_manager.prompt_rename()
-            
+
             is_valid, result = self.validate_user_input(dialog_result)
             if not is_valid:
                 if result == "User cancelled the dialog.":
                     logger.info("User cancelled the dialog.")
-                    self.move_to_rename_folder(file_path, filename)
+                    self.move_to_rename_folder(path, name, is_folder=is_folder)
                     return
                 else:
                     self.gui_manager.show_warning("Incomplete Information", result)
@@ -695,26 +737,24 @@ class FileProcessor:
             user_ID, institute, sample_ID = result
             # Construct base_name
             base_name = f"{institute}_{user_ID}_{sample_ID}"
-            # Now rename the file
-            self.rename_file(file_path, base_name, extension, notify=True)
+            # Now rename the file or folder
+            self.rename_item(path, base_name, extension, is_folder=is_folder, notify=True)
             break
 
-    def move_to_rename_folder(self, file_path, filename):
-        new_path = self.generate_rename_filename(filename)
-
+    def move_to_rename_folder(self, path, name, is_folder=False):
+        new_path = self.generate_rename_filename(name)
         try:
-            os.rename(file_path, new_path)
+            os.rename(path, new_path)
             self.gui_manager.show_info(
-                "File Moved",
-                f"File renaming was cancelled or failed. The file has been moved to: {new_path}"
+                "Moved",
+                f"Renaming was cancelled or failed. The {'folder' if is_folder else 'file'} has been moved to: {new_path}"
             )
-            logger.info(f"File moved from '{file_path}' to '{new_path}'.")
+            logger.info(f"{'Folder' if is_folder else 'File'} moved from '{path}' to '{new_path}'.")
         except Exception as e:
-            self.gui_manager.show_error("Error", f"Failed to move file: {e}")
-            logger.exception(f"Failed to move file '{file_path}' to '{new_path}': {e}")
-    
+            self.gui_manager.show_error("Error", f"Failed to move {'folder' if is_folder else 'file'}: {e}")
+            logger.exception(f"Failed to move {'folder' if is_folder else 'file'} '{path}' to '{new_path}': {e}")
+        
     #endregion
-
 # DeviceWatchdogApp combines file naming monitoring, metadata extraction, and session management, orchestrating the entire process
 # it handles session ends, triggering file syncing, and maintaining an up-to-date list of processed records
 class DeviceWatchdogApp:
@@ -722,8 +762,29 @@ class DeviceWatchdogApp:
     Main application class that combines file naming monitoring, metadata extraction,
     and session management.
     """
-    def __init__(self, watch_dir, device_name, rename_folder, processed_dir, archive_dir, exceptions_dir, session_timeout=60):
+    def __init__(
+        self,
+        watch_dir,
+        device_name,
+        rename_folder,
+        processed_dir,
+        archive_dir,
+        exceptions_dir,
+        test_path,
+        session_timeout=60,
+        testing=False,
+    ):
+        self.testing = testing
+        self.test_path = test_path
         self.watch_dir = watch_dir
+
+        if testing:
+            # delete all files and folders in watch_dir
+            for root, dirs, files in os.walk(watch_dir):
+                for file in files:
+                    os.remove(os.path.join(root, file))
+                for dir in dirs:
+                    shutil.rmtree(os.path.join(root, dir))
 
         self.session_timeout = session_timeout  # Session timeout in seconds
 
@@ -744,7 +805,7 @@ class DeviceWatchdogApp:
 
         # Initialize FileProcessor
         self.file_processor = FileProcessor(
-            device_name=device_name,
+            device_ID=device_name,
             rename_folder=rename_folder,
             processed_dir=processed_dir,
             exceptions_dir=exceptions_dir,
@@ -835,8 +896,8 @@ class DeviceWatchdogApp:
 
             # Update the processed files dictionary
             num_files = local_record.get_file_count()
-            self.processed_files[local_record.base_name] = self.processed_files.get(local_record.base_name, 0) + num_files
-            logger.info(f"Updated count for base '{local_record.base_name}': {self.processed_files[local_record.base_name]} files.")
+            self.processed_files[local_record.record_name] = self.processed_files.get(local_record.record_name, 0) + num_files
+            logger.info(f"Updated count for base '{local_record.record_name}': {self.processed_files[local_record.record_name]} files.")
 
         # Clear records after processing
         self.file_processor.clear_records_dict()
@@ -848,9 +909,20 @@ class DeviceWatchdogApp:
         Processes file events from the queue. This method is called periodically, and looks for new files to process.
         """
         while not self.event_queue.empty():
-            file_path = self.event_queue.get()
-            self.file_processor.process_file(file_path)
+            data_path = self.event_queue.get()
+            self.file_processor.process_incoming_file_or_folder(data_path)
         self.gui_manager.root.after(100, self.process_events)
+
+        # if testing, add a file or folder into the watch directory
+        if self.testing:
+            if os.path.isfile(self.test_path):
+                shutil.copy(self.test_path, self.watch_dir)
+            elif os.path.isdir(self.test_path):
+                shutil.copytree(self.test_path, os.path.join(self.watch_dir, os.path.basename(self.test_path)))
+
+        # reset the daily counter of the file_processor at the start of each day
+        if datetime.datetime.now().hour == 0:
+            self.file_processor.reset_daily_counter()
 
     def on_closing(self):
         """
@@ -874,8 +946,10 @@ class DeviceWatchdogApp:
         except Exception:
             self.handle_exception(*sys.exc_info())
 
-
 if __name__ == "__main__":
+    testing = True
+    test_path = r"D:\Repos\ipat_data_watchdog\test_elid"
+
     logger.info("Starting Device Watchdog application...")
     app = DeviceWatchdogApp(
         watch_dir=WATCH_DIR,
@@ -883,7 +957,10 @@ if __name__ == "__main__":
         rename_folder=RENAME_DIR,
         processed_dir=STAGING_DIR,
         archive_dir=ARCHIVE_DIR,
-        session_timeout=60  # Timeout in seconds
+        exceptions_dir=EXCEPTIONS_DIR,
+        test_path=test_path,
+        session_timeout=60,  # Timeout in seconds
+        testing=testing,
     )
     try:
         app.run()
