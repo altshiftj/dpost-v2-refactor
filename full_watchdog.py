@@ -17,6 +17,8 @@ from watchdog.events import FileSystemEventHandler
 
 from kadi_apy import KadiManager
 
+# TODO: Consider Clocks, Synchronization of Data Time
+
 DEVICE_NAME = "SEM"
 
 WATCH_DIR = r"test_monitor"
@@ -244,8 +246,9 @@ class LocalRecord:
     """
     Represents a collection of files with the same base_name.
     """
-    def __init__(self, record_name, in_db=False):
+    def __init__(self, record_name, record_id, in_db=False):
         self.record_name = record_name
+        self.record_id=record_id
         self.in_db = in_db
         self.files = []  # List of file paths
         metadata = {}
@@ -257,7 +260,10 @@ class LocalRecord:
             # Add all files in the folder to self.files
             for root, dirs, files in os.walk(path):
                 for file in files:
-                    file_path = os.path.join(root, file)
+                    # FIXME: Difficulty in deciding record name/id/filenames
+                    # Try to resolve in cases of renaming, staging, archiving, and syncing
+                    rel_record_path = os.path.split(path)
+                    file_path = os.path.join(self.record_id, file)
                     self.files.append(file_path)
         else:
             logger.warning(f"Path '{path}' is neither a file nor a directory.")
@@ -308,10 +314,18 @@ class LocalRecord:
         """
         Moves all files to the archive directory.
         """
-        self.save_metadata_to_json(archive_dir)
+        
+        # TODO: Integrate ELIDs into metadata collection. Perhaps 
+        #self.save_metadata_to_json(archive_dir)
+
+
 
         for file_path in self.files:
-            dest_path = os.path.join(archive_dir, os.path.basename(file_path))
+            record_dir = os.path.join(archive_dir, self.record_id)
+            if not os.path.exists(record_dir):  
+                os.mkdir(record_dir)
+            dest_path = os.path.join(record_dir, os.path.basename(file_path))
+
             try:
                 os.rename(file_path, dest_path)
 
@@ -490,6 +504,7 @@ class MetadataExtractor:
             return None
         return metadata
 
+
 # FileProcessor handles file validation, renaming, and moving, and interacts with the GUIManager to alert the user of naming issues
 # and interacts with the SessionManager to start sessions
 class FileProcessor:
@@ -505,7 +520,9 @@ class FileProcessor:
         self.gui_manager = gui_manager
         self.session_manager = session_manager
 
-        self.daily_counter = 0
+        os.path.relpath
+
+        self.daily_counter = 1
 
         self.records_dict = {}
 
@@ -559,9 +576,11 @@ class FileProcessor:
         return unique_new_path
 
     def update_records(self, record_name, record_ID, path, in_db=False):
-        if record_name not in self.records_dict:
-            self.records_dict[record_name] = LocalRecord(record_name, in_db)
-        self.records_dict[record_name].add_item(path)
+        if record_ID not in self.records_dict:
+            record_ID += f'-{self.daily_counter}'
+            self.daily_counter += 1
+            self.records_dict[record_ID] = LocalRecord(record_name, record_ID, in_db)
+        self.records_dict[record_ID].add_item(path)
 
     def manage_session(self):
         if not self.session_manager.session_active:
@@ -657,7 +676,7 @@ class FileProcessor:
             self.prompt_rename(folder_path, folder_name, is_folder=True)
 
     def construct_names_and_id(self, base_name, extension):
-        date_str = datetime.datetime.now().strftime('%Y-%m-%d')
+        date_str = datetime.datetime.now().strftime('%Y%m%d')
 
         # Scrub the base_name
         base_name = self.scrub_input(base_name)
@@ -671,7 +690,7 @@ class FileProcessor:
         record_ID = f"{self.device_ID}-{date_str}-{institute}-{user_ID}"
         
         # Prepare path without counter
-        new_path = os.path.join(self.processed_dir, record_name + extension)
+        new_path = os.path.join(self.processed_dir, base_name + extension)
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
         return record_name, record_ID, unique_new_path
@@ -755,6 +774,8 @@ class FileProcessor:
             logger.exception(f"Failed to move {'folder' if is_folder else 'file'} '{path}' to '{new_path}': {e}")
         
     #endregion
+
+
 # DeviceWatchdogApp combines file naming monitoring, metadata extraction, and session management, orchestrating the entire process
 # it handles session ends, triggering file syncing, and maintaining an up-to-date list of processed records
 class DeviceWatchdogApp:
@@ -776,7 +797,9 @@ class DeviceWatchdogApp:
     ):
         self.testing = testing
         self.test_path = test_path
+
         self.watch_dir = watch_dir
+        self.archive_dir = archive_dir
 
         if testing:
             # delete all files and folders in watch_dir
@@ -919,6 +942,7 @@ class DeviceWatchdogApp:
                 shutil.copy(self.test_path, self.watch_dir)
             elif os.path.isdir(self.test_path):
                 shutil.copytree(self.test_path, os.path.join(self.watch_dir, os.path.basename(self.test_path)))
+            self.testing = False
 
         # reset the daily counter of the file_processor at the start of each day
         if datetime.datetime.now().hour == 0:
