@@ -881,7 +881,7 @@ class DeviceWatchdogApp:
             device_ID=device_name,
             rename_folder=rename_folder,
             staging_dir=staging_dir,
-            archive_dir=archive_dir
+            archive_dir=archive_dir,
             exceptions_dir=exceptions_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
