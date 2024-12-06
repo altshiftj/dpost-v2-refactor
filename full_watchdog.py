@@ -48,6 +48,7 @@ class FileEventHandler(FileSystemEventHandler):
         self.event_queue.put(event.src_path)
         logger.info(f"New file detected: {event.src_path}")
 
+
 # SessionManager deals with session starts, ends, and timing out
 class SessionManager:
     def __init__(self, session_timeout, end_session_callback, root: tk.Tk):
@@ -86,6 +87,7 @@ class SessionManager:
         if self.session_timer_id is not None:
             self.root.after_cancel(self.session_timer_id)
             self.session_timer_id = None
+
 
 # GuiManager manages all GUI-related interactions using Tkinter
 class GUIManager:
@@ -132,6 +134,7 @@ class GUIManager:
         self.dialog_parent.destroy()
         self.root.destroy()
 
+
 # Custom Entry widget with placeholder text
 class EntryWithPlaceholder(tk.Entry):
     """
@@ -177,6 +180,7 @@ class EntryWithPlaceholder(tk.Entry):
             return ''
         else:
             return content
+
 
 # Custom dialog using EntryWithPlaceholder to collect Name, Institute, and Sample Name from users when a file name is incorrect
 class MultiFieldDialog(simpledialog.Dialog):
@@ -241,6 +245,7 @@ class MultiFieldDialog(simpledialog.Dialog):
             'sample_ID': sample_ID,
         }
 
+
 # LocalRecord represents a collection of files with the same root_name (cf record name) and their associated metadata
 class LocalRecord:
     """
@@ -251,19 +256,20 @@ class LocalRecord:
         self.record_id=record_id
         self.in_db = in_db
         self.files = []  # List of file paths
+        self.data_type = ''
         metadata = {}
 
     def add_item(self, path: str):
         if os.path.isfile(path):
             self.files.append(path)
         elif os.path.isdir(path):
+            parent_dir = ''
             # Add all files in the folder to self.files
             for root, dirs, files in os.walk(path):
                 for file in files:
                     # FIXME: Difficulty in deciding record name/id/filenames
                     # Try to resolve in cases of renaming, staging, archiving, and syncing
-                    rel_record_path = os.path.split(path)
-                    file_path = os.path.join(self.record_id, file)
+                    file_path = os.path.join(root, file)
                     self.files.append(file_path)
         else:
             logger.warning(f"Path '{path}' is neither a file nor a directory.")
@@ -303,10 +309,12 @@ class LocalRecord:
                     return
                 
 
-                kadi_record = db_manager.record(create=True, id=self.record_name, identifier=self.record_name)
+                kadi_record = db_manager.record(create=True, identifier=self.record_id)
                 for file_path in self.files:
                     kadi_record.upload_file(file_path)
                     logger.info(f"Uploaded file: {os.path.basename(file_path)}")
+                logger.info("Files have been synced to the database.")
+
         except Exception as e:
             logger.exception(f"Failed to upload files to the database: {e}")
 
@@ -315,16 +323,25 @@ class LocalRecord:
         Moves all files to the archive directory.
         """
         
-        # TODO: Integrate ELIDs into metadata collection. Perhaps 
+        # TODO: Integrate ELIDs into metadata collection. 
         #self.save_metadata_to_json(archive_dir)
-
-
+        record_dir = os.path.join(archive_dir, self.record_id)
+        if not os.path.exists(record_dir):  
+            os.mkdir(record_dir)
 
         for file_path in self.files:
-            record_dir = os.path.join(archive_dir, self.record_id)
-            if not os.path.exists(record_dir):  
-                os.mkdir(record_dir)
-            dest_path = os.path.join(record_dir, os.path.basename(file_path))
+            # TODO: Add Data Type to record ID (DEV###-DATE-INST-USER-DATA-###)
+
+            basename = os.path.basename(file_path)
+            dirname = os.path.split(os.path.dirname(file_path))[-1]
+
+            # TODO: Make this conditional more robust. Looking to flatten filenames
+            # Located in ELID folders
+            if 'analysis' in dirname and not 'analysis' in basename:
+                path = f'{dirname}_{basename}'
+                dest_path = os.path.join(record_dir, path)
+            else:
+                dest_path = os.path.join(record_dir, os.path.basename(file_path))
 
             try:
                 os.rename(file_path, dest_path)
@@ -348,6 +365,7 @@ class LocalRecord:
         Returns the number of files (excluding metadata files).
         """
         return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
+
 
 # MetadataExtractor contains extraction methods for metadata from TIFF files, etc.
 class MetadataExtractor:
@@ -520,6 +538,8 @@ class FileProcessor:
         self.gui_manager = gui_manager
         self.session_manager = session_manager
 
+        self.data_type=''
+
         os.path.relpath
 
         self.daily_counter = 1
@@ -529,6 +549,7 @@ class FileProcessor:
     #region Utility Methods
 
     def is_tiff_file(self, filename):
+        self.data_type = 'img'
         return filename.lower().endswith(('.tiff', '.tif'))
     
     def is_elid_folder(self, folder_path):
@@ -537,6 +558,7 @@ class FileProcessor:
             # Validate that the folder contains a file with the .elid extension
             for file in os.listdir(folder_path):
                 if file.endswith('.elid'):
+                    self.data_type = 'elid'
                     return True
         return False
 
@@ -551,7 +573,7 @@ class FileProcessor:
         return re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
 
     def reset_daily_counter(self):
-        self.daily_counter = 0
+        self.daily_counter = 1
 
     def get_unique_path(self, dest_path):
         """
@@ -676,23 +698,24 @@ class FileProcessor:
             self.prompt_rename(folder_path, folder_name, is_folder=True)
 
     def construct_names_and_id(self, base_name, extension):
-        date_str = datetime.datetime.now().strftime('%Y%m%d')
 
         # Scrub the base_name
         base_name = self.scrub_input(base_name)
 
-        institute, user_ID, sample_ID = base_name.split('_')
+        institute, user_ID, sample_ID, date = base_name.split('_')
 
         # The name of the record is the sample name
         record_name = sample_ID
 
         # Construct the record ID (Device_ID-Date-Institute-User_ID)
-        record_ID = f"{self.device_ID}-{date_str}-{institute}-{user_ID}"
+        record_ID = f"{self.device_ID}-{date}-{self.data_type}-{institute}-{user_ID}"
         
         # Prepare path without counter
         new_path = os.path.join(self.processed_dir, base_name + extension)
+
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
+
         return record_name, record_ID, unique_new_path
 
     def rename_item(self, path, base_name, extension="", is_folder=False, notify=True):
@@ -754,8 +777,12 @@ class FileProcessor:
                     continue
 
             user_ID, institute, sample_ID = result
+
+            
+            date_str = datetime.datetime.now().strftime('%Y%m%d')
+
             # Construct base_name
-            base_name = f"{institute}_{user_ID}_{sample_ID}"
+            base_name = f"{institute}_{user_ID}_{sample_ID}_{date_str}"
             # Now rename the file or folder
             self.rename_item(path, base_name, extension, is_folder=is_folder, notify=True)
             break
@@ -925,7 +952,6 @@ class DeviceWatchdogApp:
         # Clear records after processing
         self.file_processor.clear_records_dict()
         self.update_archived_files_list()
-        logger.info("Files have been synced to the database.")
 
     def process_events(self):
         """
@@ -992,3 +1018,24 @@ if __name__ == "__main__":
         logger.exception(f"An error occurred: {e}")
     finally:
         logger.info("Application closed.")
+
+
+"""
+    Incoming File
+        Rename if wrong
+        Create Record
+        Set Record Name to Sample Name
+        Record ID = DEV###-YYYYMMDD-INST-USR-###
+        File Name = DEV_INST_USR_SAMPLE_YYYYMMDD
+        Stage
+        Add file to record dict of file processor
+        ***Session Start***
+            Any Files added at this point are appended to record (i.e., record_dict is updated)
+            If this is an elid record, the session ends after the folder is properly named.
+        ***Session End***
+            Files are moved to the archive (move this function to file processor? (perhaps not, due to metadata consolidation of record))
+                Archive Records as Folders, named after record ID, Files are contained within, named as 
+
+        Important thought: I am in a very important position with the ability to attract programming talent
+        USE IT
+"""
