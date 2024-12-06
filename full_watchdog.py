@@ -17,15 +17,23 @@ from watchdog.events import FileSystemEventHandler
 
 from kadi_apy import KadiManager
 
+# General TODOs
+# TODO: Implement Exception Moves for Files and Folders
+# TODO: Name .elid file and elid document file to match the naming convention for files
+# TODO: End session and sync after an elid folder is processed
+# TODO: Finalize record name, record ID, and file naming conventions
+# TODO: Assign synced data to users, handle if the user does not exist yet
+# TODO: Establish SEM record Template with links, etc. Use when uploading to the database
 # TODO: Consider Clocks, Synchronization of Data Time
+# TODO: Make naming pattern more robust, handle scrubbing
 
-DEVICE_NAME = "SEM"
+DEVICE_NAME = "REM_001"
 
 WATCH_DIR = r"test_monitor"
 RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
 STAGING_DIR = os.path.join(WATCH_DIR, 'Staging')
 ARCHIVE_DIR = os.path.join(WATCH_DIR, 'Archive')
-EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions') # TODO: Implement exceptions folder in file handling
+EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
 ARCHIVED_FILES_JSON = os.path.join(ARCHIVE_DIR, 'processed_files.json')
 
 FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
@@ -310,6 +318,7 @@ class LocalRecord:
                 
 
                 kadi_record = db_manager.record(create=True, identifier=self.record_id)
+                kadi_record.set_attribute('title', self.record_name)
                 for file_path in self.files:
                     kadi_record.upload_file(file_path)
                     logger.info(f"Uploaded file: {os.path.basename(file_path)}")
@@ -330,7 +339,9 @@ class LocalRecord:
             os.mkdir(record_dir)
 
         for file_path in self.files:
-            # TODO: Add Data Type to record ID (DEV###-DATE-INST-USER-DATA-###)
+            # FIXME: ELID Folders are not removed from the staging directory after archiving
+            # Have the watchdog/file processor clear the staging directory after a session is complete
+            # Implement exceptions folder move in case of errors
 
             basename = os.path.basename(file_path)
             dirname = os.path.split(os.path.dirname(file_path))[-1]
@@ -351,7 +362,8 @@ class LocalRecord:
                 logger.info(f"Archived file '{file_path}' to '{dest_path}'.")
             except Exception as e:
                 logger.exception(f"Failed to move file '{file_path}' to '{dest_path}': {e}")
-                # Optionally handle exceptions, e.g., move to exceptions folder
+                # TODO: move to exceptions folder
+        
 
     def sync_to_database(self, archive_dir):
         """
@@ -529,18 +541,16 @@ class FileProcessor:
     """
     Handles file validation, renaming, and moving.
     """
-    def __init__(self, device_ID, rename_folder, processed_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
+    def __init__(self, device_ID, rename_folder, staging_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
         self.device_ID = device_ID
         self.rename_folder = rename_folder
-        self.processed_dir = processed_dir
+        self.staging_dir = staging_dir
         self.exceptions_dir = exceptions_dir
         self.input_pattern = input_pattern
         self.gui_manager = gui_manager
         self.session_manager = session_manager
 
         self.data_type=''
-
-        os.path.relpath
 
         self.daily_counter = 1
 
@@ -644,6 +654,13 @@ class FileProcessor:
     def clear_records_dict(self):
         self.records_dict.clear()
 
+    def clear_staging_dir(self):
+        for root, dirs, files in os.walk(self.staging_dir):
+            for file in files:
+                os.remove(os.path.join(root, file))
+            for dir in dirs:
+                shutil.rmtree(os.path.join(root, dir))
+
     #endregion
 
     #region Main Methods
@@ -711,7 +728,7 @@ class FileProcessor:
         record_ID = f"{self.device_ID}-{date}-{self.data_type}-{institute}-{user_ID}"
         
         # Prepare path without counter
-        new_path = os.path.join(self.processed_dir, base_name + extension)
+        new_path = os.path.join(self.staging_dir, base_name + extension)
 
         # Ensure uniqueness by adding counter
         unique_new_path = self.get_unique_path(new_path)
@@ -815,7 +832,7 @@ class DeviceWatchdogApp:
         watch_dir,
         device_name,
         rename_folder,
-        processed_dir,
+        staging_dir,
         archive_dir,
         exceptions_dir,
         test_path,
@@ -846,7 +863,7 @@ class DeviceWatchdogApp:
 
         # Ensure the necessary directories exist
         os.makedirs(rename_folder, exist_ok=True)
-        os.makedirs(processed_dir, exist_ok=True)
+        os.makedirs(staging_dir, exist_ok=True)
         os.makedirs(archive_dir, exist_ok=True)
         os.makedirs(exceptions_dir, exist_ok=True)
 
@@ -857,7 +874,7 @@ class DeviceWatchdogApp:
         self.file_processor = FileProcessor(
             device_ID=device_name,
             rename_folder=rename_folder,
-            processed_dir=processed_dir,
+            staging_dir=staging_dir,
             exceptions_dir=exceptions_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
@@ -946,11 +963,12 @@ class DeviceWatchdogApp:
 
             # Update the processed files dictionary
             num_files = local_record.get_file_count()
-            self.processed_files[local_record.record_name] = self.processed_files.get(local_record.record_name, 0) + num_files
-            logger.info(f"Updated count for base '{local_record.record_name}': {self.processed_files[local_record.record_name]} files.")
+            self.processed_files[local_record.record_id] = self.processed_files.get(local_record.record_id, 0) + num_files
+            logger.info(f"Updated count for base '{local_record.record_id}': {self.processed_files[local_record.record_id]} files.")
 
         # Clear records after processing
         self.file_processor.clear_records_dict()
+        self.file_processor.clear_staging_dir()
         self.update_archived_files_list()
 
     def process_events(self):
@@ -1005,7 +1023,7 @@ if __name__ == "__main__":
         watch_dir=WATCH_DIR,
         device_name=DEVICE_NAME,
         rename_folder=RENAME_DIR,
-        processed_dir=STAGING_DIR,
+        staging_dir=STAGING_DIR,
         archive_dir=ARCHIVE_DIR,
         exceptions_dir=EXCEPTIONS_DIR,
         test_path=test_path,
