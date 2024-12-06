@@ -25,7 +25,10 @@ from kadi_apy import KadiManager
 # TODO: Assign synced data to users, handle if the user does not exist yet
 # TODO: Establish SEM record Template with links, etc. Use when uploading to the database
 # TODO: Consider Clocks, Synchronization of Data Time
+# TODO: Handle Kadi Record Update for Lunch ladies and gentlemen
 # TODO: Make naming pattern more robust, handle scrubbing
+# TODO: Rework record_id string and daily record counter placement
+# TODO: Have FileProcessor check Archive for existing records rather than its own records_dict
 
 DEVICE_NAME = "REM_001"
 
@@ -271,7 +274,6 @@ class LocalRecord:
         if os.path.isfile(path):
             self.files.append(path)
         elif os.path.isdir(path):
-            parent_dir = ''
             # Add all files in the folder to self.files
             for root, dirs, files in os.walk(path):
                 for file in files:
@@ -541,10 +543,11 @@ class FileProcessor:
     """
     Handles file validation, renaming, and moving.
     """
-    def __init__(self, device_ID, rename_folder, staging_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
+    def __init__(self, device_ID, rename_folder, staging_dir, archive_dir, exceptions_dir, input_pattern, gui_manager: GUIManager, session_manager: SessionManager):
         self.device_ID = device_ID
         self.rename_folder = rename_folder
         self.staging_dir = staging_dir
+        self.archive_dir = archive_dir
         self.exceptions_dir = exceptions_dir
         self.input_pattern = input_pattern
         self.gui_manager = gui_manager
@@ -608,8 +611,11 @@ class FileProcessor:
         return unique_new_path
 
     def update_records(self, record_name, record_ID, path, in_db=False):
+        # FIXME: Validate record_ID from the archive rather than the records_dict
+        # (records dict is cleared after each session)
+        # FIXME: place the record_ID after date, rather than at the end of the string
         if record_ID not in self.records_dict:
-            record_ID += f'-{self.daily_counter}'
+            record_ID += f'-record_{self.daily_counter}'
             self.daily_counter += 1
             self.records_dict[record_ID] = LocalRecord(record_name, record_ID, in_db)
         self.records_dict[record_ID].add_item(path)
@@ -875,6 +881,7 @@ class DeviceWatchdogApp:
             device_ID=device_name,
             rename_folder=rename_folder,
             staging_dir=staging_dir,
+            archive_dir=archive_dir
             exceptions_dir=exceptions_dir,
             input_pattern=FILENAME_PATTERN,
             gui_manager=self.gui_manager,
