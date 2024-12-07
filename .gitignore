@@ -2,8 +2,6 @@
 /wdvenv/
 /dist/
 /build/
-/test_monitor/
-/test_monitor/Archive
 
 watchdog.log
 ipatwatchdog.spec
