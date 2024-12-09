@@ -60,21 +60,7 @@ class LocalRecord:
         try:
             with KadiManager() as db_manager:
                 if self.in_db:
-                    metadata_staging_path = os.path.join(STAGING_DIR, f"{self.record_name}_metadata.json")
-                    kadi_record = db_manager.record(identifier=self.record_name)
-                    file_id = kadi_record.get_file_id(file_name=f"{self.record_name}_metadata.json")
-                    kadi_record.download_file(file_id=file_id, file_path=metadata_staging_path)
-
-                    with open(metadata_staging_path, 'r') as file:
-                        db_metadata = json.load(file)
-
-                    db_metadata.update(self.metadata)
-
-                    with open(metadata_staging_path, 'w') as file:
-                        json.dump(db_metadata, file, indent=4)
-
-                    kadi_record.upload_file(metadata_staging_path)
-
+                    kadi_record = db_manager.record(identifier=self.record_id)
                     for file_path in self.files:
                         if not kadi_record.has_file(os.path.basename(file_path)):
                             kadi_record.upload_file(file_path)
@@ -89,7 +75,6 @@ class LocalRecord:
                 logger.info("Files have been synced to the database.")
         except Exception as e:
             logger.exception(f"Failed to upload files to the database: {e}")
-
 
 class MetadataExtractor:
     @staticmethod
@@ -245,10 +230,35 @@ class FileProcessor:
         except Exception as e:
             logger.exception(f"Failed to save processed files data: {e}")
 
-    def update_archived_record(self, record_id, file_count):
-        self.processed_files[record_id] = self.processed_files.get(record_id, 0) + file_count
+    def update_archived_record(self, record_id, record_name, file_count):
+        # 
+        if record_id not in self.processed_files:
+            self.processed_files[record_id] = {"record_name": record_name, "file_count": 0}
+        self.processed_files[record_id]["file_count"] += file_count
         logger.info(f"Updated count for record '{record_id}': {self.processed_files[record_id]} files.")
         self.save_processed_files_data()
+    
+    def _record_in_archive(self, record_id, record_name):
+        # extract the institute, userID, and date from the record_id
+        parts = record_id.split('-')
+        institute = parts[3]
+        user_ID = parts[4]
+        date = parts[1]
+
+        # check if the institute, userID, and date are in a key in the processed_files dictionary
+        # if it is, confirm that the record_name is within the key dictionary
+        for record_id in self.processed_files.keys():
+            if institute in record_id and user_ID in record_id and date in record_id:
+                if record_name in self.processed_files[record_id][record_name]:
+                    return True
+                
+    def add_archived_record_to_dict(self, record_id, record_name):
+        # if the record has been archived, but the user want to append to the record
+        # check that the record is in the processed_files dictionary
+        # if it is, add the record_name to the records dictionary
+        if self._record_in_archive(record_id, record_name):
+            self.records_dict[record_name] = LocalRecord(record_name, record_id, in_db=True)
+
     #endregion
 
     #region 2. Archival and Record Management
@@ -432,13 +442,6 @@ class FileProcessor:
                 _, ext = os.path.splitext(file)
                 new_path = os.path.join(folder_path, base_name + ext)
                 os.rename(old_path, new_path)
-
-    def _record_in_archive(self, record_name):
-        if os.path.exists(self.archived_files_json):
-            with open(self.archived_files_json, 'r') as f:
-                archived_records = json.load(f)
-            return record_name in archived_records
-        return False
     #endregion
 
     #region 8. Moving and Directory Operations
