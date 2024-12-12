@@ -15,7 +15,7 @@ from watchdog.observers import Observer
 from kadi_apy import KadiManager
 from event_gui_session import FileEventHandler, GUIManager, SessionManager
 
-DEVICE_NAME = "REM_001"
+DEVICE_NAME = "REM_01"
 
 WATCH_DIR = r"monitored_folder"
 RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
@@ -24,7 +24,7 @@ ARCHIVE_DIR = os.path.join(WATCH_DIR, 'Archive')
 EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
 ARCHIVED_FILES_JSON = os.path.join(ARCHIVE_DIR, 'processed_files.json')
 
-FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9]+$')
+FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9-]+$')
 
 logging.basicConfig(filename='watchdog.log', level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -39,42 +39,48 @@ class LocalRecord:
         self.record_name = record_name
         self.record_id = record_id
         self.in_db = in_db
-        self.files = []
+        # files: { file_path: bool }
+        # True = already uploaded, False = not uploaded yet
+        self.file_uploaded = {}
         self.metadata = {}
 
     def add_item(self, path: str):
         if os.path.isfile(path):
-            self.files.append(path)
+            self.file_uploaded[path] = False
         elif os.path.isdir(path):
             for root, dirs, files in os.walk(path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    self.files.append(file_path)
+                    self.file_uploaded[file_path] = False
         else:
             logger.warning(f"Path '{path}' is neither a file nor a directory.")
 
     def get_file_count(self):
-        return len([f for f in self.files if not f.endswith('_metadata.json') and not f.endswith('.json')])
+        # Count only actual data files, excluding metadata files
+        # The logic remains the same, just adapted for dictionary keys
+        return len([f for f in self.file_uploaded.keys() 
+                    if not f.endswith('_metadata.json') and not f.endswith('.json')])
 
     def upload_to_database(self):
         try:
             with KadiManager() as db_manager:
-                if self.in_db:
-                    kadi_record = db_manager.record(identifier=self.record_id)
-                    for file_path in self.files:
-                        if not kadi_record.has_file(os.path.basename(file_path)):
-                            kadi_record.upload_file(file_path)
-                            logger.info(f"Uploaded file: {os.path.basename(file_path)}")
-                else:
-                    kadi_record = db_manager.record(create=True, identifier=self.record_id)
+                # Create a new record in the DB
+                kadi_record = db_manager.record(create=True, identifier=self.record_id)
+                
+                if not self.in_db:
                     kadi_record.set_attribute('title', self.record_name)
-                    for file_path in self.files:
-                        kadi_record.upload_file(file_path)
-                        logger.info(f"Uploaded file: {os.path.basename(file_path)}")
+                for file_path, uploaded in self.file_uploaded.items():
+                    if uploaded:
+                        continue
+                    kadi_record.upload_file(file_path)
+                    self.file_uploaded[file_path] = True
+                    logger.info(f"Uploaded file: {os.path.basename(file_path)}")
+                self.in_db = True
 
                 logger.info("Files have been synced to the database.")
         except Exception as e:
             logger.exception(f"Failed to upload files to the database: {e}")
+
 
 class MetadataExtractor:
     @staticmethod
@@ -201,110 +207,136 @@ class FileProcessor:
         self.staging_dir = staging_dir
         self.archive_dir = archive_dir
         self.exceptions_dir = exceptions_dir
-        self.input_pattern = input_pattern
-        self.gui_manager = gui_manager
-        self.session_manager = session_manager
+        self.input_pattern: re.Pattern = input_pattern
+        self.gui_manager: GUIManager = gui_manager
+        self.session_manager: SessionManager = session_manager
 
         self.data_type = ''
-        self.daily_counter = 0
-        self.records_dict = {}
-        self.archived_files_json = os.path.join(self.archive_dir, 'processed_files.json')
-        self.processed_files = self.load_processed_files_data()
+        self.daily_records_dict = {}  # {base_name: LocalRecord}
+        self.daily_records_json = os.path.join(self.archive_dir, 'daily_records.json')
+        self.load_daily_records()
 
-    #region 1. Data Loading and Persistence
-    def load_processed_files_data(self):
-        if os.path.exists(self.archived_files_json):
+        # Records DB in NDJSON format
+        # Each line is a separate JSON object representing a record entry.
+        self.records_db_path = os.path.join(self.archive_dir, 'records_db.ndjson')
+
+        # Dictionary for file-level uniqueness
+        self.file_counters = {}
+        # Dictionary for record-level uniqueness: {(date, institute, user_id): count}
+        self.record_counters = {}
+
+    #region Data Persistence
+    def load_daily_records(self):
+        if os.path.exists(self.daily_records_json):
             try:
-                with open(self.archived_files_json, 'r') as f:
-                    return json.load(f)
+                with open(self.daily_records_json, 'r') as f:
+                    self.daily_records_dict = json.load(f)
             except Exception as e:
-                logger.exception(f"Failed to load processed files data: {e}")
-                return {}
-        return {}
+                logger.exception(f"Failed to load daily records: {e}")
 
-    def save_processed_files_data(self):
+    def save_daily_records(self):
+        daily_data = {}
+        for record_key, lr in self.daily_records_dict.items():
+            lr: LocalRecord
+            files_basenames = [os.path.basename(fp) for fp in lr.file_uploaded.keys()]
+            files_uploaded = [uploaded for uploaded in lr.file_uploaded.values()]
+
+            #create a key value pair of basenames and uploaded status
+            files_uploaded = dict(zip(files_basenames, files_uploaded))
+
+            daily_data[record_key] = {
+                "record_ID": lr.record_id,
+                "record_name": lr.record_name,
+                "in_db": lr.in_db,
+                "files_uploaded": files_uploaded
+            }
+
         try:
-            with open(self.archived_files_json, 'w') as f:
-                json.dump(self.processed_files, f, indent=4)
-            logger.info("Processed files data saved.")
+            with open(self.daily_records_json, 'w') as f:
+                json.dump(daily_data, f, indent=4)
+            logger.info("Daily records saved.")
         except Exception as e:
-            logger.exception(f"Failed to save processed files data: {e}")
+            logger.exception(f"Failed to save daily records: {e}")
 
-    def update_archived_record(self, record_id, record_name, file_count):
-        # 
-        if record_id not in self.processed_files:
-            self.processed_files[record_id] = {"record_name": record_name, "file_count": 0}
-        self.processed_files[record_id]["file_count"] += file_count
-        logger.info(f"Updated count for record '{record_id}': {self.processed_files[record_id]} files.")
-        self.save_processed_files_data()
-    
-    def _record_in_archive(self, record_id, record_name):
-        # extract the institute, userID, and date from the record_id
-        parts = record_id.split('-')
-        institute = parts[3]
-        user_ID = parts[4]
-        date = parts[1]
+    def append_to_records_db(self, record: LocalRecord):
+        # Append a single record entry as NDJSON line
+        record_id = record.record_id
+        record_name = record.record_name
+        file_basenames = [os.path.basename(fp) for fp in record.file_uploaded.keys()]
 
-        # check if the institute, userID, and date are in a key in the processed_files dictionary
-        # if it is, confirm that the record_name is within the key dictionary
-        for record_id in self.processed_files.keys():
-            if institute in record_id and user_ID in record_id and date in record_id:
-                if record_name in self.processed_files[record_id][record_name]:
-                    return True
-                
-    def add_archived_record_to_dict(self, record_id, record_name):
-        # if the record has been archived, but the user want to append to the record
-        # check that the record is in the processed_files dictionary
-        # if it is, add the record_name to the records dictionary
-        if self._record_in_archive(record_id, record_name):
-            self.records_dict[record_name] = LocalRecord(record_name, record_id, in_db=True)
+        record_entry = {
+            "record_id": record_id,
+            "record_name": record_name,
+            "files": file_basenames,
+        }
 
+        try:
+            with open(self.records_db_path, 'a') as f:
+                f.write(json.dumps(record_entry) + "\n")
+            logger.info(f"Appended record '{record_id}' to records_db.ndjson.")
+        except Exception as e:
+            logger.exception(f"Failed to append to records_db: {e}")
     #endregion
 
-    #region 2. Archival and Record Management
-    def archive_record_files(self, record):
+    #region Record Management
+    def archive_record_files(self, record: LocalRecord):
         record_dir = os.path.join(self.archive_dir, record.record_id)
         if not os.path.exists(record_dir):
             os.mkdir(record_dir)
 
-        for i, file_path in enumerate(record.files):
+        new_file_uploaded = {}
+        for file_path, uploaded in record.file_uploaded.items():
             basename = os.path.basename(file_path)
-            dirname = os.path.split(os.path.dirname(file_path))[-1]
-
-            # Adjust name if within 'analysis' directories
-            if 'analysis' in dirname and 'analysis' not in basename:
-                new_basename = f'{dirname}_{basename}'
-                dest_path = os.path.join(record_dir, new_basename)
-            else:
-                dest_path = os.path.join(record_dir, basename)
+            dest_path = os.path.join(record_dir, basename)
+            if os.path.exists(dest_path):
+                new_file_uploaded[dest_path] = uploaded
+                continue
 
             try:
                 os.rename(file_path, dest_path)
-                record.files[i] = dest_path
+                new_file_uploaded[dest_path] = uploaded
                 logger.info(f"Archived file '{file_path}' to '{dest_path}'.")
             except Exception as e:
                 logger.exception(f"Failed to move file '{file_path}' to '{dest_path}': {e}")
 
-    def _update_record(self, base_name, record_ID, path, in_db=False):
-        if base_name not in self.records_dict:
-            parts = record_ID.split('-')
-            self.daily_counter += 1
-            parts.insert(2, f'REC_{self.daily_counter:03}')
-            record_ID = '-'.join(parts)
-            self.records_dict[base_name] = LocalRecord(base_name, record_ID, in_db)
-        self.records_dict[base_name].add_item(path)
+        record.file_uploaded = new_file_uploaded
+        self.save_daily_records()
+        self.append_to_records_db(record)
 
-    def reset_daily_counter(self):
-        self.daily_counter = 1
+    def _update_record(self, record_name, record_ID, path, in_db=False):
+        # TODO: Make this splitting logic more robust in case the record_ID format changes in the future
+        parts = record_ID.split('-')
+        date = parts[1]
+        institute = parts[3]
+        user_id = parts[4]
+        
+        daily_record_key = f"{institute}_{user_id}_{record_name}"
+
+        if daily_record_key not in self.daily_records_dict:
+
+            record_count_key = (date, institute, user_id)
+            current_count = self.record_counters.get(record_count_key, 0) + 1
+            self.record_counters[record_count_key] = current_count
+
+            rec_part = f"REC_{current_count:02}"
+            record_ID += f"-{rec_part}"
+
+            self.daily_records_dict[daily_record_key] = LocalRecord(record_name, record_ID, in_db)
+
+        self.daily_records_dict[daily_record_key].add_item(path)
+        self.save_daily_records()
 
     def get_record_dict_for_sync(self):
-        return self.records_dict
+        return self.daily_records_dict
 
-    def clear_records_dict(self):
-        self.records_dict.clear()
+    def clear_daily_records_dict(self):
+        self.save_daily_records
+        self.daily_records_dict.clear()
+        self.file_counters.clear()
+        self.record_counters.clear()
     #endregion
 
-    #region 3. Processing Incoming Paths
+    #region Processing Items
     def process_incoming_path(self, path):
         if os.path.isfile(path):
             self._process_item(path, is_folder=False)
@@ -320,6 +352,11 @@ class FileProcessor:
             return
 
         base_name = os.path.splitext(name)[0] if not is_folder else name
+        
+        # Check if the file is already in the daily records
+        if base_name in self.daily_records_dict:
+            if self.gui_manager.prompt_append_record(base_name):
+                self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=True)
 
         if self._matches_naming_convention(base_name):
             self._attempt_rename(path, base_name, extension, is_folder, notify=False)
@@ -327,7 +364,7 @@ class FileProcessor:
             self._prompt_rename(path, name, is_folder)
     #endregion
 
-    #region 4. Name and Data Type Validation
+    #region Validation
     def _identify_data_type(self, path, is_folder):
         if not is_folder and path.lower().endswith(('.tiff', '.tif')):
             self.data_type = 'img'
@@ -338,17 +375,17 @@ class FileProcessor:
         return False
 
     def _matches_naming_convention(self, base_name):
-        if self.input_pattern.match(base_name):
-            return True
+        return bool(self.input_pattern.match(base_name))
     #endregion
 
-    #region 5. User Interaction (Prompting and Validation)
-    def _prompt_rename(self, path, name, is_folder):
-        message = (
-            f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
-            "Format: Institute_UserName_SampleName"
-        )
-        self.gui_manager.show_warning("Invalid Name", message)
+    #region User Interaction
+    def _prompt_rename(self, path, name, is_folder, notify=True):
+        if notify:
+            message = (
+                f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
+                "Format: Institute_UserName_SampleName"
+            )
+            self.gui_manager.show_warning("Invalid Name", message)
 
         extension = os.path.splitext(name)[1] if not is_folder else ""
 
@@ -366,7 +403,15 @@ class FileProcessor:
 
             user_ID, institute, sample_ID = result
             base_name = f"{institute}_{user_ID}_{sample_ID}"
-            self._attempt_rename(path, base_name, extension, is_folder, notify=True)
+
+            # Check if the new name is already in the daily records
+            if base_name in self.daily_records_dict:
+                if self.gui_manager.prompt_append_record(sample_ID):
+                    self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=True)
+                else:
+                    self._move_to_rename_folder(path, name, is_folder)
+            else:
+                self._attempt_rename(path, base_name, extension, is_folder)
             break
 
     def validate_user_input(self, dialog_result):
@@ -382,53 +427,88 @@ class FileProcessor:
         return True, (user_ID, institute, sample_ID)
     #endregion
 
-    #region 6. Name Construction
-    def _construct_names_and_id(self, appended_base_name, extension):
-        
-        # TODO: There is a bit of redundancy here with the base_name construction.
-        # It is likely a result of the two paths for a filename, if it is valid when
-        # when saved to the monitored folder, and if it is not.
-        # low priority, but could be cleaned up for better readability.
-        appended_base_name = self._scrub_input(appended_base_name)
-        parts = appended_base_name.split('_')
+    #region Name Construction
+    def _construct_names_and_id(self, base_name, extension):
+        base_name = self._scrub_input(base_name)
+        parts = base_name.split('_')
 
         institute, user_ID, sample_ID = parts
         device_name = self.device_ID.split('_')[0]
         date = datetime.datetime.now().strftime('%Y%m%d')
-        
-        # TODO: Still toying with how exactly to name files. Stupidly identifiable names like these
-        # can become too long... perhaps just the sample_ID and counter would be enough.
-        # The other important identifiers are in the metadata.
-        # Needs more thought.
-        appended_base_name = f"{device_name}_{institute}_{user_ID}_{sample_ID}_{date}"
+
+        appended_base_name = f"{device_name}_{base_name}_{date}"
         record_ID = f"{self.device_ID}-{date}-{self.data_type}-{institute}-{user_ID}"
         record_name = sample_ID
-        new_file_path = os.path.join(self.staging_dir, appended_base_name + extension)
-        unique_new_file_path = self._get_unique_path(new_file_path)
-        
-        return appended_base_name, record_name, record_ID, unique_new_file_path
+
+        new_file_path = self._get_unique_file_path(record_ID, appended_base_name, extension)
+        return appended_base_name, record_name, record_ID, new_file_path
+
+    def _get_unique_file_path(self, record_id, appended_base_name, extension):
+        key = (record_id, appended_base_name)
+        current_count = self.file_counters.get(key, 0) + 1
+        self.file_counters[key] = current_count
+        filename = f"{appended_base_name}_{current_count}{extension}"
+        return os.path.join(self.staging_dir, filename)
     #endregion
 
-    #region 7. Renaming and Archive Checks
-    def _attempt_rename(self, path, base_name, extension, is_folder, notify=True):
+    #region Renaming
+    def _attempt_rename(self, path, base_name, extension, is_folder, notify=True, append=False):
         try:
             base_filename, record_name, record_ID, new_file_path = self._construct_names_and_id(base_name, extension)
-            self._move_item(path, new_file_path, is_folder)
 
-            if is_folder and self.data_type == 'elid':
-                self._rename_elid_files(new_file_path, base_filename)
+            if append:
+                self._move_item(path, new_file_path, is_folder)
+                if is_folder and self.data_type == 'elid':
+                    self._rename_elid_files(new_file_path, base_filename)
+                    # TODO: Move into a separate function, occurs in two places and should be consolidated
+                    for root, dirs, files in os.walk(new_file_path):
+                        dirname = os.path.split(root)[-1]
+                        for fname in files:
+                            if 'analysis' in dirname and 'analysis' not in fname:
+                                old_fp = os.path.join(root, fname)
+                                new_basename = f'{dirname}_{fname}'
+                                new_basename = new_basename.replace(' ', '-')
+                                new_fp = os.path.join(root, new_basename)
+                                os.rename(old_fp, new_fp)
+                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on analysis rule.")
+                            elif " " in fname:
+                                old_fp = os.path.join(root, fname)
+                                new_fp = os.path.join(root, fname.replace(' ', '-'))
+                                os.rename(old_fp, new_fp)
+                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on space rule.")
 
-            if notify:
-                self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
-            logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
-
-            if self._record_in_archive(base_filename):
-                if self.gui_manager.prompt_append_record(base_filename):
-                    self._update_and_manage_session(base_filename, record_ID, new_file_path)
+                    if notify:
+                        self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
+                    logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
+                    self._update_and_manage_session(record_name, record_ID, new_file_path)
                 else:
-                    # Prompt user again to rename if they want a new record
-                    self._prompt_rename(path, os.path.basename(path), is_folder)
+                    logger.info("User chose not to append to existing record. Re-prompting rename dialog.")
+                    self._prompt_rename(path, os.path.basename(path), is_folder, notify=False)
             else:
+                self._move_item(path, new_file_path, is_folder)
+                if is_folder and self.data_type == 'elid':
+                    self._rename_elid_files(new_file_path, base_filename)
+                    # TODO: Move into a separate function, occurs in two places and should be consolidated
+                    for root, dirs, files in os.walk(new_file_path):
+                        dirname = os.path.split(root)[-1]
+                        for fname in files:
+                            if 'analysis' in dirname and 'analysis' not in fname:
+                                old_fp = os.path.join(root, fname)
+                                new_basename = f'{dirname}_{fname}'
+                                new_basename = new_basename.replace(' ', '-')
+                                new_fp = os.path.join(root, new_basename)
+                                os.rename(old_fp, new_fp)
+                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on analysis rule.")
+                            elif " " in fname:
+                                old_fp = os.path.join(root, fname)
+                                new_fp = os.path.join(root, fname.replace(' ', '-'))
+                                os.rename(old_fp, new_fp)
+                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on space rule.")
+
+                if notify:
+                    self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
+                logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
+
                 self._update_and_manage_session(record_name, record_ID, new_file_path)
 
         except Exception as e:
@@ -444,7 +524,7 @@ class FileProcessor:
                 os.rename(old_path, new_path)
     #endregion
 
-    #region 8. Moving and Directory Operations
+    #region Directory Ops
     def _move_to_directory(self, path, directory, log_message):
         new_path = os.path.join(directory, os.path.basename(path))
         self._move_item(path, new_path, os.path.isdir(path))
@@ -459,7 +539,7 @@ class FileProcessor:
             os.rename(src, dest)
         except:
             shutil.move(src, dest)
-    
+
     def clear_staging_dir(self):
         for root, dirs, files in os.walk(self.staging_dir):
             for file in files:
@@ -468,7 +548,7 @@ class FileProcessor:
                 shutil.rmtree(os.path.join(root, dir))
     #endregion
 
-    #region 9. Session Management
+    #region Session Management
     def _manage_session(self):
         if not self.session_manager.session_active:
             self.session_manager.start_session()
@@ -481,28 +561,16 @@ class FileProcessor:
         self._manage_session()
     #endregion
 
-    #region 10. Utility Methods
+    #region Utility
     def _scrub_input(self, input_str):
         return re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
-
-    def _get_unique_path(self, dest_path):
-        directory, filename = os.path.split(dest_path)
-        base, extension = os.path.splitext(filename)
-        counter = 1
-        unique_filename = f"{base}_{counter}{extension}"
-        while os.path.exists(os.path.join(directory, unique_filename)):
-            counter += 1
-            unique_filename = f"{base}_{counter}{extension}"
-        return os.path.join(directory, unique_filename)
 
     def _generate_rename_filename(self, original_filename):
         _, ext = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
         new_filename = f"{self.device_ID}_rename-file_{date_str}{ext}"
-        new_path = os.path.join(self.rename_folder, new_filename)
-        return self._get_unique_path(new_path)
+        return self._get_unique_file_path(f"{self.device_ID}-{date_str}", f"{self.device_ID}_rename-file", ext)
     #endregion
-
 
 class DeviceWatchdogApp:
     """
@@ -532,6 +600,7 @@ class DeviceWatchdogApp:
                     os.remove(os.path.join(root, file))
                 for dir in dirs:
                     shutil.rmtree(os.path.join(root, dir))
+
 
         self.gui_manager = GUIManager()
         self.session_manager = SessionManager(session_timeout, self.end_session, self.gui_manager.root)
@@ -588,17 +657,21 @@ class DeviceWatchdogApp:
 
         for local_record in records_dict.values():
             local_record: LocalRecord
-            self.file_processor.archive_record_files(local_record)
-            self.file_processor.update_archived_record(local_record.record_id, local_record.get_file_count())
-            local_record.upload_to_database()
 
-        self.file_processor.clear_records_dict()
+            if local_record.in_db and all(local_record.file_uploaded.values()):
+                logger.info(f"Record '{local_record.record_name}' is already in the database.")
+                continue
+            
+            local_record.upload_to_database()
+            self.file_processor.archive_record_files(local_record)
+
         self.file_processor.clear_staging_dir()
 
     def process_events(self):
         while not self.event_queue.empty():
 
             # wait for file/folder to be fully written
+            # May need to be more dynamic in the future
             time.sleep(0.5)
 
             data_path = self.event_queue.get()
@@ -614,6 +687,7 @@ class DeviceWatchdogApp:
 
         if datetime.datetime.now().hour == 0:
             self.file_processor.reset_daily_counter()
+            self.file_processor.clear_daily_records_dict()
 
     def on_closing(self):
         if self.session_timer:
@@ -633,8 +707,8 @@ class DeviceWatchdogApp:
 
 
 if __name__ == "__main__":
-    testing = True
-    test_path = r"D:\Repos\ipat_data_watchdog\testing_data\test_elid"
+    testing = False
+    test_path = r""
 
     logger.info("Starting Device Watchdog application...")
     app = DeviceWatchdogApp(
