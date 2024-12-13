@@ -227,7 +227,7 @@ class FileProcessor:
                 with open(self.daily_records_json, 'r') as f:
                     daily_data = json.load(f)
                 for base_name, record_data in daily_data.items():
-                    lr = LocalRecord(record_data["record_name"], record_data["record_ID"], record_data.get("in_db", False))
+                    lr = LocalRecord(record_data["record_name"], record_data["record_id"], record_data.get("in_db", False))
                     file_uploaded = {fp: uploaded for fp, uploaded in record_data["files_uploaded"].items()}
                     lr.file_uploaded = file_uploaded
                     self.daily_records_dict[base_name] = lr
@@ -240,7 +240,7 @@ class FileProcessor:
             lr: LocalRecord
 
             daily_data[record_key] = {
-                "record_ID": lr.record_id,
+                "record_id": lr.record_id,
                 "record_name": lr.record_name,
                 "in_db": lr.in_db,
                 "files_uploaded": lr.file_uploaded,
@@ -256,11 +256,13 @@ class FileProcessor:
     def append_to_records_db(self, record: LocalRecord):
         # Append a single record entry as NDJSON line
         record_id = record.record_id
+        sync_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         record_name = record.record_name
         file_basenames = [os.path.basename(fp) for fp in record.file_uploaded.keys()]
 
         record_entry = {
             "record_id": record_id,
+            "upsync_time": sync_time,
             "record_name": record_name,
             "files": file_basenames,
         }
