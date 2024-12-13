@@ -220,17 +220,17 @@ class FileProcessor:
         # Each line is a separate JSON object representing a record entry.
         self.records_db_path = os.path.join(self.archive_dir, 'records_db.ndjson')
 
-        # Dictionary for file-level uniqueness
-        self.file_counters = {}
-        # Dictionary for record-level uniqueness: {(date, institute, user_id): count}
-        self.record_counters = {}
-
     #region Data Persistence
     def load_daily_records(self):
         if os.path.exists(self.daily_records_json):
             try:
                 with open(self.daily_records_json, 'r') as f:
-                    self.daily_records_dict = json.load(f)
+                    daily_data = json.load(f)
+                for base_name, record_data in daily_data.items():
+                    lr = LocalRecord(record_data["record_name"], record_data["record_ID"], record_data.get("in_db", False))
+                    file_uploaded = {fp: uploaded for fp, uploaded in record_data["files_uploaded"].items()}
+                    lr.file_uploaded = file_uploaded
+                    self.daily_records_dict[base_name] = lr
             except Exception as e:
                 logger.exception(f"Failed to load daily records: {e}")
 
@@ -238,17 +238,12 @@ class FileProcessor:
         daily_data = {}
         for record_key, lr in self.daily_records_dict.items():
             lr: LocalRecord
-            files_basenames = [os.path.basename(fp) for fp in lr.file_uploaded.keys()]
-            files_uploaded = [uploaded for uploaded in lr.file_uploaded.values()]
-
-            #create a key value pair of basenames and uploaded status
-            files_uploaded = dict(zip(files_basenames, files_uploaded))
 
             daily_data[record_key] = {
                 "record_ID": lr.record_id,
                 "record_name": lr.record_name,
                 "in_db": lr.in_db,
-                "files_uploaded": files_uploaded
+                "files_uploaded": lr.file_uploaded,
             }
 
         try:
@@ -313,13 +308,11 @@ class FileProcessor:
         daily_record_key = f"{institute}_{user_id}_{record_name}"
 
         if daily_record_key not in self.daily_records_dict:
+            # count the number of keys in daily_record_dict
+            current_count = len(self.daily_records_dict)+1
 
-            record_count_key = (date, institute, user_id)
-            current_count = self.record_counters.get(record_count_key, 0) + 1
-            self.record_counters[record_count_key] = current_count
-
-            rec_part = f"REC_{current_count:02}"
-            record_ID += f"-{rec_part}"
+            rec_part = f"REC_{current_count:03}"
+            record_ID = f"{self.device_ID}-{date}-{rec_part}-{self.data_type}-{institute}-{user_id}"
 
             self.daily_records_dict[daily_record_key] = LocalRecord(record_name, record_ID, in_db)
 
@@ -330,10 +323,8 @@ class FileProcessor:
         return self.daily_records_dict
 
     def clear_daily_records_dict(self):
-        self.save_daily_records
         self.daily_records_dict.clear()
-        self.file_counters.clear()
-        self.record_counters.clear()
+        self.save_daily_records
     #endregion
 
     #region Processing Items
@@ -353,12 +344,13 @@ class FileProcessor:
 
         base_name = os.path.splitext(name)[0] if not is_folder else name
         
-        # Check if the file is already in the daily records
-        if base_name in self.daily_records_dict:
+        # Check if the file is already in the daily records, and that the record is not already in the database
+        if base_name in self.daily_records_dict and self.daily_records_dict[base_name].in_db and all(self.daily_records_dict[base_name].file_uploaded.values()):
             if self.gui_manager.prompt_append_record(base_name):
                 self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=True)
-
-        if self._matches_naming_convention(base_name):
+            else:
+                self._prompt_rename(path, name, is_folder, notify=False, append=True)
+        elif self._matches_naming_convention(base_name):
             self._attempt_rename(path, base_name, extension, is_folder, notify=False)
         else:
             self._prompt_rename(path, name, is_folder)
@@ -367,10 +359,10 @@ class FileProcessor:
     #region Validation
     def _identify_data_type(self, path, is_folder):
         if not is_folder and path.lower().endswith(('.tiff', '.tif')):
-            self.data_type = 'img'
+            self.data_type = 'IMG'
             return True
         elif is_folder and any(f.endswith('.elid') for f in os.listdir(path)):
-            self.data_type = 'elid'
+            self.data_type = 'ELID'
             return True
         return False
 
@@ -379,13 +371,20 @@ class FileProcessor:
     #endregion
 
     #region User Interaction
-    def _prompt_rename(self, path, name, is_folder, notify=True):
+    def _prompt_rename(self, path, name, is_folder, notify=True, append=False):
         if notify:
             message = (
                 f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
                 "Format: Institute_UserName_SampleName"
             )
             self.gui_manager.show_warning("Invalid Name", message)
+        
+        if append:
+            message = (
+                f"Please provide the name for your new record\n"
+                "Format: Institute_UserName_SampleName"
+            )
+            self.gui_manager.show_info("New Record", message)
 
         extension = os.path.splitext(name)[1] if not is_folder else ""
 
@@ -395,7 +394,8 @@ class FileProcessor:
             if not is_valid:
                 if result == "User cancelled the dialog.":
                     logger.info("User cancelled the dialog.")
-                    self._move_to_rename_folder(path, name, is_folder)
+                    self._move_to_rename_folder(path, name)
+                    self.gui_manager.show_info("Operation Cancelled", "The file/folder has been moved to the rename folder.")
                     return
                 else:
                     self.gui_manager.show_warning("Incomplete Information", result)
@@ -409,7 +409,7 @@ class FileProcessor:
                 if self.gui_manager.prompt_append_record(sample_ID):
                     self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=True)
                 else:
-                    self._move_to_rename_folder(path, name, is_folder)
+                    self._prompt_rename(path, name, is_folder, notify=False, append=True)
             else:
                 self._attempt_rename(path, base_name, extension, is_folder)
             break
@@ -440,15 +440,25 @@ class FileProcessor:
         record_ID = f"{self.device_ID}-{date}-{self.data_type}-{institute}-{user_ID}"
         record_name = sample_ID
 
-        new_file_path = self._get_unique_file_path(record_ID, appended_base_name, extension)
+        new_file_path = self._get_unique_file_path(base_name, appended_base_name, extension)
         return appended_base_name, record_name, record_ID, new_file_path
 
-    def _get_unique_file_path(self, record_id, appended_base_name, extension):
-        key = (record_id, appended_base_name)
-        current_count = self.file_counters.get(key, 0) + 1
-        self.file_counters[key] = current_count
-        filename = f"{appended_base_name}_{current_count}{extension}"
-        return os.path.join(self.staging_dir, filename)
+    def _get_unique_file_path(self, base_name, appended_base_name, extension):
+        file_count = 1
+
+        if base_name not in self.daily_records_dict:
+            return os.path.join(self.staging_dir, f"{appended_base_name}_{file_count}{extension}")
+        
+        previous_paths = [f for f in self.daily_records_dict[base_name].file_uploaded.keys()]
+        previous_basenames = [os.path.basename(f) for f in previous_paths]
+
+        while True:
+            new_basename = f"{appended_base_name}_{file_count}{extension}"
+            if new_basename not in previous_basenames:
+                break
+            file_count += 1
+        
+        return os.path.join(self.staging_dir, new_basename)
     #endregion
 
     #region Renaming
@@ -456,64 +466,35 @@ class FileProcessor:
         try:
             base_filename, record_name, record_ID, new_file_path = self._construct_names_and_id(base_name, extension)
 
-            if append:
-                self._move_item(path, new_file_path, is_folder)
-                if is_folder and self.data_type == 'elid':
-                    self._rename_elid_files(new_file_path, base_filename)
-                    # TODO: Move into a separate function, occurs in two places and should be consolidated
-                    for root, dirs, files in os.walk(new_file_path):
-                        dirname = os.path.split(root)[-1]
-                        for fname in files:
-                            if 'analysis' in dirname and 'analysis' not in fname:
-                                old_fp = os.path.join(root, fname)
-                                new_basename = f'{dirname}_{fname}'
-                                new_basename = new_basename.replace(' ', '-')
-                                new_fp = os.path.join(root, new_basename)
-                                os.rename(old_fp, new_fp)
-                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on analysis rule.")
-                            elif " " in fname:
-                                old_fp = os.path.join(root, fname)
-                                new_fp = os.path.join(root, fname.replace(' ', '-'))
-                                os.rename(old_fp, new_fp)
-                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on space rule.")
+            self._move_item(path, new_file_path)
+            if is_folder and self.data_type == 'ELID':
+                self._rename_elid_files(new_file_path, base_filename)
+                # TODO: Move into a separate function, occurs in two places and should be consolidated
+                for root, dirs, files in os.walk(new_file_path):
+                    dirname = os.path.split(root)[-1]
+                    for fname in files:
+                        if 'analysis' in dirname and 'analysis' not in fname:
+                            old_fp = os.path.join(root, fname)
+                            new_basename = f'{dirname}_{fname}'
+                            new_basename = new_basename.replace(' ', '-')
+                            new_fp = os.path.join(root, new_basename)
+                            os.rename(old_fp, new_fp)
+                            logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on analysis rule.")
+                        elif " " in fname:
+                            old_fp = os.path.join(root, fname)
+                            new_fp = os.path.join(root, fname.replace(' ', '-'))
+                            os.rename(old_fp, new_fp)
+                            logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on space rule.")
 
-                    if notify:
-                        self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
-                    logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
-                    self._update_and_manage_session(record_name, record_ID, new_file_path)
-                else:
-                    logger.info("User chose not to append to existing record. Re-prompting rename dialog.")
-                    self._prompt_rename(path, os.path.basename(path), is_folder, notify=False)
-            else:
-                self._move_item(path, new_file_path, is_folder)
-                if is_folder and self.data_type == 'elid':
-                    self._rename_elid_files(new_file_path, base_filename)
-                    # TODO: Move into a separate function, occurs in two places and should be consolidated
-                    for root, dirs, files in os.walk(new_file_path):
-                        dirname = os.path.split(root)[-1]
-                        for fname in files:
-                            if 'analysis' in dirname and 'analysis' not in fname:
-                                old_fp = os.path.join(root, fname)
-                                new_basename = f'{dirname}_{fname}'
-                                new_basename = new_basename.replace(' ', '-')
-                                new_fp = os.path.join(root, new_basename)
-                                os.rename(old_fp, new_fp)
-                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on analysis rule.")
-                            elif " " in fname:
-                                old_fp = os.path.join(root, fname)
-                                new_fp = os.path.join(root, fname.replace(' ', '-'))
-                                os.rename(old_fp, new_fp)
-                                logger.info(f"Renamed '{old_fp}' to '{new_fp}' based on space rule.")
+            if notify:
+                self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
+            logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
+            self._update_and_manage_session(record_name, record_ID, new_file_path)
 
-                if notify:
-                    self.gui_manager.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
-                logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
-
-                self._update_and_manage_session(record_name, record_ID, new_file_path)
 
         except Exception as e:
             self.gui_manager.show_error("Error", f"Failed to rename: {e}")
-            self._move_to_rename_folder(path, os.path.basename(path), is_folder)
+            self._move_to_rename_folder(path, os.path.basename(path))
 
     def _rename_elid_files(self, folder_path, base_name):
         for file in os.listdir(folder_path):
@@ -527,14 +508,21 @@ class FileProcessor:
     #region Directory Ops
     def _move_to_directory(self, path, directory, log_message):
         new_path = os.path.join(directory, os.path.basename(path))
-        self._move_item(path, new_path, os.path.isdir(path))
+        self._move_item(path, new_path)
         logger.info(log_message)
 
-    def _move_to_rename_folder(self, path, name, is_folder=False):
-        new_path = self._generate_rename_filename(name)
-        self._move_item(path, new_path, is_folder)
+    def _move_to_rename_folder(self, path, name):
+        counter = 1
+        date_str = datetime.datetime.now().strftime('%Y%m%d')
+        new_path = date_str + '_' + name + '_' + str(counter)
+        new_path = os.path.join(self.rename_folder, new_path)
+        while os.path.exists(new_path):
+            counter += 1
+            new_path = date_str + '_' + name + '_' + str(counter)
+            new_path = os.path.join(self.rename_folder, new_path)
+        self._move_item(path, new_path)
 
-    def _move_item(self, src, dest, is_folder):
+    def _move_item(self, src, dest):
         try:
             os.rename(src, dest)
         except:
@@ -569,7 +557,7 @@ class FileProcessor:
         _, ext = os.path.splitext(original_filename)
         date_str = datetime.datetime.now().strftime('%Y%m%d')
         new_filename = f"{self.device_ID}_rename-file_{date_str}{ext}"
-        return self._get_unique_file_path(f"{self.device_ID}-{date_str}", f"{self.device_ID}_rename-file", ext)
+        return self._get_unique_file_path(new_filename, ext)
     #endregion
 
 class DeviceWatchdogApp:
