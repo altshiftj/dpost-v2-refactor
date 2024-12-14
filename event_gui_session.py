@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from watchdog.events import FileSystemEventHandler
+from abc import ABC, abstractmethod
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,17 +20,44 @@ class FileEventHandler(FileSystemEventHandler):
         logger.info(f"New file detected: {event.src_path}")
 
 
-class SessionManager:
+class SessionManagerInterface(ABC):
+    @abstractmethod
+    def start_session(self):
+        pass
+
+    @abstractmethod
+    def reset_timer(self):
+        pass
+
+    @abstractmethod
+    def end_session(self):
+        pass
+
+    @abstractmethod
+    def cancel(self):
+        pass
+
+    @property
+    @abstractmethod
+    def session_active(self) -> bool:
+        pass
+
+
+class SessionManager(SessionManagerInterface):
     def __init__(self, session_timeout, end_session_callback, root: tk.Tk):
         self.session_timeout = session_timeout * 1000  # milliseconds
-        self.session_active = False
+        self._session_active = False
         self.end_session_callback = end_session_callback
         self.root = root
         self.session_timer_id = None
 
+    @property
+    def session_active(self) -> bool:
+        return self._session_active
+
     def start_session(self):
-        if not self.session_active:
-            self.session_active = True
+        if not self._session_active:
+            self._session_active = True
             logger.info("Session started.")
             self.start_timer()
 
@@ -40,14 +68,14 @@ class SessionManager:
         logger.info("Session timer started/restarted.")
 
     def reset_timer(self):
-        if self.session_active:
+        if self._session_active:
             self.start_timer()
 
     def end_session(self):
-        if not self.session_active:
+        if not self._session_active:
             logger.warning("SessionManager.end_session called but session already ended. Skipping.")
             return
-        self.session_active = False
+        self._session_active = False
         if self.session_timer_id is not None:
             self.root.after_cancel(self.session_timer_id)
             self.session_timer_id = None
@@ -60,8 +88,39 @@ class SessionManager:
             self.root.after_cancel(self.session_timer_id)
             self.session_timer_id = None
 
+
+class UserInterface(ABC):
+    @abstractmethod
+    def show_warning(self, title: str, message: str):
+        pass
+
+    @abstractmethod
+    def show_info(self, title: str, message: str):
+        pass
+
+    @abstractmethod
+    def prompt_rename(self):
+        """
+        Returns a dict with user responses like:
+        {"name": ..., "institute": ..., "sample_ID": ...} or None if canceled.
+        """
+        pass
+
+    @abstractmethod
+    def prompt_append_record(self, record_name: str) -> bool:
+        pass
+
+    @abstractmethod
+    def show_error(self, title: str, message: str):
+        pass
+
+    @abstractmethod
+    def show_done_dialog(self, session_manager):
+        pass
+
+
 # GuiManager manages all GUI-related interactions using Tkinter
-class GUIManager:
+class GUIManager(UserInterface):
     """
     Manages all GUI-related interactions using Tkinter.
     """
