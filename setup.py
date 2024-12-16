@@ -1,0 +1,30 @@
+# setup.py
+
+from setuptools import setup, find_packages
+
+setup(
+    name='ipat_data_watchdog',
+    version='1.0.0',
+    packages=find_packages(),
+    install_requires=[
+        # List your dependencies here
+        'watchdog',
+        'tifffile',
+        'xmltodict',
+        'kadi_apy',
+        # Add other dependencies as needed
+    ],
+    entry_points={
+        'console_scripts': [
+            'device_watchdog=main:main',  # Adjust if your main function is named differently
+        ],
+    },
+    author='James Fitz',
+    author_email='james.fitz@tu-braunschweig.de',
+    description='A device watchdog application.',
+    url='https://github.com/yourusername/device_watchdog_app',  # Update with your repo URL
+    classifiers=[
+        'Programming Language :: Python :: 3',
+        'Operating System :: OS Independent',
+    ],
+)
