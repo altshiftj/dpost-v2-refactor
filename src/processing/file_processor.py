@@ -6,7 +6,7 @@ from src.storage.path_manager import PathManager
 from src.records.record_manager import RecordManager
 from src.sync.sync_manager import SyncManager
 from src.records.record_persistence import RecordPersistence
-from src.records.models import LocalRecord
+from src.records.local_record import LocalRecord
 from src.gui.gui_manager import UserInterface
 from src.sessions.session_controller import SessionController
 from src.sessions.session_manager import SessionManagerInterface
@@ -22,31 +22,25 @@ class FileProcessor:
     Handles file validation, renaming, moving, and archiving.
     """
     def __init__(
-        self, 
-        device_id, 
-        rename_folder, 
-        staging_dir, 
-        archive_dir, 
-        exceptions_dir,
+        self,
         ui: UserInterface, 
         session_manager: SessionManagerInterface,
     ):
-        self.device_id = device_id
         self.ui: UserInterface = ui
         self.session_manager: SessionManagerInterface = session_manager
 
         self.session_controller = SessionController(session_manager, ui)
-        self.paths = PathManager(archive_dir, staging_dir, rename_folder, exceptions_dir)
+        self.paths = PathManager()
         self.storage = StorageManager(path_manager=self.paths)
-        
-        daily_records_path = os.path.join(archive_dir, 'daily_records.json')
-        records_db_path = os.path.join(archive_dir, 'records_db.ndjson')
-        self.persistence = RecordPersistence(daily_records_path, records_db_path)
+
+        self.persistence = RecordPersistence()
         
         db_manager = KadiManager()
         self.sync = SyncManager(db_manager)
 
-        self.records = RecordManager(self.persistence, self.paths, device_id, '')
+        self.records = RecordManager()
+
+        self.item_data_type = None
 
     def archive_record_files(self, record: LocalRecord):
         self.storage.archive_record_files(record)
@@ -70,7 +64,8 @@ class FileProcessor:
         name = os.path.basename(path)
         extension = "" if is_folder else os.path.splitext(name)[1]
 
-        if not self._identify_data_type(path, is_folder):
+        valid, self.item_data_type = self.is_valid_datatype(path, is_folder)
+        if not valid:
             exception_path = self.paths.get_exception_path(name)
             self.storage.move_item(path, exception_path)
             logger.info(f"Moved '{name}' to exceptions directory.")
@@ -78,29 +73,25 @@ class FileProcessor:
 
         base_name = os.path.splitext(name)[0] if not is_folder else name
         
-        # Check if the file is already in the daily records, and that the record is not already in the database
-        # AND all files have been uploaded
         record = self.records.get_record_by_short_id(base_name)
         if record and record.is_in_db and all(record.file_uploaded.values()):
             if self.ui.prompt_append_record(base_name):
-                self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=True)
+                self.add_item_to_record(path, base_name, extension, self.item_data_type, is_folder, notify=False, append=True)
             else:
-                self._prompt_rename(path, name, is_folder, bad_name=False, new_record=True)
+                self.prompt_item_rename(path, name, is_folder, bad_name=False, new_record=True)
         elif self.paths.validate_naming_convention(base_name):
-            self._attempt_rename(path, base_name, extension, is_folder, notify=False)
+            self.add_item_to_record(path, base_name, extension, is_folder, notify=False)
         else:
-            self._prompt_rename(path, name, is_folder)
+            self.prompt_item_rename(path, name, is_folder)
 
-    def _identify_data_type(self, path, is_folder):
+    def is_valid_datatype(self, path, is_folder):
         if not is_folder and path.lower().endswith(('.tiff', '.tif')):
-            self.records.data_type = 'IMG'
-            return True
+            return True, 'IMG'
         elif is_folder and any(f.endswith('.elid') for f in os.listdir(path)):
-            self.records.data_type = 'ELID'
-            return True
-        return False
+            return True, 'ELID'
+        return False, None
 
-    def _prompt_rename(self, path, name, is_folder, bad_name=True, new_record=False):
+    def prompt_item_rename(self, path, name, is_folder, bad_name=True, new_record=False):
         if bad_name:
             message = (
                 f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
@@ -137,26 +128,26 @@ class FileProcessor:
             record = self.records.get_record_by_short_id(base_name)
             if record:
                 if self.ui.prompt_append_record(sample_ID):
-                    self._attempt_rename(path, base_name, extension, is_folder, notify=False, append=False)
+                    self.add_item_to_record(path, base_name, extension, is_folder, notify=False, append=False)
                 else:
-                    self._prompt_rename(path, name, is_folder, bad_name=False, new_record=True)
+                    self.prompt_item_rename(path, name, is_folder, bad_name=False, new_record=True)
             else:
-                self._attempt_rename(path, base_name, extension, is_folder)
+                self.add_item_to_record(path, base_name, extension, is_folder)
             break
 
-    def _attempt_rename(self, path, base_name, extension, is_folder, notify=True):
+    def add_item_to_record(self, path, base_name, extension, is_folder, notify=True):
         try:
-            base_filename, record_info, new_file_path = self.paths.construct_names_and_id(
+            file_id, record_info = self.paths.generate_identifiers(
                 base_name=base_name, 
-                extension=extension, 
-                data_type=self.records.data_type, 
-                record_count=self.records.get_num_records(), 
-                device_id=self.device_id
+                data_type=self.item_data_type, 
+                record_count=self.records.get_num_records(),
             )
 
+            new_file_path = self.paths.get_unique_filename(self.paths.staging_dir, file_id, extension)
+
             self.storage.move_item(path, new_file_path)
-            if is_folder and self.records.data_type == 'ELID':
-                self.storage.rename_elid_files(new_file_path, base_filename)
+            if is_folder and self.item_data_type == 'ELID':
+                self.storage.rename_elid_files(new_file_path, file_id)
             
             if notify:
                 self.ui.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")

@@ -1,15 +1,16 @@
 import json
 import os
 import datetime
-from src.records.models import LocalRecord
+from src.config.settings import DAILY_RECORDS_JSON, ARCHIVED_FILES_JSON
+from src.records.local_record import LocalRecord
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 class RecordPersistence:
-    def __init__(self, daily_records_path: str, records_db_path: str):
-        self.daily_records_path = daily_records_path
-        self.records_db_path = records_db_path
+    def __init__(self):
+        self.daily_records_path = DAILY_RECORDS_JSON
+        self.records_db_path = ARCHIVED_FILES_JSON
 
     def load_daily_records(self) -> dict:
         if os.path.exists(self.daily_records_path):

@@ -1,7 +1,7 @@
 import os
 import shutil
 
-from src.records.models import LocalRecord
+from src.records.local_record import LocalRecord
 from src.storage.path_manager import PathManager
 from src.app.logger import setup_logger
 
@@ -96,7 +96,7 @@ class StorageManager:
 
                 # Handle analysis directory renaming
                 if 'analysis' in dirname and 'analysis' not in fname:
-                    new_basename = f"{dirname}_{fname}".replace(' ', '-').replace('_', '-')
+                    new_basename = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
                     new_path = os.path.join(root, new_basename)
                     try:
                         self.move_item(old_path, new_path)

@@ -1,6 +1,6 @@
 import os
 
-from src.records.models import LocalRecord
+from src.records.local_record import LocalRecord
 from src.app.logger import setup_logger
 
 from kadi_apy import KadiManager

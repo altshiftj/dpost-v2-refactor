@@ -3,22 +3,18 @@ import re
 import datetime
 from typing import List, Tuple
 
-from src.records.models import RecordIdInfo, LocalRecord
-from src.config.settings import ARCHIVE_DIR, STAGING_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN
+from src.records.local_record import RecordInfo, LocalRecord
+from src.config.settings import ARCHIVE_DIR, STAGING_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
 
 class PathManager:
-    def __init__(
-        self, 
-        archive_dir: str, 
-        staging_dir: str, 
-        rename_dir: str, 
-        exceptions_dir: str
-    ):
-        self.archive_dir = os.path.abspath(archive_dir)
-        self.staging_dir = os.path.abspath(staging_dir)
-        self.rename_dir = os.path.abspath(rename_dir)
-        self.exceptions_dir = os.path.abspath(exceptions_dir)
-        self.naming_pattern = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9-]+$')  # Define your naming convention here
+    def __init__(self):
+        self.archive_dir = ARCHIVE_DIR
+        self.staging_dir = STAGING_DIR
+        self.rename_dir = RENAME_DIR
+        self.exceptions_dir = EXCEPTIONS_DIR
+        self.naming_pattern = FILENAME_PATTERN
+
+        self.device_id = DEVICE_ID
 
         # Ensure all directories exist
         for directory in [self.archive_dir, self.staging_dir, self.rename_dir, self.exceptions_dir]:
@@ -44,11 +40,11 @@ class PathManager:
             return False, "All fields are required."
         return True, (user_ID, institute, sample_ID)
 
-    def construct_long_id(self, id_info: RecordIdInfo) -> str:
+    def construct_long_id(self, id_info: RecordInfo) -> str:
         """Construct the long_id using RecordIdInfo."""
         return f"{id_info.device_id}-{id_info.date}-REC_{id_info.daily_record_count:03}-{id_info.institute}-{id_info.user_id}"
 
-    def construct_short_id(self, id_info: RecordIdInfo) -> str:
+    def construct_short_id(self, id_info: RecordInfo) -> str:
         """Construct the short_id using RecordIdInfo."""
         return f"{id_info.institute}-{id_info.user_id}-{id_info.sample_id}"
 
@@ -89,7 +85,7 @@ class PathManager:
 
     def construct_new_file_path(
         self, 
-        id_info: RecordIdInfo, 
+        id_info: RecordInfo, 
         extension: str, 
         existing_basenames: List[str]
     ) -> Tuple[str, str]:
@@ -111,7 +107,7 @@ class PathManager:
 
         return unique_base_name, unique_path
 
-    def parse_long_id(self, long_id: str) -> RecordIdInfo:
+    def parse_long_id(self, long_id: str) -> RecordInfo:
         """
         Parse a long_id string back into a RecordIdInfo object.
         
@@ -122,7 +118,7 @@ class PathManager:
         if not match:
             raise ValueError(f"Invalid long_id format: {long_id}")
 
-        id_info = RecordIdInfo(
+        id_info = RecordInfo(
             device_id=match.group('device_id'),
             date=match.group('date'),
             daily_record_count=int(match.group('daily_record_count')),
@@ -132,48 +128,22 @@ class PathManager:
             sample_id=""  # Sample ID is not included in long_id; handle accordingly
         )
         return id_info
-
-    def construct_names_and_id(
-        self, 
-        base_name: str, 
-        extension: str, 
-        data_type: str, 
-        record_count: int,
-        device_id: str
-    ) -> Tuple[str, RecordIdInfo, str]:
-        """
-        Construct names and ID based on the provided parameters.
-
-        Parameters:
-            base_name (str): The base name input.
-            extension (str): File extension.
-            data_type (str): Type of data (e.g., 'IMG', 'ELID').
-            existing_basenames (List[str]): List of existing base names to ensure uniqueness.
-            device_id (str): Device identifier.
-
-        Returns:
-            Tuple containing the appended base name, RecordIdInfo, and the unique file path.
-        """
-        cleaned_base = self.scrub_input(base_name)
-        parts = cleaned_base.split('_')
-        if len(parts) != 3:
-            raise ValueError("Base name must consist of Institute_UserName_Sample-Name")
-
-        institute, user_ID, sample_ID = parts
-        device_name = device_id.split('_')[0]
-        date = datetime.datetime.now().strftime('%Y%m%d')
-
-        record_naming_info = RecordIdInfo(
-            device_id=device_id,
-            date=date,
-            daily_record_count=record_count+1,
+    
+    def generate_identifiers(self, base_name: str, data_type: str, record_count: int) -> Tuple[str, RecordInfo, str]:
+        device_name = self.device_id.split('_')[0]
+        current_date = datetime.datetime.now().strftime('%Y%m%d')
+        user_ID, institute, sample_ID = base_name.split('_')
+        
+        record_info = RecordInfo(
+            device_id=self.device_id,
+            date=current_date,
+            daily_record_count=record_count,
             data_type=data_type,
             institute=institute,
             user_id=user_ID,
             sample_id=sample_ID
         )
 
-        appended_base_name = f"{device_name}_{cleaned_base}_{date}"
-
-        new_file_path = self.get_unique_filename(self.staging_dir, appended_base_name, extension)
-        return appended_base_name, record_naming_info, new_file_path
+        file_id = f"{device_name}_{institute}_{user_ID}_{sample_ID}_{current_date}"
+        
+        return file_id, record_info

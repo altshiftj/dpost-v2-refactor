@@ -6,6 +6,7 @@ import datetime
 import shutil
 from watchdog.observers import Observer
 
+from src.config.settings import WATCH_DIR, TESTING, TESTING_PATH
 from src.gui.gui_manager import GUIManager
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import FileProcessor
@@ -18,45 +19,25 @@ class DeviceWatchdogApp:
     """
     Main application class
     """
-    def __init__(
-        self,
-        watch_dir,
-        device_name,
-        rename_folder,
-        staging_dir,
-        archive_dir,
-        exceptions_dir,
-        test_path,
-        session_timeout=60,
-        testing=False,
-    ):
-        self.testing = testing
-        self.test_path = test_path
-        self.watch_dir = watch_dir
-        self.archive_dir = archive_dir
-        self.session_timeout = session_timeout
+    def __init__(self):
+        self.testing = TESTING
+        self.test_path = TESTING
+        self.watch_dir = WATCH_DIR
 
-        if testing:
-            for root, dirs, files in os.walk(watch_dir):
+        if self.testing: # Add logging for testing, move respective code to storage_manager
+            for root, dirs, files in os.walk(self.watch_dir):
                 for file in files:
                     os.remove(os.path.join(root, file))
                 for dir in dirs:
                     shutil.rmtree(os.path.join(root, dir))
 
         self.ui = GUIManager()
-        self.session_manager = SessionManager(session_timeout, self.end_session, self.ui.root)
-
-        os.makedirs(rename_folder, exist_ok=True)
-        os.makedirs(staging_dir, exist_ok=True)
-        os.makedirs(archive_dir, exist_ok=True)
-        os.makedirs(exceptions_dir, exist_ok=True)
+        self.session_manager = SessionManager(
+            root=self.ui.root, 
+            end_session_callback=self.end_session
+        )
 
         self.file_processor: FileProcessor = FileProcessor(
-            device_id=device_name,
-            rename_folder=rename_folder,
-            staging_dir=staging_dir,
-            archive_dir=archive_dir,
-            exceptions_dir=exceptions_dir,
             ui=self.ui,
             session_manager=self.session_manager
         )
@@ -65,9 +46,15 @@ class DeviceWatchdogApp:
         self.session_timer = None
 
         self.event_handler = FileEventHandler(self.event_queue)
+        
         self.observer = Observer()
-        self.observer.schedule(self.event_handler, path=self.watch_dir, recursive=False)
+        self.observer.schedule(
+            self.event_handler,
+            path=self.watch_dir,
+            recursive=False
+        )
         self.observer.start()
+        
         logger.info(f"Monitoring directory: {self.watch_dir}")
 
         self.ui.root.after(100, self.process_events)

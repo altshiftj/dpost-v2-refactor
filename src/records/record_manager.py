@@ -1,18 +1,19 @@
 import os
-from src.records.models import LocalRecord, RecordIdInfo
+
+from src.config.settings import DEVICE_ID
+
+from src.records.local_record import LocalRecord, RecordInfo
 from src.records.record_persistence import RecordPersistence
 from src.storage.path_manager import PathManager
 
 
 class RecordManager:
-    def __init__(self, persistence: RecordPersistence, path_manager: PathManager, device_ID: str, data_type: str):
-        self.persistence = persistence
-        self.paths = path_manager
-        self.device_ID = device_ID
-        self.data_type = data_type
+    def __init__(self):
+        self.persistence = RecordPersistence()
+        self.paths = PathManager()
         self.daily_records_dict = self.persistence.load_daily_records()
 
-    def get_or_create_record(self, record_info: RecordIdInfo) -> LocalRecord:
+    def get_or_create_record(self, record_info: RecordInfo) -> LocalRecord:
         daily_record_key = self.paths.construct_short_id(record_info)
         if daily_record_key not in self.daily_records_dict:
             self.daily_records_dict[daily_record_key] = LocalRecord(
@@ -23,7 +24,7 @@ class RecordManager:
         
         return self.daily_records_dict[daily_record_key]
 
-    def add_item_to_record(self, path: str, record_info: RecordIdInfo, in_db: bool=False):
+    def add_item_to_record(self, path: str, record_info: RecordInfo, in_db: bool=False):
         record = self.get_or_create_record(record_info)
         record.add_item(path)
         self.save_records()
@@ -58,3 +59,5 @@ class RecordManager:
         if not record:
             return []
         return [os.path.basename(fp) for fp in record.file_uploaded.keys()]
+    
+

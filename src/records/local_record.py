@@ -8,7 +8,7 @@ from src.app.logger import setup_logger
 logger = setup_logger(__name__)
 
 @dataclass
-class RecordIdInfo:
+class RecordInfo:
     device_id: str = "null"
     date: str = "null"
     daily_record_count: int = -1
@@ -22,6 +22,7 @@ class LocalRecord:
     long_id: str = "null"
     short_id: str = "null"
     name: str = "null"
+    data_type: str = "null"
     is_in_db: bool = False
     file_uploaded: Dict[str, bool] = field(default_factory=dict)
 
