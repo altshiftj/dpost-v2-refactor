@@ -25,11 +25,8 @@ class DeviceWatchdogApp:
         self.watch_dir = WATCH_DIR
 
         if self.testing: # Add logging for testing, move respective code to storage_manager
-            for root, dirs, files in os.walk(self.watch_dir):
-                for file in files:
-                    os.remove(os.path.join(root, file))
-                for dir in dirs:
-                    shutil.rmtree(os.path.join(root, dir))
+            logger.info("Running in testing mode.")
+            self._clear_watch_dir_for_testing()
 
         self.ui = GUIManager()
         self.session_manager = SessionManager(
@@ -61,6 +58,27 @@ class DeviceWatchdogApp:
         self.ui.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.ui.root.report_callback_exception = self.handle_exception
 
+    def _clear_watch_dir_for_testing(self):
+        """
+        Clears the watch directory by removing all files and subdirectories.
+        """
+        logger.info("Clearing watch directory for testing...")
+        for root, dirs, files in os.walk(self.watch_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                try:
+                    os.remove(file_path)
+                    logger.debug(f"Removed file: {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to remove file '{file_path}': {e}")
+            for dir in dirs:
+                dir_path = os.path.join(root, dir)
+                try:
+                    shutil.rmtree(dir_path)
+                    logger.debug(f"Removed directory: {dir_path}")
+                except Exception as e:
+                    logger.error(f"Failed to remove directory '{dir_path}': {e}")
+
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         logger.error("An unexpected error occurred", exc_info=(exc_type, exc_value, exc_traceback))
         self.ui.show_error("Application Error", "An unexpected error occurred. Please contact the administrator.")
@@ -84,24 +102,44 @@ class DeviceWatchdogApp:
 
     def process_events(self):
         while not self.event_queue.empty():
+            try:
+                data_path = self.event_queue.get_nowait()
+            except queue.Empty:
+                break  # No more items to process
 
-            # wait for file/folder to be fully written
-            # May need to be more dynamic in the future
-            time.sleep(0.5)
-
-            data_path = self.event_queue.get()
+            logger.debug(f"Dequeued file for processing: {data_path}")
             self.file_processor.process_item(data_path)
+
         self.ui.root.after(100, self.process_events)
 
+        # Handle testing logic
         if self.testing:
-            if os.path.isfile(self.test_path):
-                shutil.copy(self.test_path, self.watch_dir)
-            elif os.path.isdir(self.test_path):
-                shutil.copytree(self.test_path, os.path.join(self.watch_dir, os.path.basename(self.test_path)))
+            self._handle_testing()
             self.testing = False
 
-        if datetime.datetime.now().hour == 0:
+        # Daily reset at midnight
+        current_time = datetime.datetime.now()
+        if current_time.hour == 0 and current_time.minute == 0:
+            logger.info("End of day. Clearing daily records dict.")
             self.file_processor.clear_daily_records_dict()
+
+    def _handle_testing(self):
+        """
+        Handles testing by copying test files or directories to the watch directory.
+        """
+        if os.path.isfile(self.test_path):
+            try:
+                shutil.copy(self.test_path, self.watch_dir)
+                logger.info(f"Copied test file from '{self.test_path}' to '{self.watch_dir}'.")
+            except Exception as e:
+                logger.error(f"Failed to copy test file '{self.test_path}': {e}")
+        elif os.path.isdir(self.test_path):
+            destination = os.path.join(self.watch_dir, os.path.basename(self.test_path))
+            try:
+                shutil.copytree(self.test_path, destination)
+                logger.info(f"Copied test directory from '{self.test_path}' to '{destination}'.")
+            except Exception as e:
+                logger.error(f"Failed to copy test directory '{self.test_path}': {e}")
 
     def on_closing(self):
         if self.session_timer:

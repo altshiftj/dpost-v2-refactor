@@ -1,4 +1,5 @@
 import os
+import time
 
 from src.processing.metadata_extractor import MetadataExtractor
 from src.storage.storage_manager import StorageManager
@@ -43,58 +44,79 @@ class FileProcessor:
         # If there are any records in the daily records dict that are not fully in the database
         # upon startup, sync them to the database
         if not self.records.all_records_uploaded():
+            logger.info("Syncing records to database upon startup.")
             self.sync_records_to_database()
 
+        # State set by the data type of the current item being processed
+        # may be more appropriate to move this to a different class
         self.item_data_type = None
-
-    def archive_record_files(self, record: LocalRecord):
-        #self.storage.archive_record_files(record)
-
-        #self.records.save_records()
-        self.records.persistence.append_to_records_db(record)
-
-    def get_record_dict_for_sync(self) -> dict:
-        return self.records.daily_records_dict()
 
     def clear_daily_records_dict(self):
         self.records.clear_all_records()
 
+    def is_file_complete(self, path: str, check_interval: float = 0.1, max_checks: int = 5) -> bool:
+        """
+        Checks if a file is fully written by monitoring its size over time.
+
+        :param path: Path to the file to check.
+        :param check_interval: Time (in seconds) between size checks.
+        :param max_checks: Maximum number of size checks before giving up.
+        :return: True if the file size is stable, False otherwise.
+        """
+        try:
+            previous_size = -1
+            for _ in range(max_checks):
+                current_size = os.path.getsize(path)
+                if current_size == previous_size:
+                    return True
+                previous_size = current_size
+                time.sleep(check_interval)
+            return False
+        except FileNotFoundError:
+            logger.error(f"File not found during completion check: {path}")
+            return False
+        except Exception as e:
+            logger.error(f"Error checking if file is complete: {path}. Error: {e}")
+            return False
+        
     def process_item(self, path: str):
-        name = os.path.basename(path)
-        extension = os.path.splitext(name)[1]
+        if self.is_file_complete(path):
+            name = os.path.basename(path)
+            extension = os.path.splitext(name)[1]
 
-        valid, self.item_data_type = self.is_valid_datatype(path)
-        if not valid:
-            exception_path = self.paths.get_exception_path(name)
-            self.storage.move_item(path, exception_path)
-            logger.info(f"Moved '{name}' to exceptions directory.")
-            return
+            valid, self.item_data_type = self.is_valid_datatype(path)
+            if not valid:
+                exception_path = self.paths.get_exception_path(name)
+                self.storage.move_item(path, exception_path)
+                logger.info(f"Moved '{name}' to exceptions directory.")
+                return
 
-        base_name = os.path.splitext(name)[0]
-        
-        record = self.records.get_record_by_short_id(base_name)
-        
-        if record and record.is_in_db and record.all_files_uploaded():  
-            state = 'append_to_synced'
-        elif self.paths.validate_naming_convention(base_name):          
-            state = 'valid_record_name'
-        else:                                                           
-            state = 'invalid_name'
-
-        # Use match to handle different states
-        match state:
-            case 'append_to_synced':
-                if self.ui.prompt_append_record(base_name):
-                    self.add_item_to_record(record, path, base_name, extension)
-                else:
-                    self.prompt_item_rename(path, name, bad_name_prompt=False, new_record_prompt=True)
+            base_name = os.path.splitext(name)[0]
             
-            case 'valid_record_name':
-                self.add_item_to_record(record, path, base_name, extension, notify=False)
+            record = self.records.get_record_by_short_id(base_name)
             
-            case 'invalid_name':
-                self.prompt_item_rename(path, name)
+            if record and record.is_in_db and record.all_files_uploaded():  
+                state = 'append_to_synced'
+            elif self.paths.validate_naming_convention(base_name):          
+                state = 'valid_record_name'
+            else:                                                           
+                state = 'invalid_name'
 
+            # Use match to handle different states
+            match state:
+                case 'append_to_synced':
+                    if self.ui.prompt_append_record(base_name):
+                        self.add_item_to_record(record, path, base_name, extension)
+                    else:
+                        self.prompt_item_rename(path, name, bad_name_prompt=False, new_record_prompt=True)
+                
+                case 'valid_record_name':
+                    self.add_item_to_record(record, path, base_name, extension, notify=False)
+                
+                case 'invalid_name':
+                    self.prompt_item_rename(path, name)
+        else:
+            logger.warning(f"File not complete, skipping processing: {path}")
 
     def is_valid_datatype(self, path):
         if path.lower().endswith(('.tiff', '.tif')):
@@ -140,14 +162,11 @@ class FileProcessor:
             # if it is, and all of its files are uploaded, then this 
             # record was synced in a previous session
             record = self.records.get_record_by_short_id(base_name)
-
-            # Determine the current state based on conditions
             if record and record.is_in_db and record.all_files_uploaded():
                 state = 'append_to_synced'
             else:
                 state = 'create_new_record'
 
-            # Use match to handle different states
             match state:
                 case 'append_to_synced':
                     if self.ui.prompt_append_record(sample_ID):
@@ -192,10 +211,7 @@ class FileProcessor:
         except Exception as e:
             self.ui.show_error("Error", f"Failed to rename: {e}")
             path = self.paths.get_unique_filename(base_name)
-            self.storage.move_to_directory(path, self.exceptions_dir, f"Moved '{base_name}' to exceptions directory.")
-
-    def clear_staging_dir(self):
-        self.storage.clear_staging_dir()
+            self.storage.move_to_exception_folder(path)
 
     def sync_records_to_database(self):
         for record in self.records.get_all_records().values():

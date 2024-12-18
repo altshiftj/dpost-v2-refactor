@@ -4,12 +4,11 @@ import datetime
 from typing import List, Tuple
 
 from src.records.local_record import RecordInfo, LocalRecord
-from src.config.settings import ARCHIVE_DIR, STAGING_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
+from src.config.settings import RECORD_DIR, STAGING_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
 
 class PathManager:
     def __init__(self):
-        self.archive_dir = ARCHIVE_DIR
-        self.staging_dir = STAGING_DIR
+        self.record_dir = RECORD_DIR
         self.rename_dir = RENAME_DIR
         self.exceptions_dir = EXCEPTIONS_DIR
         self.naming_pattern = FILENAME_PATTERN
@@ -17,7 +16,7 @@ class PathManager:
         self.device_id = DEVICE_ID
 
         # Ensure all directories exist
-        for directory in [self.archive_dir, self.staging_dir, self.rename_dir, self.exceptions_dir]:
+        for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
             os.makedirs(directory, exist_ok=True)
 
     def scrub_input(self, input_str: str) -> str:
@@ -49,12 +48,8 @@ class PathManager:
         return f"{id_info.institute}_{id_info.user_id}_{id_info.sample_id}"
 
     def get_record_path(self, record: LocalRecord) -> str:
-        """Get the archive directory path for a given record."""
-        return os.path.join(self.archive_dir, record.long_id)
-
-    def get_staging_path(self, filename: str) -> str:
-        """Get the full path in the staging directory for a given filename."""
-        return os.path.join(self.staging_dir, filename)
+        """Get the directory path for a given record."""
+        return os.path.join(self.record_dir, record.long_id)
 
     def get_rename_path(self, name: str) -> str:
         """Generate a unique rename path for a given name."""
