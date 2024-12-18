@@ -22,7 +22,6 @@ class LocalRecord:
     long_id: str = "null"
     short_id: str = "null"
     name: str = "null"
-    data_type: str = "null"
     is_in_db: bool = False
     file_uploaded: Dict[str, bool] = field(default_factory=dict)
 
@@ -49,17 +48,19 @@ class LocalRecord:
 
     def to_dict(self) -> dict:
         return {
-            "record_id": self.long_id,
-            "record_name": self.short_id,
-            "in_db": self.is_in_db,
+            "short_id": self.short_id,
+            "long_id": self.long_id,
+            "name": self.name,
+            "is_in_db": self.is_in_db,
             "files_uploaded": self.file_uploaded,
         }
     
     @classmethod
     def from_dict(cls, data: dict) -> "LocalRecord":
         return cls(
-            record_name=data.get("record_name", ""),
-            record_id=data.get("record_id", ""),
-            is_in_db=data.get("in_db", False),
+            short_id=data.get("short_id", ""),
+            long_id=data.get("long_id", ""),
+            name=data.get("name", ""),
+            is_in_db=data.get("is_in_db", False),
             file_uploaded=data.get("files_uploaded", {})
         )

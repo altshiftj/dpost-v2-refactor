@@ -8,24 +8,22 @@ from src.storage.path_manager import PathManager
 
 
 class RecordManager:
-    def __init__(self):
-        self.persistence = RecordPersistence()
-        self.paths = PathManager()
+    def __init__(self, record_persistence: RecordPersistence, paths_manager: PathManager):
+        self.persistence = record_persistence
+        self.paths = paths_manager
         self.daily_records_dict = self.persistence.load_daily_records()
 
-    def get_or_create_record(self, record_info: RecordInfo) -> LocalRecord:
+    def create_record(self, record_info: RecordInfo) -> LocalRecord:
         daily_record_key = self.paths.construct_short_id(record_info)
-        if daily_record_key not in self.daily_records_dict:
-            self.daily_records_dict[daily_record_key] = LocalRecord(
-                long_id=self.paths.construct_long_id(record_info),
-                short_id=self.paths.construct_short_id(record_info),
-                name=record_info.sample_id
-            )
+        self.daily_records_dict[daily_record_key] = LocalRecord(
+            long_id=self.paths.construct_long_id(record_info),
+            short_id=self.paths.construct_short_id(record_info),
+            name=record_info.sample_id
+        )
         
         return self.daily_records_dict[daily_record_key]
 
-    def add_item_to_record(self, path: str, record_info: RecordInfo, in_db: bool=False):
-        record = self.get_or_create_record(record_info)
+    def add_item_to_record(self, path: str, record: LocalRecord):
         record.add_item(path)
         self.save_records()
 
@@ -60,4 +58,6 @@ class RecordManager:
             return []
         return [os.path.basename(fp) for fp in record.file_uploaded.keys()]
     
+    def all_records_uploaded(self) -> bool:
+        return all(record.all_files_uploaded() for record in self.daily_records_dict.values())
 

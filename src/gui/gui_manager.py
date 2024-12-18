@@ -62,7 +62,7 @@ class GUIManager(UserInterface):
         return dialog.result
 
     def prompt_append_record(self, record_name):
-        return messagebox.askyesno("Append to Existing Record", f"Record '{record_name}' has been previously synced. Add file to existing record?", parent=self.dialog_parent)
+        return messagebox.askyesno("Append to Existing Record", f"Record '{record_name}' was already created today. Add file to existing record?", parent=self.dialog_parent)
 
     def show_done_dialog(self, session_manager: SessionManager):
         if hasattr(self, 'done_dialog') and self.done_dialog.winfo_exists():

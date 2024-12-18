@@ -12,7 +12,7 @@ class StorageManager:
         self.path_manager = path_manager
 
     def archive_record_files(self, record: LocalRecord):
-        record_dir = self.path_manager.get_archive_path(record)
+        record_dir = self.path_manager.get_record_path(record)
         os.makedirs(record_dir, exist_ok=True)
 
         new_file_uploaded = {}
@@ -77,39 +77,68 @@ class StorageManager:
         self.move_item(path, unique_dest_path)
         logger.info(f"Moved '{path}' to rename folder at '{unique_dest_path}'.")
 
-    def rename_elid_files(self, folder_path: str, base_name: str):
-        for root, dirs, files in os.walk(folder_path):
-            dirname = os.path.basename(root)
+    def rename_and_move_elid_files(self, folder_path: str, base_name: str):
+        """
+        Renames and moves all .elid and .odt files from subdirectories into the main folder,
+        eliminates all subdirectories, and ensures all filenames are unique and follow naming conventions.
+        
+        :param folder_path: Path to the main folder containing subdirectories.
+        :param base_name: Base name to use for renaming certain files.
+        """
+        # Define the target directory (can be the main folder or a new one)
+        target_dir = folder_path  # Using the main folder as the target
+
+        # Keep track of renamed files to handle naming conflicts
+        renamed_files = {}
+
+        for root, dirs, files in os.walk(folder_path, topdown=False):
             for fname in files:
                 old_path = os.path.join(root, fname)
-                new_path = old_path
+                new_fname = fname  # Initialize with the original filename
 
                 # Handle .elid and .odt files
                 if fname.endswith('.elid') or fname.endswith('.odt'):
                     _, ext = os.path.splitext(fname)
-                    new_path = os.path.join(root, f"{base_name}{ext}")
-                    try:
-                        self.move_item(old_path, new_path)
-                        logger.info(f"Renamed '{old_path}' to '{new_path}'.")
-                    except Exception as e:
-                        logger.error(f"Failed to rename '{old_path}' to '{new_path}': {e}")
+                    new_fname = f"{base_name}{ext}"
+                    logger.debug(f"Handling .elid/.odt file: {fname} -> {new_fname}")
 
                 # Handle analysis directory renaming
+                dirname = os.path.basename(root)
                 if 'analysis' in dirname and 'analysis' not in fname:
-                    new_basename = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
-                    new_path = os.path.join(root, new_basename)
-                    try:
-                        self.move_item(old_path, new_path)
-                        logger.info(f"Renamed '{old_path}' to '{new_path}' based on analysis rule.")
-                    except Exception as e:
-                        logger.error(f"Failed to rename '{old_path}' to '{new_path}' based on analysis rule: {e}")
+                    new_fname = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
+                    logger.debug(f"Handling analysis directory file: {fname} -> {new_fname}")
 
-                # Handle space in filenames
-                elif " " in fname:
-                    new_basename = fname.replace(' ', '-').replace('_', '-')
-                    new_path = os.path.join(root, new_basename)
-                    try:
-                        self.move_item(old_path, new_path)
-                        logger.info(f"Renamed '{old_path}' to '{new_path}' based on space rule.")
-                    except Exception as e:
-                        logger.error(f"Failed to rename '{old_path}' to '{new_path}' based on space rule: {e}")
+                # Handle spaces and underscores in filenames
+                if " " in new_fname:
+                    new_fname = new_fname.replace(' ', '-').replace('_', '-')
+                    logger.debug(f"Handling spaces/underscores in filename: {fname} -> {new_fname}")
+
+                # Resolve naming conflicts
+                original_new_fname = new_fname
+                counter = 1
+                while new_fname in renamed_files or os.path.exists(os.path.join(target_dir, new_fname)):
+                    name, ext = os.path.splitext(original_new_fname)
+                    new_fname = f"{name}_{counter}{ext}"
+                    counter += 1
+                    logger.debug(f"Naming conflict detected. Trying new filename: {new_fname}")
+
+                renamed_files[new_fname] = True  # Mark this filename as used
+
+                new_path = os.path.join(target_dir, new_fname)
+
+                try:
+                    # Move and rename the file
+                    shutil.move(old_path, new_path)
+                    logger.info(f"Moved and renamed '{old_path}' to '{new_path}'.")
+                except Exception as e:
+                    logger.error(f"Failed to move and rename '{old_path}' to '{new_path}': {e}")
+
+            # After moving all files, remove the empty directory
+            try:
+                os.rmdir(root)
+                logger.info(f"Removed empty directory: '{root}'.")
+            except OSError:
+                # Directory not empty or other error
+                logger.warning(f"Could not remove directory (not empty or error): '{root}'.")
+
+        logger.info("All files have been moved and subdirectories eliminated.")

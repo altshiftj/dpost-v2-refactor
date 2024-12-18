@@ -21,7 +21,7 @@ class DeviceWatchdogApp:
     """
     def __init__(self):
         self.testing = TESTING
-        self.test_path = TESTING
+        self.test_path = TESTING_PATH
         self.watch_dir = WATCH_DIR
 
         if self.testing: # Add logging for testing, move respective code to storage_manager
@@ -90,7 +90,7 @@ class DeviceWatchdogApp:
             time.sleep(0.5)
 
             data_path = self.event_queue.get()
-            self.file_processor.process_incoming_path(data_path)
+            self.file_processor.process_item(data_path)
         self.ui.root.after(100, self.process_events)
 
         if self.testing:

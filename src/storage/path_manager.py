@@ -42,13 +42,13 @@ class PathManager:
 
     def construct_long_id(self, id_info: RecordInfo) -> str:
         """Construct the long_id using RecordIdInfo."""
-        return f"{id_info.device_id}-{id_info.date}-REC_{id_info.daily_record_count:03}-{id_info.institute}-{id_info.user_id}"
+        return f"{id_info.device_id}-{id_info.date}-REC_{id_info.daily_record_count:03}-{id_info.data_type}-{id_info.institute}-{id_info.user_id}"
 
     def construct_short_id(self, id_info: RecordInfo) -> str:
         """Construct the short_id using RecordIdInfo."""
-        return f"{id_info.institute}-{id_info.user_id}-{id_info.sample_id}"
+        return f"{id_info.institute}_{id_info.user_id}_{id_info.sample_id}"
 
-    def get_archive_path(self, record: LocalRecord) -> str:
+    def get_record_path(self, record: LocalRecord) -> str:
         """Get the archive directory path for a given record."""
         return os.path.join(self.archive_dir, record.long_id)
 
@@ -95,7 +95,7 @@ class PathManager:
         Returns:
             Tuple containing the new base name and the full file path.
         """
-        base_directory = self.get_archive_path(id_info)
+        base_directory = self.get_record_path(id_info)
         os.makedirs(base_directory, exist_ok=True)
 
         base_name = self.construct_short_id(id_info)
@@ -129,21 +129,26 @@ class PathManager:
         )
         return id_info
     
-    def generate_identifiers(self, base_name: str, data_type: str, record_count: int) -> Tuple[str, RecordInfo, str]:
-        device_name = self.device_id.split('_')[0]
+    def generate_new_record_info(self, base_name: str, data_type: str, record_count: int) -> Tuple[str, RecordInfo, str]:
         current_date = datetime.datetime.now().strftime('%Y%m%d')
-        user_ID, institute, sample_ID = base_name.split('_')
+        institute, user_ID, sample_ID = base_name.split('_')
         
         record_info = RecordInfo(
             device_id=self.device_id,
             date=current_date,
-            daily_record_count=record_count,
+            daily_record_count=record_count+1,
             data_type=data_type,
             institute=institute,
             user_id=user_ID,
             sample_id=sample_ID
         )
-
-        file_id = f"{device_name}_{institute}_{user_ID}_{sample_ID}_{current_date}"
         
-        return file_id, record_info
+        return record_info
+    
+    def generate_file_id(self, base_name) -> str:
+        device_name = self.device_id.split('_')[0]
+        current_date = datetime.datetime.now().strftime('%Y%m%d')
+        institute, user_ID, sample_ID = base_name.split('_')
+
+        return f"{device_name}_{institute}_{user_ID}_{sample_ID}_{current_date}"
+    

@@ -31,21 +31,26 @@ class FileProcessor:
 
         self.session_controller = SessionController(session_manager, ui)
         self.paths = PathManager()
-        self.storage = StorageManager(path_manager=self.paths)
+        self.storage = StorageManager(self.paths)
 
         self.persistence = RecordPersistence()
         
         db_manager = KadiManager()
         self.sync = SyncManager(db_manager)
 
-        self.records = RecordManager()
+        self.records = RecordManager(self.persistence, self.paths)
+
+        # If there are any records in the daily records dict that are not fully in the database
+        # upon startup, sync them to the database
+        if not self.records.all_records_uploaded():
+            self.sync_records_to_database()
 
         self.item_data_type = None
 
     def archive_record_files(self, record: LocalRecord):
-        self.storage.archive_record_files(record)
+        #self.storage.archive_record_files(record)
 
-        self.records.save_records()
+        #self.records.save_records()
         self.records.persistence.append_to_records_db(record)
 
     def get_record_dict_for_sync(self) -> dict:
@@ -53,60 +58,67 @@ class FileProcessor:
 
     def clear_daily_records_dict(self):
         self.records.clear_all_records()
- 
-    def process_incoming_path(self, path: str):
-        if os.path.isfile(path):
-            self._process_item(path, is_folder=False)
-        elif os.path.isdir(path):
-            self._process_item(path, is_folder=True)
 
-    def _process_item(self, path: str, is_folder=False):
+    def process_item(self, path: str):
         name = os.path.basename(path)
-        extension = "" if is_folder else os.path.splitext(name)[1]
+        extension = os.path.splitext(name)[1]
 
-        valid, self.item_data_type = self.is_valid_datatype(path, is_folder)
+        valid, self.item_data_type = self.is_valid_datatype(path)
         if not valid:
             exception_path = self.paths.get_exception_path(name)
             self.storage.move_item(path, exception_path)
             logger.info(f"Moved '{name}' to exceptions directory.")
             return
 
-        base_name = os.path.splitext(name)[0] if not is_folder else name
+        base_name = os.path.splitext(name)[0]
         
         record = self.records.get_record_by_short_id(base_name)
-        if record and record.is_in_db and all(record.file_uploaded.values()):
-            if self.ui.prompt_append_record(base_name):
-                self.add_item_to_record(path, base_name, extension, self.item_data_type, is_folder, notify=False, append=True)
-            else:
-                self.prompt_item_rename(path, name, is_folder, bad_name=False, new_record=True)
-        elif self.paths.validate_naming_convention(base_name):
-            self.add_item_to_record(path, base_name, extension, is_folder, notify=False)
-        else:
-            self.prompt_item_rename(path, name, is_folder)
+        
+        if record and record.is_in_db and record.all_files_uploaded():  
+            state = 'append_to_synced'
+        elif self.paths.validate_naming_convention(base_name):          
+            state = 'valid_record_name'
+        else:                                                           
+            state = 'invalid_name'
 
-    def is_valid_datatype(self, path, is_folder):
-        if not is_folder and path.lower().endswith(('.tiff', '.tif')):
+        # Use match to handle different states
+        match state:
+            case 'append_to_synced':
+                if self.ui.prompt_append_record(base_name):
+                    self.add_item_to_record(record, path, base_name, extension)
+                else:
+                    self.prompt_item_rename(path, name, bad_name_prompt=False, new_record_prompt=True)
+            
+            case 'valid_record_name':
+                self.add_item_to_record(record, path, base_name, extension, notify=False)
+            
+            case 'invalid_name':
+                self.prompt_item_rename(path, name)
+
+
+    def is_valid_datatype(self, path):
+        if path.lower().endswith(('.tiff', '.tif')):
             return True, 'IMG'
-        elif is_folder and any(f.endswith('.elid') for f in os.listdir(path)):
+        elif any(f.endswith('.elid') for f in os.listdir(path)):
             return True, 'ELID'
         return False, None
 
-    def prompt_item_rename(self, path, name, is_folder, bad_name=True, new_record=False):
-        if bad_name:
+    def prompt_item_rename(self, path, name, bad_name_prompt=True, new_record_prompt=False):
+        if bad_name_prompt:
             message = (
-                f"The {'folder' if is_folder else 'file'} '{name}' does not adhere to the naming convention.\n"
+                f"The {'folder' if os.path.isdir(path) else 'file'} '{name}' does not adhere to the naming convention.\n"
                 "Format: Institute_UserName_Sample-Name"
             )
             self.ui.show_warning("Invalid Name", message)
         
-        if new_record:
+        if new_record_prompt:
             message = (
                 f"Please provide the name for your new record\n"
                 "Format: Institute_UserName_Sample-Name"
             )
             self.ui.show_info("New Record", message)
 
-        extension = os.path.splitext(name)[1] if not is_folder else ""
+        extension = os.path.splitext(name)[1] 
 
         while True:
             dialog_result = self.ui.prompt_rename()
@@ -125,35 +137,56 @@ class FileProcessor:
             base_name = f"{institute}_{user_ID}_{sample_ID}"
 
             # Check if the new name is already in the daily records
+            # if it is, and all of its files are uploaded, then this 
+            # record was synced in a previous session
             record = self.records.get_record_by_short_id(base_name)
-            if record:
-                if self.ui.prompt_append_record(sample_ID):
-                    self.add_item_to_record(path, base_name, extension, is_folder, notify=False, append=False)
-                else:
-                    self.prompt_item_rename(path, name, is_folder, bad_name=False, new_record=True)
+
+            # Determine the current state based on conditions
+            if record and record.is_in_db and record.all_files_uploaded():
+                state = 'append_to_synced'
             else:
-                self.add_item_to_record(path, base_name, extension, is_folder)
+                state = 'create_new_record'
+
+            # Use match to handle different states
+            match state:
+                case 'append_to_synced':
+                    if self.ui.prompt_append_record(sample_ID):
+                        self.add_item_to_record(record, path, base_name, extension, notify=False)
+                    else:
+                        self.prompt_item_rename(path, name, bad_name_prompt=False, new_record_prompt=True)
+                
+                case 'create_new_record':
+                    self.add_item_to_record(record, path, base_name, extension, notify=True)
             break
 
-    def add_item_to_record(self, path, base_name, extension, is_folder, notify=True):
+    def add_item_to_record(self, record, path, base_name, extension, notify=True):
         try:
-            file_id, record_info = self.paths.generate_identifiers(
-                base_name=base_name, 
-                data_type=self.item_data_type, 
-                record_count=self.records.get_num_records(),
-            )
-
-            new_file_path = self.paths.get_unique_filename(self.paths.staging_dir, file_id, extension)
-
-            self.storage.move_item(path, new_file_path)
-            if is_folder and self.item_data_type == 'ELID':
-                self.storage.rename_elid_files(new_file_path, file_id)
+            if not record:
+                record_info = self.paths.generate_new_record_info(
+                    base_name=base_name, 
+                    data_type=self.item_data_type, 
+                    record_count=self.records.get_num_records(),
+                )
+                record = self.records.create_record(record_info)
             
+            file_id = self.paths.generate_file_id(base_name)
+
+            record_path = self.paths.get_record_path(record)
+            os.makedirs(record_path, exist_ok=True)
+
+            if self.item_data_type == 'ELID':
+                new_file_path = os.path.join(record_path, f"{file_id}")
+                self.storage.rename_and_move_elid_files(path, file_id)
+                self.storage.move_item(path, new_file_path)
+            else:
+                new_file_path = self.paths.get_unique_filename(record_path, file_id, extension)
+                self.storage.move_item(path, new_file_path)
+
             if notify:
-                self.ui.show_info("Success", f"{'Folder' if is_folder else 'File'} renamed to '{os.path.basename(new_file_path)}'")
-            logger.info(f"{'Folder' if is_folder else 'File'} '{path}' renamed to '{new_file_path}'.")
+                self.ui.show_info("Success", f"{'Folder' if os.path.isdir(path) else 'File'} renamed to '{os.path.basename(new_file_path)}'")
+            logger.info(f"{'Folder' if os.path.isdir(path) else 'File'} '{path}' renamed to '{new_file_path}'.")
             
-            self.records.add_item_to_record(new_file_path, record_info)
+            self.records.add_item_to_record(new_file_path, record)
             self.session_controller.manage_session()
 
         except Exception as e:
@@ -169,4 +202,5 @@ class FileProcessor:
             record: LocalRecord
             if not record.all_files_uploaded():
                 self.sync.sync_record_to_database(record)
-                self.archive_record_files(record)
+                self.records.save_records()
+                self.records.persistence.append_to_records_db(record)
