@@ -46,6 +46,10 @@ class FileProcessor:
         if not self.records.all_records_uploaded():
             logger.info("Syncing records to database upon startup.")
             self.sync_records_to_database()
+            # check the current date against the entries of the daily records
+            # if the date is different, clear the daily records dict
+            if not self.records.is_dict_up_to_date():
+                self.clear_daily_records_dict() 
 
         # State set by the data type of the current item being processed
         # may be more appropriate to move this to a different class
@@ -102,7 +106,6 @@ class FileProcessor:
             else:                                                           
                 state = 'invalid_name'
 
-            # Use match to handle different states
             match state:
                 case 'append_to_synced':
                     if self.ui.prompt_append_record(base_name):

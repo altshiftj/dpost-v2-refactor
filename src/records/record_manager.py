@@ -1,11 +1,14 @@
 import os
+import datetime
 
 from src.config.settings import DEVICE_ID
 
 from src.records.local_record import LocalRecord, RecordInfo
 from src.records.record_persistence import RecordPersistence
 from src.storage.path_manager import PathManager
+from src.app.logger import setup_logger
 
+logger = setup_logger(__name__)
 
 class RecordManager:
     def __init__(self, record_persistence: RecordPersistence, paths_manager: PathManager):
@@ -60,4 +63,14 @@ class RecordManager:
     
     def all_records_uploaded(self) -> bool:
         return all(record.all_files_uploaded() for record in self.daily_records_dict.values())
+    
+    def is_dict_up_to_date(self) -> bool:
+        if self.persistence.daily_records_date != datetime.datetime.now().strftime('%Y-%m-%d'):
+            logger.info("Daily records dictionary is out of date. Resetting.")
+            self.update_dict_date()
+            return False
+        return True
+    
+    def update_dict_date(self):
+        self.persistence.daily_records_date = datetime.datetime.now().strftime('%Y-%m-%d')
 

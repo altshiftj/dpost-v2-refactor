@@ -7,16 +7,14 @@ setup(
     version='1.0.0',
     packages=find_packages(),
     install_requires=[
-        # List your dependencies here
         'watchdog',
         'tifffile',
         'xmltodict',
         'kadi_apy',
-        # Add other dependencies as needed
     ],
     entry_points={
         'console_scripts': [
-            'device_watchdog=main:main',  # Adjust if your main function is named differently
+            'device_watchdog=main:main',
         ],
     },
     author='James Fitz',

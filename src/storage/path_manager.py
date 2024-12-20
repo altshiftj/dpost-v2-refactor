@@ -4,7 +4,7 @@ import datetime
 from typing import List, Tuple
 
 from src.records.local_record import RecordInfo, LocalRecord
-from src.config.settings import RECORD_DIR, STAGING_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
+from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
 
 class PathManager:
     def __init__(self):

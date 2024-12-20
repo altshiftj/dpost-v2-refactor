@@ -58,6 +58,8 @@ class DeviceWatchdogApp:
         self.ui.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.ui.root.report_callback_exception = self.handle_exception
 
+        self.dict_reset_done = False
+
     def _clear_watch_dir_for_testing(self):
         """
         Clears the watch directory by removing all files and subdirectories.
@@ -119,9 +121,13 @@ class DeviceWatchdogApp:
 
         # Daily reset at midnight
         current_time = datetime.datetime.now()
-        if current_time.hour == 0 and current_time.minute == 0:
+        if current_time.hour == 0 and not self.dict_reset_done:
             logger.info("End of day. Clearing daily records dict.")
             self.file_processor.clear_daily_records_dict()
+            self.dict_reset_done = True
+
+        if current_time.hour != 0:
+            self.dict_reset_done = False
 
     def _handle_testing(self):
         """

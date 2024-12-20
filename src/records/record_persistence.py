@@ -11,6 +11,7 @@ class RecordPersistence:
     def __init__(self):
         self.daily_records_path = DAILY_RECORDS_JSON
         self.records_db_path = ARCHIVED_FILES_JSON
+        self.daily_records_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
     def load_daily_records(self) -> dict:
         if os.path.exists(self.daily_records_path):
@@ -29,6 +30,7 @@ class RecordPersistence:
 
     def save_daily_records(self, daily_records_dict: dict):
         daily_data = {key: record.to_dict() for key, record in daily_records_dict.items()}
+
         try:
             with open(self.daily_records_path, 'w') as f:
                 json.dump(daily_data, f, indent=4)
