@@ -7,9 +7,9 @@ import shutil
 from watchdog.observers import Observer
 
 from src.config.settings import WATCH_DIR, TESTING, TESTING_PATH
-from src.gui.gui_manager import GUIManager
+from src.gui.gui_manager import UserInterface
 from src.handlers.file_event_handler import FileEventHandler
-from src.processing.file_processor import FileProcessor
+from src.processing.file_processor import BaseFileProcessor
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
 
@@ -19,32 +19,31 @@ class DeviceWatchdogApp:
     """
     Main application class
     """
-    def __init__(self):
+    def __init__(
+            self, 
+            file_processor: BaseFileProcessor,
+            ui: UserInterface,
+            session_manager: SessionManager,
+            event_handler: FileEventHandler,
+            observer,
+            event_queue: queue.Queue,
+        ):
         self.testing = TESTING
         self.test_path = TESTING_PATH
         self.watch_dir = WATCH_DIR
 
-        if self.testing: # Add logging for testing, move respective code to storage_manager
+        # TODO: Add logging for testing, move respective code to storage_manager and/or up to the main
+        if self.testing:             
             logger.info("Running in testing mode.")
             self._clear_watch_dir_for_testing()
 
-        self.ui = GUIManager()
-        self.session_manager = SessionManager(
-            root=self.ui.root, 
-            end_session_callback=self.end_session
-        )
-
-        self.file_processor: FileProcessor = FileProcessor(
-            ui=self.ui,
-            session_manager=self.session_manager
-        )
-
-        self.event_queue = queue.Queue()
-        self.session_timer = None
-
-        self.event_handler = FileEventHandler(self.event_queue)
+        self.ui: UserInterface                  = ui
+        self.session_manager: SessionManager    = session_manager
+        self.file_processor: BaseFileProcessor  = file_processor
+        self.event_queue: queue.Queue           = event_queue
+        self.event_handler: FileEventHandler    = event_handler
         
-        self.observer = Observer()
+        self.observer = observer
         self.observer.schedule(
             self.event_handler,
             path=self.watch_dir,
@@ -58,8 +57,11 @@ class DeviceWatchdogApp:
         self.ui.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.ui.root.report_callback_exception = self.handle_exception
 
+        self.session_manager.end_session_callback = self.end_session
+
         self.dict_reset_done = False
 
+    # TODO: Add logging for testing, move respective code to storage_manager and/or up to the main
     def _clear_watch_dir_for_testing(self):
         """
         Clears the watch directory by removing all files and subdirectories.
@@ -105,9 +107,9 @@ class DeviceWatchdogApp:
     def process_events(self):
         while not self.event_queue.empty():
             try:
-                data_path = self.event_queue.get_nowait()
+                data_path, _ = self.event_queue.get_nowait()
             except queue.Empty:
-                break  # No more items to process
+                break
 
             logger.debug(f"Dequeued file for processing: {data_path}")
             self.file_processor.process_item(data_path)
@@ -148,8 +150,8 @@ class DeviceWatchdogApp:
                 logger.error(f"Failed to copy test directory '{self.test_path}': {e}")
 
     def on_closing(self):
-        if self.session_timer:
-            self.session_timer.cancel()
+        if self.session_manager.session_active():
+            self.session_manager.end_session()
         self.observer.stop()
         self.observer.join()
         self.ui.destroy()

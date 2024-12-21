@@ -1,8 +1,8 @@
-from src.sessions.session_manager import SessionManagerInterface
+from src.sessions.session_manager import SessionManager
 from src.gui.gui_manager import UserInterface
 
 class SessionController:
-    def __init__(self, session_manager: SessionManagerInterface, ui: UserInterface):
+    def __init__(self, session_manager: SessionManager, ui: UserInterface):
         self.session_manager = session_manager
         self.ui = ui
 
