@@ -1,34 +1,11 @@
 import tkinter as tk
-from abc import ABC, abstractmethod
+
 from src.config.settings import SESSION_TIMEOUT
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class SessionManagerInterface(ABC):
-    @abstractmethod
-    def start_session(self):
-        pass
-
-    @abstractmethod
-    def reset_timer(self):
-        pass
-
-    @abstractmethod
-    def end_session(self):
-        pass
-
-    @abstractmethod
-    def cancel(self):
-        pass
-
-    @property
-    @abstractmethod
-    def session_active(self) -> bool:
-        pass
-
-
-class SessionManager(SessionManagerInterface):
+class SessionManager():
     def __init__(self, root: tk.Tk, end_session_callback):
         self.session_timeout = SESSION_TIMEOUT * 1000  # milliseconds
         self._session_active = False

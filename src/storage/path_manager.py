@@ -4,7 +4,7 @@ import datetime
 from typing import List, Tuple
 
 from src.records.local_record import RecordInfo, LocalRecord
-from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, DEVICE_ID
+from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN
 
 class PathManager:
     def __init__(self):
@@ -12,8 +12,6 @@ class PathManager:
         self.rename_dir = RENAME_DIR
         self.exceptions_dir = EXCEPTIONS_DIR
         self.naming_pattern = FILENAME_PATTERN
-
-        self.device_id = DEVICE_ID
 
         # Ensure all directories exist
         for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
@@ -38,14 +36,6 @@ class PathManager:
         if not user_ID or not institute or not sample_ID:
             return False, "All fields are required."
         return True, (user_ID, institute, sample_ID)
-
-    def construct_long_id(self, id_info: RecordInfo) -> str:
-        """Construct the long_id using RecordIdInfo."""
-        return f"{id_info.device_id}-{id_info.date}-REC_{id_info.daily_record_count:03}-{id_info.data_type}-{id_info.institute}-{id_info.user_id}"
-
-    def construct_short_id(self, id_info: RecordInfo) -> str:
-        """Construct the short_id using RecordIdInfo."""
-        return f"{id_info.institute}_{id_info.user_id}_{id_info.sample_id}"
 
     def get_record_path(self, record: LocalRecord) -> str:
         """Get the directory path for a given record."""
@@ -101,49 +91,3 @@ class PathManager:
         unique_base_name = os.path.basename(unique_path)
 
         return unique_base_name, unique_path
-
-    def parse_long_id(self, long_id: str) -> RecordInfo:
-        """
-        Parse a long_id string back into a RecordIdInfo object.
-        
-        Expected format: "{device_id}-{date}-REC_{daily_record_count}-{institute}-{user_id}"
-        """
-        pattern = r'^(?P<device_id>[A-Za-z0-9_-]+)-(?P<date>\d{8})-REC_(?P<daily_record_count>\d{3})-(?P<institute>[A-Za-z0-9_-]+)-(?P<user_id>[A-Za-z0-9_-]+)$'
-        match = re.match(pattern, long_id)
-        if not match:
-            raise ValueError(f"Invalid long_id format: {long_id}")
-
-        id_info = RecordInfo(
-            device_id=match.group('device_id'),
-            date=match.group('date'),
-            daily_record_count=int(match.group('daily_record_count')),
-            data_type="",  # Data type might need to be inferred or stored separately
-            institute=match.group('institute'),
-            user_id=match.group('user_id'),
-            sample_id=""  # Sample ID is not included in long_id; handle accordingly
-        )
-        return id_info
-    
-    def generate_new_record_info(self, base_name: str, data_type: str, record_count: int) -> Tuple[str, RecordInfo, str]:
-        current_date = datetime.datetime.now().strftime('%Y%m%d')
-        institute, user_ID, sample_ID = base_name.split('_')
-        
-        record_info = RecordInfo(
-            device_id=self.device_id,
-            date=current_date,
-            daily_record_count=record_count+1,
-            data_type=data_type,
-            institute=institute,
-            user_id=user_ID,
-            sample_id=sample_ID
-        )
-        
-        return record_info
-    
-    def generate_file_id(self, base_name) -> str:
-        device_name = self.device_id.split('_')[0]
-        current_date = datetime.datetime.now().strftime('%Y%m%d')
-        institute, user_ID, sample_ID = base_name.split('_')
-
-        return f"{device_name}_{institute}_{user_ID}_{sample_ID}_{current_date}"
-    
