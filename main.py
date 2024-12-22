@@ -1,4 +1,5 @@
 from src.app.logger import setup_logger
+from src.config.settings import DEVICE_ID
 from src.app.main_app import DeviceWatchdogApp
 from src.gui.gui_manager import GUIManager
 from src.sessions.session_manager import SessionManager
@@ -8,6 +9,7 @@ from src.storage.path_manager import PathManager
 from src.storage.storage_manager import StorageManager
 from src.records.record_persistence import RecordPersistence
 from src.records.record_manager import RecordManager
+from src.records.id_generator import IdGenerator
 from src.sync.sync_manager import SyncManager
 from src.processing.file_processor import SEMFileProcessor
 
@@ -20,7 +22,9 @@ def main():
 
     paths = PathManager()
     persistence = RecordPersistence()
-    records = RecordManager(persistence, paths)
+    ids = IdGenerator(DEVICE_ID)
+    records = RecordManager(persistence, paths, ids)
+
     sync = SyncManager(db_manager=KadiManager())
     storage = StorageManager(paths)
 
@@ -30,16 +34,17 @@ def main():
     observer = Observer()
 
     ui = GUIManager()
-    session = SessionManager(ui.root, end_session_callback=None)
-    session_controller = SessionController(session, ui)
+    session_manager = SessionManager(ui.root, end_session_callback=None)
+    session_controller = SessionController(session_manager, ui)
 
     file_processor = SEMFileProcessor(
         ui=ui,
-        session_manager=session,
+        session_manager=session_manager,
         session_controller=session_controller,
         paths=paths,
         storage=storage,
         persistence=persistence,
+        ids=ids,
         sync=sync,
         records=records
     )
@@ -47,7 +52,7 @@ def main():
     app = DeviceWatchdogApp(
         file_processor = file_processor,
         ui = ui,
-        session_manager = session,
+        session_manager = session_manager,
         event_handler = event_handler,
         observer = observer,
         event_queue = event_queue,

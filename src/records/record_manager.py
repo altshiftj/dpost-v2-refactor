@@ -1,26 +1,29 @@
 import os
 import datetime
+from typing import Dict
 
 from src.config.settings import DEVICE_ID
 
 from src.records.local_record import LocalRecord, RecordInfo
 from src.records.record_persistence import RecordPersistence
+from src.records.id_generator import IdGenerator
 from src.storage.path_manager import PathManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 class RecordManager:
-    def __init__(self, record_persistence: RecordPersistence, paths_manager: PathManager):
+    def __init__(self, record_persistence: RecordPersistence, paths_manager: PathManager, id_generator: IdGenerator):
         self.persistence = record_persistence
         self.paths = paths_manager
-        self.daily_records_dict = self.persistence.load_daily_records()
+        self.ids = id_generator
+        self.daily_records_dict: Dict[str, LocalRecord] = self.persistence.load_daily_records()
 
     def create_record(self, record_info: RecordInfo) -> LocalRecord:
-        daily_record_key = self.paths.construct_short_id(record_info)
+        daily_record_key = self.ids.construct_short_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
-            long_id=self.paths.construct_long_id(record_info),
-            short_id=self.paths.construct_short_id(record_info),
+            long_id=self.ids.construct_long_id(record_info),
+            short_id=self.ids.construct_short_id(record_info),
             name=record_info.sample_id
         )
         
