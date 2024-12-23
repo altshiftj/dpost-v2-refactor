@@ -60,7 +60,6 @@ class BaseFileProcessor(ABC):
         storage:            IStorageManager,
         persistence:        RecordPersistence,
         ids:                IdGenerator,
-        sync:               ISyncManager,
         records:            RecordManager,
     ):
         """
@@ -83,7 +82,6 @@ class BaseFileProcessor(ABC):
         self.storage:               IStorageManager     = storage
         self.persistence:           RecordPersistence   = persistence
         self.ids:                   IdGenerator         = ids
-        self.sync:                  ISyncManager        = sync
         self.records:               RecordManager       = records
 
         # If any record is not fully uploaded, do an initial sync on startup:
@@ -146,6 +144,10 @@ class BaseFileProcessor(ABC):
         :param extension: The extension part of the name, e.g., '.tif' or ''.
         :param path: The full path to the file or folder.
         """
+        # Initially ensure the record dictionary is for the current date
+        if not self.records.is_dict_up_to_date():
+            self.records.reset_dict_date()
+
         base_name = os.path.splitext(name)[0]  # e.g. "IPAT_MuS_Sample1"
         record = self.records.get_record_by_short_id(base_name)
         
@@ -288,6 +290,9 @@ class BaseFileProcessor(ABC):
             path = self.paths.get_unique_filename(base_name)  # Fallback path
             self.storage.move_to_exception_folder(path)
 
+    def sync_records_to_database(self):
+        self.records.sync_records_to_database()
+
     @abstractmethod
     def device_specific_processing(
         self, record_path, file_id, source_path, base_name, extension
@@ -298,20 +303,6 @@ class BaseFileProcessor(ABC):
         This method is expected to return the final path where the item ends up.
         """
         raise NotImplementedError
-
-    def sync_records_to_database(self):
-        """
-        Iterates through all records in memory and attempts to sync any that are
-        not fully uploaded to the remote database/system. After syncing, the records
-        are saved to disk, and an entry is appended to the records database.
-        """
-        for record in self.records.get_all_records().values():
-            record: LocalRecord
-            if not record.all_files_uploaded():
-                # If any file in the record is not yet uploaded, attempt to sync
-                self.sync.sync_record_to_database(record)
-                self.records.save_records()
-                self.records.persistence.append_to_records_db(record)
 
 
 class SEMFileProcessor(BaseFileProcessor):

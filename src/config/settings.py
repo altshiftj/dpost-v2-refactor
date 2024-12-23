@@ -4,7 +4,7 @@ import logging
 from kadi_apy import KadiManager
 
 DEVICE_ID = "REM_01"
-DEVICE_DBRECORD_ID = 190
+DEVICE_RECORD_ID = 190
 
 WATCH_DIR = os.path.abspath("monitored_folder")
 RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
@@ -22,7 +22,7 @@ LOG_FILE = 'watchdog.log'
 
 SESSION_TIMEOUT = 300 # 5 minutes
 
-DEBOUNCE_TIME = 1.0
+DEBOUNCE_TIME = 0.5
 
 DEFAULT_REM_RECORD_DESCRIPTION = """
 # Default Description

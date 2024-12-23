@@ -23,9 +23,9 @@ def main():
     paths = PathManager()
     persistence = RecordPersistence()
     ids = IdGenerator(DEVICE_ID)
-    records = RecordManager(persistence, paths, ids)
-
     sync = SyncManager(db_manager=KadiManager())
+    records = RecordManager(persistence, paths, ids, sync)
+
     storage = StorageManager(paths)
 
     event_queue = queue.Queue()
@@ -45,7 +45,6 @@ def main():
         storage=storage,
         persistence=persistence,
         ids=ids,
-        sync=sync,
         records=records
     )
 
