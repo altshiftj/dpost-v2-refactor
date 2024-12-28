@@ -32,11 +32,6 @@ class DeviceWatchdogApp:
       4. Testing logic (if enabled),
       5. Session management and database synchronization,
       6. Graceful shutdown logic.
-
-    Usage:
-        # Instantiate and run:
-        app = DeviceWatchdogApp(...)
-        app.run()
     """
     def __init__(
             self, 

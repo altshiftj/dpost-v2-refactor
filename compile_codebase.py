@@ -28,6 +28,9 @@ def compile_codebase(source_dir, output_file, extensions=None):
                                 print(f'Skipped empty file: {file_path}')
                                 continue
                             content = infile.read()
+                            # remove any docstrings
+                            content = '\n'.join([line for line in content.split('\n') if not line.strip().startswith('"""')])
+                        
                         # Write a header for each file
                         outfile.write(f'\n\n# ======= {file_path} =======\n')
                         outfile.write(content)

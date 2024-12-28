@@ -39,9 +39,9 @@ class RecordManager:
     """
 
     def __init__(
-        self, 
-        record_persistence: RecordPersistence, 
+        self,  
         paths_manager: PathManager, 
+        record_persistence: RecordPersistence,
         id_generator: IdGenerator,
         sync_manager: ISyncManager
     ):
@@ -55,13 +55,13 @@ class RecordManager:
         :param id_generator: Helps generate unique record/file IDs based on naming conventions.
         :param sync_manager: Handles synchronization of records with a remote database/system.
         """
-        self.persistence = record_persistence
         self.paths = paths_manager
+        self.persistence = record_persistence
         self.ids = id_generator
         self.sync = sync_manager
 
         # Dictionary of records for the current day,
-        # keyed by their short_id (e.g., "IPAT_John_SampleA")
+        # keyed by their short_id (e.g., "IPAT_John_Sample-A")
         self.daily_records_dict: Dict[str, LocalRecord] = self.persistence.load_daily_records()
 
     def create_record(self, record_info: RecordInfo) -> LocalRecord:
@@ -75,6 +75,7 @@ class RecordManager:
         """
         daily_record_key = self.ids.construct_short_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
+            record_info=record_info,
             long_id=self.ids.construct_long_id(record_info),
             short_id=self.ids.construct_short_id(record_info),
             name=record_info.sample_id  # User-friendly display name

@@ -26,8 +26,6 @@ from src.storage.path_manager import PathManager
 from src.records.record_manager import RecordManager
 from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
-from src.records.local_record import LocalRecord
-from src.sync.sync_manager import ISyncManager
 from src.gui.gui_manager import UserInterface
 from src.sessions.session_controller import SessionController
 from src.sessions.session_manager import SessionManager
@@ -54,7 +52,6 @@ class BaseFileProcessor(ABC):
     def __init__(
         self,
         ui:                 UserInterface,
-        session_manager:    SessionManager,
         session_controller: SessionController,
         paths:              PathManager,
         storage:            IStorageManager,
@@ -76,7 +73,6 @@ class BaseFileProcessor(ABC):
         :param records: Manages in-memory record objects, creation, and updating.
         """
         self.ui:                    UserInterface       = ui
-        self.session_manager:       SessionManager      = session_manager
         self.session_controller:    SessionController   = session_controller
         self.paths:                 PathManager         = paths
         self.storage:               IStorageManager     = storage
@@ -89,19 +85,10 @@ class BaseFileProcessor(ABC):
             logger.info("Syncing records to database upon startup.")
             self.sync_records_to_database()
             if not self.records.is_dict_up_to_date():
-                self.clear_daily_records_dict()
+                self.records.clear_all_records()
 
         # Will hold the data type for the item being processed
         self.item_data_type = None
-
-    def clear_daily_records_dict(self):
-        """
-        Clears all daily records in memory and updates persistence accordingly.
-
-        Typically called if the system detects that the daily record dictionary
-        is out-of-date or at midnight resets.
-        """
-        self.records.clear_all_records()
 
     @abstractmethod
     def is_valid_datatype(self, path: str):
@@ -233,7 +220,7 @@ class BaseFileProcessor(ABC):
                     self.ui.show_warning("Incomplete Information", result)
                     continue
 
-            # If valid, we reconstruct a new name and route again
+            # If valid, we reconstruct a new name and try to route again
             user_ID, institute, sample_ID = result
             name = f"{institute}_{user_ID}_{sample_ID}{extension}"
             self.route_item_via_name(name, extension, path)
@@ -381,14 +368,10 @@ class SEMFileProcessor(BaseFileProcessor):
                     _, ext = os.path.splitext(fname)
                     new_fname = f"{base_name}{ext}"
 
-                # If it's in an analysis directory, prefix the folder name
+                # If it's in an analysis directory, prefix the folder name to the file name
                 dirname = os.path.basename(root)
                 if 'analysis' in dirname and 'analysis' not in fname:
                     new_fname = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
-
-                # Remove any spaces in the final name
-                if " " in new_fname:
-                    new_fname = new_fname.replace(' ', '-').replace('_', '-')
 
                 original_new_fname = new_fname
                 counter = 1

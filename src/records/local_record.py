@@ -55,6 +55,7 @@ class LocalRecord:
                                          The key is the file path, and the value is a boolean indicating
                                          if the file has been uploaded (`True`) or not (`False`).
     """
+    RecordInfo = RecordInfo
     long_id: str = "null"
     short_id: str = "null"
     name: str = "null"

@@ -39,7 +39,7 @@ class FileEventHandler(FileSystemEventHandler):
                             and directories will be placed for further processing.
         """
         super().__init__()
-        self.event_queue = event_queue                # Queue to hold paths ready for processing
+        self.event_queue = event_queue               # Queue to hold paths ready for processing
         self.debounce_time = DEBOUNCE_TIME           # Time in seconds to wait before processing
         self.timers = {}                             # Dictionary to map paths to their debounce timers
     

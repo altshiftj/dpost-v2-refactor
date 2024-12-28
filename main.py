@@ -24,13 +24,12 @@ def main():
     persistence = RecordPersistence()
     ids = IdGenerator(DEVICE_ID)
     sync = SyncManager(db_manager=KadiManager())
-    records = RecordManager(persistence, paths, ids, sync)
+    records = RecordManager(paths, persistence, ids, sync)
 
     storage = StorageManager(paths)
 
     event_queue = queue.Queue()
     event_handler = FileEventHandler(event_queue)
-
     observer = Observer()
 
     ui = GUIManager()
@@ -39,7 +38,6 @@ def main():
 
     file_processor = SEMFileProcessor(
         ui=ui,
-        session_manager=session_manager,
         session_controller=session_controller,
         paths=paths,
         storage=storage,
