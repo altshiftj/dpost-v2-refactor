@@ -7,7 +7,7 @@ feedback to the user through GUI dialogs.
 """
 
 from src.sessions.session_manager import SessionManager
-from src.gui.gui_manager import UserInterface
+from gui.user_interface import UserInterface
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)

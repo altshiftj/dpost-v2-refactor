@@ -1,7 +1,7 @@
 from src.app.logger import setup_logger
 from src.config.settings import DEVICE_ID
 from src.app.main_app import DeviceWatchdogApp
-from src.gui.gui_manager import GUIManager
+from gui.user_interface import TKinterUI
 from src.sessions.session_manager import SessionManager
 from src.sessions.session_controller import SessionController
 from src.handlers.file_event_handler import FileEventHandler
@@ -32,7 +32,7 @@ def main():
     event_handler = FileEventHandler(event_queue)
     observer = Observer()
 
-    ui = GUIManager()
+    ui = TKinterUI()
     session_manager = SessionManager(ui.root, end_session_callback=None)
     session_controller = SessionController(session_manager, ui)
 

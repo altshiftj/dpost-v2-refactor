@@ -85,7 +85,7 @@ class UserInterface(ABC):
         pass
 
 
-class GUIManager(UserInterface):
+class TKinterUI(UserInterface):
     """
     A concrete implementation of the UserInterface that manages all GUI interactions 
     using Tkinter. This includes displaying warnings, info popups, and error messages,

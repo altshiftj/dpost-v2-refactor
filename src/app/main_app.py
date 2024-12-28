@@ -15,7 +15,7 @@ import shutil
 from watchdog.observers import Observer
 
 from src.config.settings import WATCH_DIR, TESTING, TESTING_PATH
-from src.gui.gui_manager import UserInterface
+from gui.user_interface import UserInterface
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import BaseFileProcessor
 from src.sessions.session_manager import SessionManager

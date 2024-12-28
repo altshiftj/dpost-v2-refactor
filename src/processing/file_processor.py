@@ -26,7 +26,7 @@ from src.storage.path_manager import PathManager
 from src.records.record_manager import RecordManager
 from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
-from src.gui.gui_manager import UserInterface
+from gui.user_interface import UserInterface
 from src.sessions.session_controller import SessionController
 from src.sessions.session_manager import SessionManager
 from kadi_apy import KadiManager
