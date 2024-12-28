@@ -104,12 +104,12 @@ class SyncManager(ISyncManager):
                     logger.info(f"Initialized new database record '{local_record.long_id}' with attributes and tags.")
 
                 # Iterate through all files associated with the local record
-                for file_path, uploaded in local_record.file_uploaded.items():
+                for file_path, uploaded in local_record.files_uploaded.items():
                     if not uploaded:
                         # Upload the file to the database
                         db_record.upload_file(file_path)
                         # Mark the file as uploaded in the local record
-                        local_record.file_uploaded[file_path] = True
+                        local_record.files_uploaded[file_path] = True
                         logger.info(f"Uploaded file: {os.path.basename(file_path)}")
 
                 # After uploading all files, mark the local record as being in the database

@@ -26,7 +26,7 @@ from src.storage.path_manager import PathManager
 from src.records.record_manager import RecordManager
 from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
-from gui.user_interface import UserInterface
+from src.gui.user_interface import UserInterface
 from src.sessions.session_controller import SessionController
 from src.sessions.session_manager import SessionManager
 from kadi_apy import KadiManager
@@ -84,8 +84,9 @@ class BaseFileProcessor(ABC):
         if not self.records.all_records_uploaded():
             logger.info("Syncing records to database upon startup.")
             self.sync_records_to_database()
+            # Reset the dictionary date if needed
             if not self.records.is_dict_up_to_date():
-                self.records.clear_all_records()
+                self.records.reset_dict()
 
         # Will hold the data type for the item being processed
         self.item_data_type = None
@@ -133,7 +134,7 @@ class BaseFileProcessor(ABC):
         """
         # Initially ensure the record dictionary is for the current date
         if not self.records.is_dict_up_to_date():
-            self.records.reset_dict_date()
+            self.records.reset_dict()
 
         base_name = os.path.splitext(name)[0]  # e.g. "IPAT_MuS_Sample1"
         record = self.records.get_record_by_short_id(base_name)
@@ -239,7 +240,7 @@ class BaseFileProcessor(ABC):
         :param notify: If True, display a success message in the UI once moved.
         """
         try:
-            # If the record doesn't exist, create a new record using the ID generator
+            # If the record doesn't exist, create a new one
             if not record:
                 record_info = self.ids.generate_new_record_info(
                     base_name=base_name, 
@@ -274,7 +275,6 @@ class BaseFileProcessor(ABC):
         except Exception as e:
             # If something fails, inform the user and move the file to exceptions folder
             self.ui.show_error("Error", f"Failed to rename: {e}")
-            path = self.paths.get_unique_filename(base_name)  # Fallback path
             self.storage.move_to_exception_folder(path)
 
     def sync_records_to_database(self):

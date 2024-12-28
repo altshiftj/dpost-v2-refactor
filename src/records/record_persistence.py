@@ -33,8 +33,6 @@ class RecordPersistence:
         """
         self.daily_records_path = DAILY_RECORDS_JSON
         self.records_db_path = ARCHIVED_FILES_JSON
-        # The date associated with the current daily records
-        self.daily_records_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
     def load_daily_records(self) -> dict:
         """
@@ -85,7 +83,7 @@ class RecordPersistence:
         sync_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         record_name = record.short_id
         # Gather the basenames of the record's files for storage
-        file_basenames = [os.path.basename(fp) for fp in record.file_uploaded.keys()]
+        file_basenames = [os.path.basename(fp) for fp in record.files_uploaded.keys()]
 
         # Prepare a record entry suitable for NDJSON
         record_entry = {

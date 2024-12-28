@@ -61,7 +61,7 @@ class RecordManager:
         self.sync = sync_manager
 
         # Dictionary of records for the current day,
-        # keyed by their short_id (e.g., "IPAT_John_Sample-A")
+        # keyed by their short_id (e.g., "IPAT_John_SampleA")
         self.daily_records_dict: Dict[str, LocalRecord] = self.persistence.load_daily_records()
 
     def create_record(self, record_info: RecordInfo) -> LocalRecord:
@@ -75,10 +75,10 @@ class RecordManager:
         """
         daily_record_key = self.ids.construct_short_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
-            record_info=record_info,
             long_id=self.ids.construct_long_id(record_info),
             short_id=self.ids.construct_short_id(record_info),
-            name=record_info.sample_id  # User-friendly display name
+            name=record_info.sample_id,
+            date = record_info.date
         )
         
         logger.debug(f"Created new record with short_id '{daily_record_key}' and long_id '{self.daily_records_dict[daily_record_key].long_id}'.")
@@ -178,12 +178,12 @@ class RecordManager:
 
         :return: True if the date matches today's date, False otherwise.
         """
-        today_str = datetime.datetime.now().strftime('%Y-%m-%d')
-        up_to_date = self.persistence.daily_records_date == today_str
+        today_str = datetime.datetime.now().strftime('%Y%m%d')
+        up_to_date = all(record.date == today_str for record in self.daily_records_dict.values())
         logger.debug(f"Is daily records dictionary up to date? {up_to_date}")
         return up_to_date
-    
-    def reset_dict_date(self):
+
+    def reset_dict(self):
         """
         Resets the daily records dictionary by syncing any pending records to the database,
         clearing all existing records, updating the date to today, and saving the empty
@@ -193,8 +193,6 @@ class RecordManager:
         logger.info("Resetting daily records dictionary and syncing to database.")
         self.sync_records_to_database()
         self.clear_all_records()
-        self.persistence.daily_records_date = datetime.datetime.now().strftime('%Y-%m-%d')
-        self.save_records()
         logger.info("Daily records dictionary has been reset.")
     
     def sync_records_to_database(self):

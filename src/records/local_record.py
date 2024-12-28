@@ -8,7 +8,7 @@ their synchronization status with a remote database.
 """
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict
 
 from src.app.logger import setup_logger
@@ -50,6 +50,7 @@ class LocalRecord:
                       device ID, date, and other metadata.
         short_id (str): A concise unique identifier for the record.
         name (str): A user-friendly name for the record, typically derived from the sample ID.
+        date (str): The date when the record was created (yyyymmdd format).
         is_in_db (bool): Flag indicating whether the record has been uploaded to the database.
         file_uploaded (Dict[str, bool]): A dictionary mapping file paths to their upload status.
                                          The key is the file path, and the value is a boolean indicating
@@ -59,8 +60,9 @@ class LocalRecord:
     long_id: str = "null"
     short_id: str = "null"
     name: str = "null"
+    date: str = "null"
     is_in_db: bool = False
-    file_uploaded: Dict[str, bool] = field(default_factory=dict)
+    files_uploaded: Dict[str, bool] = field(default_factory=dict)
 
     def add_item(self, path: str):
         """
@@ -73,14 +75,14 @@ class LocalRecord:
         """
         if os.path.isfile(path):
             # Add the single file with upload status set to False
-            self.file_uploaded[path] = False
+            self.files_uploaded[path] = False
             logger.debug(f"Added file to record: {path}")
         elif os.path.isdir(path):
             # Recursively add all files in the directory
             for root, dirs, files in os.walk(path):
                 for file in files:
                     file_path = os.path.join(root, file)
-                    self.file_uploaded[file_path] = False
+                    self.files_uploaded[file_path] = False
                     logger.debug(f"Added file to record from directory: {file_path}")
         else:
             # Log a warning if the path is neither a file nor a directory
@@ -93,22 +95,11 @@ class LocalRecord:
         Args:
             file_path (str): The path of the file to mark as uploaded.
         """
-        if file_path in self.file_uploaded:
-            self.file_uploaded[file_path] = True
+        if file_path in self.files_uploaded:
+            self.files_uploaded[file_path] = True
             logger.debug(f"Marked file as uploaded: {file_path}")
         else:
             logger.warning(f"Tried to mark non-existent file as uploaded: {file_path}")
-
-    def count_files(self) -> int:
-        """
-        Counts the total number of files associated with the record.
-
-        Returns:
-            int: The total number of files.
-        """
-        total_files = len(self.file_uploaded)
-        logger.debug(f"Total files in record '{self.short_id}': {total_files}")
-        return total_files
 
     def all_files_uploaded(self) -> bool:
         """
@@ -117,44 +108,23 @@ class LocalRecord:
         Returns:
             bool: `True` if all files are uploaded, `False` otherwise.
         """
-        all_uploaded = all(self.file_uploaded.values())
+        all_uploaded = all(self.files_uploaded.values())
         logger.debug(f"All files uploaded for record '{self.short_id}': {all_uploaded}")
         return all_uploaded
 
     def to_dict(self) -> dict:
         """
-        Serializes the LocalRecord instance into a dictionary suitable for JSON storage.
-
-        Returns:
-            dict: A dictionary representation of the LocalRecord.
+        Automatically serialize all fields into a dictionary.
         """
-        record_dict = {
-            "short_id": self.short_id,
-            "long_id": self.long_id,
-            "name": self.name,
-            "is_in_db": self.is_in_db,
-            "files_uploaded": self.file_uploaded,
-        }
-        logger.debug(f"Serialized record '{self.short_id}' to dict.")
-        return record_dict
+        return asdict(self)
 
+    #
+    # 3. Use `cls(**data)` to deserialize: 
+    #    This passes the dictionary keys as constructor kwargs.
+    #
     @classmethod
     def from_dict(cls, data: dict) -> "LocalRecord":
         """
-        Deserializes a dictionary into a LocalRecord instance.
-
-        Args:
-            data (dict): A dictionary containing record data, typically loaded from JSON.
-
-        Returns:
-            LocalRecord: The deserialized LocalRecord object.
+        Reconstruct a LocalRecord by passing `data` as keyword args.
         """
-        record = cls(
-            short_id=data.get("short_id", ""),
-            long_id=data.get("long_id", ""),
-            name=data.get("name", ""),
-            is_in_db=data.get("is_in_db", False),
-            file_uploaded=data.get("files_uploaded", {})
-        )
-        logger.debug(f"Deserialized record from dict: {record.short_id}")
-        return record
+        return cls(**data)

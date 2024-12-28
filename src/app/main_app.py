@@ -15,7 +15,7 @@ import shutil
 from watchdog.observers import Observer
 
 from src.config.settings import WATCH_DIR, TESTING, TESTING_PATH
-from gui.user_interface import UserInterface
+from src.gui.user_interface import UserInterface
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import BaseFileProcessor
 from src.sessions.session_manager import SessionManager
@@ -193,7 +193,7 @@ class DeviceWatchdogApp:
         active, and destroys the UI.
         """
         # End the session if it's active
-        if self.session_manager.session_active():
+        if self.session_manager.session_active:
             self.session_manager.end_session()
 
         # Stop and join the watchdog observer
