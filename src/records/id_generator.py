@@ -38,7 +38,6 @@ class IdGenerator:
         :param device_id: The device identifier, e.g., from src.config.settings.DEVICE_ID
         """
         self.device_id = device_id
-        logger = None  # Assuming logger is set up elsewhere if needed
 
     def construct_short_id(self, id_info: RecordInfo) -> str:
         """

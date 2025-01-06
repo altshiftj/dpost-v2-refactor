@@ -40,8 +40,6 @@ class SessionManager:
         self.root = root
         self.session_timer_id = None
 
-        logger.debug("SessionManager initialized with timeout of %d ms.", self.session_timeout)
-
     @property
     def session_active(self) -> bool:
         """Returns True if a session is active, False otherwise."""

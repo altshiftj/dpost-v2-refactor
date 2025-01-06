@@ -51,7 +51,7 @@ def main():
         ui = ui,
         session_manager = session_manager,
         event_handler = event_handler,
-        observer = observer,
+        directory_observer = observer,
         event_queue = event_queue,
     )   
 

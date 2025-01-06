@@ -60,7 +60,6 @@ class SyncManager(ISyncManager):
                                     of KadiManager for database operations.
         """
         self.db_manager_factory = db_manager
-        logger.debug("SyncManager initialized with provided db_manager factory.")
 
     def sync_record_to_database(self, local_record: LocalRecord):
         """

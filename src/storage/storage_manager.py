@@ -90,7 +90,6 @@ class StorageManager(IStorageManager):
             path_manager (PathManager): An instance of PathManager to handle path operations.
         """
         self.path_manager = path_manager
-        logger.debug("StorageManager initialized with PathManager.")
 
     def move_item(self, src: str, dest: str):
         """

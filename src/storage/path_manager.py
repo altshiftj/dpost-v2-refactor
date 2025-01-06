@@ -43,7 +43,7 @@ class PathManager:
             os.makedirs(directory, exist_ok=True)
             # Log the creation or confirmation of directory existence if needed
     
-    def scrub_input(self, input_str: str) -> str:
+    def scrub_input(self, input_str: str) -> str: # TODO Implement this method
         """
         Sanitizes the input string to conform to naming conventions by replacing
         invalid characters with underscores.

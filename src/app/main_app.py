@@ -9,8 +9,6 @@ user sessions, testing logic, and database synchronization tasks.
 import os
 import sys
 import queue
-import time
-import datetime
 import shutil
 from watchdog.observers import Observer
 
@@ -39,7 +37,7 @@ class DeviceWatchdogApp:
             ui: UserInterface,
             session_manager: SessionManager,
             event_handler: FileEventHandler,
-            observer,
+            directory_observer,
             event_queue: queue.Queue,
         ):
         """
@@ -69,13 +67,13 @@ class DeviceWatchdogApp:
         self.event_handler: FileEventHandler    = event_handler
         
         # Configure the watchdog observer to watch the directory and start observing
-        self.observer = observer
-        self.observer.schedule(
+        self.directory_observer = directory_observer
+        self.directory_observer.schedule(
             self.event_handler,
             path=self.watch_dir,
             recursive=False
         )
-        self.observer.start()
+        self.directory_observer.start()
         
         logger.info(f"Monitoring directory: {self.watch_dir}")
 
@@ -88,9 +86,6 @@ class DeviceWatchdogApp:
 
         # When the session manager ends a session, call self.end_session
         self.session_manager.end_session_callback = self.end_session
-
-        # Track if a daily reset has already happened
-        self.dict_reset_done = False
 
     def _clear_watch_dir_for_testing(self):
         """
@@ -197,8 +192,8 @@ class DeviceWatchdogApp:
             self.session_manager.end_session()
 
         # Stop and join the watchdog observer
-        self.observer.stop()
-        self.observer.join()
+        self.directory_observer.stop()
+        self.directory_observer.join()
 
         # Finally, destroy the GUI
         self.ui.destroy()
