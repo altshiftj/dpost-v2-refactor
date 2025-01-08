@@ -55,6 +55,7 @@ class IdGenerator:
         :return: A string representing the short_id.
         """
         short_id = f"{id_info.institute}_{id_info.user_id}_{id_info.sample_id}"
+        short_id = short_id.lower()
         logger.debug(f"Constructed short_id: {short_id} from RecordInfo: {id_info}")
         return short_id
     
@@ -82,50 +83,10 @@ class IdGenerator:
             f"{id_info.institute}-"
             f"{id_info.user_id}"
         )
+        long_id = long_id.lower()
         logger.debug(f"Constructed long_id: {long_id} from RecordInfo: {id_info}")
         return long_id
-
-    def parse_long_id(self, long_id: str) -> RecordInfo:
-        """
-        Parses a `long_id` string back into a RecordInfo object. This method validates
-        the format of the long_id and extracts the relevant components to reconstruct
-        the original RecordInfo.
-
-        Expected Format:
-            {device_id}-{date}-REC_{daily_record_count}-{data_type}-{institute}-{user_id}
-
-        Example:
-            "DEV_01-20240101-REC_001-IMG-IPAT-MuS"
-
-        :param long_id: The long_id string to parse.
-        :return: A RecordInfo object populated with the extracted data.
-        :raises ValueError: If the long_id does not match the expected format.
-        """
-        pattern = (
-            r'^(?P<device_id>[A-Za-z0-9_-]+)-'
-            r'(?P<date>\d{8})-'
-            r'REC_(?P<daily_record_count>\d{3})-'
-            r'(?P<data_type>[A-Za-z0-9_-]+)-'
-            r'(?P<institute>[A-Za-z0-9_-]+)-'
-            r'(?P<user_id>[A-Za-z0-9_-]+)$'
-        )
-        match = re.match(pattern, long_id)
-        if not match:
-            logger.error(f"Invalid long_id format: {long_id}")
-            raise ValueError(f"Invalid long_id format: {long_id}")
-
-        record_info = RecordInfo(
-            device_id=match.group('device_id'),
-            date=match.group('date'),
-            daily_record_count=int(match.group('daily_record_count')),
-            data_type=match.group('data_type'),
-            institute=match.group('institute'),
-            user_id=match.group('user_id'),
-            sample_id=""  # Sample ID is not included in long_id; handled separately
-        )
-        logger.debug(f"Parsed RecordInfo from long_id '{long_id}': {record_info}")
-        return record_info
-    
+ 
     def generate_new_record_info(
         self, 
         base_name: str, 
@@ -194,9 +155,9 @@ class IdGenerator:
             logger.error(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
             raise ValueError(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
 
-        device_name = self.device_id.split('_')[0]
+        device_type = self.device_id.split('_')[0]
         current_date = datetime.datetime.now().strftime('%Y%m%d')
         
-        file_id = f"{device_name}_{institute}_{user_ID}_{sample_ID}_{current_date}"
+        file_id = f"{device_type}_{institute}_{user_ID}_{sample_ID}_{current_date}"
         logger.debug(f"Generated file_id: {file_id} from base_name: {base_name}")
         return file_id

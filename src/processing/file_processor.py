@@ -18,35 +18,24 @@ Classes:
 
 from abc import ABC, abstractmethod
 import os
-import time
 
 from src.processing.metadata_extractor import MetadataExtractor
 from src.storage.storage_manager import IStorageManager
 from src.storage.path_manager import PathManager
+from src.records.local_record import LocalRecord
 from src.records.record_manager import RecordManager
 from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
 from src.gui.user_interface import UserInterface
 from src.sessions.session_controller import SessionController
-from src.sessions.session_manager import SessionManager
-from kadi_apy import KadiManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 class BaseFileProcessor(ABC):
     """
-    An abstract class that defines the shared logic and interface for
-    processing files (or directories) and tying them to local records
-    within the watch-dog application. It enforces a method to check file
-    validity and one to handle device-specific processing.
-
-    Typical workflow:
-      1. Check if the incoming file/directory is valid for processing.
-      2. If invalid, move it to the exceptions directory.
-      3. If valid, determine if it should be appended to an existing record or create a new record.
-      4. Perform device-specific file moves/renames.
-      5. Optionally sync records to the database if needed.
+    An abstract base for processors that handle new/modified files or directories
+    and associate them with records in the system.
     """
 
     def __init__(
@@ -59,32 +48,18 @@ class BaseFileProcessor(ABC):
         ids:                IdGenerator,
         records:            RecordManager,
     ):
-        """
-        Initializes the BaseFileProcessor.
+        self.ui = ui
+        self.session_controller = session_controller
+        self.paths = paths
+        self.storage = storage
+        self.persistence = persistence
+        self.ids = ids
+        self.records = records
 
-        :param ui: The GUI manager for user prompts and messaging.
-        :param session_manager: Manages user sessions (start, stop, timeout).
-        :param session_controller: Orchestrates session behavior (starts new sessions, resets timers).
-        :param paths: Manages file paths and naming conventions.
-        :param storage: Handles file/directory moving and renaming.
-        :param persistence: Responsible for loading/saving record data to disk.
-        :param ids: Generates and parses record/file IDs based on naming conventions.
-        :param sync: Syncs records to a remote database or system.
-        :param records: Manages in-memory record objects, creation, and updating.
-        """
-        self.ui:                    UserInterface       = ui
-        self.session_controller:    SessionController   = session_controller
-        self.paths:                 PathManager         = paths
-        self.storage:               IStorageManager     = storage
-        self.persistence:           RecordPersistence   = persistence
-        self.ids:                   IdGenerator         = ids
-        self.records:               RecordManager       = records
-
-        # If any record is not fully uploaded, do an initial sync on startup:
+        # If any record is not fully uploaded, sync on startup
         if not self.records.all_records_uploaded():
-            logger.info("Syncing records to database upon startup.")
+            logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
-            # Reset the dictionary date if needed
             if not self.records.is_dict_up_to_date():
                 self.records.reset_dict()
 
@@ -94,288 +69,300 @@ class BaseFileProcessor(ABC):
     @abstractmethod
     def is_valid_datatype(self, path: str):
         """
-        Checks if the file/folder at the given path is valid for this device or file processor.
-        Should return a tuple of (bool, str | None):
-            - bool: indicating if the file is valid
-            - str | None: describing the type of data or None if invalid
+        Checks if the file/folder at the given path is valid for this processor.
+        Returns (bool, str|None) -> (is_valid, data_type).
         """
         pass
 
-    def process_item(self, path: str):
+    @abstractmethod
+    def is_record_appendable(self, record: LocalRecord) -> bool:
         """
-        Main entry point for processing a new or modified file/directory.
-
-        :param path: The path to the file or directory to process.
+        Checks if the record can be appended to with this processor’s data type.
+        Return: (appendable, message_if_not_appendable)
         """
-        name = os.path.basename(path)          # Extract the file/folder name
-        extension = os.path.splitext(name)[1]  # e.g. ".tif"
-
-        # Validate and get the data type (e.g., 'IMG', 'ELID', etc.)
-        valid, self.item_data_type = self.is_valid_datatype(path)
-        if not valid:
-            # If invalid, move to the exceptions directory
-            exception_path = self.paths.get_exception_path(name)
-            self.storage.move_item(path, exception_path)
-            logger.info(f"Moved '{name}' to exceptions directory.")
-            return
-
-        # If valid, route it based on record name and state
-        self.route_item_via_name(name, extension, path)
-    
-    def route_item_via_name(self, name, extension, path):
-        """
-        Determines how to handle the item based on its 'short_id' (i.e., base_name).
-        Decides if it belongs to an existing record, a new record, or if the naming
-        convention is invalid (triggering rename prompts).
-
-        :param name: The file or folder name with extension.
-        :param extension: The extension part of the name, e.g., '.tif' or ''.
-        :param path: The full path to the file or folder.
-        """
-        # Initially ensure the record dictionary is for the current date
-        if not self.records.is_dict_up_to_date():
-            self.records.reset_dict()
-
-        base_name = os.path.splitext(name)[0]  # e.g. "IPAT_MuS_Sample1"
-        record = self.records.get_record_by_short_id(base_name)
-        
-        # Cases for existing or new record:
-        if record and record.is_in_db and record.all_files_uploaded():
-            # A record that is already in the database and fully uploaded
-            state = 'append_to_synced'
-        elif self.paths.validate_naming_convention(base_name):
-            # Matches pattern like 'Institute_UserName_Sample-Name'
-            state = 'valid_record_name'
-        else:
-            # Fails naming convention, needs manual rename
-            state = 'invalid_name'
-
-        # Decide next steps using 'match' for clarity
-        match state:
-            case 'append_to_synced':
-                # The record was uploaded to DB, but user may want to append new data
-                if self.ui.prompt_append_record(base_name):
-                    self.add_item_to_record(record, path, base_name, extension)
-                else:
-                    # Prompt user for new record name (no "invalid" prompt needed)
-                    self.prompt_item_rename(path, name, bad_name_prompt=False, new_record_prompt=True)
-            
-            case 'valid_record_name':
-                # We can attach it directly to the existing record or create a new one if none found
-                self.add_item_to_record(record, path, base_name, extension, notify=False)
-            
-            case 'invalid_name':
-                # Prompt user to rename the file/folder
-                self.prompt_item_rename(path, name)
-
-    def prompt_item_rename(self, path, name, bad_name_prompt=True, new_record_prompt=False):
-        """
-        Shows various user prompts (warnings, info dialogs) guiding them to rename
-        the file/folder. If user cancels, the file/folder is moved to a "rename" folder
-        for further handling.
-
-        :param path: Full path to the original file/folder.
-        :param name: The original file/folder name.
-        :param bad_name_prompt: If True, show a message about invalid naming convention.
-        :param new_record_prompt: If True, show a message about creating a new record name.
-        """
-        # Optional warning prompt for invalid naming
-        if bad_name_prompt:
-            message = (
-                f"The {'folder' if os.path.isdir(path) else 'file'} '{name}' "
-                "does not adhere to the naming convention.\n"
-                "Format: Institute_UserName_Sample-Name"
-            )
-            self.ui.show_warning("Invalid Name", message)
-        
-        # Optional info prompt for creating a new record
-        if new_record_prompt:
-            message = (
-                f"Please provide the name for your new record\n"
-                "Format: Institute_UserName_Sample-Name"
-            )
-            self.ui.show_info("New Record", message)
-
-        extension = os.path.splitext(name)[1] 
-
-        # Loop until the user either provides a valid name or cancels
-        while True:
-            dialog_result = self.ui.prompt_rename()  # Returns dict or None
-            is_valid, result = self.paths.validate_user_input(dialog_result)
-            if not is_valid:
-                if result == "User cancelled the dialog.":
-                    # Move item to rename folder if user cancels
-                    logger.info("User cancelled the dialog.")
-                    self.storage.move_to_directory(
-                        path,
-                        self.paths.get_rename_path(name), 
-                        f"Moved '{name}' to rename folder."
-                    )
-                    self.ui.show_info(
-                        "Operation Cancelled", 
-                        "The file/folder has been moved to the rename folder."
-                    )
-                    return
-                else:
-                    # The user left some fields empty or invalid
-                    self.ui.show_warning("Incomplete Information", result)
-                    continue
-
-            # If valid, we reconstruct a new name and try to route again
-            user_ID, institute, sample_ID = result
-            name = f"{institute}_{user_ID}_{sample_ID}{extension}"
-            self.route_item_via_name(name, extension, path)
-            break
-
-    def add_item_to_record(self, record, path, base_name, extension, notify=True):
-        """
-        Attaches the file/folder at 'path' to the specified record. If the record
-        does not exist yet, this creates a new one. Then moves/renames the file/folder
-        and informs the user if 'notify' is True.
-
-        :param record: The LocalRecord object if it exists, or None.
-        :param path: The path to the file/folder.
-        :param base_name: The base name for the file/folder (e.g. 'IPAT_MuS_Sample1').
-        :param extension: The file extension (e.g. '.tif' or '').
-        :param notify: If True, display a success message in the UI once moved.
-        """
-        try:
-            # If the record doesn't exist, create a new one
-            if not record:
-                record_info = self.ids.generate_new_record_info(
-                    base_name=base_name, 
-                    data_type=self.item_data_type, 
-                    record_count=self.records.get_num_records(),
-                )
-                record = self.records.create_record(record_info)
-
-            # Generate a unique file ID and construct the record directory
-            file_id = self.ids.generate_file_id(base_name)
-            record_path = self.paths.get_record_path(record)
-            os.makedirs(record_path, exist_ok=True)
-
-            # Perform device-specific operations (implemented in subclasses)
-            new_file_path = self.device_specific_processing(
-                record_path, file_id, path, base_name, extension
-            )
-
-            # Optionally inform the user of the successful rename/move
-            if notify:
-                msg_type = "Folder" if os.path.isdir(path) else "File"
-                self.ui.show_info("Success", 
-                    f"{msg_type} renamed to '{os.path.basename(new_file_path)}'")
-
-            logger.info(f"{'Folder' if os.path.isdir(path) else 'File'} '{path}' "
-                        f"renamed to '{new_file_path}'.")
-
-            # Add this item to the record's list of files and manage session
-            self.records.add_item_to_record(new_file_path, record)
-            self.session_controller.manage_session()
-
-        except Exception as e:
-            # If something fails, inform the user and move the file to exceptions folder
-            self.ui.show_error("Error", f"Failed to rename: {e}")
-            self.storage.move_to_exception_folder(path)
-
-    def sync_records_to_database(self):
-        self.records.sync_records_to_database()
+        pass
 
     @abstractmethod
     def device_specific_processing(
         self, record_path, file_id, source_path, base_name, extension
     ):
         """
-        A hook for subclasses to implement device-specific or file-type-specific
-        file manipulations (e.g., flattening directories, generating metadata).
-        This method is expected to return the final path where the item ends up.
+        Allows subclasses to implement custom moves, renames, or metadata extraction.
+        Must return the final path of the processed item.
         """
-        raise NotImplementedError
+        pass
+
+    def process_item(self, src_path: str):
+        """
+        Entry point when a file/folder is created or modified.
+        """
+        base_name = os.path.basename(src_path)
+        name_no_ext, extension = os.path.splitext(base_name)
+
+        # --- 1) Validate data type
+        valid_datatype, self.item_data_type = self.is_valid_datatype(src_path)
+        if not valid_datatype:
+            self._handle_invalid_item(src_path, name_no_ext, extension)
+            return
+
+        # --- 2) Route item based on record name & state
+        self._route_item(src_path, base_name, extension)
+
+    def _handle_invalid_item(self, src_path: str, name_no_ext: str, extension: str):
+        """
+        Moves invalid items to exception folder and informs the user.
+        """
+        self.storage.move_to_exception_folder(src_path, name_no_ext, extension)
+        self.ui.show_warning(
+            "Invalid Data Type",
+            "The file/folder is not a recognized data type.\n"
+            "Only .tif/.tiff images and .elid directories are supported."
+        )
+        logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
+
+    def _route_item(self, src_path: str, base_name: str, extension: str):
+        """
+        Determines how to process a valid item—whether it belongs to a known record
+        or needs a new one, or if the naming is invalid.
+        """
+        # Ensure the in-memory record dict is up to date
+        if not self.records.is_dict_up_to_date():
+            self.records.reset_dict()
+
+        # Sanitize the name (remove illegal chars, etc.)
+        short_id_no_ext, is_valid_format = self.paths.sanitize_and_validate_name(
+            os.path.splitext(base_name)[0]
+        )
+        record = self.records.get_record_by_short_id(short_id_no_ext)
+
+        # Decide 'state' of the item
+        item_state = self._determine_routing_state(record, is_valid_format)
+
+        # Match on routing state
+        match item_state:
+            case 'unappendable_record':
+                self._handle_unappendable_record(src_path, base_name)
+            case 'append_to_synced':
+                self._handle_append_to_synced_record(record, src_path, base_name, extension)
+            case 'valid_record_name':
+                # Possibly attach to existing record or create new
+                self.add_item_to_record(record, src_path, short_id_no_ext, extension, notify=False)
+            case 'invalid_name':
+                self._prompt_item_rename(src_path, base_name)
+
+    def _determine_routing_state(self, record: LocalRecord, is_valid_format: bool) -> str:
+        """
+        Returns a string denoting how we should handle the incoming item:
+          - 'unappendable_record'
+          - 'append_to_synced'
+          - 'valid_record_name'
+          - 'invalid_name'
+        """
+        if record:
+            # If record can't be appended to for device-specific reasons:
+            is_appendable = self.is_record_appendable(record)
+            if not is_appendable:
+                return 'unappendable_record'
+            # If record is fully synced in DB and user might want to attach more data:
+            if record.is_in_db and record.all_files_uploaded():
+                return 'append_to_synced'
+            # Otherwise, the record name is valid; we can just append
+            return 'valid_record_name'
+        else:
+            # If we have no record, check naming format
+            return 'valid_record_name' if is_valid_format else 'invalid_name'
+
+    def _handle_unappendable_record(self, src_path: str, base_name: str):
+        """
+        If the existing record is unappendable, prompt to rename and create a new record.
+        """
+        self.ui.show_warning(
+            "Invalid Record",
+            "An existing record with this name cannot be appended.\n"
+            "Please create a new record for this data."
+        )
+        # No "invalid" prompt needed here, we just ask for new name
+        self._prompt_item_rename(src_path, base_name, bad_name_prompt=False)
+
+    def _handle_append_to_synced_record(self, record, src_path, base_name, extension):
+        """
+        If the record is synced but user may still want to append new data.
+        """
+        short_id_no_ext, _ = os.path.splitext(base_name)
+        if self.ui.prompt_append_record(short_id_no_ext):
+            self.add_item_to_record(record, src_path, short_id_no_ext, extension)
+        else:
+            # Prompt user for a new record name
+            self._prompt_item_rename(src_path, base_name, bad_name_prompt=False, new_record_prompt=True)
+
+    def _prompt_item_rename(self, src_path, base_name, bad_name_prompt=True, new_record_prompt=False):
+        """
+        Guides the user to rename the item properly. 
+        Allows multiple attempts or cancellation (moves to rename folder).
+        """
+        name_no_ext, extension = os.path.splitext(base_name)
+
+        # Optional warning prompt for invalid naming
+        if bad_name_prompt:
+            self.ui.show_warning(
+                "Invalid Name",
+                f"'{base_name}' does not follow the naming convention.\n"
+                "Format: Institute_UserName_Sample-Name"
+            )
+        
+        # Optional message for creating a new record name
+        if new_record_prompt:
+            self.ui.show_info(
+                "New Record",
+                "Please enter the name for a new record (Format: Institute_UserName_Sample-Name)"
+            )
+
+        # Keep asking until valid name or user cancels
+        while True:
+            user_input = self.ui.prompt_rename()  # Returns dict or None
+            result, is_valid = self.paths.validate_user_input(user_input)
+
+            if not is_valid:
+                if result == "User cancelled the dialog.":
+                    # Move to rename folder
+                    self.storage.move_to_rename_folder(src_path, name_no_ext, extension)
+                    self.ui.show_info(
+                        "Operation Cancelled",
+                        "The item has been moved to the rename folder."
+                    )
+                    return
+                elif result == "Invalid Parts":
+                    # Field(s) contained invalid characters
+                    self.ui.show_warning(
+                        "Invalid Name",
+                        "Please avoid special characters and follow the naming convention."
+                    )
+                    continue
+                else:
+                    # Possibly incomplete fields, try again
+                    self.ui.show_warning(
+                        "Incomplete Information",
+                        "All fields are required. Please try again."
+                    )
+                    continue
+
+            # If valid, reconstruct new base_name and re-route
+            new_base_name = f"{result}{extension}"
+            self._route_item(src_path, new_base_name, extension)
+            break
+
+    def add_item_to_record(self, record, src_path, base_name, extension, notify=True):
+        """
+        Attaches the file/folder to an existing or new record, then handles final storage.
+        """
+        try:
+            # 1) Get or create record
+            record = self._get_or_create_record(record, base_name)
+
+            # 2) Prepare final file path + device-specific ops
+            file_id = self.ids.generate_file_id(base_name)
+            record_path = self.paths.get_record_path(record)
+            os.makedirs(record_path, exist_ok=True)
+
+            final_path = self.device_specific_processing(
+                record_path, file_id, src_path, base_name, extension
+            )
+
+            # 3) Notify the user of success
+            if notify:
+                item_type = "Folder" if os.path.isdir(src_path) else "File"
+                self.ui.show_info("Success", f"{item_type} renamed to '{os.path.basename(final_path)}'")
+
+            logger.debug(
+                f"{'Folder' if os.path.isdir(src_path) else 'File'} '{src_path}' "
+                f"moved/renamed to '{final_path}'."
+            )
+
+            # 4) Add item to record + manage session
+            self.records.add_item_to_record(final_path, record)
+            self.session_controller.manage_session()
+
+        except Exception as e:
+            self.ui.show_error("Error", f"Failed to rename: {e}")
+            self.storage.move_to_exception_folder(src_path)
+
+    def _get_or_create_record(self, record: LocalRecord, base_name: str) -> LocalRecord:
+        """
+        Returns an existing record or creates a new one if `record` is None.
+        """
+        if record is not None:
+            return record
+
+        record_info = self.ids.generate_new_record_info(
+            base_name=base_name,
+            data_type=self.item_data_type,
+            record_count=self.records.get_num_records(),
+        )
+        return self.records.create_record(record_info)
+
+    def sync_records_to_database(self):
+        """
+        Syncs the in-memory records to the external database.
+        """
+        self.records.sync_records_to_database()
 
 
 class SEMFileProcessor(BaseFileProcessor):
     """
-    A concrete implementation of the BaseFileProcessor designed to handle
-    SEM (Scanning Electron Microscope) data. This handles:
-      - TIFF or TIF image files (marked as 'IMG')
-      - .elid directories (marked as 'ELID')
+    A concrete processor for SEM data (TIFF images or .elid directories).
     """
 
     def is_valid_datatype(self, path: str):
         """
-        Checks if the path is either a TIFF/TIF file or a directory containing
-        .elid files. Returns (True, 'IMG') if it's a TIFF, or (True, 'ELID') if
-        an '.elid' file is found in the directory, otherwise (False, None).
-
-        :param path: The path to the file or directory.
-        :return: (bool, str or None)
+        Checks if path is a TIFF/TIF file or a folder containing .elid files.
         """
-        # If it's a .tif or .tiff, treat it as image data
+        if os.path.isdir(path):
+            if any(f.endswith('.elid') for f in os.listdir(path)):
+                return True, 'ELID'
         if path.lower().endswith(('.tiff', '.tif')):
             return True, 'IMG'
-        # If it’s a directory containing .elid files, treat it as ELID data
-        elif any(f.endswith('.elid') for f in os.listdir(path)):
-            return True, 'ELID'
-        # Otherwise, it's not recognized
         return False, None
 
-    def device_specific_processing(
-        self, record_path, file_id, source_path, base_name, extension
-    ):
+    def is_record_appendable(self, record: LocalRecord) -> bool:
         """
-        Handles the unique steps for SEM data, namely:
-          - Flattening .elid directories before moving them.
-          - Moving .tif/.tiff files directly.
-        
-        :param record_path: Destination directory for the record.
-        :param file_id: Generated identifier for the file (e.g., REM_01_IPAT_MuS_SampleID_20231212).
-        :param source_path: The original path of the item.
-        :param base_name: The base name used for naming logic (e.g. 'IPAT_MuS_Sample1').
-        :param extension: The file extension (e.g. '.tif').
-        :return: The final path to which the file/folder was moved.
+        Disallow appending to records that already represent an ELID directory.
         """
-        # If it's ELID data, flatten the directory first
+        if 'elid' in record.long_id:
+            return False
+        return True
+
+    def device_specific_processing(self, record_path, file_id, src_path, base_name, extension):
+        """
+        For ELID data, flatten subdirectories first.
+        For TIF/TIFF, just rename and move the file.
+        """
         if self.item_data_type == 'ELID':
-            self.flatten_elid_directory(source_path, base_name)
-            new_file_path = os.path.join(record_path, file_id)
-            # Move the entire directory to the record's folder
-            self.storage.move_item(source_path, new_file_path)
-            return new_file_path
+            self._flatten_elid_directory(src_path, base_name)
+            new_dir_path = os.path.join(record_path, file_id)
+            self.storage.move_item(src_path, new_dir_path)
+            return new_dir_path
         else:
-            # For images, move the file directly with a unique filename
+            # For images, create a unique filename
             new_file_path = self.paths.get_unique_filename(record_path, file_id, extension)
-            self.storage.move_item(source_path, new_file_path)
+            self.storage.move_item(src_path, new_file_path)
             return new_file_path
 
-    def flatten_elid_directory(self, folder_path: str, base_name: str):
+    def _flatten_elid_directory(self, folder_path: str, base_name: str):
         """
-        Traverses the specified folder, moving and renaming .elid/.odt files (and others)
-        so that no subdirectories remain. Ensures unique, consistent filenames.
-
-        :param folder_path: The root directory containing .elid files.
-        :param base_name: The base name used for renaming .elid/.odt files.
+        Eliminates subdirectories, renames .elid/.odt, etc. in-place.
         """
-        target_dir = folder_path  # We flatten in place, then move the entire folder later.
+        logger.debug(f"Flattening ELID directory: {folder_path}")
+        target_dir = folder_path
         renamed_files = {}
 
-        # Walk in reverse (topdown=False) so we handle files first, then remove dirs
         for root, dirs, files in os.walk(folder_path, topdown=False):
             for fname in files:
                 old_path = os.path.join(root, fname)
-                new_fname = fname
-
-                # If it's .elid or .odt, rename to incorporate base_name
-                if fname.endswith('.elid') or fname.endswith('.odt'):
-                    _, ext = os.path.splitext(fname)
-                    new_fname = f"{base_name}{ext}"
-
-                # If it's in an analysis directory, prefix the folder name to the file name
-                dirname = os.path.basename(root)
-                if 'analysis' in dirname and 'analysis' not in fname:
-                    new_fname = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
-
-                original_new_fname = new_fname
+                new_fname = self._build_new_filename(fname, root, base_name)
+                
+                # Ensure uniqueness
                 counter = 1
-                # Ensure uniqueness in case of collisions
+                original_new_fname = new_fname
                 while (new_fname in renamed_files or 
                        os.path.exists(os.path.join(target_dir, new_fname))):
                     name_only, ext = os.path.splitext(original_new_fname)
@@ -386,17 +373,42 @@ class SEMFileProcessor(BaseFileProcessor):
                 new_path = os.path.join(target_dir, new_fname)
 
                 try:
-                    # Move and rename the file
                     self.storage.move_item(old_path, new_path)
-                    logger.info(f"Moved and renamed '{old_path}' to '{new_path}'.")
-                except Exception as e:
-                    logger.error(f"Failed to move and rename '{old_path}' to '{new_path}': {e}")
+                    logger.debug(f"Moved and renamed '{old_path}' to '{new_path}'.")
+                except OSError as e:
+                    logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")
 
-            # Remove the now-empty subdirectory
-            try:
-                os.rmdir(root)
-                logger.info(f"Removed empty directory: '{root}'.")
-            except OSError:
-                logger.warning(f"Directory not empty or removal error: '{root}'.")
+            # Remove the subdirectory if empty
+            if root != folder_path:
+                try:
+                    os.rmdir(root)
+                    logger.debug(f"Removed empty directory: '{root}'.")
+                except OSError:
+                    logger.warning(f"Could not remove directory (not empty): '{root}'.")
 
-        logger.info("All files have been moved and subdirectories eliminated.")
+        logger.debug("Subdirectories flattened for ELID data.")
+
+    def _build_new_filename(self, fname: str, root_dir: str, base_name: str) -> str:
+        """
+        Builds a new file name for .elid/.odt files or files in analysis/export folders.
+        """
+        # Default: keep original
+        new_fname = fname
+
+        # If .elid/.odt: incorporate base_name
+        if fname.endswith('.elid') or fname.endswith('.odt'):
+            _, ext = os.path.splitext(fname)
+            new_fname = f"{base_name}{ext}"
+
+        # If inside an analysis directory, prefix that folder name
+        dirname = os.path.basename(root_dir)
+        if 'analysis' in dirname:
+            new_fname = f"{dirname}-{fname}".replace(' ', '-').replace('_', '-')
+            if 'analysis' in fname:
+                new_fname = fname.replace(' ', '-').replace('_', '-')
+
+        # If inside an export directory, do a simpler rename
+        if 'export' in dirname:
+            new_fname = fname.replace(' ', '-')
+
+        return new_fname

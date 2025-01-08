@@ -76,7 +76,7 @@ class RecordManager:
         daily_record_key = self.ids.construct_short_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
             long_id=self.ids.construct_long_id(record_info),
-            short_id=self.ids.construct_short_id(record_info),
+            short_id=daily_record_key,
             name=record_info.sample_id,
             date = record_info.date
         )
@@ -139,6 +139,7 @@ class RecordManager:
         :param short_id: The short_id to look for (e.g., "IPAT_MuS_Sample1").
         :return: The LocalRecord if found, otherwise None.
         """
+        short_id = short_id.lower()
         record = self.daily_records_dict.get(short_id)
         if record:
             logger.debug(f"Found record with short_id '{short_id}'.")
@@ -154,6 +155,7 @@ class RecordManager:
                         (e.g., "REM_01-20231010-REC_001-IMG-IPAT-MuS").
         :return: The matching LocalRecord if found, otherwise None.
         """
+        long_id = long_id.lower()
         for record in self.daily_records_dict.values():
             if record.long_id == long_id:
                 logger.debug(f"Found record with long_id '{long_id}'.")
@@ -203,8 +205,10 @@ class RecordManager:
         """
         logger.info("Starting synchronization of records to the database.")
         for record in self.get_all_records().values():
+            record: LocalRecord
+            
             if not record.all_files_uploaded():
-                logger.debug(f"Syncing record '{record.short_id}' to the database.")
+                logger.info(f"Syncing record '{record.long_id}' to the database.")
                 self.sync.sync_record_to_database(record)
                 self.save_records()
                 self.persistence.append_to_records_db(record)

@@ -66,7 +66,7 @@ class SessionManager:
             logger.debug("Existing session timer canceled.")
 
         self.session_timer_id = self.root.after(self.session_timeout, self.end_session)
-        logger.info("Session timer started with timeout of %d ms.", self.session_timeout)
+        logger.debug("Session timer started with timeout of %d ms.", self.session_timeout)
 
     def reset_timer(self):
         """
@@ -93,7 +93,7 @@ class SessionManager:
             self.session_timer_id = None
             logger.debug("Session timer canceled upon ending session.")
 
-        logger.info("Session ended.")
+        logger.debug("Session ended.")
         self.end_session_callback()
 
     def cancel(self):

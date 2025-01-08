@@ -13,7 +13,7 @@ EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
 ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')
 DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
 
-FILENAME_PATTERN = re.compile(r'^[A-Za-z0-9]+_[A-Za-z0-9]+_[A-Za-z0-9-]+$')
+FILENAME_PATTERN = re.compile(r'^[A-Za-z]+_[A-Za-z]+_[A-Za-z0-9- ]+$')
 
 TESTING = False
 TESTING_PATH = ""

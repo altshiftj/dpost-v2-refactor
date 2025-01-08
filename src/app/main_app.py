@@ -127,7 +127,7 @@ class DeviceWatchdogApp:
         Callback for when a session ends (either by timeout or user action).
         Attempts to sync any records to the database, then cleans up.
         """
-        logger.info("End session called.")
+        logger.debug("End session called.")
         try:
             self.file_processor.sync_records_to_database()
         except Exception as e:
@@ -137,7 +137,7 @@ class DeviceWatchdogApp:
             # If there's a "Done" dialog open, destroy it
             if hasattr(self.ui, 'done_dialog') and self.ui.done_dialog.winfo_exists():
                 self.ui.done_dialog.destroy()
-            logger.info("End session completed.")
+            logger.debug("End session completed.")
 
     def process_events(self):
         """

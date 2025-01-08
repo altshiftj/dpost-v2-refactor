@@ -9,6 +9,7 @@ naming conventions and directory structures.
 
 import os
 import shutil
+import logging
 from abc import ABC, abstractmethod
 
 from src.records.local_record import LocalRecord
@@ -39,35 +40,26 @@ class IStorageManager(ABC):
         pass
 
     @abstractmethod
-    def move_to_directory(self, path: str, directory: str, log_message: str):
+    def move_to_exception_folder(self, path: str, name: str, extension: str):
         """
-        Move a file to a specified directory with a log message.
+        Move a file to the exceptions directory with a unique name.
 
         Args:
             path (str): Path of the file to move.
-            directory (str): Target directory path.
-            log_message (str): Message to log after moving.
+            name (str): Desired base name for the file (without extension).
+            extension (str): File extension (e.g., '.txt').
         """
         pass
 
     @abstractmethod
-    def move_to_exception_folder(self, path: str):
-        """
-        Move a file to the exceptions directory.
-
-        Args:
-            path (str): Path of the file to move.
-        """
-        pass
-
-    @abstractmethod
-    def move_to_rename_folder(self, path: str, name: str):
+    def move_to_rename_folder(self, path: str, name: str, extension: str):
         """
         Move a file to the rename directory with a unique name.
 
         Args:
             path (str): Path of the file to move.
-            name (str): Desired base name for the file.
+            name (str): Desired base name for the file (without extension).
+            extension (str): File extension (e.g., '.txt').
         """
         pass
 
@@ -93,10 +85,7 @@ class StorageManager(IStorageManager):
 
     def move_item(self, src: str, dest: str):
         """
-        Move an item from src to dest using os.rename. If os.rename fails, fallback to shutil.move.
-
-        This method attempts to rename/move a file or directory. If the rename operation
-        fails (e.g., moving across different filesystems), it uses shutil.move as a fallback.
+        Move an item from src to dest. If `os.rename` fails, fallback to `shutil.move`.
 
         Args:
             src (str): Source file or directory path.
@@ -107,66 +96,66 @@ class StorageManager(IStorageManager):
         """
         try:
             os.rename(src, dest)
-            logger.info(f"Moved '{src}' to '{dest}' using os.rename.")
         except OSError as e:
             logger.warning(f"os.rename failed for '{src}' to '{dest}': {e}. Attempting shutil.move.")
             try:
                 shutil.move(src, dest)
-                logger.info(f"Moved '{src}' to '{dest}' using shutil.move.")
             except Exception as e_move:
                 logger.error(f"Failed to move '{src}' to '{dest}' using shutil.move: {e_move}.")
-                raise e_move  # Re-raise exception after logging
+                raise e_move  # Re-raise after logging
 
-    def move_to_directory(self, path: str, directory: str, log_message: str):
+    def _move_to_folder(
+        self,
+        path: str,
+        name: str,
+        extension: str,
+        unique_path_func,
+        log_message: str,
+        log_level: int = logging.INFO
+    ):
         """
-        Moves the file at the given path to the specified directory with a log message.
-
-        This method ensures that the destination directory has a unique filename to prevent
-        overwriting existing files. It then moves the file and logs the provided message.
+        Internal helper method to reduce redundancy when moving items to specific folders.
 
         Args:
             path (str): Path of the file to move.
-            directory (str): Target directory path.
-            log_message (str): Message to log after moving.
+            name (str): Desired base name for the file (without extension).
+            extension (str): File extension (e.g., '.txt').
+            unique_path_func (Callable[[str], str]): A function (e.g., `get_exception_path`)
+                that returns a unique destination path given a full filename.
+            log_message (str): The log message format string, expecting two placeholders:
+                1) Original path
+                2) Destination path
+            log_level (int): The logging level to be used. Defaults to `logging.INFO`.
         """
-        basename = os.path.basename(path)
-        base_name, extension = os.path.splitext(basename)
-        unique_dest_path = self.path_manager.get_unique_filename(directory, base_name, extension)
+        full_name = f"{name}{extension}"  # Combine base name and extension
+        unique_dest_path = unique_path_func(full_name)
         self.move_item(path, unique_dest_path)
-        logger.info(log_message + f" Moved to '{unique_dest_path}'.")
 
-    def move_to_exception_folder(self, path: str):
+        # Use the provided log level and message
+        logger.log(log_level, log_message.format(path, unique_dest_path))
+
+    def move_to_exception_folder(self, path: str, name: str, extension: str):
         """
-        Move a file to the exceptions directory.
-
-        This is typically used when a file does not meet certain criteria and needs
-        to be isolated for further inspection or handling.
-
-        Args:
-            path (str): Path of the file to move.
+        Move a file to the exceptions directory with a unique name.
         """
-        self.move_to_directory(
-            path,
-            self.path_manager.exceptions_dir,
-            f"Moved '{path}' to exceptions folder."
+        self._move_to_folder(
+            path=path,
+            name=name,
+            extension=extension,
+            unique_path_func=self.path_manager.get_exception_path,
+            log_message="Moved '{}' to exceptions folder at '{}'",
+            log_level=logging.WARNING
         )
 
-    def move_to_rename_folder(self, path: str, name: str):
+    def move_to_rename_folder(self, path: str, name: str, extension: str):
         """
         Move a file to the rename directory with a unique name.
-
-        This method is used when a file needs to be renamed to conform to naming conventions.
-        It ensures the new name is unique within the rename directory to avoid conflicts.
-
-        Args:
-            path (str): Path of the file to move.
-            name (str): Desired base name for the file.
         """
-        unique_dest_path = self.path_manager.get_unique_filename(
-            self.path_manager.rename_dir,
-            name,
-            ''  # Assuming no extension is needed; adjust if necessary
+        self._move_to_folder(
+            path=path,
+            name=name,
+            extension=extension,
+            unique_path_func=self.path_manager.get_rename_path,
+            log_message="Moved '{}' to rename folder at '{}'",
+            log_level=logging.INFO
         )
-        self.move_item(path, unique_dest_path)
-        logger.info(f"Moved '{path}' to rename folder at '{unique_dest_path}'.")
-

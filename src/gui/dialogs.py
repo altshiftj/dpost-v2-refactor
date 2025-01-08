@@ -110,9 +110,9 @@ class MultiFieldDialog(simpledialog.Dialog):
         :return: The widget that should have initial focus (name_entry).
         """
         # Create labels for each field
-        tk.Label(master, text="Name:").grid(row=0, column=0, sticky='e', padx=5, pady=2)
-        tk.Label(master, text="Institute:").grid(row=1, column=0, sticky='e', padx=5, pady=2)
-        tk.Label(master, text="Sample-Name:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
+        tk.Label(master, text="Name (Initials):").grid(row=0, column=0, sticky='e', padx=5, pady=2)
+        tk.Label(master, text="Institute (Initials):").grid(row=1, column=0, sticky='e', padx=5, pady=2)
+        tk.Label(master, text="Sample Name:").grid(row=2, column=0, sticky='e', padx=5, pady=2)
 
         # Initialize StringVar instances to hold user input
         self.user_ID_var = tk.StringVar()
@@ -187,5 +187,5 @@ class MultiFieldDialog(simpledialog.Dialog):
         self.result = {
             'name': userID,
             'institute': institute,
-            'sample_ID': sample_ID,
+            'sample_ID': sample_ID
         }

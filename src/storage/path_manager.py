@@ -8,9 +8,6 @@ to prevent conflicts.
 """
 
 import os
-import re
-import datetime
-from typing import List, Tuple
 
 from src.records.local_record import LocalRecord
 from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN
@@ -41,132 +38,105 @@ class PathManager:
         # Ensure all required directories exist; create them if they don't
         for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
             os.makedirs(directory, exist_ok=True)
-            # Log the creation or confirmation of directory existence if needed
     
-    def scrub_input(self, input_str: str) -> str: # TODO Implement this method
+    def sanitize_and_validate_name(self, base_name: str) -> tuple:
         """
-        Sanitizes the input string to conform to naming conventions by replacing
-        invalid characters with underscores.
+        Validates and sanitizes a base name against the naming convention.
+        Expected format: 'Institute_UserID_SampleID'
         
+        Constraints:
+            - Institute: letters only
+            - UserID: letters only
+            - SampleID: letters, numbers, or hyphens
+            - Any spaces in the sample ID are replaced with hyphens.
+
         Args:
-            input_str (str): The input string to sanitize.
-        
+            base_name (str): The original base name to validate.
+
         Returns:
-            str: The sanitized string.
+            Tuple[str, bool]:
+                - A possibly sanitized version of the base_name
+                - A boolean indicating if the name is valid
         """
-        # Replace any character that is not a letter, number, underscore, or hyphen with an underscore
-        sanitized = re.sub(r'[^A-Za-z0-9_-]+', '_', input_str)
-        logger.debug(f"Sanitized input: {input_str} -> {sanitized}")
-        return sanitized
+        # Quick overall pattern check (if you use a compiled regex for the entire string)
+        if not self.naming_pattern.match(base_name):
+            return base_name, False
+
+        # Attempt to split into exactly three parts
+        parts = base_name.split('_')
+        if len(parts) != 3:
+            return base_name, False
+
+        institute, user_id, sample_id = parts
+        # Replace spaces with hyphens in sample_id
+        sample_id = sample_id.replace(' ', '-')
+
+        # Rebuild and return sanitized name
+        sanitized = f"{institute}_{user_id}_{sample_id}"
+        return sanitized, True
     
-    def validate_naming_convention(self, base_name: str) -> bool:
-        """
-        Validates whether the provided base name matches the predefined naming convention.
-        
-        Args:
-            base_name (str): The base name to validate.
-        
-        Returns:
-            bool: True if the base name matches the naming convention, False otherwise.
-        """
-        return bool(self.naming_pattern.match(base_name))
-    
-    def validate_user_input(self, dialog_result):
+    def validate_user_input(self, dialog_result: dict) -> tuple:
         """
         Validates the user input collected from the dialog.
         
         Args:
             dialog_result (dict or None): The result from the dialog containing user inputs.
+                Expected keys: 'name', 'institute', 'sample_ID'
         
         Returns:
-            Tuple[bool, str or Tuple[str, str, str]]: 
-                - A boolean indicating if the input is valid.
-                - An error message string if invalid, or a tuple of validated inputs.
+            Tuple[Any, bool]:
+                - (error_message, False) if invalid, or
+                - (sanitized_base_name, True) if valid
         """
         if dialog_result is None:
-            return False, "User cancelled the dialog."
+            return "User cancelled the dialog.", False
         
-        user_ID = dialog_result['name']
-        institute = dialog_result['institute']
-        sample_ID = dialog_result['sample_ID']
+        user_ID = dialog_result.get('name')
+        institute = dialog_result.get('institute')
+        sample_ID = dialog_result.get('sample_ID')
 
         # Check that all required fields are provided
-        if not user_ID or not institute or not sample_ID:
-            return False, "All fields are required."
-        return True, (user_ID, institute, sample_ID)
-    
+        if not (user_ID and institute and sample_ID):
+            return "All fields are required.", False
+
+        # Combine into the expected "institute_userID_sampleID" format
+        original_name = f"{institute}_{user_ID}_{sample_ID}"
+        sanitized_name, is_valid = self.sanitize_and_validate_name(original_name)
+        if not is_valid:
+            return "Invalid Parts", False
+
+        return sanitized_name, True
+      
     def get_record_path(self, record: LocalRecord) -> str:
         """
-        Constructs the directory path for a given record based on its long_id.
-        
-        Args:
-            record (LocalRecord): The record for which to get the directory path.
-        
-        Returns:
-            str: The full path to the record's directory.
+        Returns the directory path for a given record based on its long_id.
         """
         return os.path.join(self.record_dir, record.long_id)
-    
+
     def get_rename_path(self, name: str) -> str:
         """
-        Generates a unique path in the rename directory for a given name to prevent conflicts.
-        
-        Args:
-            name (str): The base name for the rename operation.
-        
-        Returns:
-            str: A unique path within the rename directory.
-        """
-        return self._generate_unique_path(self.rename_dir, name)
-    
-    def get_exception_path(self, name: str) -> str:
-        """
-        Generates a unique path in the exceptions directory for handling exceptions related to a name.
-        
-        Args:
-            name (str): The base name associated with the exception.
-        
-        Returns:
-            str: A unique path within the exceptions directory.
-        """
-        return self._generate_unique_path(self.exceptions_dir, name)
-    
-    def get_unique_filename(self, directory: str, base_name: str, extension: str) -> str:
-        """
-        Generates a unique filename within a specified directory by appending a counter
-        if a file with the same name already exists.
-        
-        Args:
-            directory (str): The directory in which to create the file.
-            base_name (str): The base name for the file.
-            extension (str): The file extension (e.g., '.txt').
-        
-        Returns:
-            str: A unique filename within the directory.
-        """
-        counter = 1
-        unique_name = f"{base_name}_{counter}{extension}"
-        unique_path = os.path.join(directory, unique_name)
-
-        # Increment the counter until a unique filename is found
-        while os.path.exists(unique_path):
-            unique_name = f"{base_name}_{counter}{extension}"
-            unique_path = os.path.join(directory, unique_name)
-            counter += 1
-
-        return unique_path
-    
-    def _generate_unique_path(self, directory: str, name: str) -> str:
-        """
-        Helper method to generate a unique file or folder path within a specified directory.
-        
-        Args:
-            directory (str): The directory in which to create the path.
-            name (str): The base name for the file or folder.
-        
-        Returns:
-            str: A unique path within the directory.
+        Returns a unique path in the rename directory.
         """
         base_name, extension = os.path.splitext(name)
-        unique_path = self.get_unique_filename(directory, base_name, extension)
-        return unique_path
+        return self.get_unique_filename(self.rename_dir, base_name, extension)
+
+    def get_exception_path(self, name: str) -> str:
+        """
+        Returns a unique path in the exceptions directory.
+        """
+        base_name, extension = os.path.splitext(name)
+        return self.get_unique_filename(self.exceptions_dir, base_name, extension)
+
+    def get_unique_filename(self, directory: str, base_name: str, extension: str) -> str:
+        """
+        Generates a unique filename in the given directory by appending a counter if needed.
+        """
+        counter = 1
+        while True:
+            candidate = f"{base_name}_{counter}{extension}"
+
+            unique_path = os.path.join(directory, candidate)
+            if not os.path.exists(unique_path):
+                return unique_path
+            counter += 1
+    

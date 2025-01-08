@@ -20,10 +20,12 @@ import queue
 def main():
     logger = setup_logger(__name__)
 
+    ui = TKinterUI()
+
     paths = PathManager()
     persistence = RecordPersistence()
     ids = IdGenerator(DEVICE_ID)
-    sync = SyncManager(db_manager=KadiManager())
+    sync = SyncManager(db_manager=KadiManager(), ui=ui)
     records = RecordManager(paths, persistence, ids, sync)
 
     storage = StorageManager(paths)
@@ -32,7 +34,6 @@ def main():
     event_handler = FileEventHandler(event_queue)
     observer = Observer()
 
-    ui = TKinterUI()
     session_manager = SessionManager(ui.root, end_session_callback=None)
     session_controller = SessionController(session_manager, ui)
 
