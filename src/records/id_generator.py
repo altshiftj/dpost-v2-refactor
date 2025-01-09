@@ -89,7 +89,7 @@ class IdGenerator:
  
     def generate_new_record_info(
         self, 
-        base_name: str, 
+        filename_no_ext: str, 
         data_type: str, 
         record_count: int
     ) -> RecordInfo:
@@ -113,10 +113,10 @@ class IdGenerator:
         :raises ValueError: If the base_name does not follow the expected format.
         """
         try:
-            institute, user_ID, sample_ID = base_name.split('_')
+            institute, user_ID, sample_ID = filename_no_ext.split('_')
         except ValueError:
-            logger.error(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
-            raise ValueError(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
+            logger.error(f"Base name '{filename_no_ext}' is not in the expected format 'Institute_UserID_SampleID'.")
+            raise ValueError(f"Base name '{filename_no_ext}' is not in the expected format 'Institute_UserID_SampleID'.")
 
         current_date = datetime.datetime.now().strftime('%Y%m%d')
         
@@ -132,7 +132,7 @@ class IdGenerator:
         logger.debug(f"Generated new RecordInfo: {record_info}")
         return record_info
     
-    def generate_file_id(self, base_name: str) -> str:
+    def generate_file_id(self, filename_no_ext: str) -> str:
         """
         Generates a unique file identifier (`file_id`) based on the provided base name.
         The file_id includes the device name, institute, user ID, sample ID, and the
@@ -150,14 +150,14 @@ class IdGenerator:
         :raises ValueError: If the base_name does not follow the expected format.
         """
         try:
-            institute, user_ID, sample_ID = base_name.split('_')
+            institute, user_ID, sample_ID = filename_no_ext.split('_')
         except ValueError:
-            logger.error(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
-            raise ValueError(f"Base name '{base_name}' is not in the expected format 'Institute_UserID_SampleID'.")
+            logger.error(f"Base name '{filename_no_ext}' is not in the expected format 'Institute_UserID_SampleID'.")
+            raise ValueError(f"Base name '{filename_no_ext}' is not in the expected format 'Institute_UserID_SampleID'.")
 
         device_type = self.device_id.split('_')[0]
         current_date = datetime.datetime.now().strftime('%Y%m%d')
         
         file_id = f"{device_type}_{institute}_{user_ID}_{sample_ID}_{current_date}"
-        logger.debug(f"Generated file_id: {file_id} from base_name: {base_name}")
+        logger.debug(f"Generated file_id: {file_id} from base_name: {filename_no_ext}")
         return file_id

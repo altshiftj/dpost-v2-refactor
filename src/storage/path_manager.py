@@ -39,7 +39,7 @@ class PathManager:
         for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
             os.makedirs(directory, exist_ok=True)
     
-    def sanitize_and_validate_name(self, base_name: str) -> tuple:
+    def sanitize_and_validate_name(self, filename_no_ext: str) -> tuple:
         """
         Validates and sanitizes a base name against the naming convention.
         Expected format: 'Institute_UserID_SampleID'
@@ -59,13 +59,13 @@ class PathManager:
                 - A boolean indicating if the name is valid
         """
         # Quick overall pattern check (if you use a compiled regex for the entire string)
-        if not self.naming_pattern.match(base_name):
-            return base_name, False
+        if not self.naming_pattern.match(filename_no_ext):
+            return filename_no_ext, False
 
         # Attempt to split into exactly three parts
-        parts = base_name.split('_')
+        parts = filename_no_ext.split('_')
         if len(parts) != 3:
-            return base_name, False
+            return filename_no_ext, False
 
         institute, user_id, sample_id = parts
         # Replace spaces with hyphens in sample_id
@@ -127,13 +127,13 @@ class PathManager:
         base_name, extension = os.path.splitext(name)
         return self.get_unique_filename(self.exceptions_dir, base_name, extension)
 
-    def get_unique_filename(self, directory: str, base_name: str, extension: str) -> str:
+    def get_unique_filename(self, directory: str, filename_no_ext: str, extension: str) -> str:
         """
         Generates a unique filename in the given directory by appending a counter if needed.
         """
         counter = 1
         while True:
-            candidate = f"{base_name}_{counter}{extension}"
+            candidate = f"{filename_no_ext}_{counter}{extension}"
 
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):
