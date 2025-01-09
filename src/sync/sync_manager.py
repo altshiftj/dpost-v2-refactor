@@ -209,7 +209,7 @@ class SyncManager(ISyncManager):
             KadiGroup: The database group object.
         """
         institute, user_initials, _ = local_record.short_id.split('_')
-        db_group_id = f"{user_initials}-{institute}-rawdata"
+        db_group_id = f"{user_initials}-{institute}-rawdata-group"
         db_group: KadiGroup = db_manager.group(create=True, identifier=db_group_id)
         db_group.set_attribute('title', f"{user_initials.upper()}@{institute.upper()}: Raw Data Records")
         return db_group
@@ -228,7 +228,7 @@ class SyncManager(ISyncManager):
             KadiGroup: The database group object.
         """
         institute, user_initials, _ = local_record.short_id.split('_')
-        db_group_id = f"{user_initials}-{institute}-rawdata"
+        db_group_id = f"{user_initials}-{institute}-rawdata-group"
         try:
             db_group: KadiGroup = db_manager.group(identifier=db_group_id)
         except:
@@ -251,7 +251,7 @@ class SyncManager(ISyncManager):
         """
         db_device_record = db_manager.record(id=DEVICE_RECORD_ID)
 
-        db_group_id = f"{DEVICE_ID.lower()}-rawdata-records"
+        db_group_id = f"{DEVICE_ID.lower()}-rawdata-group"
         db_group: KadiGroup = db_manager.group(create=True, identifier=db_group_id)
         db_group.set_attribute('title', f"{db_device_record.meta['title']}: Raw Data Records")
         return db_group
