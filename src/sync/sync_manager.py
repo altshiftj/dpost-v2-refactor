@@ -65,11 +65,11 @@ class SyncManager(ISyncManager):
                 # 2. Retrieve or create the user group
                 db_user_group = self._get_or_create_db_user_group(db_manager, local_record, db_user)
 
-                # 3. Retrieve or create the record
-                db_record = self._get_or_create_db_record(db_manager, local_record)
-
-                # 4. Retrieve or create the device data group
+                # 3. Retrieve or create the device data group
                 db_device_data_group = self._get_or_create_db_device_data_group(db_manager)
+
+                # 4. Retrieve or create the record
+                db_record = self._get_or_create_db_record(db_manager, local_record)
 
                 # 5. Initialize record if it's newly created
                 self._initialize_new_db_record(
@@ -126,7 +126,7 @@ class SyncManager(ISyncManager):
         """
         db_device_record = db_manager.record(id=DEVICE_RECORD_ID)
 
-        db_group_id = f"{DEVICE_ID.lower()}-rawdata-group"
+        db_group_id = f"{DEVICE_ID.lower()}{ID_SEP}rawdata{ID_SEP}group"
 
         try:
             db_group: KadiGroup = db_manager.group(identifier=db_group_id)
@@ -163,7 +163,8 @@ class SyncManager(ISyncManager):
                 f"User {db_user_id} not found", 
                 f"User not found in kadi4mat database.\n"
                 f"Records will be uploaded now, and later associated with the {db_user_id} "
-                f"account when it is created.\nPlease contact your administrator."
+                f"account when it is created."
+                "\nPlease contact your administrator."
             )
             db_user = None
 
