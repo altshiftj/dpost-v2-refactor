@@ -2,6 +2,15 @@
 /wdvenv/
 /dist/
 /build/
+<<<<<<< HEAD
+=======
+/monitored_folder/
+/testing_data/
+**/__pycache__/
+
+
+>>>>>>> ref
 
 watchdog.log
 ipatwatchdog.spec
+compiled_code.py

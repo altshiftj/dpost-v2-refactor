@@ -1,0 +1,155 @@
+"""
+device_watchdog_app.py
+
+This module contains the main application class, DeviceWatchdogApp, which orchestrates
+the monitoring of a watch directory (using watchdog), processes file events, and manages
+user sessions, testing logic, and database synchronization tasks.
+"""
+
+import sys
+import queue
+
+from src.config.settings import WATCH_DIR
+from src.gui.user_interface import UserInterface
+from src.handlers.file_event_handler import FileEventHandler
+from src.processing.file_processor import BaseFileProcessor
+from src.sessions.session_manager import SessionManager
+from src.app.logger import setup_logger
+
+logger = setup_logger(__name__)
+
+class DeviceWatchdogApp:
+    """
+    A main application class that coordinates:
+      1. File system monitoring (via watchdog),
+      2. File processing (through a file processor),
+      3. GUI interactions (with a UI manager),
+      4. Session management and database synchronization,
+      5. Graceful shutdown logic.
+    """
+    def __init__(
+            self, 
+            file_processor:     BaseFileProcessor,
+            ui:                 UserInterface,
+            session_manager:    SessionManager,
+            event_handler:      FileEventHandler,
+            directory_observer, #WatchdogObserver
+            event_queue:        queue.Queue,
+        ):
+        """
+        Initializes the DeviceWatchdogApp with all necessary components.
+
+        :param file_processor: An instance of a BaseFileProcessor (or subclass) for handling file logic.
+        :param ui: A UserInterface or subclass responsible for GUI interactions and dialogs.
+        :param session_manager: A SessionManager that manages user sessions and timeouts.
+        :param event_handler: A FileEventHandler that listens for file system events.
+        :param observer: The watchdog Observer that monitors the specified directory for file changes.
+        :param event_queue: A queue.Queue object where the event handler places files for processing.
+        """
+        self.watch_dir = WATCH_DIR      # The main directory being monitored for file changes
+
+        # Store references to core components
+        self.ui:                UserInterface       = ui
+        self.session_manager:   SessionManager      = session_manager
+        self.file_processor:    BaseFileProcessor   = file_processor
+        self.event_queue:       queue.Queue         = event_queue
+        self.event_handler:     FileEventHandler    = event_handler
+        
+        # Configure the watchdog observer to watch the directory and start observing
+        self.directory_observer = directory_observer
+        self.directory_observer.schedule(
+            self.event_handler,
+            path=self.watch_dir,
+            recursive=False
+        )
+        self.directory_observer.start()
+        
+        logger.info(f"Monitoring directory: {self.watch_dir}")
+
+        # Periodically check for new events
+        self.ui.root.after(100, self.process_events)
+
+        # Set the GUI to handle window close and unhandled exceptions
+        self.ui.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        self.ui.root.report_callback_exception = self.handle_exception
+
+        # When the session manager ends a session, call self.end_session
+        self.session_manager.end_session_callback = self.end_session
+
+    def handle_exception(self, exc_type, exc_value, exc_traceback):
+        """
+        Handles unexpected exceptions by logging and displaying an error
+        message to the user, then closes the application.
+        
+        :param exc_type: Exception class/type.
+        :param exc_value: The exception instance.
+        :param exc_traceback: The traceback object with call-stack information.
+        """
+        logger.error("An unexpected error occurred", exc_info=(exc_type, exc_value, exc_traceback))
+        self.ui.show_error("Application Error", "An unexpected error occurred. Please contact the administrator.")
+        self.on_closing()
+
+    def end_session(self):
+        """
+        Callback for when a session ends (either by timeout or user action).
+        Attempts to sync any records to the database, then cleans up.
+        """
+        logger.debug("End session called.")
+        try:
+            self.file_processor.sync_records_to_database()
+        except Exception as e:
+            logger.exception(f"An error occurred during session end: {e}")
+            self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
+        finally:
+            # If there's a "Done" dialog open, destroy it
+            if hasattr(self.ui, 'done_dialog') and self.ui.done_dialog.winfo_exists():
+                self.ui.done_dialog.destroy()
+            logger.debug("End session completed.")
+
+    def process_events(self):
+        """
+        Periodically invoked to:
+          1. Process any queued file system events (placed by the FileEventHandler).
+          2. Handle testing logic if enabled.
+        """
+        # Handle all items currently queued
+        while not self.event_queue.empty():
+            try:
+                data_path = self.event_queue.get_nowait()
+            except queue.Empty:
+                break
+            logger.debug(f"Dequeued file for processing: {data_path}")
+            self.file_processor.process_item(data_path)
+
+        # Schedule the next iteration of this loop
+        self.ui.root.after(100, self.process_events)
+
+    def on_closing(self):
+        """
+        Invoked when the user attempts to close the GUI window or when the system
+        catches a KeyboardInterrupt. Cleans up the observer, ends the session if 
+        active, and destroys the UI.
+        """
+        # End the session if it's active
+        if self.session_manager.session_active:
+            self.session_manager.end_session()
+
+        # Stop and join the watchdog observer
+        self.directory_observer.stop()
+        self.directory_observer.join()
+
+        # Finally, destroy the GUI
+        self.ui.destroy()
+        logger.info("Monitoring stopped.")
+
+    def run(self):
+        """
+        Main entry point for running the Tkinter main loop. 
+        Includes handling of KeyboardInterrupt and other exceptions to gracefully shut down.
+        """
+        try:
+            self.ui.root.mainloop()
+        except KeyboardInterrupt:
+            self.on_closing()
+        except Exception:
+            self.handle_exception(*sys.exc_info())
