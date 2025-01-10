@@ -7,7 +7,7 @@ to collect multiple fields from the user when renaming files or folders.
 """
 
 import tkinter as tk
-from tkinter import simpledialog, messagebox
+from tkinter import simpledialog
 
 # Custom Entry widget with placeholder text
 class EntryWithPlaceholder(tk.Entry):
@@ -84,6 +84,7 @@ class EntryWithPlaceholder(tk.Entry):
         else:
             return content
 
+
 # Custom dialog using EntryWithPlaceholder to collect Name, Institute, and Sample Name from users when a file name is incorrect
 class MultiFieldDialog(simpledialog.Dialog):
     """
@@ -122,7 +123,7 @@ class MultiFieldDialog(simpledialog.Dialog):
         # Example placeholder texts to guide the user
         self.example_user_ID = "Ex: MuS"
         self.example_institute = "Ex: IPAT"
-        self.example_sample_ID = "Ex: Cathode-20XD6-SO4"
+        self.example_sample_ID = r"Ex: Cathode_20%_SO4_-20C"
 
         # Create EntryWithPlaceholder widgets for each field
         self.name_entry = EntryWithPlaceholder(

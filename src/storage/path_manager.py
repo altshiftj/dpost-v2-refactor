@@ -10,7 +10,7 @@ to prevent conflicts.
 import os
 
 from src.records.local_record import LocalRecord
-from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN
+from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -39,40 +39,40 @@ class PathManager:
         for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
             os.makedirs(directory, exist_ok=True)
     
-    def sanitize_and_validate_name(self, filename_no_ext: str) -> tuple:
+    def sanitize_and_validate_name(self, filename_prefix: str) -> tuple:
         """
         Validates and sanitizes a base name against the naming convention.
-        Expected format: 'Institute_UserID_SampleID'
+        Expected format: 'Institute-UserID-SampleID'
         
         Constraints:
             - Institute: letters only
             - UserID: letters only
-            - SampleID: letters, numbers, or hyphens
-            - Any spaces in the sample ID are replaced with hyphens.
+            - SampleID: Most characters are allowed, with some special character restrictions 
+              (see FILENAME_PATTERN in settings.py)
 
         Args:
-            base_name (str): The original base name to validate.
+            filename_prefix (str): The original filename prefix to validate.
 
         Returns:
             Tuple[str, bool]:
-                - A possibly sanitized version of the base_name
+                - A possibly sanitized version of the filename_prefix
                 - A boolean indicating if the name is valid
         """
         # Quick overall pattern check (if you use a compiled regex for the entire string)
-        if not self.naming_pattern.match(filename_no_ext):
-            return filename_no_ext, False
+        if not self.naming_pattern.match(filename_prefix):
+            return filename_prefix, False
 
-        # Attempt to split into exactly three parts
-        parts = filename_no_ext.split('_')
-        if len(parts) != 3:
-            return filename_no_ext, False
+        # extract the inst and user_id as the first two parts of the filename
+        parts = filename_prefix.split(ID_SEP)
+        institute, user_id = parts[:2]
 
-        institute, user_id, sample_id = parts
-        # Replace spaces with hyphens in sample_id
-        sample_id = sample_id.replace(' ', '-')
+        # the sample_id is the rest of the filename
+        sample_id = ID_SEP.join(parts[2:])
+
+        sample_id = sample_id.replace('%', 'pct')
 
         # Rebuild and return sanitized name
-        sanitized = f"{institute}_{user_id}_{sample_id}"
+        sanitized = f"{institute}{ID_SEP}{user_id}{ID_SEP}{sample_id}"
         return sanitized, True
     
     def validate_user_input(self, dialog_result: dict) -> tuple:
@@ -91,7 +91,7 @@ class PathManager:
         if dialog_result is None:
             return "User cancelled the dialog.", False
         
-        user_ID = dialog_result.get('name')
+        user_ID =   dialog_result.get('name')
         institute = dialog_result.get('institute')
         sample_ID = dialog_result.get('sample_ID')
 
@@ -100,7 +100,7 @@ class PathManager:
             return "All fields are required.", False
 
         # Combine into the expected "institute_userID_sampleID" format
-        original_name = f"{institute}_{user_ID}_{sample_ID}"
+        original_name = f"{institute}{ID_SEP}{user_ID}{ID_SEP}{sample_ID}"
         sanitized_name, is_valid = self.sanitize_and_validate_name(original_name)
         if not is_valid:
             return "Invalid Parts", False
@@ -117,23 +117,23 @@ class PathManager:
         """
         Returns a unique path in the rename directory.
         """
-        base_name, extension = os.path.splitext(name)
-        return self.get_unique_filename(self.rename_dir, base_name, extension)
+        filename_prefix, extension = os.path.splitext(name)
+        return self.get_unique_filename(self.rename_dir, filename_prefix, extension)
 
     def get_exception_path(self, name: str) -> str:
         """
         Returns a unique path in the exceptions directory.
         """
-        base_name, extension = os.path.splitext(name)
-        return self.get_unique_filename(self.exceptions_dir, base_name, extension)
+        filename_prefix, extension = os.path.splitext(name)
+        return self.get_unique_filename(self.exceptions_dir, filename_prefix, extension)
 
-    def get_unique_filename(self, directory: str, filename_no_ext: str, extension: str) -> str:
+    def get_unique_filename(self, directory: str, filename_prefix: str, extension: str) -> str:
         """
         Generates a unique filename in the given directory by appending a counter if needed.
         """
         counter = 1
         while True:
-            candidate = f"{filename_no_ext}_{counter}{extension}"
+            candidate = f"{filename_prefix}_{counter}{extension}"
 
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):

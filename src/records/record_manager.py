@@ -8,11 +8,8 @@ RecordPersistence object. Additionally, it handles synchronization of records
 to a remote database using a SyncManager.
 """
 
-import os
 import datetime
 from typing import Dict
-
-from src.config.settings import DEVICE_ID
 
 from src.records.local_record import LocalRecord, RecordInfo
 from src.records.record_persistence import RecordPersistence
@@ -61,7 +58,7 @@ class RecordManager:
         self.sync = sync_manager
 
         # Dictionary of records for the current day,
-        # keyed by their short_id (e.g., "IPAT_John_SampleA")
+        # keyed by their short_id (e.g., "ipat-jrf_Sample_A")
         self.daily_records_dict: Dict[str, LocalRecord] = self.persistence.load_daily_records()
 
     def create_record(self, record_info: RecordInfo) -> LocalRecord:
@@ -126,7 +123,7 @@ class RecordManager:
         """
         Removes all LocalRecord objects from the daily records dictionary
         and saves the empty dictionary to disk. This is typically done
-        at midnight or when manually resetting the system for a new day.
+        resetting the system for a new day.
         """
         logger.info("Clearing all daily records.")
         self.daily_records_dict.clear()
@@ -136,7 +133,7 @@ class RecordManager:
         """
         Looks up a LocalRecord by its short_id in the daily records dictionary.
 
-        :param short_id: The short_id to look for (e.g., "IPAT_MuS_Sample1").
+        :param short_id: The short_id to look for (e.g., "ipat-mus_sample_a").
         :return: The LocalRecord if found, otherwise None.
         """
         short_id = short_id.lower()
@@ -152,7 +149,7 @@ class RecordManager:
         Iterates over all daily records to find one whose long_id matches.
 
         :param long_id: The record's long ID string to look for 
-                        (e.g., "REM_01-20231010-REC_001-IMG-IPAT-MuS").
+                        (e.g., "dev_01-20231010-rec_001-img-ipat-mus").
         :return: The matching LocalRecord if found, otherwise None.
         """
         long_id = long_id.lower()
@@ -190,7 +187,7 @@ class RecordManager:
         Resets the daily records dictionary by syncing any pending records to the database,
         clearing all existing records, updating the date to today, and saving the empty
         records dictionary to disk. This is typically called when the system detects that
-        the daily records dictionary is out of date (e.g., at midnight).
+        the daily records dictionary is out of date.
         """
         logger.info("Resetting daily records dictionary and syncing to database.")
         self.sync_records_to_database()

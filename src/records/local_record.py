@@ -46,10 +46,9 @@ class LocalRecord:
     name, database status, and associated files.
 
     Attributes:
-        long_id (str): A detailed unique identifier for the record, potentially including
-                      device ID, date, and other metadata.
-        short_id (str): A concise unique identifier for the record.
-        name (str): A user-friendly name for the record, typically derived from the sample ID.
+        long_id (str): A detailed unique identifier for the record for database storage.
+        short_id (str): A concise unique identifier for the record for daily record storage.
+        name (str): The name of the record, or record title in kadi4mat, typically derived from the sample ID.
         date (str): The date when the record was created (yyyymmdd format).
         is_in_db (bool): Flag indicating whether the record has been uploaded to the database.
         file_uploaded (Dict[str, bool]): A dictionary mapping file paths to their upload status.
@@ -114,7 +113,7 @@ class LocalRecord:
 
     def to_dict(self) -> dict:
         """
-        Automatically serialize all fields into a dictionary.
+        Serialize all fields into a dictionary.
         """
         return asdict(self)
 

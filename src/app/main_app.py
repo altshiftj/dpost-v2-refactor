@@ -6,13 +6,10 @@ the monitoring of a watch directory (using watchdog), processes file events, and
 user sessions, testing logic, and database synchronization tasks.
 """
 
-import os
 import sys
 import queue
-import shutil
-from watchdog.observers import Observer
 
-from src.config.settings import WATCH_DIR, TESTING, TESTING_PATH
+from src.config.settings import WATCH_DIR
 from src.gui.user_interface import UserInterface
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import BaseFileProcessor
@@ -27,18 +24,17 @@ class DeviceWatchdogApp:
       1. File system monitoring (via watchdog),
       2. File processing (through a file processor),
       3. GUI interactions (with a UI manager),
-      4. Testing logic (if enabled),
-      5. Session management and database synchronization,
-      6. Graceful shutdown logic.
+      4. Session management and database synchronization,
+      5. Graceful shutdown logic.
     """
     def __init__(
             self, 
-            file_processor: BaseFileProcessor,
-            ui: UserInterface,
-            session_manager: SessionManager,
-            event_handler: FileEventHandler,
-            directory_observer,
-            event_queue: queue.Queue,
+            file_processor:     BaseFileProcessor,
+            ui:                 UserInterface,
+            session_manager:    SessionManager,
+            event_handler:      FileEventHandler,
+            directory_observer, #WatchdogObserver
+            event_queue:        queue.Queue,
         ):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
@@ -46,25 +42,18 @@ class DeviceWatchdogApp:
         :param file_processor: An instance of a BaseFileProcessor (or subclass) for handling file logic.
         :param ui: A UserInterface or subclass responsible for GUI interactions and dialogs.
         :param session_manager: A SessionManager that manages user sessions and timeouts.
-        :param event_handler: A FileEventHandler that listens for file system events (watchdog).
+        :param event_handler: A FileEventHandler that listens for file system events.
         :param observer: The watchdog Observer that monitors the specified directory for file changes.
         :param event_queue: A queue.Queue object where the event handler places files for processing.
         """
-        self.testing = TESTING          # Global setting indicating if testing logic is enabled
-        self.test_path = TESTING_PATH   # Path to test files or directories
         self.watch_dir = WATCH_DIR      # The main directory being monitored for file changes
 
-        # If testing is enabled, clear the watch directory for a clean state
-        if self.testing:
-            logger.info("Running in testing mode.")
-            self._clear_watch_dir_for_testing()
-
         # Store references to core components
-        self.ui: UserInterface                  = ui
-        self.session_manager: SessionManager    = session_manager
-        self.file_processor: BaseFileProcessor  = file_processor
-        self.event_queue: queue.Queue           = event_queue
-        self.event_handler: FileEventHandler    = event_handler
+        self.ui:                UserInterface       = ui
+        self.session_manager:   SessionManager      = session_manager
+        self.file_processor:    BaseFileProcessor   = file_processor
+        self.event_queue:       queue.Queue         = event_queue
+        self.event_handler:     FileEventHandler    = event_handler
         
         # Configure the watchdog observer to watch the directory and start observing
         self.directory_observer = directory_observer
@@ -86,28 +75,6 @@ class DeviceWatchdogApp:
 
         # When the session manager ends a session, call self.end_session
         self.session_manager.end_session_callback = self.end_session
-
-    def _clear_watch_dir_for_testing(self):
-        """
-        Clears the watch directory by removing all files and subdirectories.
-        This ensures a fresh start when running in testing mode.
-        """
-        logger.info("Clearing watch directory for testing...")
-        for root, dirs, files in os.walk(self.watch_dir):
-            for file in files:
-                file_path = os.path.join(root, file)
-                try:
-                    os.remove(file_path)
-                    logger.debug(f"Removed file: {file_path}")
-                except Exception as e:
-                    logger.error(f"Failed to remove file '{file_path}': {e}")
-            for dir in dirs:
-                dir_path = os.path.join(root, dir)
-                try:
-                    shutil.rmtree(dir_path)
-                    logger.debug(f"Removed directory: {dir_path}")
-                except Exception as e:
-                    logger.error(f"Failed to remove directory '{dir_path}': {e}")
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         """
@@ -148,7 +115,7 @@ class DeviceWatchdogApp:
         # Handle all items currently queued
         while not self.event_queue.empty():
             try:
-                data_path, _ = self.event_queue.get_nowait()
+                data_path = self.event_queue.get_nowait()
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
@@ -156,30 +123,6 @@ class DeviceWatchdogApp:
 
         # Schedule the next iteration of this loop
         self.ui.root.after(100, self.process_events)
-
-        # If testing is enabled, handle it once, then disable testing
-        if self.testing:
-            self._handle_testing()
-            self.testing = False
-
-    def _handle_testing(self): #TODO: Consider managing integration testing with a separate class
-        """
-        Handles testing by copying test files or directories from TESTING_PATH
-        into the watch directory for automated scenarios.
-        """
-        if os.path.isfile(self.test_path):
-            try:
-                shutil.copy(self.test_path, self.watch_dir)
-                logger.info(f"Copied test file from '{self.test_path}' to '{self.watch_dir}'.")
-            except Exception as e:
-                logger.error(f"Failed to copy test file '{self.test_path}': {e}")
-        elif os.path.isdir(self.test_path):
-            destination = os.path.join(self.watch_dir, os.path.basename(self.test_path))
-            try:
-                shutil.copytree(self.test_path, destination)
-                logger.info(f"Copied test directory from '{self.test_path}' to '{destination}'.")
-            except Exception as e:
-                logger.error(f"Failed to copy test directory '{self.test_path}': {e}")
 
     def on_closing(self):
         """

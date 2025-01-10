@@ -29,9 +29,6 @@ class RecordPersistence:
         self.daily_records_path = DAILY_RECORDS_JSON
         self.records_db_path = ARCHIVED_FILES_JSON
 
-    # -------------------------------------------------------------------------
-    # Public Methods
-    # -------------------------------------------------------------------------
     def load_daily_records(self) -> dict:
         """
         Loads daily record data from a JSON file, converting each entry back into a LocalRecord.
@@ -63,12 +60,7 @@ class RecordPersistence:
         """
         record_entry = self._build_record_ndjson_entry(record)
         self._append_ndjson_entry(self.records_db_path, record_entry)
-    # -------------------------------------------------------------------------
 
-
-    # -------------------------------------------------------------------------
-    # Private Helper Methods
-    # -------------------------------------------------------------------------
     def _read_json_file(self, path: str) -> dict | None:
         """
         Reads a JSON file and returns its contents as a dictionary. Logs exceptions if any.
@@ -136,7 +128,7 @@ class RecordPersistence:
         """
         record_id = record.long_id
         sync_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        record_name = record.short_id
+        record_name = record.name
         file_basenames = [os.path.basename(fp) for fp in record.files_uploaded.keys()]
 
         return {
@@ -159,4 +151,3 @@ class RecordPersistence:
             logger.info(f"Appended record '{entry.get('record_id')}' to NDJSON at '{path}'.")
         except Exception as e:
             logger.exception(f"Failed to append to NDJSON file '{path}': {e}")
-    # -------------------------------------------------------------------------

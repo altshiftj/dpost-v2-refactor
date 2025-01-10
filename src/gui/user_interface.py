@@ -1,9 +1,9 @@
 """
 gui_manager.py
 
-This module defines classes for handling all GUI-related interactions using Tkinter.
+This module defines classes for handling all GUI-related interactions.
 It provides an abstract base class (UserInterface) that outlines required GUI methods,
-and a concrete implementation (GUIManager) that displays dialogs, pop-ups, and other
+and a concrete implementation (TKinterUI) that displays dialogs, pop-ups, and other
 UI elements to guide user interactions. 
 """
 
@@ -59,7 +59,7 @@ class UserInterface(ABC):
         Asks the user whether they want to append new data to an already existing,
         uploaded record.
 
-        :param record_name: The base name of the record (short ID).
+        :param record_name: The short ID of the record.
         :return: True if the user opts to append to the existing record, False otherwise.
         """
         pass
@@ -95,7 +95,7 @@ class TKinterUI(UserInterface):
 
     def __init__(self):
         """
-        Initializes the GUIManager. Sets up a hidden root window (self.root) and a hidden
+        Initializes the TKinterUI. Sets up a hidden root window (self.root) and a hidden
         dialog parent window (self.dialog_parent), both of which are used for displaying
         message boxes and custom dialogs on top of the main application.
         """

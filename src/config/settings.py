@@ -1,7 +1,5 @@
 import os
 import re
-import logging
-from kadi_apy import KadiManager
 
 DEVICE_ID = "REM_01"
 DEVICE_RECORD_ID = 190
@@ -13,10 +11,25 @@ EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
 ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')
 DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
 
-FILENAME_PATTERN = re.compile(r'^[A-Za-z]+_[A-Za-z]+_[A-Za-z0-9- ]+$')
+"""
+   ^(?!.*\.\.): No consecutive dots ".." anywhere in the string
+   (?!\.):       The first character must not be a dot
+   [A-Za-z]+:    First segment = letters only
+   _:            Literal underscore
+   [A-Za-z]+:    Second segment = letters only
+   _:            Another underscore
+   [A-Za-z0-9._\- ]+: Third segment = letters, digits, underscore, dash, dot, space (characters to avoid: / \ : * ? " < > |)
+   (?<!\.):      Must not end with a dot
+   $:            End of string
 
-TESTING = False
-TESTING_PATH = ""
+   Exemplary format: 'Institute-UserID-Sample_ID'
+"""
+FILENAME_PATTERN = re.compile(
+    r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9._\-\ %]+(?<!\.)$'
+)
+
+ID_SEP = '-'
+FILE_SEP = '_'
 
 LOG_FILE = 'watchdog.log'
 

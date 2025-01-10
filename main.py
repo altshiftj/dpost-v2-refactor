@@ -24,7 +24,7 @@ def main():
 
     paths = PathManager()
     persistence = RecordPersistence()
-    ids = IdGenerator(DEVICE_ID)
+    ids = IdGenerator()
     sync = SyncManager(db_manager=KadiManager(), ui=ui)
     records = RecordManager(paths, persistence, ids, sync)
 

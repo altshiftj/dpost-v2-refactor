@@ -1,3 +1,7 @@
+"""
+    Currently not implemented in the application. Someday...
+"""
+
 import os
 import re
 import hashlib
