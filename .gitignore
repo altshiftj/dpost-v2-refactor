@@ -8,3 +8,4 @@
 watchdog.log
 ipatwatchdog.spec
 compiled_code.py
+.gitignore
