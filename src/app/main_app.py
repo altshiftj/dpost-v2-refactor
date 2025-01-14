@@ -9,7 +9,7 @@ user sessions, testing logic, and database synchronization tasks.
 import sys
 import queue
 
-from watchdog.observers import ObserverType # for linting
+from watchdog.observers.api import BaseObserver # for linting
 
 from src.config.settings import WATCH_DIR
 from src.gui.user_interface import TKinterUI # UserInterface enabling linting
@@ -35,7 +35,7 @@ class DeviceWatchdogApp:
             ui:                 TKinterUI,
             session_manager:    SessionManager,
             event_handler:      FileEventHandler,
-            directory_observer: ObserverType,           # fixed linting
+            directory_observer: BaseObserver,           # fixed linting
             event_queue:        queue.Queue,
         ):
         """

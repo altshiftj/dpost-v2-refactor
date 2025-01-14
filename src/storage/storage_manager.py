@@ -10,7 +10,6 @@ naming conventions and directory structures.
 import os
 import shutil
 import logging
-from abc import ABC, abstractmethod
 
 from src.records.local_record import LocalRecord
 from src.storage.path_manager import PathManager
@@ -18,55 +17,11 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-
-class IStorageManager(ABC):
+class StorageManager:
     """
-    Interface for managing storage operations such as moving and renaming files.
+    Concrete implementation of previous IStorageManager that handles standard file storage operations.
 
-    This abstract base class defines the essential methods that any storage manager
-    implementation must provide. It ensures consistency and standardization across
-    different storage operations within the application.
-    """
-
-    @abstractmethod
-    def move_item(self, src: str, dest: str):
-        """
-        Move an item from the source path to the destination path.
-
-        Args:
-            src (str): Source file or directory path.
-            dest (str): Destination file or directory path.
-        """
-        pass
-
-    @abstractmethod
-    def move_to_exception_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the exceptions directory with a unique name.
-
-        Args:
-            path (str): Path of the file to move.
-            name (str): Desired base name for the file (without extension).
-            extension (str): File extension (e.g., '.txt').
-        """
-        pass
-
-    @abstractmethod
-    def move_to_rename_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the rename directory with a unique name.
-
-        Args:
-            path (str): Path of the file to move.
-            name (str): Desired base name for the file (without extension).
-            extension (str): File extension (e.g., '.txt').
-        """
-        pass
-
-
-class StorageManager(IStorageManager):
-    """
-    Concrete implementation of IStorageManager that handles standard file storage operations.
+    Since there is no current need for multiple storage manager implementations //ALK 14.01.25
 
     The StorageManager class provides methods to move and rename files and directories
     within the application's directory structure. It ensures that all storage actions

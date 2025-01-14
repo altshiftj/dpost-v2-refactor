@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 import os
 
 from src.processing.metadata_extractor import MetadataExtractor
-from src.storage.storage_manager import IStorageManager
+from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
 from src.records.local_record import LocalRecord
 from src.records.record_manager import RecordManager
@@ -43,7 +43,7 @@ class BaseFileProcessor(ABC):
         ui:                 UserInterface,
         session_controller: SessionController,
         paths:              PathManager,
-        storage:            IStorageManager,
+        storage:            StorageManager,
         persistence:        RecordPersistence,
         ids:                IdGenerator,
         records:            RecordManager,
