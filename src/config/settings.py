@@ -1,15 +1,16 @@
 import os
 import re
 
-DEVICE_ID = "REM_01"
-DEVICE_RECORD_ID = 190
-
 WATCH_DIR = os.path.abspath("monitored_folder")
-RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
-RECORD_DIR = os.path.join(WATCH_DIR, 'Records')
-EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
-ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')
-DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
+
+RENAME_DIR = os.path.join('staging', 'To_Rename')
+RECORD_DIR = os.path.join('staging', 'Records')
+EXCEPTIONS_DIR = os.path.join('staging', 'Exceptions')
+ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')    # phase out
+DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')  # phase out
+
+
+DB_PATH = os.path.join('staging', 'particle_size_data.db')    
 
 """
    ^(?!.*\.\.): No consecutive dots ".." anywhere in the string
@@ -25,7 +26,7 @@ DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
    Exemplary format: 'Institute-UserID-Sample_ID'
 """
 FILENAME_PATTERN = re.compile(
-    r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9._\-\ %]+(?<!\.)$'
+   r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9._\-\ %]+(?<!\.)$'
 )
 
 ID_SEP = '-'
@@ -37,6 +38,9 @@ SESSION_TIMEOUT = 300 # 5 minutes
 
 DEBOUNCE_TIME = 0.5
 
+# TODO move rem relaated metainfo to rem space
+DEVICE_ID = "REM_01"
+DEVICE_RECORD_ID = 190
 DEFAULT_REM_RECORD_DESCRIPTION = """
 # Default Description
 *Can be edited and/or overwritten*  

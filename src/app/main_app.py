@@ -9,8 +9,10 @@ user sessions, testing logic, and database synchronization tasks.
 import sys
 import queue
 
+from watchdog.observers import ObserverType # for linting
+
 from src.config.settings import WATCH_DIR
-from src.gui.user_interface import UserInterface
+from src.gui.user_interface import TKinterUI # UserInterface enabling linting
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import BaseFileProcessor
 from src.sessions.session_manager import SessionManager
@@ -30,10 +32,10 @@ class DeviceWatchdogApp:
     def __init__(
             self, 
             file_processor:     BaseFileProcessor,
-            ui:                 UserInterface,
+            ui:                 TKinterUI,
             session_manager:    SessionManager,
             event_handler:      FileEventHandler,
-            directory_observer, #WatchdogObserver
+            directory_observer: ObserverType,           # fixed linting
             event_queue:        queue.Queue,
         ):
         """
@@ -49,7 +51,7 @@ class DeviceWatchdogApp:
         self.watch_dir = WATCH_DIR      # The main directory being monitored for file changes
 
         # Store references to core components
-        self.ui:                UserInterface       = ui
+        self.ui:                TKinterUI           = ui
         self.session_manager:   SessionManager      = session_manager
         self.file_processor:    BaseFileProcessor   = file_processor
         self.event_queue:       queue.Queue         = event_queue

@@ -4,6 +4,8 @@
 /build/
 /monitored_folder/
 /testing_data/
+/tmp/
+/staging
 **/__pycache__/
 watchdog.log
 ipatwatchdog.spec
