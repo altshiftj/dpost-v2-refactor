@@ -33,20 +33,20 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class BaseFileProcessor(ABC):
-    """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
-    """
+
+
+class FileProcessorWrapper:
 
     def __init__(
         self,
         ui:                 UserInterface,
         session_manager:    SessionManager,
+        file_processor:     'BaseFileProcessor',
     ):
         self.ui                 = ui
         self.session_manager    = session_manager
         self.records            = RecordManager(sync_manager=SyncManager(ui=ui))
+        self.file_processor:    BaseFileProcessor   = file_processor
 
         # initialize directories
         PathManager.init_dirs()
@@ -58,34 +58,7 @@ class BaseFileProcessor(ABC):
             if not self.records.is_dict_up_to_date():
                 self.records.reset_dict()
 
-        # Holds the data type for the item being processed
-        self.item_data_type = None
-
-    @abstractmethod
-    def is_valid_datatype(self, path: str):
-        """
-        Checks if the file/folder at the given path is valid for this processor.
-        Returns (bool, str|None) -> (is_valid, data_type).
-        """
-        pass
-
-    @abstractmethod
-    def is_record_appendable(self, record: LocalRecord) -> bool:
-        """
-        Checks if the record can be appended to with this processor’s data type.
-        Return: (appendable, message_if_not_appendable)
-        """
-        pass
-
-    @abstractmethod
-    def device_specific_processing(
-        self, record_path, file_id, source_path, filename_prefix, extension
-    ):
-        """
-        Allows subclasses to implement custom moves, renames, or metadata extraction.
-        Must return the final path of the processed item.
-        """
-        pass
+        
 
     def process_item(self, src_path: str):
         """
@@ -94,8 +67,8 @@ class BaseFileProcessor(ABC):
         base_name = os.path.basename(src_path)
         filename_prefix, extension = os.path.splitext(base_name)
 
-        # Validate data type
-        valid_datatype, self.item_data_type = self.is_valid_datatype(src_path)
+        # Validate data type TODO CHANGE THIS attribtue manipulation of itemdatatype
+        valid_datatype, self.file_processor.item_data_type = self.file_processor.is_valid_datatype(src_path)
         if not valid_datatype:
             self._handle_invalid_datatype(src_path, filename_prefix, extension)
             return
@@ -152,7 +125,7 @@ class BaseFileProcessor(ABC):
         """
         if record:
             # If record can't be appended to for device-specific reasons:
-            if not self.is_record_appendable(record):
+            if not self.file_processor.is_record_appendable(record):
                 return 'unappendable_record'
             
             # If record is fully synced in DB and user might want to attach more data:
@@ -254,7 +227,7 @@ class BaseFileProcessor(ABC):
             record_path = PathManager.get_record_path(record)
             os.makedirs(record_path, exist_ok=True)
 
-            final_path = self.device_specific_processing(
+            final_path = self.file_processor.device_specific_processing(
                 record_path, file_id, src_path, filename_prefix, extension
             )
 
@@ -287,16 +260,18 @@ class BaseFileProcessor(ABC):
             self.ui.show_error("Error", f"Failed to rename: {e}")
             StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
 
+
+
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
         """
         Returns an existing record or creates a new one if `record` is None.
         """
         if record is not None:
             return record
-
+        # TODO remove item datatype from interdependence
         record_info = IdGenerator.generate_new_record_info(
             filename_prefix=filename_prefix,
-            data_type=self.item_data_type,
+            data_type=self.file_processor.item_data_type,
             record_count=self.records.get_num_records(),
         )
         return self.records.create_record(record_info)
@@ -307,7 +282,39 @@ class BaseFileProcessor(ABC):
         """
         self.records.sync_records_to_database()
 
+class BaseFileProcessor(ABC):
+    """
+    An abstract base for processors that handle new/modified files or directories
+    and associate them with records in the system.
+    """
+    # Holds the data type for the item being processed
+    item_data_type = None 
 
+    @abstractmethod
+    def is_valid_datatype(self, path: str):
+        """
+        Checks if the file/folder at the given path is valid for this processor.
+        Returns (bool, str|None) -> (is_valid, data_type).
+        """
+        pass
+
+    @abstractmethod
+    def is_record_appendable(self, record: LocalRecord) -> bool:
+        """
+        Checks if the record can be appended to with this processor’s data type.
+        Return: (appendable, message_if_not_appendable)
+        """
+        pass
+
+    @abstractmethod
+    def device_specific_processing(
+        self, record_path, file_id, source_path, filename_prefix, extension
+    ):
+        """
+        Allows subclasses to implement custom moves, renames, or metadata extraction.
+        Must return the final path of the processed item.
+        """
+        pass
 class SEMFileProcessor(BaseFileProcessor):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).

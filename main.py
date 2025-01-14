@@ -7,17 +7,10 @@ from src.processing.file_processor import SEMFileProcessor
 def main():
     logger = setup_logger(__name__)
 
-    ui = TKinterUI()
-    session_manager = SessionManager(ui.root, end_session_callback=None)
-
-    file_processor = SEMFileProcessor(
-        ui=ui,
-        session_manager = session_manager)
-    
     app = DeviceWatchdogApp(
-        ui = ui,
-        file_processor = file_processor,
-        session_manager = session_manager)   
+        ui = TKinterUI(),
+        file_processor = SEMFileProcessor()
+        )   
 
     try:
         app.run()
