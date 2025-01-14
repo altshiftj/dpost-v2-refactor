@@ -28,8 +28,8 @@ class StorageManager:
     filenames when necessary.
     """
 
-
-    def move_item(self, src: str, dest: str):
+    @staticmethod
+    def move_item(src: str, dest: str):
         """
         Move an item from src to dest. If `os.rename` fails, fallback to `shutil.move`.
 

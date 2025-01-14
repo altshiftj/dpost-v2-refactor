@@ -13,6 +13,7 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class SessionManager:
     """
     Manages user sessions by tracking their active state, handling session timeouts,

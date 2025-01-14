@@ -27,6 +27,8 @@ from src.records.record_manager import RecordManager
 from src.records.id_generator import IdGenerator
 from src.gui.user_interface import UserInterface
 from src.sessions.session_controller import SessionController
+from src.sessions.session_manager import SessionManager
+from src.sync.sync_manager import SyncManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -40,12 +42,14 @@ class BaseFileProcessor(ABC):
     def __init__(
         self,
         ui:                 UserInterface,
-        session_controller: SessionController,
-        records:            RecordManager,
+        session_manager:    SessionManager,
     ):
         self.ui                 = ui
-        self.session_controller = session_controller
-        self.records            = records
+        self.session_controller = SessionController(session_manager, ui)
+        self.records            = RecordManager(sync_manager=SyncManager(ui=ui))
+
+        # initialize directories
+        PathManager.init_dirs()
 
         # If any record is not fully uploaded, sync on startup
         if not self.records.all_records_uploaded():

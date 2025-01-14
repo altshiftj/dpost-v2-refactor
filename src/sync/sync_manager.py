@@ -40,7 +40,7 @@ class SyncManager(ISyncManager):
     to a remote database using KadiManager.
     """
 
-    def __init__(self, db_manager, ui: UserInterface):
+    def __init__(self, ui: UserInterface):
         """
         Initializes the SyncManager with a database manager instance.
 
@@ -48,7 +48,7 @@ class SyncManager(ISyncManager):
             db_manager (callable): A factory or context manager that provides an instance
                                    of KadiManager for database operations.
         """
-        self.db_manager: KadiManager = db_manager
+        self.db_manager = KadiManager()
         self.ui = ui
 
     def sync_record_to_database(self, local_record: LocalRecord):

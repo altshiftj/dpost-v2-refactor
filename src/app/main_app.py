@@ -9,7 +9,7 @@ user sessions, testing logic, and database synchronization tasks.
 import sys
 import queue
 
-from watchdog.observers.api import BaseObserver # for linting
+from watchdog.observers import Observer
 
 from src.config.settings import WATCH_DIR
 from src.gui.user_interface import TKinterUI # UserInterface enabling linting
@@ -29,14 +29,16 @@ class DeviceWatchdogApp:
       4. Session management and database synchronization,
       5. Graceful shutdown logic.
     """
+
+    # they kinda are class attribute/constants
+    event_queue = queue.Queue()
+    event_handler = FileEventHandler(event_queue)
+
     def __init__(
-            self, 
-            file_processor:     BaseFileProcessor,
+            self,
             ui:                 TKinterUI,
+            file_processor:     BaseFileProcessor,
             session_manager:    SessionManager,
-            event_handler:      FileEventHandler,
-            directory_observer: BaseObserver,           # fixed linting
-            event_queue:        queue.Queue,
         ):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
@@ -54,11 +56,9 @@ class DeviceWatchdogApp:
         self.ui:                TKinterUI           = ui
         self.session_manager:   SessionManager      = session_manager
         self.file_processor:    BaseFileProcessor   = file_processor
-        self.event_queue:       queue.Queue         = event_queue
-        self.event_handler:     FileEventHandler    = event_handler
-        
+
         # Configure the watchdog observer to watch the directory and start observing
-        self.directory_observer = directory_observer
+        self.directory_observer = Observer()
         self.directory_observer.schedule(
             self.event_handler,
             path=self.watch_dir,
