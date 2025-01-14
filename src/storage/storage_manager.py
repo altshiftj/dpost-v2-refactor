@@ -11,7 +11,6 @@ import os
 import shutil
 import logging
 
-from src.records.local_record import LocalRecord
 from src.storage.path_manager import PathManager
 from src.app.logger import setup_logger
 
@@ -29,14 +28,6 @@ class StorageManager:
     filenames when necessary.
     """
 
-    def __init__(self, path_manager: PathManager):
-        """
-        Initialize the StorageManager with a PathManager instance.
-
-        Args:
-            path_manager (PathManager): An instance of PathManager to handle path operations.
-        """
-        self.path_manager = path_manager
 
     def move_item(self, src: str, dest: str):
         """
@@ -59,8 +50,9 @@ class StorageManager:
                 logger.error(f"Failed to move '{src}' to '{dest}' using shutil.move: {e_move}.")
                 raise e_move  # Re-raise after logging
 
+    @classmethod
     def _move_to_folder(
-        self,
+        cls,
         path: str,
         name: str,
         extension: str,
@@ -84,33 +76,35 @@ class StorageManager:
         """
         full_name = f"{name}{extension}"  # Combine base name and extension
         unique_dest_path = unique_path_func(full_name)
-        self.move_item(path, unique_dest_path)
+        cls.move_item(path, unique_dest_path)
 
         # Use the provided log level and message
         logger.log(log_level, log_message.format(path, unique_dest_path))
 
-    def move_to_exception_folder(self, path: str, name: str, extension: str):
+    @classmethod
+    def move_to_exception_folder(cls, path: str, name: str, extension: str):
         """
         Move a file to the exceptions directory with a unique name.
         """
-        self._move_to_folder(
+        cls._move_to_folder(
             path=path,
             name=name,
             extension=extension,
-            unique_path_func=self.path_manager.get_exception_path,
+            unique_path_func=PathManager.get_exception_path,
             log_message="Moved '{}' to exceptions folder at '{}'",
             log_level=logging.WARNING
         )
 
-    def move_to_rename_folder(self, path: str, name: str, extension: str):
+    @classmethod
+    def move_to_rename_folder(cls, path: str, name: str, extension: str):
         """
         Move a file to the rename directory with a unique name.
         """
-        self._move_to_folder(
+        cls._move_to_folder(
             path=path,
             name=name,
             extension=extension,
-            unique_path_func=self.path_manager.get_rename_path,
+            unique_path_func=PathManager.get_rename_path,
             log_message="Moved '{}' to rename folder at '{}'",
             log_level=logging.INFO
         )

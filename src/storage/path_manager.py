@@ -25,21 +25,15 @@ class PathManager:
         - Generates unique filenames to avoid naming conflicts.
         - Constructs paths for records, renaming operations, and exception handling.
     """
-    
-    def __init__(self):
-        """
-        Initializes the PathManager by setting up directory paths and ensuring their existence.
-        """
-        self.record_dir = RECORD_DIR
-        self.rename_dir = RENAME_DIR
-        self.exceptions_dir = EXCEPTIONS_DIR
-        self.naming_pattern = FILENAME_PATTERN
 
+    @staticmethod
+    def init_dirs():
         # Ensure all required directories exist; create them if they don't
-        for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
+        for directory in [RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR]:
             os.makedirs(directory, exist_ok=True)
-    
-    def sanitize_and_validate_name(self, filename_prefix: str) -> tuple:
+
+    @staticmethod
+    def sanitize_and_validate_name(filename_prefix: str) -> tuple:
         """
         Validates and sanitizes a base name against the naming convention.
         Expected format: 'Institute-UserID-SampleID'
@@ -59,7 +53,7 @@ class PathManager:
                 - A boolean indicating if the name is valid
         """
         # Quick overall pattern check (if you use a compiled regex for the entire string)
-        if not self.naming_pattern.match(filename_prefix):
+        if not FILENAME_PATTERN.match(filename_prefix):
             return filename_prefix, False
 
         # extract the inst and user_id as the first two parts of the filename
@@ -75,7 +69,8 @@ class PathManager:
         sanitized = f"{institute}{ID_SEP}{user_id}{ID_SEP}{sample_id}"
         return sanitized, True
     
-    def validate_user_input(self, dialog_result: dict) -> tuple:
+    @classmethod
+    def validate_user_input(cls, dialog_result: dict) -> tuple:
         """
         Validates the user input collected from the dialog.
         
@@ -101,33 +96,37 @@ class PathManager:
 
         # Combine into the expected "institute_userID_sampleID" format
         original_name = f"{institute}{ID_SEP}{user_ID}{ID_SEP}{sample_ID}"
-        sanitized_name, is_valid = self.sanitize_and_validate_name(original_name)
+        sanitized_name, is_valid = cls.sanitize_and_validate_name(original_name)
         if not is_valid:
             return "Invalid Parts", False
 
         return sanitized_name, True
       
-    def get_record_path(self, record: LocalRecord) -> str:
+    @staticmethod
+    def get_record_path(record: LocalRecord) -> str:
         """
         Returns the directory path for a given record based on its long_id.
         """
-        return os.path.join(self.record_dir, record.long_id)
+        return os.path.join(RECORD_DIR, record.long_id)
 
-    def get_rename_path(self, name: str) -> str:
+    @classmethod
+    def get_rename_path(cls, name: str) -> str:
         """
         Returns a unique path in the rename directory.
         """
         filename_prefix, extension = os.path.splitext(name)
-        return self.get_unique_filename(self.rename_dir, filename_prefix, extension)
+        return cls.get_unique_filename(RENAME_DIR, filename_prefix, extension)
 
-    def get_exception_path(self, name: str) -> str:
+    @classmethod
+    def get_exception_path(cls, name: str) -> str:
         """
         Returns a unique path in the exceptions directory.
         """
         filename_prefix, extension = os.path.splitext(name)
-        return self.get_unique_filename(self.exceptions_dir, filename_prefix, extension)
-
-    def get_unique_filename(self, directory: str, filename_prefix: str, extension: str) -> str:
+        return cls.get_unique_filename(EXCEPTIONS_DIR, filename_prefix, extension)
+    
+    @staticmethod
+    def get_unique_filename( directory: str, filename_prefix: str, extension: str) -> str:
         """
         Generates a unique filename in the given directory by appending a counter if needed.
         """

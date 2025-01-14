@@ -12,9 +12,9 @@ import datetime
 from typing import Dict
 
 from src.records.local_record import LocalRecord, RecordInfo
-from src.records.record_persistence import RecordPersistence
+from src.records import record_persistence
 from src.records.id_generator import IdGenerator
-from src.storage.path_manager import PathManager
+
 from src.sync.sync_manager import ISyncManager
 from src.app.logger import setup_logger
 
@@ -37,9 +37,6 @@ class RecordManager:
 
     def __init__(
         self,  
-        paths_manager: PathManager, 
-        record_persistence: RecordPersistence,
-        id_generator: IdGenerator,
         sync_manager: ISyncManager
     ):
         """
@@ -49,17 +46,13 @@ class RecordManager:
 
         :param record_persistence: Manages saving/loading records to disk (daily/archived).
         :param paths_manager: Provides path construction/validation methods.
-        :param id_generator: Helps generate unique record/file IDs based on naming conventions.
         :param sync_manager: Handles synchronization of records with a remote database/system.
         """
-        self.paths = paths_manager
-        self.persistence = record_persistence
-        self.ids = id_generator
         self.sync = sync_manager
 
         # Dictionary of records for the current day,
         # keyed by their short_id (e.g., "ipat-jrf_Sample_A")
-        self.daily_records_dict: Dict[str, LocalRecord] = self.persistence.load_daily_records()
+        self.daily_records_dict: Dict[str, LocalRecord] = record_persistence.load_daily_records()
 
     def create_record(self, record_info: RecordInfo) -> LocalRecord:
         """
@@ -70,9 +63,9 @@ class RecordManager:
         :param record_info: A RecordInfo dataclass containing the record's basic metadata.
         :return: The newly created LocalRecord object.
         """
-        daily_record_key = self.ids.construct_short_id(record_info)
+        daily_record_key = IdGenerator.construct_short_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
-            long_id=self.ids.construct_long_id(record_info),
+            long_id=IdGenerator.construct_long_id(record_info),
             short_id=daily_record_key,
             name=record_info.sample_id,
             date = record_info.date
@@ -99,7 +92,7 @@ class RecordManager:
         RecordPersistence object.
         """
         logger.debug("Saving daily records to disk.")
-        self.persistence.save_daily_records(self.daily_records_dict)
+        record_persistence.save_daily_records(self.daily_records_dict)
 
     def get_all_records(self) -> dict:
         """
@@ -208,5 +201,5 @@ class RecordManager:
                 logger.info(f"Syncing record '{record.long_id}' to the database.")
                 self.sync.sync_record_to_database(record)
                 self.save_records()
-                self.persistence.append_to_records_db(record)
+                record_persistence.append_to_records_db(record)
         logger.info("Synchronization of records completed.")

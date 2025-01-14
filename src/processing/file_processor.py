@@ -24,7 +24,6 @@ from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
 from src.records.local_record import LocalRecord
 from src.records.record_manager import RecordManager
-from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
 from src.gui.user_interface import UserInterface
 from src.sessions.session_controller import SessionController
@@ -42,18 +41,10 @@ class BaseFileProcessor(ABC):
         self,
         ui:                 UserInterface,
         session_controller: SessionController,
-        paths:              PathManager,
-        storage:            StorageManager,
-        persistence:        RecordPersistence,
-        ids:                IdGenerator,
         records:            RecordManager,
     ):
         self.ui                 = ui
         self.session_controller = session_controller
-        self.paths              = paths
-        self.storage            = storage
-        self.persistence        = persistence
-        self.ids                = ids
         self.records            = records
 
         # If any record is not fully uploaded, sync on startup
@@ -112,7 +103,7 @@ class BaseFileProcessor(ABC):
         """
         Moves invalid items to exception folder and informs the user.
         """
-        self.storage.move_to_exception_folder(src_path, filename_prefix, extension)
+        StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
         self.ui.show_warning(
             "Invalid Data Type",
             "The file/folder is not a recognized data type.\n"
@@ -130,7 +121,7 @@ class BaseFileProcessor(ABC):
             self.records.reset_dict()
 
         # Sanitize the name (remove illegal chars, etc.)
-        sanitized_filename_prefix, is_valid_format = self.paths.sanitize_and_validate_name(filename_prefix)
+        sanitized_filename_prefix, is_valid_format = PathManager.sanitize_and_validate_name(filename_prefix)
         record = self.records.get_record_by_short_id(sanitized_filename_prefix)
 
         # Decide 'state' of the item
@@ -217,12 +208,12 @@ class BaseFileProcessor(ABC):
         # Keep asking until valid name or user cancels
         while True:
             user_input = self.ui.prompt_rename()  # Returns dict or None
-            result, is_valid = self.paths.validate_user_input(user_input)
+            result, is_valid = PathManager.validate_user_input(user_input)
 
             if not is_valid:
                 if result == "User cancelled the dialog.":
                     # Move to rename folder
-                    self.storage.move_to_rename_folder(src_path, filename_prefix, extension)
+                    StorageManager.move_to_rename_folder(src_path, filename_prefix, extension)
                     self.ui.show_info(
                         "Operation Cancelled",
                         "The item has been moved to the rename folder."
@@ -255,8 +246,8 @@ class BaseFileProcessor(ABC):
             record = self._get_or_create_record(record, filename_prefix)
 
             # 2) Prepare final file path + device-specific ops
-            file_id = self.ids.generate_file_id(filename_prefix)
-            record_path = self.paths.get_record_path(record)
+            file_id = IdGenerator.generate_file_id(filename_prefix)
+            record_path = PathManager.get_record_path(record)
             os.makedirs(record_path, exist_ok=True)
 
             final_path = self.device_specific_processing(
@@ -279,7 +270,7 @@ class BaseFileProcessor(ABC):
 
         except Exception as e:
             self.ui.show_error("Error", f"Failed to rename: {e}")
-            self.storage.move_to_exception_folder(src_path, filename_prefix, extension)
+            StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
 
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
         """
@@ -288,7 +279,7 @@ class BaseFileProcessor(ABC):
         if record is not None:
             return record
 
-        record_info = self.ids.generate_new_record_info(
+        record_info = IdGenerator.generate_new_record_info(
             filename_prefix=filename_prefix,
             data_type=self.item_data_type,
             record_count=self.records.get_num_records(),
@@ -334,12 +325,12 @@ class SEMFileProcessor(BaseFileProcessor):
         if self.item_data_type == 'ELID':
             self._flatten_elid_directory(src_path, filename_prefix)
             new_dir_path = os.path.join(record_path, file_id)
-            self.storage.move_item(src_path, new_dir_path)
+            StorageManager.move_item(src_path, new_dir_path)
             return new_dir_path
         else:
             # For images, create a unique filename
-            new_file_path = self.paths.get_unique_filename(record_path, file_id, extension)
-            self.storage.move_item(src_path, new_file_path)
+            new_file_path = PathManager.get_unique_filename(record_path, file_id, extension)
+            StorageManager.move_item(src_path, new_file_path)
             return new_file_path
 
     def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
@@ -368,7 +359,7 @@ class SEMFileProcessor(BaseFileProcessor):
                 new_path = os.path.join(target_dir, new_fname)
 
                 try:
-                    self.storage.move_item(old_path, new_path)
+                    StorageManager.move_item(old_path, new_path)
                     logger.debug(f"Moved and renamed '{old_path}' to '{new_path}'.")
                 except OSError as e:
                     logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")

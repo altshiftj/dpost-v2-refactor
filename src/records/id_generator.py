@@ -38,9 +38,10 @@ class IdGenerator:
 
         :param device_id: The device identifier, e.g., from src.config.settings.DEVICE_ID
         """
-        self.device_id = DEVICE_ID
+        #self.device_id = DEVICE_ID
 
-    def construct_short_id(self, id_info: RecordInfo) -> str:
+    @staticmethod
+    def construct_short_id(id_info: RecordInfo) -> str:
         """
         Constructs a short identifier (`short_id`) using the RecordInfo object's institute,
         user ID, and sample ID. This identifier is used to store and retrieve records in the
@@ -60,7 +61,8 @@ class IdGenerator:
         logger.debug(f"Constructed short_id: {short_id} from RecordInfo: {id_info}")
         return short_id
     
-    def construct_long_id(self, id_info: RecordInfo) -> str:
+    @staticmethod
+    def construct_long_id(id_info: RecordInfo) -> str:
         """
         Constructs a long identifier (`long_id`) using comprehensive metadata from the
         RecordInfo object. This identifier includes device ID, date, daily record count,
@@ -88,9 +90,9 @@ class IdGenerator:
         long_id = long_id.lower()
         logger.debug(f"Constructed long_id: {long_id} from RecordInfo: {id_info}")
         return long_id
- 
-    def generate_new_record_info(
-        self, 
+        
+    @staticmethod
+    def generate_new_record_info( 
         filename_prefix: str, 
         data_type: str, 
         record_count: int
@@ -124,7 +126,7 @@ class IdGenerator:
         current_date = datetime.datetime.now().strftime('%Y%m%d')
         
         record_info = RecordInfo(
-            device_id=self.device_id,
+            device_id=DEVICE_ID,
             date=current_date,
             daily_record_count=record_count + 1,
             data_type=data_type,
@@ -135,7 +137,8 @@ class IdGenerator:
         logger.debug(f"Generated new RecordInfo: {record_info}")
         return record_info
     
-    def generate_file_id(self, filename_prefix: str) -> str:
+    @staticmethod
+    def generate_file_id(filename_prefix: str) -> str:
         """
         Generates a unique file identifier (`file_id`) based on the provided filename prefix.
         The file_id includes the device name, institute, user ID, sample ID, and the
@@ -159,7 +162,7 @@ class IdGenerator:
             logger.error(f"Base name '{filename_prefix}' is not in the expected format 'Institute-UserID-Sample_ID'.")
             raise ValueError(f"Base name '{filename_prefix}' is not in the expected format 'Institute-UserID-Sample_ID'.")
 
-        device_type = self.device_id.split('_')[0]
+        device_type = DEVICE_ID.split('_')[0]
         current_date = datetime.datetime.now().strftime('%Y%m%d')
         
         file_id = f"{device_type}{ID_SEP}{institute.upper()}{ID_SEP}{user_ID.upper()}{ID_SEP}{sample_ID}{ID_SEP}{current_date}"
