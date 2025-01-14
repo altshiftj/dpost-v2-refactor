@@ -8,7 +8,6 @@ application.
 """
 
 import datetime
-from dataclasses import dataclass
 
 from src.app.logger import setup_logger
 from src.records.local_record import RecordInfo

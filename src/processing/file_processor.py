@@ -18,16 +18,16 @@ Classes:
 
 from abc import ABC, abstractmethod
 import os
-
+# these are just namespaces
 from src.processing.metadata_extractor import MetadataExtractor
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
-from src.records.local_record import LocalRecord
-from src.records.record_manager import RecordManager
 from src.records.id_generator import IdGenerator
-from src.gui.user_interface import UserInterface
-from src.sessions.session_controller import SessionController
+from src.records.local_record import LocalRecord
+# these carry state
 from src.sessions.session_manager import SessionManager
+from src.records.record_manager import RecordManager
+from src.gui.user_interface import UserInterface
 from src.sync.sync_manager import SyncManager
 from src.app.logger import setup_logger
 
@@ -45,7 +45,7 @@ class BaseFileProcessor(ABC):
         session_manager:    SessionManager,
     ):
         self.ui                 = ui
-        self.session_controller = SessionController(session_manager, ui)
+        self.session_manager    = session_manager
         self.records            = RecordManager(sync_manager=SyncManager(ui=ui))
 
         # initialize directories
@@ -270,7 +270,18 @@ class BaseFileProcessor(ABC):
 
             # 4) Add item to record + manage session
             self.records.add_item_to_record(final_path, record)
-            self.session_controller.manage_session()
+
+            if not self.session_manager.session_active:
+                # No active session; start a new one
+                self.session_manager.start_session()
+                # Show a dialog informing the user that the session is active and can be ended
+                self.ui.show_done_dialog(self.session_manager)
+                logger.debug("Started a new session and displayed the 'Done' dialog.")
+            else:
+                # Session is active; reset the timer to extend the session
+                self.session_manager.reset_timer()
+                logger.debug("Session is active. Timer has been reset to extend the session.")
+
 
         except Exception as e:
             self.ui.show_error("Error", f"Failed to rename: {e}")
