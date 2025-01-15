@@ -45,7 +45,9 @@ class FileProcessorWrapper:
     ):
         self.ui                 = ui
         self.session_manager    = session_manager
-        self.records            = RecordManager(sync_manager=SyncManager(ui=ui))
+        self.records            = RecordManager(
+            sync_manager=SyncManager(ui=ui) 
+            )   # i feel like we can avoid the ui with the syncmanager
         self.file_processor:    BaseFileProcessor   = file_processor
 
         # initialize directories

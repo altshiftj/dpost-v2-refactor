@@ -30,9 +30,8 @@ class DeviceWatchdogApp:
       5. Graceful shutdown logic.
     """
 
-    # they kinda are class attribute/constants
+    # this is kinda a class attribute/constants
     event_queue = queue.Queue()
-    event_handler = FileEventHandler(event_queue)
 
     def __init__(
             self,
@@ -66,9 +65,10 @@ class DeviceWatchdogApp:
         ########################################################################
         # DIRECTORY OBSERVER
         # Configure the watchdog observer to watch the directory and start observing
+        event_handler = FileEventHandler(self.event_queue)
         self.directory_observer = Observer()
         self.directory_observer.schedule(
-            self.event_handler,
+            event_handler,
             path=self.watch_dir,
             recursive=False
         )
@@ -150,7 +150,6 @@ class DeviceWatchdogApp:
         self.directory_observer.stop()
         self.directory_observer.join()
         ########################################################################
-
 
         # Finally, destroy the GUI
         self.ui.destroy()
