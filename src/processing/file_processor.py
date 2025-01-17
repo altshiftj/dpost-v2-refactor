@@ -232,7 +232,7 @@ class BaseFileProcessor(ABC):
                     # Field(s) contained invalid characters
                     self.ui.show_warning(
                         "Invalid Name",
-                        "Please avoid special characters (e.g., !@#$%^&*_+=) and follow the naming convention."
+                        "Please avoid special characters (e.g., !@#$^&*+=) and follow the naming convention."
                     )
                     continue
                 else:

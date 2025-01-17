@@ -13,6 +13,8 @@ from src.records.local_record import LocalRecord
 from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
 from src.app.logger import setup_logger
 
+from kadi_apy import KadiManager
+
 logger = setup_logger(__name__)
 
 class PathManager:
@@ -38,6 +40,8 @@ class PathManager:
         # Ensure all required directories exist; create them if they don't
         for directory in [self.record_dir, self.rename_dir, self.exceptions_dir]:
             os.makedirs(directory, exist_ok=True)
+
+        self.db_record_filelist = []
     
     def sanitize_and_validate_name(self, filename_prefix: str) -> tuple:
         """
@@ -138,5 +142,26 @@ class PathManager:
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):
                 return unique_path
+            counter += 1
+
+    def get_unique_db_filename(self, directory: str, record_id, filename_prefix: str, extension: str, kadimanager: KadiManager) -> str:
+        """
+        Generates a unique filename in the given directory by appending a counter if needed.
+        """
+        counter = 1
+        while True:
+            candidate = f"{filename_prefix}_{counter}{extension}"
+
+            with kadimanager as manager:
+                db_record = manager.record(id=record_id)
+                unique_path = os.path.join(directory, candidate)
+                if not os.path.exists(unique_path):
+                    return candidate
+                counter += 1
+                
+
+            unique_path = os.path.join(directory, candidate)
+            if not os.path.exists(unique_path):
+                return candidate
             counter += 1
     

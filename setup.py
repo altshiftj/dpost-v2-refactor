@@ -20,7 +20,7 @@ setup(
     author='James Fitz',
     author_email='james.fitz@tu-braunschweig.de',
     description='A device watchdog application.',
-    url='https://github.com/yourusername/device_watchdog_app',  # Update with your repo URL
+    url='https://github.com/yourusername/device_watchdog_app',
     classifiers=[
         'Programming Language :: Python :: 3',
         'Operating System :: OS Independent',

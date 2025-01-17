@@ -4,14 +4,14 @@ import re
 DEVICE_ID = "REM_01"
 DEVICE_RECORD_ID = 190
 
-WATCH_DIR = os.path.abspath("monitored_folder")
+WATCH_DIR = os.path.abspath("PhenomXL Bilder")
 RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
 RECORD_DIR = os.path.join(WATCH_DIR, 'Records')
 EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
 ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')
 DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
 
-"""
+r"""
    ^(?!.*\.\.): No consecutive dots ".." anywhere in the string
    (?!\.):       The first character must not be a dot
    [A-Za-z]+:    First segment = letters only
@@ -25,7 +25,7 @@ DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')
    Exemplary format: 'Institute-UserID-Sample_ID'
 """
 FILENAME_PATTERN = re.compile(
-    r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9._\-\ %]+(?<!\.)$'
+    r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9._+\-\ %]+(?<!\.)$'
 )
 
 ID_SEP = '-'
