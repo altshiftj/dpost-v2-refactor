@@ -63,11 +63,10 @@ class RecordManager:
         :param record_info: A RecordInfo dataclass containing the record's basic metadata.
         :return: The newly created LocalRecord object.
         """
-        daily_record_key = IdGenerator.construct_short_id(record_info)
+        daily_record_key = IdGenerator.construct_record_id(record_info)
         self.daily_records_dict[daily_record_key] = LocalRecord(
-            long_id=IdGenerator.construct_long_id(record_info),
-            short_id=daily_record_key,
-            name=record_info.sample_id,
+            record_identifier=daily_record_key,
+            record_name=record_info.sample_id,
             date = record_info.date
         )
         
@@ -82,7 +81,7 @@ class RecordManager:
         :param path: The file or directory path to associate with the record.
         :param record: The LocalRecord object to which the path will be added.
         """
-        logger.debug(f"Adding item '{path}' to record '{record.short_id}'.")
+        logger.debug(f"Adding item '{path}' to record '{record.record_identifier}'.")
         record.add_item(path)
         self.save_records()
 

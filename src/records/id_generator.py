@@ -40,7 +40,7 @@ class IdGenerator:
         #self.device_id = DEVICE_ID
 
     @staticmethod
-    def construct_short_id(id_info: RecordInfo) -> str:
+    def construct_record_id(id_info: RecordInfo) -> str:
         """
         Constructs a short identifier (`short_id`) using the RecordInfo object's institute,
         user ID, and sample ID. This identifier is used to store and retrieve records in the

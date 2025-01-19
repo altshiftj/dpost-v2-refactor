@@ -50,7 +50,7 @@ def append_to_records_db(record: LocalRecord):
     entry = {
         "record_id": record.long_id,
         "upsync_time": datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        "record_name": record.name,
+        "record_name": record.record_name,
         "files": [os.path.basename(fp) for fp in record.files_uploaded.keys()],
     }
     try:

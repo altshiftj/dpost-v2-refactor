@@ -102,7 +102,7 @@ class SyncManager(ISyncManager):
         Retrieves or creates a user group for this record based on user/institute info.
         If user is provided, also adds the user to the group as 'admin'.
         """
-        institute, user_initials = local_record.short_id.split(ID_SEP)[:2]
+        institute, user_initials = local_record.record_identifier.split(ID_SEP)[:2]
         db_group_id = f"{user_initials}{ID_SEP}{institute}{ID_SEP}rawdata{ID_SEP}group"
 
         try:
@@ -153,7 +153,7 @@ class SyncManager(ISyncManager):
         Retrieve the user object for this record. If the user doesn't exist, 
         show an error in the UI, and return None. (Creation is not supported yet.)
         """
-        institute, user_initials = local_record.short_id.split(ID_SEP)[:2]
+        institute, user_initials = local_record.record_identifier.split(ID_SEP)[:2]
         db_user_id = f"{user_initials}{ID_SEP}{institute}"
 
         try:
@@ -183,7 +183,7 @@ class SyncManager(ISyncManager):
         tags, and links.
         """
         if not local_record.is_in_db:
-            db_record.set_attribute('title', local_record.name)
+            db_record.set_attribute('title', local_record.record_name)
             db_record.set_attribute('description', DEFAULT_REM_RECORD_DESCRIPTION)
             db_record.set_attribute('type', 'rawdata')
             db_record.add_tag('Electron Microscopy')

@@ -56,9 +56,8 @@ class LocalRecord:
                                          if the file has been uploaded (`True`) or not (`False`).
     """
     RecordInfo = RecordInfo
-    long_id: str = "null"
-    short_id: str = "null"
-    name: str = "null"
+    record_identifier: str = "null"
+    record_name: str = "null"
     date: str = "null"
     is_in_db: bool = False
     files_uploaded: Dict[str, bool] = field(default_factory=dict)
@@ -108,7 +107,7 @@ class LocalRecord:
             bool: `True` if all files are uploaded, `False` otherwise.
         """
         all_uploaded = all(self.files_uploaded.values())
-        logger.debug(f"All files uploaded for record '{self.short_id}': {all_uploaded}")
+        logger.debug(f"All files uploaded for record '{self.record_identifier}': {all_uploaded}")
         return all_uploaded
 
     def to_dict(self) -> dict:

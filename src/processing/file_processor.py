@@ -260,8 +260,6 @@ class FileProcessorWrapper:
             self.ui.show_error("Error", f"Failed to rename: {e}")
             StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
 
-
-
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
         """
         Returns an existing record or creates a new one if `record` is None.

@@ -63,10 +63,11 @@ class PathManager:
         # the sample_id is the rest of the filename
         sample_id = ID_SEP.join(parts[2:])
 
-        sample_id = sample_id.replace('%', 'pct')
+        sample_id = sample_id.replace(' ', '_')  # replace spaces with underscores
 
         # Rebuild and return sanitized name
         sanitized = f"{institute}{ID_SEP}{user_id}{ID_SEP}{sample_id}"
+        sanitized = sanitized.lower()
         return sanitized, True
     
     @classmethod
