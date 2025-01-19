@@ -6,8 +6,7 @@ WATCH_DIR = os.path.abspath("PhenomXL Bilder")
 RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
 RECORD_DIR = os.path.join(WATCH_DIR, 'Records')
 EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
-ARCHIVED_FILES_JSON = os.path.join(RECORD_DIR, 'archive_db.json')    # phase out
-DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')  # phase out
+DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'record_persistence.json')  # phase out
 
 
 DB_PATH = os.path.join('staging', 'particle_size_data.db')    

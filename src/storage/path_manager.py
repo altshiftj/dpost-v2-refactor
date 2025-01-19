@@ -108,7 +108,7 @@ class PathManager:
         """
         Returns the directory path for a given record based on its long_id.
         """
-        return os.path.join(RECORD_DIR, record.long_id)
+        return os.path.join(RECORD_DIR, record.identifier)
 
     @classmethod
     def get_rename_path(cls, name: str) -> str:

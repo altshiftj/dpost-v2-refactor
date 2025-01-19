@@ -28,14 +28,22 @@ from src.records.local_record import LocalRecord
 from src.sessions.session_manager import SessionManager
 from src.records.record_manager import RecordManager
 from src.gui.user_interface import UserInterface
-from src.sync.sync_manager import SyncManager
+from src.sync.sync_manager import KadiSyncManager
 from src.app.logger import setup_logger
+
 
 logger = setup_logger(__name__)
 
-
-
-class FileProcessorWrapper:
+class FileProcessManager:
+    """
+    Coordinates the overall workflow for new or updated files/folders within the
+    data-watchdog system. This class acts as the primary entry point for file events:
+    it validates file types via the configured BaseFileProcessor, manages user prompts
+    (e.g., renaming and record decisions), handles session control, and updates or
+    creates records accordingly. If a file does not meet criteria or the user opts out,
+    it routes items to rename or exception folders. The FileProcessManager also ensures
+    pending records are synchronized to the database on startup and after processing.
+    """
 
     def __init__(
         self,
@@ -46,7 +54,7 @@ class FileProcessorWrapper:
         self.ui                 = ui
         self.session_manager    = session_manager
         self.records            = RecordManager(
-            sync_manager=SyncManager(ui=ui) 
+            sync_manager=KadiSyncManager(ui=ui) 
             )   # i feel like we can avoid the ui with the syncmanager
         self.file_processor:    BaseFileProcessor   = file_processor
 
@@ -57,8 +65,6 @@ class FileProcessorWrapper:
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
-            if not self.records.is_dict_up_to_date():
-                self.records.reset_dict()
 
     def process_item(self, src_path: str):
         """
@@ -68,7 +74,7 @@ class FileProcessorWrapper:
         filename_prefix, extension = os.path.splitext(base_name)
 
         # Validate data type TODO CHANGE THIS attribtue manipulation of itemdatatype
-        valid_datatype, self.file_processor.item_data_type = self.file_processor.is_valid_datatype(src_path)
+        valid_datatype = self.file_processor.is_valid_datatype(src_path)
         if not valid_datatype:
             self._handle_invalid_datatype(src_path, filename_prefix, extension)
             return
@@ -93,13 +99,9 @@ class FileProcessorWrapper:
         Determines how to process a valid item—whether it belongs to a known record
         or needs a new one, or if the naming is invalid.
         """
-        # Ensure the in-memory record dict is up to date
-        if not self.records.is_dict_up_to_date():
-            self.records.reset_dict()
-
         # Sanitize the name (remove illegal chars, etc.)
         sanitized_filename_prefix, is_valid_format = PathManager.sanitize_and_validate_name(filename_prefix)
-        record = self.records.get_record_by_short_id(sanitized_filename_prefix)
+        record = self.records.get_record_by_id(sanitized_filename_prefix)
 
         # Decide 'state' of the item
         item_state = self._determine_routing_state(record, is_valid_format)
@@ -223,13 +225,15 @@ class FileProcessorWrapper:
             record = self._get_or_create_record(record, filename_prefix)
 
             # 2) Prepare final file path + device-specific ops
-            file_id = IdGenerator.generate_file_id(filename_prefix)
+            file_id = record.identifier
             record_path = PathManager.get_record_path(record)
             os.makedirs(record_path, exist_ok=True)
 
-            final_path = self.file_processor.device_specific_processing(
-                record_path, file_id, src_path, filename_prefix, extension
+            final_path, datatype = self.file_processor.device_specific_processing(
+                src_path, record_path, file_id, extension
             )
+
+            record.datatype = datatype
 
             # 3) Notify the user of success
             if notify:
@@ -266,13 +270,7 @@ class FileProcessorWrapper:
         """
         if record is not None:
             return record
-        # TODO remove item datatype from interdependence
-        record_info = IdGenerator.generate_new_record_info(
-            filename_prefix=filename_prefix,
-            data_type=self.file_processor.item_data_type,
-            record_count=self.records.get_num_records(),
-        )
-        return self.records.create_record(record_info)
+        return self.records.create_record(filename_prefix)
 
     def sync_records_to_database(self):
         """
@@ -285,14 +283,11 @@ class BaseFileProcessor(ABC):
     An abstract base for processors that handle new/modified files or directories
     and associate them with records in the system.
     """
-    # Holds the data type for the item being processed
-    item_data_type = None 
-
     @abstractmethod
     def is_valid_datatype(self, path: str):
         """
         Checks if the file/folder at the given path is valid for this processor.
-        Returns (bool, str|None) -> (is_valid, data_type).
+        Returns (bool|None) -> (is_valid, data_type).
         """
         pass
 
@@ -325,34 +320,35 @@ class SEMFileProcessor(BaseFileProcessor):
         """
         if os.path.isdir(path):
             if any(f.endswith('.elid') for f in os.listdir(path)):
-                return True, 'ELID'
+                return True
         if path.lower().endswith(('.tiff', '.tif')):
-            return True, 'IMG'
-        return False, None
+            return True
+        return False
 
     def is_record_appendable(self, record: LocalRecord) -> bool:
         """
         Disallow appending to records that already represent an ELID directory.
         """
-        if 'elid' in record.long_id:
+        if any('.elid' in key for key in record.files_uploaded.keys()):
             return False
         return True
 
-    def device_specific_processing(self, record_path, file_id, src_path, filename_prefix, extension):
+    def device_specific_processing(self, src_path: str, record_path: str, file_id: str, extension: str) -> str:
         """
         For ELID data, flatten subdirectories first.
         For TIF/TIFF, just rename and move the file.
         """
-        if self.item_data_type == 'ELID':
-            self._flatten_elid_directory(src_path, filename_prefix)
-            new_dir_path = os.path.join(record_path, file_id)
-            StorageManager.move_item(src_path, new_dir_path)
-            return new_dir_path
-        else:
+        if extension.lower() in ('.tif', '.tiff'):
             # For images, create a unique filename
             new_file_path = PathManager.get_unique_filename(record_path, file_id, extension)
             StorageManager.move_item(src_path, new_file_path)
-            return new_file_path
+            return new_file_path, 'img'
+        else:
+            self._flatten_elid_directory(src_path, file_id)
+            new_dir_path = os.path.join(record_path, file_id)
+            StorageManager.move_item(src_path, new_dir_path)
+            return new_dir_path, 'elid'
+
 
     def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
         """

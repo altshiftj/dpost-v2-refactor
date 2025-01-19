@@ -14,7 +14,7 @@ from watchdog.observers import Observer
 from src.config.settings import WATCH_DIR
 from src.gui.user_interface import TKinterUI 
 from src.handlers.file_event_handler import FileEventHandler
-from src.processing.file_processor import BaseFileProcessor, FileProcessorWrapper
+from src.processing.file_processor import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
 
@@ -57,7 +57,7 @@ class DeviceWatchdogApp:
             ui.root,
             end_session_callback=None)
         
-        self.file_processor_wrapper = FileProcessorWrapper(
+        self.file_processing = FileProcessManager(
             ui = ui,
             session_manager = self.session_manager,
             file_processor = file_processor)
@@ -107,7 +107,7 @@ class DeviceWatchdogApp:
         """
         logger.debug("End session called.")
         try:
-            self.file_processor_wrapper.sync_records_to_database()
+            self.file_processing.sync_records_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
@@ -130,7 +130,7 @@ class DeviceWatchdogApp:
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
-            self.file_processor_wrapper.process_item(data_path)
+            self.file_processing.process_item(data_path)
 
         # Schedule the next iteration of this loop
         self.ui.root.after(100, self.process_events)
