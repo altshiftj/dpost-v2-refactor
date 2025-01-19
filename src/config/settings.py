@@ -1,7 +1,7 @@
 import os
 import re
 
-WATCH_DIR = os.path.abspath("monitored_folder")
+WATCH_DIR = os.path.abspath("PhenomXL Bilder")
 
 RENAME_DIR = os.path.join('staging', 'To_Rename')
 RECORD_DIR = os.path.join('staging', 'Records')
@@ -12,7 +12,7 @@ DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'daily_records.json')  # phase out
 
 DB_PATH = os.path.join('staging', 'particle_size_data.db')    
 
-"""
+r"""
    ^(?!.*\.\.): No consecutive dots ".." anywhere in the string
    (?!\.):       The first character must not be a dot
    [A-Za-z]+:    First segment = letters only

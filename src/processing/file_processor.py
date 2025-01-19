@@ -60,8 +60,6 @@ class FileProcessorWrapper:
             if not self.records.is_dict_up_to_date():
                 self.records.reset_dict()
 
-        
-
     def process_item(self, src_path: str):
         """
         Entry point when a file/folder is created or modified.
@@ -317,6 +315,7 @@ class BaseFileProcessor(ABC):
         Must return the final path of the processed item.
         """
         pass
+    
 class SEMFileProcessor(BaseFileProcessor):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).

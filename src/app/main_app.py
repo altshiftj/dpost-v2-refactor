@@ -12,7 +12,7 @@ import queue
 from watchdog.observers import Observer
 
 from src.config.settings import WATCH_DIR
-from src.gui.user_interface import TKinterUI # UserInterface enabling linting
+from src.gui.user_interface import TKinterUI 
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_processor import BaseFileProcessor, FileProcessorWrapper
 from src.sessions.session_manager import SessionManager
@@ -51,9 +51,9 @@ class DeviceWatchdogApp:
         self.watch_dir = WATCH_DIR      # The main directory being monitored for file changes
 
         # Store references to core components
-        self.ui :    TKinterUI      = ui
+        self.ui : TKinterUI = ui
 
-        self.session_manager        = SessionManager(
+        self.session_manager = SessionManager(
             ui.root,
             end_session_callback=None)
         
