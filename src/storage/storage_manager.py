@@ -54,7 +54,7 @@ class StorageManager:
     def _move_to_folder(
         cls,
         path: str,
-        name: str,
+        filename_prefix: str,
         extension: str,
         unique_path_func,
         log_message: str,
@@ -74,7 +74,7 @@ class StorageManager:
                 2) Destination path
             log_level (int): The logging level to be used. Defaults to `logging.INFO`.
         """
-        full_name = f"{name}{extension}"  # Combine base name and extension
+        full_name = f"{filename_prefix}{extension}"  # Combine base name and extension
         unique_dest_path = unique_path_func(full_name)
         cls.move_item(path, unique_dest_path)
 
@@ -82,13 +82,13 @@ class StorageManager:
         logger.log(log_level, log_message.format(path, unique_dest_path))
 
     @classmethod
-    def move_to_exception_folder(cls, path: str, name: str, extension: str):
+    def move_to_exception_folder(cls, path: str, filename_prefix: str, extension: str = ""):
         """
         Move a file to the exceptions directory with a unique name.
         """
         cls._move_to_folder(
             path=path,
-            name=name,
+            filename_prefix=filename_prefix,
             extension=extension,
             unique_path_func=PathManager.get_exception_path,
             log_message="Moved '{}' to exceptions folder at '{}'",
@@ -96,15 +96,29 @@ class StorageManager:
         )
 
     @classmethod
-    def move_to_rename_folder(cls, path: str, name: str, extension: str):
+    def move_to_rename_folder(cls, path: str, filename_prefix: str, extension: str = ""):       
         """
         Move a file to the rename directory with a unique name.
         """
         cls._move_to_folder(
             path=path,
-            name=name,
+            filename_prefix=filename_prefix,
             extension=extension,
             unique_path_func=PathManager.get_rename_path,
             log_message="Moved '{}' to rename folder at '{}'",
+            log_level=logging.INFO
+        )
+
+    @classmethod
+    def move_to_record_folder(cls, path: str, filename_prefix: str, extension: str = ""):
+        """
+        Move a file to the record directory for a given record ID.
+        """
+        cls._move_to_folder(
+            path=path,
+            filename_prefix=filename_prefix,
+            extension=extension,
+            unique_path_func=PathManager.get_record_path,
+            log_message="Moved '{}' to record folder for '{}'",
             log_level=logging.INFO
         )

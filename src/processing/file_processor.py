@@ -325,7 +325,7 @@ class SEMFileProcessor(BaseFileProcessor):
             return True
         return False
 
-    def is_record_appendable(self, record: LocalRecord) -> bool:
+    def is_record_appendable(self, record: LocalRecord) -> bool: #TODO consider appendability of EILDs. Why not?
         """
         Disallow appending to records that already represent an ELID directory.
         """
@@ -333,19 +333,19 @@ class SEMFileProcessor(BaseFileProcessor):
             return False
         return True
 
-    def device_specific_processing(self, src_path: str, record_path: str, file_id: str, extension: str) -> str:
+    def device_specific_processing(self, src_path: str, record_path: str, filename_prefix: str, extension: str) -> str:
         """
         For ELID data, flatten subdirectories first.
         For TIF/TIFF, just rename and move the file.
         """
         if extension.lower() in ('.tif', '.tiff'):
             # For images, create a unique filename
-            new_file_path = PathManager.get_unique_filename(record_path, file_id, extension)
+            new_file_path = PathManager.get_unique_filename(record_path, filename_prefix, extension)
             StorageManager.move_item(src_path, new_file_path)
             return new_file_path, 'img'
         else:
-            self._flatten_elid_directory(src_path, file_id)
-            new_dir_path = os.path.join(record_path, file_id)
+            self._flatten_elid_directory(src_path, filename_prefix)
+            new_dir_path = os.path.join(record_path, filename_prefix)
             StorageManager.move_item(src_path, new_dir_path)
             return new_dir_path, 'elid'
 

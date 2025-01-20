@@ -102,13 +102,14 @@ class PathManager:
             return "Invalid Parts", False
 
         return sanitized_name, True
-      
+    
     @staticmethod
     def get_record_path(record: LocalRecord) -> str:
         """
         Returns the directory path for a given record based on its long_id.
         """
         return os.path.join(RECORD_DIR, record.identifier)
+
 
     @classmethod
     def get_rename_path(cls, name: str) -> str:
@@ -127,13 +128,13 @@ class PathManager:
         return cls.get_unique_filename(EXCEPTIONS_DIR, filename_prefix, extension)
     
     @staticmethod
-    def get_unique_filename( directory: str, filename_prefix: str, extension: str) -> str:
+    def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
         """
         Generates a unique filename in the given directory by appending a counter if needed.
         """
         counter = 1
         while True:
-            candidate = f"{filename_prefix}_{counter}{extension}"
+            candidate = f"{filename_prefix}_{counter:02d}{extension}"
 
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):

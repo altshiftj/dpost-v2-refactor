@@ -8,6 +8,4 @@
 /staging
 **/__pycache__/
 watchdog.log
-ipatwatchdog.spec
-compiled_code.py
 .gitignore
