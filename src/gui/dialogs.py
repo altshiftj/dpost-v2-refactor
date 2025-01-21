@@ -121,9 +121,15 @@ class MultiFieldDialog(simpledialog.Dialog):
         self.sample_ID_var = tk.StringVar()
 
         # Example placeholder texts to guide the user
+<<<<<<< HEAD
         self.example_user_ID = "Ex: MuS"
         self.example_institute = "Ex: IPAT"
         self.example_sample_ID = r"Ex: Cathode_20%_SO4_-20C"
+=======
+        self.example_user_ID = "Ex: mus"
+        self.example_institute = "Ex: ipat"
+        self.example_sample_ID = r"Ex: ivtrap_a01"
+>>>>>>> ref-sqlpersistence
 
         # Create EntryWithPlaceholder widgets for each field
         self.name_entry = EntryWithPlaceholder(

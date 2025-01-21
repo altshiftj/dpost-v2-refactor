@@ -2,6 +2,7 @@
 /wdvenv/
 /dist/
 /build/
+<<<<<<< HEAD
 /monitored_folder/
 /testing_data/
 **/__pycache__/
@@ -11,3 +12,10 @@
 watchdog.log
 ipatwatchdog.spec
 compiled_code.py
+=======
+/PhenomXL Bilder/
+/testing_data/
+**/__pycache__/
+watchdog.log
+.gitignore
+>>>>>>> ref-sqlpersistence

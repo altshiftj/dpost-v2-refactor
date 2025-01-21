@@ -157,7 +157,11 @@ class TKinterUI(UserInterface):
         """
         return messagebox.askyesno(
             "Append to Existing Record", 
+<<<<<<< HEAD
             f"Record '{record_name}' was already created today. Add file to existing record?",
+=======
+            f"Record '{record_name}' already exists. Add file to existing record?",
+>>>>>>> ref-sqlpersistence
             parent=self.dialog_parent
         )
 

@@ -2,19 +2,28 @@
 record_persistence.py
 
 This module manages the serialization and deserialization of LocalRecord objects 
+<<<<<<< HEAD
 to and from JSON files. It also provides a way to append records to a log of 
 historical/archived record data in NDJSON (newline-delimited JSON) format.
+=======
+to and from JSON files.
+>>>>>>> ref-sqlpersistence
 """
 
 import json
 import os
+<<<<<<< HEAD
 import datetime
 from src.config.settings import DAILY_RECORDS_JSON, ARCHIVED_FILES_JSON
+=======
+from src.config.settings import DAILY_RECORDS_JSON
+>>>>>>> ref-sqlpersistence
 from src.records.local_record import LocalRecord
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+<<<<<<< HEAD
 class RecordPersistence:
     """
     Responsible for loading and saving 'daily' records data (used during the current
@@ -151,3 +160,31 @@ class RecordPersistence:
             logger.info(f"Appended record '{entry.get('record_id')}' to NDJSON at '{path}'.")
         except Exception as e:
             logger.exception(f"Failed to append to NDJSON file '{path}': {e}")
+=======
+def load_persisted_records() -> dict[str, LocalRecord]:
+    """
+    Loads daily record data from a JSON file, converting each entry back into a LocalRecord.
+    :return: A dictionary of short_id -> LocalRecord objects.
+    """
+    if not os.path.exists(DAILY_RECORDS_JSON):
+        return {}
+    try:
+        with open(DAILY_RECORDS_JSON, 'r') as f:
+            raw_data = json.load(f)
+        return {short_id: LocalRecord.from_dict(record_data) for short_id, record_data in raw_data.items()}
+    except Exception as e:
+        logger.exception(f"Failed to read or convert JSON file '{DAILY_RECORDS_JSON}': {e}")
+        return {}
+
+def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
+    """
+    Saves the given dictionary of LocalRecord objects to the daily records JSON file.
+    :param daily_records_dict: A dictionary mapping short_id -> LocalRecord objects.
+    """
+    try:
+        with open(DAILY_RECORDS_JSON, 'w') as f:
+            json.dump({key: record.to_dict() for key, record in daily_records_dict.items()}, f, indent=4)
+        logger.debug(f"JSON data saved to '{DAILY_RECORDS_JSON}'.")
+    except Exception as e:
+        logger.exception(f"Failed to write JSON file '{DAILY_RECORDS_JSON}': {e}")
+>>>>>>> ref-sqlpersistence

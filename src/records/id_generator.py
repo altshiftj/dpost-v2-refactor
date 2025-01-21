@@ -6,12 +6,16 @@ identifiers (`short_id,` `long_id,` and `file_id`) for records based on provided
 consistent ID formats for easy tracking, storage, and retrieval of records within the
 application.
 """
+<<<<<<< HEAD
 
 import datetime
 from dataclasses import dataclass
 
 from src.app.logger import setup_logger
 from src.records.local_record import RecordInfo
+=======
+from src.app.logger import setup_logger
+>>>>>>> ref-sqlpersistence
 from src.config.settings import DEVICE_ID, ID_SEP
 
 logger = setup_logger(__name__)
@@ -24,6 +28,7 @@ class IdGenerator:
     based on record metadata provided through a RecordInfo object.
 
     Key Responsibilities:
+<<<<<<< HEAD
         - Constructing `short_id` using institute, user ID, and sample ID.
         - Constructing `long_id` with comprehensive metadata including device ID, date,
           record count, and data type.
@@ -165,3 +170,30 @@ class IdGenerator:
         file_id = f"{device_type}{ID_SEP}{institute.upper()}{ID_SEP}{user_ID.upper()}{ID_SEP}{sample_ID}{ID_SEP}{current_date}"
         logger.debug(f"Generated file_id: {file_id} from base_name: {filename_prefix}")
         return file_id
+=======
+        - Constructing record identifiers using institute, user ID, and sample ID.
+        - Generating unique file IDs for associated files.
+    """
+
+    @staticmethod
+    def generate_record_id(filename_prefix: str) -> str:
+        """
+        Constructs a record identifier using the device name and the provided filename prefix.
+
+        Format:
+            {device}-{user_id}-{institute}-{sample_id}
+
+        Example:
+            "rem-mus-ipat-sample_a"
+
+        :param filename_prefix: The filename prefix to use in the identifier.
+        :return: A string representing the identifier.
+        """
+        device_type = DEVICE_ID.split('_')[0]
+
+        record_id = f"{device_type}{ID_SEP}{filename_prefix}"
+        record_id = record_id.lower()
+        logger.debug(f"Constructed record_id: {record_id}")
+        return record_id
+        
+>>>>>>> ref-sqlpersistence

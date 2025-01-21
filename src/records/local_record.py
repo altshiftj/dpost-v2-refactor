@@ -17,6 +17,7 @@ from src.app.logger import setup_logger
 logger = setup_logger(__name__)
 
 @dataclass
+<<<<<<< HEAD
 class RecordInfo:
     """
     A dataclass that holds metadata information about a record.
@@ -40,14 +41,20 @@ class RecordInfo:
 
 
 @dataclass
+=======
+>>>>>>> ref-sqlpersistence
 class LocalRecord:
     """
     A dataclass that represents a local record, tracking its unique identifiers,
     name, database status, and associated files.
 
     Attributes:
+<<<<<<< HEAD
         long_id (str): A detailed unique identifier for the record for database storage.
         short_id (str): A concise unique identifier for the record for daily record storage.
+=======
+        identifier (str): A concise unique identifier for the record for daily record storage.
+>>>>>>> ref-sqlpersistence
         name (str): The name of the record, or record title in kadi4mat, typically derived from the sample ID.
         date (str): The date when the record was created (yyyymmdd format).
         is_in_db (bool): Flag indicating whether the record has been uploaded to the database.
@@ -55,10 +62,16 @@ class LocalRecord:
                                          The key is the file path, and the value is a boolean indicating
                                          if the file has been uploaded (`True`) or not (`False`).
     """
+<<<<<<< HEAD
     RecordInfo = RecordInfo
     long_id: str = "null"
     short_id: str = "null"
     name: str = "null"
+=======
+    identifier: str = "null"
+    name: str = "null"
+    datatype: str = "null"
+>>>>>>> ref-sqlpersistence
     date: str = "null"
     is_in_db: bool = False
     files_uploaded: Dict[str, bool] = field(default_factory=dict)
@@ -108,7 +121,11 @@ class LocalRecord:
             bool: `True` if all files are uploaded, `False` otherwise.
         """
         all_uploaded = all(self.files_uploaded.values())
+<<<<<<< HEAD
         logger.debug(f"All files uploaded for record '{self.short_id}': {all_uploaded}")
+=======
+        logger.debug(f"All files uploaded for record '{self.identifier}': {all_uploaded}")
+>>>>>>> ref-sqlpersistence
         return all_uploaded
 
     def to_dict(self) -> dict:
@@ -117,10 +134,13 @@ class LocalRecord:
         """
         return asdict(self)
 
+<<<<<<< HEAD
     #
     # 3. Use `cls(**data)` to deserialize: 
     #    This passes the dictionary keys as constructor kwargs.
     #
+=======
+>>>>>>> ref-sqlpersistence
     @classmethod
     def from_dict(cls, data: dict) -> "LocalRecord":
         """
