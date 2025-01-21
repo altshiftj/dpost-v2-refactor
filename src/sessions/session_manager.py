@@ -13,10 +13,6 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> ref-sqlpersistence
 class SessionManager:
     """
     Manages user sessions by tracking their active state, handling session timeouts,
@@ -111,8 +107,6 @@ class SessionManager:
             logger.debug("Session timer canceled via cancel method.")
         else:
             logger.debug("No active session timer to cancel.")
-<<<<<<< HEAD
-=======
 
     def check_session_active_state(self):
         """
@@ -134,4 +128,3 @@ class SessionManager:
             self.session_manager.reset_timer()
             logger.debug("Session is active. Timer has been reset to extend the session.")
 
->>>>>>> ref-sqlpersistence

@@ -10,75 +10,16 @@ naming conventions and directory structures.
 import os
 import shutil
 import logging
-<<<<<<< HEAD
-from abc import ABC, abstractmethod
-
-from src.records.local_record import LocalRecord
-=======
-
->>>>>>> ref-sqlpersistence
 from src.storage.path_manager import PathManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-<<<<<<< HEAD
-
-class IStorageManager(ABC):
-    """
-    Interface for managing storage operations such as moving and renaming files.
-
-    This abstract base class defines the essential methods that any storage manager
-    implementation must provide. It ensures consistency and standardization across
-    different storage operations within the application.
-    """
-
-    @abstractmethod
-    def move_item(self, src: str, dest: str):
-        """
-        Move an item from the source path to the destination path.
-
-        Args:
-            src (str): Source file or directory path.
-            dest (str): Destination file or directory path.
-        """
-        pass
-
-    @abstractmethod
-    def move_to_exception_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the exceptions directory with a unique name.
-
-        Args:
-            path (str): Path of the file to move.
-            name (str): Desired base name for the file (without extension).
-            extension (str): File extension (e.g., '.txt').
-        """
-        pass
-
-    @abstractmethod
-    def move_to_rename_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the rename directory with a unique name.
-
-        Args:
-            path (str): Path of the file to move.
-            name (str): Desired base name for the file (without extension).
-            extension (str): File extension (e.g., '.txt').
-        """
-        pass
-
-
-class StorageManager(IStorageManager):
-    """
-    Concrete implementation of IStorageManager that handles standard file storage operations.
-=======
 class StorageManager:
     """
     Concrete implementation of previous IStorageManager that handles standard file storage operations.
 
     Since there is no current need for multiple storage manager implementations //ALK 14.01.25
->>>>>>> ref-sqlpersistence
 
     The StorageManager class provides methods to move and rename files and directories
     within the application's directory structure. It ensures that all storage actions
@@ -86,21 +27,8 @@ class StorageManager:
     filenames when necessary.
     """
 
-<<<<<<< HEAD
-    def __init__(self, path_manager: PathManager):
-        """
-        Initialize the StorageManager with a PathManager instance.
-
-        Args:
-            path_manager (PathManager): An instance of PathManager to handle path operations.
-        """
-        self.path_manager = path_manager
-
-    def move_item(self, src: str, dest: str):
-=======
     @staticmethod
     def move_item(src: str, dest: str):
->>>>>>> ref-sqlpersistence
         """
         Move an item from src to dest. If `os.rename` fails, fallback to `shutil.move`.
 
@@ -121,18 +49,11 @@ class StorageManager:
                 logger.error(f"Failed to move '{src}' to '{dest}' using shutil.move: {e_move}.")
                 raise e_move  # Re-raise after logging
 
-<<<<<<< HEAD
-    def _move_to_folder(
-        self,
-        path: str,
-        name: str,
-=======
     @classmethod
     def _move_to_folder(
         cls,
         path: str,
         filename_prefix: str,
->>>>>>> ref-sqlpersistence
         extension: str,
         unique_path_func,
         log_message: str,
@@ -152,30 +73,13 @@ class StorageManager:
                 2) Destination path
             log_level (int): The logging level to be used. Defaults to `logging.INFO`.
         """
-<<<<<<< HEAD
-        full_name = f"{name}{extension}"  # Combine base name and extension
-        unique_dest_path = unique_path_func(full_name)
-        self.move_item(path, unique_dest_path)
-=======
         full_name = f"{filename_prefix}{extension}"  # Combine base name and extension
         unique_dest_path = unique_path_func(full_name)
         cls.move_item(path, unique_dest_path)
->>>>>>> ref-sqlpersistence
 
         # Use the provided log level and message
         logger.log(log_level, log_message.format(path, unique_dest_path))
 
-<<<<<<< HEAD
-    def move_to_exception_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the exceptions directory with a unique name.
-        """
-        self._move_to_folder(
-            path=path,
-            name=name,
-            extension=extension,
-            unique_path_func=self.path_manager.get_exception_path,
-=======
     @classmethod
     def move_to_exception_folder(cls, path: str, filename_prefix: str, extension: str = ""):
         """
@@ -186,24 +90,10 @@ class StorageManager:
             filename_prefix=filename_prefix,
             extension=extension,
             unique_path_func=PathManager.get_exception_path,
->>>>>>> ref-sqlpersistence
             log_message="Moved '{}' to exceptions folder at '{}'",
             log_level=logging.WARNING
         )
 
-<<<<<<< HEAD
-    def move_to_rename_folder(self, path: str, name: str, extension: str):
-        """
-        Move a file to the rename directory with a unique name.
-        """
-        self._move_to_folder(
-            path=path,
-            name=name,
-            extension=extension,
-            unique_path_func=self.path_manager.get_rename_path,
-            log_message="Moved '{}' to rename folder at '{}'",
-            log_level=logging.INFO
-=======
     @classmethod
     def move_to_rename_folder(cls, path: str, filename_prefix: str, extension: str = ""):       
         """
@@ -230,5 +120,4 @@ class StorageManager:
             unique_path_func=PathManager.get_record_path,
             log_message="Moved '{}' to record folder for '{}'",
             log_level=logging.INFO
->>>>>>> ref-sqlpersistence
         )
