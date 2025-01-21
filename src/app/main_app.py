@@ -9,10 +9,12 @@ user sessions, testing logic, and database synchronization tasks.
 import sys
 import queue
 
+from watchdog.observers import Observer
+
 from src.config.settings import WATCH_DIR
-from src.gui.user_interface import UserInterface
+from src.gui.user_interface import TKinterUI 
 from src.handlers.file_event_handler import FileEventHandler
-from src.processing.file_processor import BaseFileProcessor
+from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
 
@@ -27,14 +29,14 @@ class DeviceWatchdogApp:
       4. Session management and database synchronization,
       5. Graceful shutdown logic.
     """
+
+    # this is kinda a class attribute/constants
+    event_queue = queue.Queue()
+
     def __init__(
-            self, 
-            file_processor:     BaseFileProcessor,
-            ui:                 UserInterface,
-            session_manager:    SessionManager,
-            event_handler:      FileEventHandler,
-            directory_observer, #WatchdogObserver
-            event_queue:        queue.Queue,
+            self,
+            ui:                 TKinterUI,
+            file_processor:     BaseFileProcessor
         ):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
@@ -49,21 +51,30 @@ class DeviceWatchdogApp:
         self.watch_dir = WATCH_DIR      # The main directory being monitored for file changes
 
         # Store references to core components
-        self.ui:                UserInterface       = ui
-        self.session_manager:   SessionManager      = session_manager
-        self.file_processor:    BaseFileProcessor   = file_processor
-        self.event_queue:       queue.Queue         = event_queue
-        self.event_handler:     FileEventHandler    = event_handler
+        self.ui : TKinterUI = ui
+
+        self.session_manager = SessionManager(
+            ui.root,
+            end_session_callback=None)
         
+        self.file_processing = FileProcessManager(
+            ui = ui,
+            session_manager = self.session_manager,
+            file_processor = file_processor)
+        
+        ########################################################################
+        # DIRECTORY OBSERVER
         # Configure the watchdog observer to watch the directory and start observing
-        self.directory_observer = directory_observer
+        event_handler = FileEventHandler(self.event_queue)
+        self.directory_observer = Observer()
         self.directory_observer.schedule(
-            self.event_handler,
+            event_handler,
             path=self.watch_dir,
             recursive=False
         )
         self.directory_observer.start()
-        
+        ########################################################################
+
         logger.info(f"Monitoring directory: {self.watch_dir}")
 
         # Periodically check for new events
@@ -96,7 +107,7 @@ class DeviceWatchdogApp:
         """
         logger.debug("End session called.")
         try:
-            self.file_processor.sync_records_to_database()
+            self.file_processing.sync_records_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
@@ -119,7 +130,7 @@ class DeviceWatchdogApp:
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
-            self.file_processor.process_item(data_path)
+            self.file_processing.process_item(data_path)
 
         # Schedule the next iteration of this loop
         self.ui.root.after(100, self.process_events)
@@ -134,9 +145,11 @@ class DeviceWatchdogApp:
         if self.session_manager.session_active:
             self.session_manager.end_session()
 
+        ########################################################################
         # Stop and join the watchdog observer
         self.directory_observer.stop()
         self.directory_observer.join()
+        ########################################################################
 
         # Finally, destroy the GUI
         self.ui.destroy()

@@ -17,37 +17,13 @@ from src.app.logger import setup_logger
 logger = setup_logger(__name__)
 
 @dataclass
-class RecordInfo:
-    """
-    A dataclass that holds metadata information about a record.
-
-    Attributes:
-        device_id (str): Identifier for the device generating the record.
-        date (str): The date when the record was created.
-        daily_record_count (int): The count of records created on the given date.
-        data_type (str): The type of data the record contains (e.g., 'IMG', 'ELID').
-        institute (str): The institute associated with the record.
-        user_id (str): The ID of the user who created the record.
-        sample_id (str): The identifier for the sample associated with the record.
-    """
-    device_id: str = "null"
-    date: str = "null"
-    daily_record_count: int = -1
-    data_type: str = "null"
-    institute: str = "null"
-    user_id: str = "null"
-    sample_id: str = "null"
-
-
-@dataclass
 class LocalRecord:
     """
     A dataclass that represents a local record, tracking its unique identifiers,
     name, database status, and associated files.
 
     Attributes:
-        long_id (str): A detailed unique identifier for the record for database storage.
-        short_id (str): A concise unique identifier for the record for daily record storage.
+        identifier (str): A concise unique identifier for the record for daily record storage.
         name (str): The name of the record, or record title in kadi4mat, typically derived from the sample ID.
         date (str): The date when the record was created (yyyymmdd format).
         is_in_db (bool): Flag indicating whether the record has been uploaded to the database.
@@ -55,10 +31,9 @@ class LocalRecord:
                                          The key is the file path, and the value is a boolean indicating
                                          if the file has been uploaded (`True`) or not (`False`).
     """
-    RecordInfo = RecordInfo
-    long_id: str = "null"
-    short_id: str = "null"
+    identifier: str = "null"
     name: str = "null"
+    datatype: str = "null"
     date: str = "null"
     is_in_db: bool = False
     files_uploaded: Dict[str, bool] = field(default_factory=dict)
@@ -108,7 +83,7 @@ class LocalRecord:
             bool: `True` if all files are uploaded, `False` otherwise.
         """
         all_uploaded = all(self.files_uploaded.values())
-        logger.debug(f"All files uploaded for record '{self.short_id}': {all_uploaded}")
+        logger.debug(f"All files uploaded for record '{self.identifier}': {all_uploaded}")
         return all_uploaded
 
     def to_dict(self) -> dict:
@@ -117,10 +92,6 @@ class LocalRecord:
         """
         return asdict(self)
 
-    #
-    # 3. Use `cls(**data)` to deserialize: 
-    #    This passes the dictionary keys as constructor kwargs.
-    #
     @classmethod
     def from_dict(cls, data: dict) -> "LocalRecord":
         """

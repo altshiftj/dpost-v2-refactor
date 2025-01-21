@@ -18,79 +18,51 @@ Classes:
 
 from abc import ABC, abstractmethod
 import os
-
+# these are just namespaces
 from src.processing.metadata_extractor import MetadataExtractor
-from src.storage.storage_manager import IStorageManager
+from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
-from src.records.local_record import LocalRecord
-from src.records.record_manager import RecordManager
-from src.records.record_persistence import RecordPersistence
 from src.records.id_generator import IdGenerator
+
+# these carry state
+from src.records.local_record import LocalRecord
+from src.sessions.session_manager import SessionManager
+from src.records.record_manager import RecordManager
 from src.gui.user_interface import UserInterface
-from src.sessions.session_controller import SessionController
+from src.sync.sync_manager import KadiSyncManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-class BaseFileProcessor(ABC):
+class FileProcessManager:
     """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
+    Coordinates the overall workflow for new or updated files/folders within the
+    data-watchdog system. This class acts as the primary entry point for file events:
+    it validates file types via the configured BaseFileProcessor, manages user prompts
+    (e.g., renaming and record decisions), handles session control, and updates or
+    creates records accordingly. If a file does not meet criteria or the user opts out,
+    it routes items to rename or exception folders. The FileProcessManager also ensures
+    pending records are synchronized to the database on startup and after processing.
     """
 
     def __init__(
         self,
         ui:                 UserInterface,
-        session_controller: SessionController,
-        paths:              PathManager,
-        storage:            IStorageManager,
-        persistence:        RecordPersistence,
-        ids:                IdGenerator,
-        records:            RecordManager,
+        session_manager:    SessionManager,
+        file_processor:     'BaseFileProcessor',
     ):
         self.ui                 = ui
-        self.session_controller = session_controller
-        self.paths              = paths
-        self.storage            = storage
-        self.persistence        = persistence
-        self.ids                = ids
-        self.records            = records
+        self.session_manager    = session_manager
+        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))   #TODO: Decouple ui from sync_manager and generally
+        self.file_processor:    BaseFileProcessor   = file_processor
+
+        # initialize directories
+        PathManager.init_dirs()
 
         # If any record is not fully uploaded, sync on startup
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
-            if not self.records.is_dict_up_to_date():
-                self.records.reset_dict()
-
-        # Holds the data type for the item being processed
-        self.item_data_type = None
-
-    @abstractmethod
-    def is_valid_datatype(self, path: str):
-        """
-        Checks if the file/folder at the given path is valid for this processor.
-        Returns (bool, str|None) -> (is_valid, data_type).
-        """
-        pass
-
-    @abstractmethod
-    def is_record_appendable(self, record: LocalRecord) -> bool:
-        """
-        Checks if the record can be appended to with this processor’s data type.
-        Return: (appendable, message_if_not_appendable)
-        """
-        pass
-
-    @abstractmethod
-    def device_specific_processing(
-        self, record_path, file_id, source_path, filename_prefix, extension
-    ):
-        """
-        Allows subclasses to implement custom moves, renames, or metadata extraction.
-        Must return the final path of the processed item.
-        """
-        pass
 
     def process_item(self, src_path: str):
         """
@@ -99,8 +71,7 @@ class BaseFileProcessor(ABC):
         base_name = os.path.basename(src_path)
         filename_prefix, extension = os.path.splitext(base_name)
 
-        # Validate data type
-        valid_datatype, self.item_data_type = self.is_valid_datatype(src_path)
+        valid_datatype = self.file_processor.is_valid_datatype(src_path)
         if not valid_datatype:
             self._handle_invalid_datatype(src_path, filename_prefix, extension)
             return
@@ -112,7 +83,7 @@ class BaseFileProcessor(ABC):
         """
         Moves invalid items to exception folder and informs the user.
         """
-        self.storage.move_to_exception_folder(src_path, filename_prefix, extension)
+        StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
         self.ui.show_warning(
             "Invalid Data Type",
             "The file/folder is not a recognized data type.\n"
@@ -125,16 +96,14 @@ class BaseFileProcessor(ABC):
         Determines how to process a valid item—whether it belongs to a known record
         or needs a new one, or if the naming is invalid.
         """
-        # Ensure the in-memory record dict is up to date
-        if not self.records.is_dict_up_to_date():
-            self.records.reset_dict()
-
         # Sanitize the name (remove illegal chars, etc.)
-        sanitized_filename_prefix, is_valid_format = self.paths.sanitize_and_validate_name(filename_prefix)
-        record = self.records.get_record_by_short_id(sanitized_filename_prefix)
+        sanitized_filename_prefix, is_valid_format = PathManager.sanitize_and_validate_name(filename_prefix)
+        
+        record_id = IdGenerator.generate_record_id(sanitized_filename_prefix)
+        record = self.records.get_record_by_id(record_id)
 
         # Decide 'state' of the item
-        item_state = self._determine_routing_state(record, is_valid_format)
+        item_state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension)
 
         # Match on routing state
         match item_state:
@@ -147,7 +116,7 @@ class BaseFileProcessor(ABC):
             case 'invalid_name':
                 self._prompt_item_rename(src_path, filename_prefix, extension)
 
-    def _determine_routing_state(self, record: LocalRecord, is_valid_format: bool) -> str:
+    def _determine_routing_state(self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str) -> str:
         """
         Returns a string denoting how we should handle the incoming item:
           - 'unappendable_record'
@@ -157,7 +126,7 @@ class BaseFileProcessor(ABC):
         """
         if record:
             # If record can't be appended to for device-specific reasons:
-            if not self.is_record_appendable(record):
+            if not self.file_processor.is_record_appendable(record, filename_prefix, extension):
                 return 'unappendable_record'
             
             # If record is fully synced in DB and user might want to attach more data:
@@ -204,25 +173,25 @@ class BaseFileProcessor(ABC):
             self.ui.show_warning(
                 "Invalid Name",
                 f"'{filename_prefix}{extension}' does not follow the naming convention.\n"
-                "Format: Institute-UserName-Sample Name"
+                "Format: User-Institute-Sample_Name"
             )
         
         # Optional message for creating a new record name
         if new_record_prompt:
             self.ui.show_info(
                 "New Record",
-                "Please enter the name for a new record (Format: Institute-UserName-Sample Name)"
+                "Please enter the name for a new record (Format: User-Institute-Sample_Name)"
             )
 
         # Keep asking until valid name or user cancels
         while True:
             user_input = self.ui.prompt_rename()  # Returns dict or None
-            result, is_valid = self.paths.validate_user_input(user_input)
+            result, is_valid = PathManager.validate_user_input(user_input)
 
             if not is_valid:
                 if result == "User cancelled the dialog.":
                     # Move to rename folder
-                    self.storage.move_to_rename_folder(src_path, filename_prefix, extension)
+                    StorageManager.move_to_rename_folder(src_path, filename_prefix, extension)
                     self.ui.show_info(
                         "Operation Cancelled",
                         "The item has been moved to the rename folder."
@@ -232,7 +201,7 @@ class BaseFileProcessor(ABC):
                     # Field(s) contained invalid characters
                     self.ui.show_warning(
                         "Invalid Name",
-                        "Please avoid special characters (e.g., !@#$^&*+=) and follow the naming convention."
+                        "Please avoid special characters (e.g., !@#$%^&*-+=) and follow the naming convention."
                     )
                     continue
                 else:
@@ -255,13 +224,15 @@ class BaseFileProcessor(ABC):
             record = self._get_or_create_record(record, filename_prefix)
 
             # 2) Prepare final file path + device-specific ops
-            file_id = self.ids.generate_file_id(filename_prefix)
-            record_path = self.paths.get_record_path(record)
+            file_id = filename_prefix
+            record_path = PathManager.get_record_path(record)
             os.makedirs(record_path, exist_ok=True)
 
-            final_path = self.device_specific_processing(
-                record_path, file_id, src_path, filename_prefix, extension
+            final_path, datatype = self.file_processor.device_specific_processing(
+                src_path, record_path, file_id, extension
             )
+
+            record.datatype = datatype
 
             # 3) Notify the user of success
             if notify:
@@ -275,11 +246,22 @@ class BaseFileProcessor(ABC):
 
             # 4) Add item to record + manage session
             self.records.add_item_to_record(final_path, record)
-            self.session_controller.manage_session()
+
+            if not self.session_manager.session_active:
+                # No active session; start a new one
+                self.session_manager.start_session()
+                # Show a dialog informing the user that the session is active and can be ended
+                self.ui.show_done_dialog(self.session_manager)
+                logger.debug("Started a new session and displayed the 'Done' dialog.")
+            else:
+                # Session is active; reset the timer to extend the session
+                self.session_manager.reset_timer()
+                logger.debug("Session is active. Timer has been reset to extend the session.")
+
 
         except Exception as e:
             self.ui.show_error("Error", f"Failed to rename: {e}")
-            self.storage.move_to_exception_folder(src_path, filename_prefix, extension)
+            StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
 
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
         """
@@ -287,13 +269,7 @@ class BaseFileProcessor(ABC):
         """
         if record is not None:
             return record
-
-        record_info = self.ids.generate_new_record_info(
-            filename_prefix=filename_prefix,
-            data_type=self.item_data_type,
-            record_count=self.records.get_num_records(),
-        )
-        return self.records.create_record(record_info)
+        return self.records.create_record(filename_prefix)
 
     def sync_records_to_database(self):
         """
@@ -301,8 +277,38 @@ class BaseFileProcessor(ABC):
         """
         self.records.sync_records_to_database()
 
+class BaseFileProcessor(ABC):
+    """
+    An abstract base for processors that handle new/modified files or directories
+    and associate them with records in the system.
+    """
+    @abstractmethod
+    def is_valid_datatype(self, path: str):
+        """
+        Checks if the file/folder at the given path is valid for this processor.
+        Returns (bool|None) -> (is_valid, data_type).
+        """
+        pass
 
-class SEMFileProcessor(BaseFileProcessor):
+    @abstractmethod
+    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+        """
+        Checks if the record can be appended to with this processor’s data type.
+        Return: (appendable, message_if_not_appendable)
+        """
+        pass
+
+    @abstractmethod
+    def device_specific_processing(
+        self, record_path, file_id, source_path, filename_prefix, extension
+    ):
+        """
+        Allows subclasses to implement custom moves, renames, or metadata extraction.
+        Must return the final path of the processed item.
+        """
+        pass
+    
+
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
     """
@@ -313,34 +319,35 @@ class SEMFileProcessor(BaseFileProcessor):
         """
         if os.path.isdir(path):
             if any(f.endswith('.elid') for f in os.listdir(path)):
-                return True, 'ELID'
+                return True
         if path.lower().endswith(('.tiff', '.tif')):
-            return True, 'IMG'
-        return False, None
+            return True
+        return False
 
-    def is_record_appendable(self, record: LocalRecord) -> bool:
+    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """
-        Disallow appending to records that already represent an ELID directory.
+        Disallow appending to records that already represent an ELID directory, or if the item is an ELID datatype.
         """
-        if 'elid' in record.long_id:
+        if any('.elid' in key for key in record.files_uploaded.keys()) or extension == "":
             return False
         return True
 
-    def device_specific_processing(self, record_path, file_id, src_path, filename_prefix, extension):
+    def device_specific_processing(self, src_path: str, record_path: str, filename_prefix: str, extension: str) -> str:
         """
         For ELID data, flatten subdirectories first.
         For TIF/TIFF, just rename and move the file.
         """
-        if self.item_data_type == 'ELID':
-            self._flatten_elid_directory(src_path, filename_prefix)
-            new_dir_path = os.path.join(record_path, file_id)
-            self.storage.move_item(src_path, new_dir_path)
-            return new_dir_path
-        else:
+        if extension.lower() in ('.tif', '.tiff'):
             # For images, create a unique filename
-            new_file_path = self.paths.get_unique_filename(record_path, file_id, extension)
-            self.storage.move_item(src_path, new_file_path)
-            return new_file_path
+            new_file_path = PathManager.get_unique_filename(record_path, filename_prefix, extension)
+            StorageManager.move_item(src_path, new_file_path)
+            return new_file_path, 'img'
+        else:
+            self._flatten_elid_directory(src_path, filename_prefix)
+            new_dir_path = os.path.join(record_path, filename_prefix)
+            StorageManager.move_item(src_path, new_dir_path)
+            return new_dir_path, 'elid'
+
 
     def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
         """
@@ -368,7 +375,7 @@ class SEMFileProcessor(BaseFileProcessor):
                 new_path = os.path.join(target_dir, new_fname)
 
                 try:
-                    self.storage.move_item(old_path, new_path)
+                    StorageManager.move_item(old_path, new_path)
                     logger.debug(f"Moved and renamed '{old_path}' to '{new_path}'.")
                 except OSError as e:
                     logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")

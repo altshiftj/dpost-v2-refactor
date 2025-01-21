@@ -6,4 +6,4 @@
 /testing_data/
 **/__pycache__/
 watchdog.log
-watchdog_app.spec
+.gitignore
