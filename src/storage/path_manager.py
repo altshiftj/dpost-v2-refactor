@@ -36,13 +36,12 @@ class PathManager:
     def sanitize_and_validate_name(filename_prefix: str) -> tuple:
         """
         Validates and sanitizes a base name against the naming convention.
-        Expected format: 'Institute-UserID-SampleID'
+        Expected format: 'UserID-Institute-SampleID'
         
         Constraints:
             - Institute: letters only
             - UserID: letters only
-            - SampleID: Most characters are allowed, with some special character restrictions 
-              (see FILENAME_PATTERN in settings.py)
+            - SampleID: Lower-case alphanumeric and underscores
 
         Args:
             filename_prefix (str): The original filename prefix to validate.
@@ -58,16 +57,15 @@ class PathManager:
 
         # extract the inst and user_id as the first two parts of the filename
         parts = filename_prefix.split(ID_SEP)
-        institute, user_id = parts[:2]
+        user_id, institute = parts[:2]
 
         # the sample_id is the rest of the filename
         sample_id = ID_SEP.join(parts[2:])
 
-        sample_id = sample_id.replace(' ', '_')  # replace spaces with underscores
+        sample_id = sample_id.replace(' ', '_')
 
         # Rebuild and return sanitized name
-        sanitized = f"{institute}{ID_SEP}{user_id}{ID_SEP}{sample_id}"
-        sanitized = sanitized.lower()
+        sanitized = f"{user_id.lower()}{ID_SEP}{institute.lower()}{ID_SEP}{sample_id}"
         return sanitized, True
     
     @classmethod
@@ -96,7 +94,7 @@ class PathManager:
             return "All fields are required.", False
 
         # Combine into the expected "institute_userID_sampleID" format
-        original_name = f"{institute}{ID_SEP}{user_ID}{ID_SEP}{sample_ID}"
+        original_name = f"{user_ID}{ID_SEP}{institute}{ID_SEP}{sample_ID}"
         sanitized_name, is_valid = cls.sanitize_and_validate_name(original_name)
         if not is_valid:
             return "Invalid Parts", False
@@ -134,7 +132,7 @@ class PathManager:
         """
         counter = 1
         while True:
-            candidate = f"{filename_prefix}_{counter:02d}{extension}"
+            candidate = f"{filename_prefix}{ID_SEP}{counter:02d}{extension}"
 
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):

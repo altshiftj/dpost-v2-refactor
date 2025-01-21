@@ -4,8 +4,6 @@
 /build/
 /PhenomXL Bilder/
 /testing_data/
-/tmp/
-/staging
 **/__pycache__/
 watchdog.log
 .gitignore

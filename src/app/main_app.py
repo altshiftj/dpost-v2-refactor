@@ -14,7 +14,7 @@ from watchdog.observers import Observer
 from src.config.settings import WATCH_DIR
 from src.gui.user_interface import TKinterUI 
 from src.handlers.file_event_handler import FileEventHandler
-from src.processing.file_processor import BaseFileProcessor, FileProcessManager
+from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
 

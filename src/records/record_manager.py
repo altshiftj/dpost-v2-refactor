@@ -50,7 +50,7 @@ class RecordManager:
         self.sync = sync_manager
 
         # Dictionary of records processed for this device
-        # keyed by their id (e.g., "ipat-jrf_Sample_A")
+        # keyed by their id (e.g., "jfi-ipat-Sample_A")
         self.persist_records_dict: Dict[str, LocalRecord] = record_persistence.load_persisted_records()
 
     def create_record(self, filename_prefix: str) -> LocalRecord:
@@ -64,14 +64,14 @@ class RecordManager:
         """
         record_id = IdGenerator.generate_record_id(filename_prefix)
         sample_id = filename_prefix.split('-')[-1]
-        self.persist_records_dict[filename_prefix] = LocalRecord(
+        self.persist_records_dict[record_id] = LocalRecord(
             identifier=record_id,
             name=sample_id,
             date = datetime.datetime.now().strftime('%Y%m%d')
         )
         
         logger.debug(f"Created new record with id '{filename_prefix}'.")
-        return self.persist_records_dict[filename_prefix]
+        return self.persist_records_dict[record_id]
 
     def add_item_to_record(self, path: str, record: LocalRecord):
         """
@@ -115,7 +115,7 @@ class RecordManager:
         """
         Looks up a LocalRecord by its short_id in the daily records dictionary.
 
-        :param short_id: The short_id to look for (e.g., "ipat-mus_sample_a").
+        :param short_id: The short_id to look for (e.g., "jfi-ipat-sample_a").
         :return: The LocalRecord if found, otherwise None.
         """
         id = id.lower()

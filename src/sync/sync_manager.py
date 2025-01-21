@@ -102,7 +102,7 @@ class KadiSyncManager(ISyncManager):
         Retrieves or creates a user group for this record based on user/institute info.
         If user is provided, also adds the user to the group as 'admin'.
         """
-        _, institute, user_initials = local_record.identifier.split(ID_SEP)[:3]
+        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_group_id = f"{user_initials}{ID_SEP}{institute}{ID_SEP}rawdata{ID_SEP}group"
 
         try:
@@ -153,7 +153,7 @@ class KadiSyncManager(ISyncManager):
         Retrieve the user object for this record. If the user doesn't exist, 
         show an error in the UI, and return None. (Creation is not supported yet.)
         """
-        _, institute, user_initials = local_record.identifier.split(ID_SEP)[:3]
+        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_user_id = f"{user_initials}{ID_SEP}{institute}"
 
         try:
@@ -162,7 +162,7 @@ class KadiSyncManager(ISyncManager):
             self.ui.show_error(
                 f"User {db_user_id} not found", 
                 f"User not found in kadi4mat database.\n"
-                f"Records will be uploaded now, and later associated with the {db_user_id} "
+                f"Records will be uploaded now and mapped to the {db_user_id} "
                 f"account when it is created."
                 "\nPlease contact your administrator."
             )

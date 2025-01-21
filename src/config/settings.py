@@ -22,10 +22,10 @@ r"""
    (?<!\.):       Must not end with a dot
    $:             End of string
 
-   Exemplary format: 'Institute-UserID-Sample_ID'
+   Exemplary format: 'UserID-Institute-Sample_ID'
 """
 FILENAME_PATTERN = re.compile(
-   r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[a-z0-9_ ]+(?<!\.)$'
+   r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]+(?<!\.)$'
 )
 
 ID_SEP = '-'

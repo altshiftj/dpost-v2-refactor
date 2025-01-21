@@ -2,7 +2,7 @@ import os
 from src.records.local_record import LocalRecord
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
-from src.processing.file_processor import BaseFileProcessor
+from src.processing.file_process_manager import BaseFileProcessor
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -18,34 +18,35 @@ class SEMFileProcessor(BaseFileProcessor):
         """
         if os.path.isdir(path):
             if any(f.endswith('.elid') for f in os.listdir(path)):
-                return True, 'ELID'
+                return True
         if path.lower().endswith(('.tiff', '.tif')):
-            return True, 'IMG'
-        return False, None
+            return True
+        return False
 
-    def is_record_appendable(self, record: LocalRecord) -> bool:
+    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """
-        Disallow appending to records that already represent an ELID directory.
+        Disallow appending to records that already represent an ELID directory, or if the item is an ELID datatype.
         """
-        if 'elid' in record.long_id:
+        if any('.elid' in key for key in record.files_uploaded.keys()) or extension == "":
             return False
         return True
 
-    def device_specific_processing(self, record_path, file_id, src_path, filename_prefix, extension):
+    def device_specific_processing(self, src_path: str, record_path: str, filename_prefix: str, extension: str) -> str:
         """
         For ELID data, flatten subdirectories first.
         For TIF/TIFF, just rename and move the file.
         """
-        if self.item_data_type == 'ELID':
-            self._flatten_elid_directory(src_path, filename_prefix)
-            new_dir_path = os.path.join(record_path, file_id)
-            StorageManager.move_item(src_path, new_dir_path)
-            return new_dir_path
-        else:
+        if extension.lower() in ('.tif', '.tiff'):
             # For images, create a unique filename
-            new_file_path = PathManager.get_unique_filename(record_path, file_id, extension)
+            new_file_path = PathManager.get_unique_filename(record_path, filename_prefix, extension)
             StorageManager.move_item(src_path, new_file_path)
-            return new_file_path
+            return new_file_path, 'img'
+        else:
+            self._flatten_elid_directory(src_path, filename_prefix)
+            new_dir_path = os.path.join(record_path, filename_prefix)
+            StorageManager.move_item(src_path, new_dir_path)
+            return new_dir_path, 'elid'
+
 
     def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
         """

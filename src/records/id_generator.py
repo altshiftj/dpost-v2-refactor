@@ -29,12 +29,12 @@ class IdGenerator:
         Constructs a record identifier using the device name and the provided filename prefix.
 
         Format:
-            {device}-{institute}-{user_id}-{sample_id}
+            {device}-{user_id}-{institute}-{sample_id}
 
         Example:
-            "rem-ipat-mus-sample_a"
+            "rem-mus-ipat-sample_a"
 
-        :param id_info: A RecordInfo object containing metadata for the record.
+        :param filename_prefix: The filename prefix to use in the identifier.
         :return: A string representing the identifier.
         """
         device_type = DEVICE_ID.split('_')[0]
