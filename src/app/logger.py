@@ -1,7 +1,7 @@
 import logging
 from src.config.settings import LOG_FILE
 
-def setup_logger(name=__name__, level=logging.INFO):
+def setup_logger(name=__name__, level=logging.DEBUG):
     logger = logging.getLogger(name)
     if not logger.handlers:
         handler = logging.FileHandler(LOG_FILE)

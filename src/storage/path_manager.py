@@ -9,11 +9,8 @@ to prevent conflicts.
 
 import os
 
-from src.records.local_record import LocalRecord
-from src.config.settings import RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
+from src.config.settings import WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
 from src.app.logger import setup_logger
-
-from kadi_apy import KadiManager
 
 logger = setup_logger(__name__)
 
@@ -31,7 +28,7 @@ class PathManager:
     @staticmethod
     def init_dirs():
         # Ensure all required directories exist; create them if they don't
-        for directory in [RECORD_DIR, RENAME_DIR, EXCEPTIONS_DIR]:
+        for directory in [WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR]:
             os.makedirs(directory, exist_ok=True)
 
     @staticmethod
@@ -104,12 +101,19 @@ class PathManager:
         return sanitized_name, True
     
     @staticmethod
-    def get_record_path(record: LocalRecord) -> str:
+    def get_record_path(filename_prefix: str) -> str:
         """
         Returns the directory path for a given record based on its long_id.
         """
-        return os.path.join(RECORD_DIR, record.identifier)
+        user_ID, institute, sample_ID = filename_prefix.split(ID_SEP)
 
+        # create a directory tree for the record, with institute->user_ID->sample_ID structure
+        record_path = os.path.join(DEST_DIR, institute.upper(), user_ID.upper(), sample_ID)
+
+        # Ensure the directory exists
+        os.makedirs(record_path, exist_ok=True)
+
+        return record_path
 
     @classmethod
     def get_rename_path(cls, name: str) -> str:
@@ -133,32 +137,24 @@ class PathManager:
         Generates a unique filename in the given directory by appending a counter if needed.
         """
         counter = 1
+
+        for filename in os.listdir(directory):
+            basename = os.path.basename(filename)
+            prefix, ext = os.path.splitext(basename)
+            #strip the counter from the prefix, which is the last part of the filename separated by ID_SEP
+            prefix_no_counter = prefix.rsplit(ID_SEP, 1)[0]
+
+            if basename.endswith(extension) and (prefix_no_counter in filename_prefix):
+                try:
+                    counter = max(counter, int(prefix.rsplit(ID_SEP, 1)[1]) + 1)
+                except ValueError:
+                    continue
+
         while True:
             candidate = f"{filename_prefix}{ID_SEP}{counter:02d}{extension}"
 
             unique_path = os.path.join(directory, candidate)
             if not os.path.exists(unique_path):
                 return unique_path
-            counter += 1
-
-    def get_unique_db_filename(self, directory: str, record_id, filename_prefix: str, extension: str, kadimanager: KadiManager) -> str:
-        """
-        Generates a unique filename in the given directory by appending a counter if needed.
-        """
-        counter = 1
-        while True:
-            candidate = f"{filename_prefix}_{counter}{extension}"
-
-            with kadimanager as manager:
-                db_record = manager.record(id=record_id)
-                unique_path = os.path.join(directory, candidate)
-                if not os.path.exists(unique_path):
-                    return candidate
-                counter += 1
-                
-
-            unique_path = os.path.join(directory, candidate)
-            if not os.path.exists(unique_path):
-                return candidate
             counter += 1
     

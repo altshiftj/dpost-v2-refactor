@@ -113,17 +113,17 @@ class RecordManager:
 
     def get_record_by_id(self, id: str) -> LocalRecord:
         """
-        Looks up a LocalRecord by its short_id in the daily records dictionary.
+        Looks up a LocalRecord by its identifier in the daily records dictionary.
 
-        :param short_id: The short_id to look for (e.g., "jfi-ipat-sample_a").
+        :param identifier: The identifier to look for (e.g., "jfi-ipat-sample_a").
         :return: The LocalRecord if found, otherwise None.
         """
         id = id.lower()
         record = self.persist_records_dict.get(id)
         if record:
-            logger.debug(f"Found record with short_id '{id}'.")
+            logger.debug(f"Found record with identifier '{id}'.")
         else:
-            logger.debug(f"No record found with short_id '{id}'.")
+            logger.debug(f"No record found with identifier '{id}'.")
         return record
      
     def all_records_uploaded(self) -> bool:

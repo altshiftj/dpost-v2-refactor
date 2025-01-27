@@ -6,6 +6,7 @@ the monitoring of a watch directory (using watchdog), processes file events, and
 user sessions, testing logic, and database synchronization tasks.
 """
 
+import os
 import sys
 import queue
 

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from src.records.local_record import LocalRecord
 from src.gui.user_interface import UserInterface
 from src.app.logger import setup_logger
-from src.config.settings import DEVICE_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP
+from src.config.settings import DEVICE_ID, DEVICE_USER_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
@@ -119,10 +119,9 @@ class KadiSyncManager(ISyncManager):
             db_group.set_attribute('title', f"{user_initials.upper()}@{institute.upper()}: Raw Data Records")
             logger.debug(f"Created new user group with ID: {db_group_id}")
 
-        # If the group was just created or retrieved without the user, ensure the user is added
+        # Ensure the user is added
         if db_user:
             db_group.add_user(user_id=db_user.id, role_name='admin')
-            db_group.remove_user(user_id=db_manager.pat_user.id)
 
         return db_group
 
@@ -139,6 +138,7 @@ class KadiSyncManager(ISyncManager):
         except:
             db_group: KadiGroup = db_manager.group(create=True, identifier=db_group_id)
             db_group.set_attribute('title', f"{db_device_record.meta['title']}: Raw Data Records")
+            db_group.add_user(user_id=DEVICE_USER_ID, role_name='admin')
             logger.debug(f"Created new device data group with ID: {db_group_id}")
 
         return db_group
@@ -215,10 +215,24 @@ class KadiSyncManager(ISyncManager):
         Uploads any files from the local_record that haven't been uploaded yet.
         Updates local_record.files_uploaded to mark each file as uploaded.
         """
+        missing_files = []
         for file_path, uploaded in local_record.files_uploaded.items():
             if not uploaded:
-                # Upload the file to the database
-                db_record.upload_file(file_path)
-                # Mark the file as uploaded
-                local_record.files_uploaded[file_path] = True
-                logger.debug(f"Uploaded file: {os.path.basename(file_path)}")
+                try:
+                    # Upload the file to the database
+                    db_record.upload_file(file_path)
+                    # Mark the file as uploaded
+                    local_record.files_uploaded[file_path] = True
+                    logger.debug(f"Uploaded file: {os.path.basename(file_path)}")
+                except FileNotFoundError:
+                    # if the error is file not found, add the file to the list of files to be removed
+                    logger.warning(f"File not found: {os.path.basename(file_path)}")
+                    missing_files.append(file_path)
+                    continue
+                except Exception as e:
+                    logger.exception(f"Failed to upload file: {os.path.basename(file_path)}")
+                    raise e
+                
+        for file_path in missing_files:
+            del local_record.files_uploaded[file_path]
+            logger.debug(f"Removed missing file '{os.path.basename(file_path)}' from local record.")

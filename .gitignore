@@ -2,8 +2,10 @@
 /wdvenv/
 /dist/
 /build/
-/PhenomXL Bilder/
+/Bilder/
+/Upload_Ordner/
 /testing_data/
+
 **/__pycache__/
 watchdog.log
 .gitignore

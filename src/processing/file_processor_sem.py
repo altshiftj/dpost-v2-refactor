@@ -11,6 +11,22 @@ class SEMFileProcessor(BaseFileProcessor):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
     """
+    def device_specific_preprocessing(self, path: str) -> str:
+        if path.lower().endswith(('.tiff', '.tif')):
+            basename = os.path.basename(path)
+            filename_prefix, extension = os.path.splitext(basename)
+
+            # remove last character added by the PhenomXL software
+            if filename_prefix[-1].isdigit():
+                filename_prefix = filename_prefix[:-1]
+                
+                # reconstruct the path
+                new_path = os.path.join(os.path.dirname(path), filename_prefix + extension)
+                os.rename(path, new_path)
+                logger.debug(f"Renamed file: {path} -> {new_path}, removed trailing digit.")
+                return new_path
+        
+        return path
 
     def is_valid_datatype(self, path: str):
         """
@@ -23,7 +39,7 @@ class SEMFileProcessor(BaseFileProcessor):
             return True
         return False
 
-    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """
         Disallow appending to records that already represent an ELID directory, or if the item is an ELID datatype.
         """
@@ -43,9 +59,21 @@ class SEMFileProcessor(BaseFileProcessor):
             return new_file_path, 'img'
         else:
             self._flatten_elid_directory(src_path, filename_prefix)
-            new_dir_path = os.path.join(record_path, filename_prefix)
-            StorageManager.move_item(src_path, new_dir_path)
-            return new_dir_path, 'elid'
+
+            # Move each file in the ELID directory to the record directory
+            for file in os.listdir(src_path):
+                file_path = os.path.join(src_path, file)
+                dest_path = os.path.join(record_path, file)
+                StorageManager.move_item(file_path, dest_path)
+
+            # delete the original ELID directory
+            try:
+                os.rmdir(src_path)
+                logger.debug(f"Removed ELID directory: '{src_path}'.")
+            except OSError:
+                logger.warning(f"Could not remove ELID directory: '{src_path}'.")
+                
+            return record_path, 'elid'
 
 
     def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
@@ -114,3 +142,4 @@ class SEMFileProcessor(BaseFileProcessor):
             new_fname = fname.replace(' ', '_')
 
         return new_fname
+    

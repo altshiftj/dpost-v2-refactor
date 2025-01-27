@@ -68,6 +68,9 @@ class FileProcessManager:
         """
         Entry point when a file/folder is created or modified.
         """
+        src_path = self.file_processor.device_specific_preprocessing(src_path)
+
+        # TODO: Create helper function to extract and split the filename and extension
         base_name = os.path.basename(src_path)
         filename_prefix, extension = os.path.splitext(base_name)
 
@@ -126,7 +129,7 @@ class FileProcessManager:
         """
         if record:
             # If record can't be appended to for device-specific reasons:
-            if not self.file_processor.is_record_appendable(record, filename_prefix, extension):
+            if not self.file_processor.is_appendable(record, filename_prefix, extension):
                 return 'unappendable_record'
             
             # If record is fully synced in DB and user might want to attach more data:
@@ -173,14 +176,16 @@ class FileProcessManager:
             self.ui.show_warning(
                 "Invalid Name",
                 f"'{filename_prefix}{extension}' does not follow the naming convention.\n"
-                "Format: User-Institute-Sample_Name"
+                "Format: User-Institute-Sample_Name\n"
+                "No special characters (e.g., !@#$%^&*-+=)\n"
+                "30 character limit for Sample Name."
             )
         
         # Optional message for creating a new record name
         if new_record_prompt:
             self.ui.show_info(
                 "New Record",
-                "Please enter the name for a new record (Format: User-Institute-Sample_Name)"
+                "Please enter a name for the new record."
             )
 
         # Keep asking until valid name or user cancels
@@ -201,7 +206,8 @@ class FileProcessManager:
                     # Field(s) contained invalid characters
                     self.ui.show_warning(
                         "Invalid Name",
-                        "Please avoid special characters (e.g., !@#$%^&*-+=) and follow the naming convention."
+                        "Please avoid special characters (e.g., !@#$%^&*-+=)\n"
+                        "30 character limit for Sample Name."
                     )
                     continue
                 else:
@@ -224,9 +230,9 @@ class FileProcessManager:
             record = self._get_or_create_record(record, filename_prefix)
 
             # 2) Prepare final file path + device-specific ops
-            file_id = filename_prefix
-            record_path = PathManager.get_record_path(record)
-            os.makedirs(record_path, exist_ok=True)
+            record_path = PathManager.get_record_path(filename_prefix)
+
+            file_id = IdGenerator.generate_file_id(filename_prefix)
 
             final_path, datatype = self.file_processor.device_specific_processing(
                 src_path, record_path, file_id, extension
@@ -283,6 +289,13 @@ class BaseFileProcessor(ABC):
     and associate them with records in the system.
     """
     @abstractmethod
+    def device_specific_preprocessing(self, src_path: str)-> str:
+        """
+        Method to implement optional preprocessing steps before routing the item.
+        """
+        pass
+    
+    @abstractmethod
     def is_valid_datatype(self, path: str):
         """
         Checks if the file/folder at the given path is valid for this processor.
@@ -291,7 +304,7 @@ class BaseFileProcessor(ABC):
         pass
 
     @abstractmethod
-    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """
         Checks if the record can be appended to with this processor’s data type.
         Return: (appendable, message_if_not_appendable)
@@ -307,111 +320,3 @@ class BaseFileProcessor(ABC):
         Must return the final path of the processed item.
         """
         pass
-    
-
-    """
-    A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
-    """
-
-    def is_valid_datatype(self, path: str):
-        """
-        Checks if path is a TIFF/TIF file or a folder containing .elid files.
-        """
-        if os.path.isdir(path):
-            if any(f.endswith('.elid') for f in os.listdir(path)):
-                return True
-        if path.lower().endswith(('.tiff', '.tif')):
-            return True
-        return False
-
-    def is_record_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
-        """
-        Disallow appending to records that already represent an ELID directory, or if the item is an ELID datatype.
-        """
-        if any('.elid' in key for key in record.files_uploaded.keys()) or extension == "":
-            return False
-        return True
-
-    def device_specific_processing(self, src_path: str, record_path: str, filename_prefix: str, extension: str) -> str:
-        """
-        For ELID data, flatten subdirectories first.
-        For TIF/TIFF, just rename and move the file.
-        """
-        if extension.lower() in ('.tif', '.tiff'):
-            # For images, create a unique filename
-            new_file_path = PathManager.get_unique_filename(record_path, filename_prefix, extension)
-            StorageManager.move_item(src_path, new_file_path)
-            return new_file_path, 'img'
-        else:
-            self._flatten_elid_directory(src_path, filename_prefix)
-            new_dir_path = os.path.join(record_path, filename_prefix)
-            StorageManager.move_item(src_path, new_dir_path)
-            return new_dir_path, 'elid'
-
-
-    def _flatten_elid_directory(self, folder_path: str, filename_prefix: str):
-        """
-        Eliminates subdirectories, renames .elid/.odt, etc. in-place.
-        """
-        logger.debug(f"Flattening ELID directory: {folder_path}")
-        target_dir = folder_path
-        renamed_files = {}
-
-        for root, dirs, files in os.walk(folder_path, topdown=False):
-            for fname in files:
-                old_path = os.path.join(root, fname)
-                new_fname = self._build_new_filename(fname, root, filename_prefix)
-                
-                # Ensure uniqueness
-                counter = 1
-                original_new_fname = new_fname
-                while (new_fname in renamed_files or 
-                       os.path.exists(os.path.join(target_dir, new_fname))):
-                    name_only, ext = os.path.splitext(original_new_fname)
-                    new_fname = f"{name_only}_{counter}{ext}"
-                    counter += 1
-
-                renamed_files[new_fname] = True
-                new_path = os.path.join(target_dir, new_fname)
-
-                try:
-                    StorageManager.move_item(old_path, new_path)
-                    logger.debug(f"Moved and renamed '{old_path}' to '{new_path}'.")
-                except OSError as e:
-                    logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")
-
-            # Remove the subdirectory if empty
-            if root != folder_path:
-                try:
-                    os.rmdir(root)
-                    logger.debug(f"Removed empty directory: '{root}'.")
-                except OSError:
-                    logger.warning(f"Could not remove directory (not empty): '{root}'.")
-
-        logger.debug("Subdirectories flattened for ELID data.")
-
-    def _build_new_filename(self, fname: str, root_dir: str, filename_prefix: str) -> str:
-        """
-        Builds a new file name for .elid/.odt files or files in analysis/export folders.
-        """
-        # Default: keep original
-        new_fname = fname
-
-        # If .elid/.odt: incorporate base_name
-        if fname.endswith('.elid') or fname.endswith('.odt'):
-            _, ext = os.path.splitext(fname)
-            new_fname = f"{filename_prefix}{ext}"
-            new_fname = new_fname.replace(' ', '_')
-
-        # If inside an analysis directory, prefix that folder name
-        dirname = os.path.basename(root_dir)
-        if 'analysis' in dirname:
-            new_fname = f"{dirname}_{fname}".replace(' ', '_')
-            if 'analysis' in fname:
-                new_fname = fname.replace(' ', '_')
-
-        # If inside an export directory, do a simpler rename
-        if 'export' in dirname:
-            new_fname = fname.replace(' ', '_')
-
-        return new_fname

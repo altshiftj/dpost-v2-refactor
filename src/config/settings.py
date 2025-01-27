@@ -1,12 +1,12 @@
 import os
 import re
 
-WATCH_DIR = os.path.abspath("PhenomXL Bilder")
+WATCH_DIR = os.path.abspath("Upload_Ordner")
 
-RENAME_DIR = os.path.join(WATCH_DIR, 'To_Rename')
-RECORD_DIR = os.path.join(WATCH_DIR, 'Records')
-EXCEPTIONS_DIR = os.path.join(WATCH_DIR, 'Exceptions')
-DAILY_RECORDS_JSON = os.path.join(RECORD_DIR, 'record_persistence.json')  # phase out
+DEST_DIR = os.path.abspath("Bilder")
+RENAME_DIR = os.path.join(DEST_DIR, '00_To_Rename')
+EXCEPTIONS_DIR = os.path.join(DEST_DIR, '01_Exceptions')
+DAILY_RECORDS_JSON = os.path.join(DEST_DIR, 'record_persistence.json')  # phase out
 
 
 DB_PATH = os.path.join('staging', 'particle_size_data.db')    
@@ -25,7 +25,7 @@ r"""
    Exemplary format: 'UserID-Institute-Sample_ID'
 """
 FILENAME_PATTERN = re.compile(
-   r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]+(?<!\.)$'
+   r'^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$'
 )
 
 ID_SEP = '-'
@@ -35,11 +35,12 @@ LOG_FILE = 'watchdog.log'
 
 SESSION_TIMEOUT = 300 # 5 minutes
 
-DEBOUNCE_TIME = 0.5
+DEBOUNCE_TIME = 1
 
 # TODO move rem related metainfo to rem space
 DEVICE_ID = "REM_01"
 DEVICE_RECORD_ID = 190
+DEVICE_USER_ID = 22
 DEFAULT_REM_RECORD_DESCRIPTION = r"""
 # Default Description
 *Can be edited and/or overwritten*  

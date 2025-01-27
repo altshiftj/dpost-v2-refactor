@@ -8,6 +8,7 @@ application.
 """
 from src.app.logger import setup_logger
 from src.config.settings import DEVICE_ID, ID_SEP
+from src.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -43,4 +44,25 @@ class IdGenerator:
         record_id = record_id.lower()
         logger.debug(f"Constructed record_id: {record_id}")
         return record_id
-        
+    
+    @staticmethod
+    def generate_file_id(filename_prefix: str) -> str:
+        """
+        Constructs a unique file identifier using the provided record ID and filename.
+
+        Format:
+            {record_id}-{filename}
+
+        Example:
+            "rem-mus-ipat-sample_a-image_001.tiff"
+
+        :param record_id: The record identifier to use in the file ID.
+        :param filename: The filename to use in the file ID.
+        :return: A string representing the file identifier.
+        """
+        user_id, institute, sample_id = filename_prefix.split(ID_SEP)
+        device_type = DEVICE_ID.split('_')[0]
+
+        file_id = f"{device_type}{ID_SEP}{sample_id}"
+
+        return file_id

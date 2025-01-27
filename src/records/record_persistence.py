@@ -23,7 +23,8 @@ def load_persisted_records() -> dict[str, LocalRecord]:
     try:
         with open(DAILY_RECORDS_JSON, 'r') as f:
             raw_data = json.load(f)
-        return {short_id: LocalRecord.from_dict(record_data) for short_id, record_data in raw_data.items()}
+        logger.debug(f"JSON data loaded from '{DAILY_RECORDS_JSON}'.")
+        return {id: LocalRecord.from_dict(record_data) for id, record_data in raw_data.items()}
     except Exception as e:
         logger.exception(f"Failed to read or convert JSON file '{DAILY_RECORDS_JSON}': {e}")
         return {}
