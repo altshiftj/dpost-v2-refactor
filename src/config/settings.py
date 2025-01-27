@@ -3,7 +3,7 @@ import re
 
 WATCH_DIR = os.path.abspath("Upload_Ordner")
 
-DEST_DIR = os.path.abspath("Bilder")
+DEST_DIR = os.path.abspath("Data")
 RENAME_DIR = os.path.join(DEST_DIR, '00_To_Rename')
 EXCEPTIONS_DIR = os.path.join(DEST_DIR, '01_Exceptions')
 DAILY_RECORDS_JSON = os.path.join(DEST_DIR, 'record_persistence.json')  # phase out
