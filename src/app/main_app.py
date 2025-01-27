@@ -6,7 +6,6 @@ the monitoring of a watch directory (using watchdog), processes file events, and
 user sessions, testing logic, and database synchronization tasks.
 """
 
-import os
 import sys
 import queue
 
@@ -88,6 +87,8 @@ class DeviceWatchdogApp:
         # When the session manager ends a session, call self.end_session
         self.session_manager.end_session_callback = self.end_session
 
+        self.log_sync_counter = 0
+
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         """
         Handles unexpected exceptions by logging and displaying an error
@@ -109,6 +110,7 @@ class DeviceWatchdogApp:
         logger.debug("End session called.")
         try:
             self.file_processing.sync_records_to_database()
+            self.file_processing.sync_logs_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
@@ -133,8 +135,17 @@ class DeviceWatchdogApp:
             logger.debug(f"Dequeued file for processing: {data_path}")
             self.file_processing.process_item(data_path)
 
+        # Sync logs to database every 9000 iterations (9000 * 100ms = 900s, 15 minutes)
+        if self.log_sync_counter >= 9000 or self.log_sync_counter == 0:
+            self.file_processing.sync_logs_to_database()
+            self.log_sync_counter = 0
+
+        # periodically sync logs to database
+        self.log_sync_counter += 1
+
         # Schedule the next iteration of this loop
         self.ui.root.after(100, self.process_events)
+
 
     def on_closing(self):
         """

@@ -6,10 +6,7 @@ WATCH_DIR = os.path.abspath("Upload_Ordner")
 DEST_DIR = os.path.abspath("Data")
 RENAME_DIR = os.path.join(DEST_DIR, '00_To_Rename')
 EXCEPTIONS_DIR = os.path.join(DEST_DIR, '01_Exceptions')
-DAILY_RECORDS_JSON = os.path.join(DEST_DIR, 'record_persistence.json')  # phase out
-
-
-DB_PATH = os.path.join('staging', 'particle_size_data.db')    
+DAILY_RECORDS_JSON = os.path.join(DEST_DIR, 'record_persistence.json')  # phase out 
 
 r"""
    ^(?!.*\.\.):   No consecutive dots ".." anywhere in the string
@@ -31,7 +28,7 @@ FILENAME_PATTERN = re.compile(
 ID_SEP = '-'
 FILE_SEP = '_'
 
-LOG_FILE = 'watchdog.log'
+LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
 
 SESSION_TIMEOUT = 300 # 5 minutes
 

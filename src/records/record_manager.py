@@ -151,3 +151,11 @@ class RecordManager:
                 self.sync.sync_record_to_database(record)
                 self.save_records()
         logger.info("Synchronization of records completed.")
+
+    def sync_logs_to_database(self):
+        """
+        Syncs the log file to the database.
+        """
+        logger.info("Starting synchronization of logs to the database.")
+        self.sync.sync_logs_to_database()
+        logger.info("Synchronization of logs completed.")

@@ -283,6 +283,12 @@ class FileProcessManager:
         """
         self.records.sync_records_to_database()
 
+    def sync_logs_to_database(self):
+        """
+        Syncs the log file to the external database.
+        """
+        self.records.sync_logs_to_database()
+
 class BaseFileProcessor(ABC):
     """
     An abstract base for processors that handle new/modified files or directories

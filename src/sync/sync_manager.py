@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from src.records.local_record import LocalRecord
 from src.gui.user_interface import UserInterface
 from src.app.logger import setup_logger
-from src.config.settings import DEVICE_ID, DEVICE_USER_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP
+from src.config.settings import DEVICE_ID, DEVICE_USER_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP, LOG_FILE
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
@@ -30,6 +30,13 @@ class ISyncManager(ABC):
 
         Args:
             local_record (LocalRecord): The local record to synchronize.
+        """
+        pass
+
+    @abstractmethod
+    def sync_logs_to_database(self):
+        """
+        Synchronize the logs to the database.
         """
         pass
 
@@ -236,3 +243,16 @@ class KadiSyncManager(ISyncManager):
         for file_path in missing_files:
             del local_record.files_uploaded[file_path]
             logger.debug(f"Removed missing file '{os.path.basename(file_path)}' from local record.")
+
+    def sync_logs_to_database(self):
+        """
+        Synchronize the logs to the database.
+        """
+        with self.db_manager as db_manager:
+            db_record: KadiRecord = db_manager.record(id=DEVICE_RECORD_ID)
+
+            # Upload the log file
+            db_record.upload_file(LOG_FILE, force=True)
+
+        logger.info("Uploaded log file to the database.")
+
