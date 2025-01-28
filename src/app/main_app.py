@@ -6,6 +6,7 @@ the monitoring of a watch directory (using watchdog), processes file events, and
 user sessions, testing logic, and database synchronization tasks.
 """
 
+import os
 import sys
 import queue
 
@@ -133,7 +134,10 @@ class DeviceWatchdogApp:
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
-            self.file_processing.process_item(data_path)
+
+            # Final check to ensure the file still exists
+            if os.path.exists(data_path):
+                self.file_processing.process_item(data_path)
 
         # Sync logs to database every 9000 iterations (9000 * 100ms = 900s, 15 minutes)
         if self.log_sync_counter >= 9000 or self.log_sync_counter == 0:

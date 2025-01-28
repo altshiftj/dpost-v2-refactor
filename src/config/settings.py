@@ -32,7 +32,7 @@ LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
 
 SESSION_TIMEOUT = 300 # 5 minutes
 
-DEBOUNCE_TIME = 1
+DEBOUNCE_TIME = 5  # seconds
 
 # TODO move rem related metainfo to rem space
 DEVICE_ID = "REM_01"

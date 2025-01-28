@@ -174,10 +174,10 @@ class KadiSyncManager(ISyncManager):
         except:
             self.ui.show_error(
                 f"User {db_user_id} not found", 
-                f"User not found in kadi4mat database.\n"
-                f"Records will be uploaded now and mapped to the {db_user_id} "
-                f"account when it is created."
-                "\nPlease contact your administrator."
+                "User not found in kadi4mat database.\n"
+                f"Records will be uploaded now and mapped to the\n"
+                f"{db_user_id} account when it is created.\n"
+                "Please contact the Kadi administrator."
             )
             db_user = None
 
