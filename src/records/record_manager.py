@@ -55,11 +55,10 @@ class RecordManager:
 
     def create_record(self, filename_prefix: str) -> LocalRecord:
         """
-        Creates a new LocalRecord object based on the provided RecordInfo,
-        assigning both a long_id and short_id to the record. Stores it
-        in the daily records dictionary.
+        Creates a new LocalRecord object based on the given filename_prefix. Stores it
+        in the record_persistance dictionary.
 
-        :param record_info: A RecordInfo dataclass containing the record's basic metadata.
+        :param filename_prefix: The extensionless filename used to generate the record ID.
         :return: The newly created LocalRecord object.
         """
         record_id = IdGenerator.generate_record_id(filename_prefix)

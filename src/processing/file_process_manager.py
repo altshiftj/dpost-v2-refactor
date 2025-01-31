@@ -53,7 +53,7 @@ class FileProcessManager:
     ):
         self.ui                 = ui
         self.session_manager    = session_manager
-        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))   #TODO: Decouple ui from sync_manager and generally
+        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))   #TODO: Decouple ui from sync_manager and generally from the codebase
         self.file_processor:    BaseFileProcessor   = file_processor
 
         # initialize directories

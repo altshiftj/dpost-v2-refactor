@@ -29,6 +29,7 @@ ID_SEP = '-'
 FILE_SEP = '_'
 
 LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
+TRACE_LOG = os.path.join(DEST_DIR, 'trace.log')
 
 SESSION_TIMEOUT = 300 # 5 minutes
 
