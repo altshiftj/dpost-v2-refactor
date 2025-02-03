@@ -12,10 +12,11 @@ r"""
    ^(?!.*\.\.):   No consecutive dots ".." anywhere in the string
    (?!\.):        The first character must not be a dot
    [A-Za-z]+:     First segment = letters only
-   -:             Literal underscore
+   -:             Literal hyphen
    [A-Za-z]+:     Second segment = letters only
-   -:             Another underscore
+   -:             Another hyphen
    [a-z0-9_ ]+:   Third segment = lower case letters, digits, underscores, and spaces
+   {1,30}:        Between 1 and 30 characters long
    (?<!\.):       Must not end with a dot
    $:             End of string
 
@@ -29,7 +30,12 @@ ID_SEP = '-'
 FILE_SEP = '_'
 
 LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
-TRACE_LOG = os.path.join(DEST_DIR, 'trace.log')
+SYNC_LOGS = False
+LOG_SYNC_INTERVAL = 900  # seconds, 15 minutes
+
+TRACE_LOG_MODE = "html" # "ascii" or "html"
+TRACE_LOG_FILE = os.path.join(DEST_DIR,
+                              f"trace.{ 'html' if TRACE_LOG_MODE == 'html' else 'log' }")
 
 SESSION_TIMEOUT = 300 # 5 minutes
 

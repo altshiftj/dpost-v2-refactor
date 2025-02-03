@@ -204,13 +204,13 @@ class TKinterUI(UserInterface):
         :param session_manager: SessionManager instance for ending the session.
         :return: A function (closure) that can be called to end the session.
         """
-        def wrapper():
+        def done_dialog_wrapper():
             # Destroy the dialog if it's still open
             if self.done_dialog and self.done_dialog.winfo_exists():
                 self.done_dialog.destroy()
             # Then end the session
             session_manager.end_session()
-        return wrapper
+        return done_dialog_wrapper
 
     def _close_dialog(self):
         """
