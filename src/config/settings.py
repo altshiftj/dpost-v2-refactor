@@ -33,7 +33,7 @@ TRACE_LOG = os.path.join(DEST_DIR, 'trace.log')
 
 SESSION_TIMEOUT = 300 # 5 minutes
 
-DEBOUNCE_TIME = 5  # seconds
+DEBOUNCE_TIME = 1
 
 # TODO move rem related metainfo to rem space
 DEVICE_ID = "REM_01"
