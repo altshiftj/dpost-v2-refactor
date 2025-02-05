@@ -1,7 +1,12 @@
 /ipatwatchdogvenv/
+/wdvenv/
 /dist/
 /build/
+/Data/
+/Upload_Ordner/
 /testing_data/
-Data/*
 
 **/__pycache__/
+watchdog.log
+.gitignore
+watchdog_app.spec

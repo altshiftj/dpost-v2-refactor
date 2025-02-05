@@ -12,13 +12,13 @@ import queue
 
 from watchdog.observers import Observer
 
-from src.config.settings import WATCH_DIR, LOG_SYNC_INTERVAL, SYNC_LOGS
+from src.config.settings import WATCH_DIR
 from src.gui.user_interface import TKinterUI 
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
-from src.utils.trace_functions import track_function_calls
+from src.utils.helpers import track_function_calls
 
 logger = setup_logger(__name__)
 
@@ -113,8 +113,7 @@ class DeviceWatchdogApp:
         logger.debug("End session called.")
         try:
             self.file_processing.sync_records_to_database()
-            if SYNC_LOGS:
-                self.file_processing.sync_logs_to_database()
+            # self.file_processing.sync_logs_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
@@ -142,10 +141,9 @@ class DeviceWatchdogApp:
             if os.path.exists(data_path):
                 self.file_processing.process_item(data_path)
 
-        # Sync logs to database periodically
-        if self.log_sync_counter >= 10*LOG_SYNC_INTERVAL or self.log_sync_counter == 0:
-            if SYNC_LOGS:
-                self.file_processing.sync_logs_to_database
+        # Sync logs to database every 9000 iterations (9000 * 100ms = 900s, 15 minutes)
+        if self.log_sync_counter >= 9000 or self.log_sync_counter == 0:
+            # self.file_processing.sync_logs_to_database()
             self.log_sync_counter = 0
 
         # periodically sync logs to database
