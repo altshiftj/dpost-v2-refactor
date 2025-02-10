@@ -112,7 +112,7 @@ class DeviceWatchdogApp:
         logger.debug("End session called.")
         try:
             self.file_processing.sync_records_to_database()
-            # self.file_processing.sync_logs_to_database()
+            self.file_processing.sync_logs_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error("Session End Error", f"An error occurred during session end: {e}")
@@ -139,7 +139,7 @@ class DeviceWatchdogApp:
 
         # Sync logs to database every 9000 iterations (9000 * 100ms = 900s, 15 minutes)
         if self.log_sync_counter >= 9000 or self.log_sync_counter == 0:
-            # self.file_processing.sync_logs_to_database()
+            self.file_processing.sync_logs_to_database()
             self.log_sync_counter = 0
 
         # periodically sync logs to database
