@@ -2,7 +2,7 @@
 id_generator.py
 
 This module defines the IdGenerator class, responsible for creating and parsing unique
-identifiers (`short_id,` `long_id,` and `file_id`) for records based on provided metadata. It ensures
+identifiers for records and files based on provided metadata. It ensures
 consistent ID formats for easy tracking, storage, and retrieval of records within the
 application.
 """
@@ -16,8 +16,7 @@ logger = setup_logger(__name__)
 class IdGenerator:
     """
     The IdGenerator class is responsible for constructing and parsing unique identifiers
-    for records. It generates both concise (`short_id`) and detailed (`long_id`) identifiers
-    based on record metadata provided through a RecordInfo object.
+    for records. It generates identifiers from the filename prefix provided by the user.
 
     Key Responsibilities:
         - Constructing record identifiers using institute, user ID, and sample ID.
@@ -48,18 +47,17 @@ class IdGenerator:
     @staticmethod
     def generate_file_id(filename_prefix: str) -> str:
         """
-        Constructs a unique file identifier using the provided record ID and filename.
+        Constructs a unique file identifier using the extracted sample_id from the provided filename prefix.
 
         Format:
-            {record_id}-{filename}
+            {device}-{sample_id}
 
         Example:
-            "rem-mus-ipat-sample_a-image_001.tiff"
+            "rem-sample_a.tiff"
 
-        :param record_id: The record identifier to use in the file ID.
-        :param filename: The filename to use in the file ID.
-        :return: A string representing the file identifier.
+        :param filename_prefix: The filename prefix from which we extract the sample_id.
         """
+        # extract the sample_id as the last part of the filename prefix
         user_id, institute, sample_id = filename_prefix.split(ID_SEP)
         device_type = DEVICE_ID.split('_')[0]
 

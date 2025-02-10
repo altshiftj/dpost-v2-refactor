@@ -2,7 +2,6 @@ from src.app.logger import setup_logger
 from src.app.main_app import DeviceWatchdogApp
 from src.gui.user_interface import TKinterUI
 from src.processing.file_processor_sem import SEMFileProcessor
-from src.utils.helpers import track_function_calls
 
 def main():
     logger = setup_logger(__name__)

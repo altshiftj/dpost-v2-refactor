@@ -17,11 +17,9 @@ from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.app.logger import setup_logger
-from src.utils.helpers import track_function_calls
 
 logger = setup_logger(__name__)
 
-# @track_function_calls
 class DeviceWatchdogApp:
     """
     A main application class that coordinates:

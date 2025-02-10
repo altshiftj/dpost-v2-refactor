@@ -109,7 +109,7 @@ class KadiSyncManager(ISyncManager):
         Retrieves or creates a user group for this record based on user/institute info.
         If user is provided, also adds the user to the group as 'admin'.
         """
-        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
+        device, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_group_id = f"{user_initials}{ID_SEP}{institute}{ID_SEP}rawdata{ID_SEP}group"
 
         try:
@@ -160,7 +160,7 @@ class KadiSyncManager(ISyncManager):
         Retrieve the user object for this record. If the user doesn't exist, 
         show an error in the UI, and return None. (Creation is not supported yet.)
         """
-        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
+        device, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_user_id = f"{user_initials}{ID_SEP}{institute}"
 
         try:

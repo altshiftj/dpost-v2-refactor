@@ -289,6 +289,11 @@ class FileProcessManager:
         """
         self.records.sync_logs_to_database()
 
+
+####################################################################################################
+# BaseFileProcessor
+####################################################################################################
+
 class BaseFileProcessor(ABC):
     """
     An abstract base for processors that handle new/modified files or directories
