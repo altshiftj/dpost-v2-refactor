@@ -29,11 +29,10 @@ ID_SEP = '-'
 FILE_SEP = '_'
 
 LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
-TRACE_LOG = os.path.join(DEST_DIR, 'trace.log')
 
-SESSION_TIMEOUT = 300 # 5 minutes
+SESSION_TIMEOUT = 600 # 10 minutes
 
-DEBOUNCE_TIME = 1
+DEBOUNCE_TIME = 6
 
 # TODO move rem related metainfo to rem space
 DEVICE_ID = "REM_01"
