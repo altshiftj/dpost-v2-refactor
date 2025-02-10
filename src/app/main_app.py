@@ -21,7 +21,7 @@ from src.utils.helpers import track_function_calls
 
 logger = setup_logger(__name__)
 
-@track_function_calls
+# @track_function_calls
 class DeviceWatchdogApp:
     """
     A main application class that coordinates:
