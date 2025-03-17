@@ -10,3 +10,5 @@
 watchdog.log
 .gitignore
 watchdog_app.spec
+/.pytest_cache/
+/.vscode/
