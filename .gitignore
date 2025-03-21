@@ -5,6 +5,9 @@
 /Data/
 /Upload_Ordner/
 /testing_data/
+/.pytest_cache/
+/.vscode/
+
 **/__pycache__/
 
 watchdog.log

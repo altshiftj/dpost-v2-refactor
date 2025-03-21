@@ -144,8 +144,10 @@ class RecordManager:
         logger.info("Starting synchronization of records to the database.")
         for record in self.get_all_records().values():
             record: LocalRecord
+            # if the institute in the record identifier is ipat, then sync the record
+            institute = record.identifier.split('-')[2]
             
-            if not record.all_files_uploaded():
+            if institute == 'ipat' and not record.all_files_uploaded():
                 logger.info(f"Syncing record '{record.identifier}' to the database.")
                 self.sync.sync_record_to_database(record)
                 self.save_records()
