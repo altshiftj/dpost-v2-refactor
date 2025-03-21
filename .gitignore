@@ -5,10 +5,11 @@
 /Data/
 /Upload_Ordner/
 /testing_data/
+/.pytest_cache/
+/.vscode/
 
 **/__pycache__/
 watchdog.log
 .gitignore
 watchdog_app.spec
-/.pytest_cache/
-/.vscode/
+watchdog_app.exe
