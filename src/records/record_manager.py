@@ -151,6 +151,11 @@ class RecordManager:
                 logger.info(f"Syncing record '{record.identifier}' to the database.")
                 self.sync.sync_record_to_database(record)
                 self.save_records()
+            elif institute != 'ipat':
+                logger.info(f"Record '{record.identifier}' is not applicable for syncing.")
+            else:
+                logger.info(f"Record '{record.identifier}' is already fully uploaded.")
+                
         logger.info("Synchronization of records completed.")
 
     def sync_logs_to_database(self):
