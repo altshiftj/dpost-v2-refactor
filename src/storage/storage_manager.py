@@ -17,10 +17,6 @@ logger = setup_logger(__name__)
 
 class StorageManager:
     """
-    Concrete implementation of previous IStorageManager that handles standard file storage operations.
-
-    Since there is no current need for multiple storage manager implementations //ALK 14.01.25
-
     The StorageManager class provides methods to move and rename files and directories
     within the application's directory structure. It ensures that all storage actions
     comply with naming conventions and prevents filename conflicts by generating unique

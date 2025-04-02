@@ -18,19 +18,19 @@ Classes:
 
 from abc import ABC, abstractmethod
 import os
-# these are just namespaces
+
 from src.processing.metadata_extractor import MetadataExtractor
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
 from src.records.id_generator import IdGenerator
 
-# these carry state
 from src.records.local_record import LocalRecord
 from src.sessions.session_manager import SessionManager
 from src.records.record_manager import RecordManager
-from src.gui.user_interface import UserInterface
 from src.sync.sync_manager import KadiSyncManager
 from src.app.logger import setup_logger
+from src.ui.ui_abstract import UserInterface
+from src.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages
 
 logger = setup_logger(__name__)
 
@@ -53,7 +53,7 @@ class FileProcessManager:
     ):
         self.ui                 = ui
         self.session_manager    = session_manager
-        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))   #TODO: Decouple ui from sync_manager and generally from the codebase
+        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))
         self.file_processor:    BaseFileProcessor   = file_processor
 
         # initialize directories
@@ -87,10 +87,10 @@ class FileProcessManager:
         Moves invalid items to exception folder and informs the user.
         """
         StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
+
         self.ui.show_warning(
-            "Invalid Data Type",
-            "The file/folder is not a recognized data type.\n"
-            "Only .tif/.tiff images and .elid directories are supported."
+            WarningMessages.INVALID_DATA_TYPE,
+            WarningMessages.INVALID_DATA_TYPE_DETAILS
         )
         logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
 
@@ -150,9 +150,8 @@ class FileProcessManager:
         If the existing record is unappendable, prompt to rename and create a new record.
         """
         self.ui.show_warning(
-            "Invalid Record",
-            "An existing record with this name cannot be appended.\n"
-            "Please create a new record for this data."
+            WarningMessages.INVALID_RECORD,
+            WarningMessages.INVALID_RECORD_DETAILS
         )
         self._prompt_item_rename(src_path, filename_prefix, extension, bad_name_prompt=False)
 
@@ -170,22 +169,22 @@ class FileProcessManager:
         """
         Guides the user to rename the item properly. 
         Allows multiple attempts or cancellation (moves to rename folder).
-        """
+        """        
         # Optional warning prompt for invalid naming
         if bad_name_prompt:
             self.ui.show_warning(
-                "Invalid Name",
-                f"'{filename_prefix}{extension}' does not follow the naming convention.\n"
-                "Format: User-Institute-Sample_Name\n"
-                "No special characters (e.g., !@#$%^&*-+=)\n"
-                "30 character limit for Sample Name."
+                WarningMessages.INVALID_NAME,
+                WarningMessages.INVALID_NAME_DETAILS.format(
+                    filename=filename_prefix, 
+                    extension=extension
+                )
             )
         
         # Optional message for creating a new record name
         if new_record_prompt:
             self.ui.show_info(
-                "New Record",
-                "Please enter a name for the new record."
+                InfoMessages.NEW_RECORD,
+                InfoMessages.NEW_RECORD_DETAILS
             )
 
         # Keep asking until valid name or user cancels
@@ -198,23 +197,22 @@ class FileProcessManager:
                     # Move to rename folder
                     StorageManager.move_to_rename_folder(src_path, filename_prefix, extension)
                     self.ui.show_info(
-                        "Operation Cancelled",
-                        "The item has been moved to the rename folder."
+                        InfoMessages.OPERATION_CANCELLED,
+                        InfoMessages.MOVED_TO_RENAME
                     )
                     return
                 elif result == "Invalid Parts":
                     # Field(s) contained invalid characters
                     self.ui.show_warning(
-                        "Invalid Name",
-                        "Please avoid special characters (e.g., !@#$%^&*-+=)\n"
-                        "30 character limit for Sample Name."
+                        WarningMessages.INVALID_CHARACTERS,
+                        WarningMessages.INVALID_CHARACTERS_DETAILS
                     )
                     continue
                 else:
                     # Possibly incomplete fields, try again
                     self.ui.show_warning(
-                        "Incomplete Information",
-                        "All fields are required. Please try again."
+                        WarningMessages.INCOMPLETE_INFO,
+                        WarningMessages.INCOMPLETE_INFO_DETAILS
                     )
                     continue
 
@@ -224,7 +222,7 @@ class FileProcessManager:
     def add_item_to_record(self, record, src_path, filename_prefix, extension, notify=True):
         """
         Attaches the file/folder to an existing or new record, then handles final storage.
-        """
+        """        
         try:
             # 1) Get or create record
             record = self._get_or_create_record(record, filename_prefix)
@@ -243,7 +241,13 @@ class FileProcessManager:
             # 3) Notify the user of success
             if notify:
                 item_type = "Folder" if os.path.isdir(src_path) else "File"
-                self.ui.show_info("Success", f"{item_type} renamed to '{os.path.basename(final_path)}'")
+                self.ui.show_info(
+                    InfoMessages.SUCCESS,
+                    InfoMessages.ITEM_RENAMED.format(
+                        item_type=item_type, 
+                        filename=os.path.basename(final_path)
+                    )
+                )
 
             logger.debug(
                 f"{'Folder' if os.path.isdir(src_path) else 'File'} '{src_path}' "
@@ -256,9 +260,8 @@ class FileProcessManager:
             if not self.session_manager.session_active:
                 # No active session; start a new one
                 self.session_manager.start_session()
-                # Show a dialog informing the user that the session is active and can be ended
-                self.ui.show_done_dialog(self.session_manager)
-                logger.debug("Started a new session and displayed the 'Done' dialog.")
+                # No need to explicitly show the dialog anymore, SessionManager does it
+                logger.debug("Started a new session.")
             else:
                 # Session is active; reset the timer to extend the session
                 self.session_manager.reset_timer()
@@ -266,7 +269,10 @@ class FileProcessManager:
 
 
         except Exception as e:
-            self.ui.show_error("Error", f"Failed to rename: {e}")
+            self.ui.show_error(
+                "Error",  # We should add this title to the ErrorMessages class
+                ErrorMessages.RENAME_FAILED.format(error=str(e))
+            )
             StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
 
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
@@ -288,11 +294,6 @@ class FileProcessManager:
         Syncs the log file to the external database.
         """
         self.records.sync_logs_to_database()
-
-
-####################################################################################################
-# BaseFileProcessor
-####################################################################################################
 
 class BaseFileProcessor(ABC):
     """
@@ -317,14 +318,14 @@ class BaseFileProcessor(ABC):
     @abstractmethod
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """
-        Checks if the record can be appended to with this processor’s data type.
+        Checks if the record can be appended to with this processor's data type.
         Return: (appendable, message_if_not_appendable)
         """
         pass
 
     @abstractmethod
     def device_specific_processing(
-        self, record_path, file_id, source_path, filename_prefix, extension
+        self, source_path, record_path, file_id, extension
     ):
         """
         Allows subclasses to implement custom moves, renames, or metadata extraction.

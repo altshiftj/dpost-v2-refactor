@@ -1,6 +1,6 @@
 from src.app.logger import setup_logger
 from src.app.main_app import DeviceWatchdogApp
-from src.gui.user_interface import TKinterUI
+from src.ui.ui_tkinter import TKinterUI
 from src.processing.file_processor_sem import SEMFileProcessor
 
 def main():

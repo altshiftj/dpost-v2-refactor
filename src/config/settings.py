@@ -32,12 +32,16 @@ LOG_FILE = os.path.join(DEST_DIR, 'rem_watchdog.log')
 
 SESSION_TIMEOUT = 600 # 10 minutes
 
+SYNC_LOGS = True
+LOG_SYNC_INTERVAL = 60 # 1 minute
+
 DEBOUNCE_TIME = 6
 
 # TODO move rem related metainfo to rem space
-DEVICE_ID = "REM_01"
-DEVICE_RECORD_ID = 190
-DEVICE_USER_ID = 22
+DEVICE_ID = "test-rem-01-usr"
+DEVICE_RECORD_ID = 172
+DEVICE_USER_ID = 14
+DEVICE_TYPE = "REM"
 DEFAULT_REM_RECORD_DESCRIPTION = r"""
 # Default Description
 *Can be edited and/or overwritten*  

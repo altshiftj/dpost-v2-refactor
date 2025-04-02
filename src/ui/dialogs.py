@@ -1,15 +1,16 @@
 """
-gui_manager.py
+dialogs.py
 
-This module defines classes for handling GUI-related interactions using Tkinter.
-It includes a custom Entry widget with placeholder functionality and a dialog
-to collect multiple fields from the user when renaming files or folders.
+This module defines UI dialog components for collecting user input and displaying information.
+It provides reusable dialog components that encapsulate specific UI interactions.
 """
 
 import tkinter as tk
 from tkinter import simpledialog
+from typing import Dict, Optional, Any
+from src.ui.ui_messages import DialogPrompts, InfoMessages
 
-# Custom Entry widget with placeholder text
+
 class EntryWithPlaceholder(tk.Entry):
     """
     A custom Tkinter Entry widget that displays placeholder text when empty.
@@ -33,37 +34,38 @@ class EntryWithPlaceholder(tk.Entry):
         self.placeholder = placeholder
         self.placeholder_color = color
         self.default_fg_color = self['fg']  # Store the default text color
-        self.bind("<FocusOut>", self._focus_out)  # Bind event when focus is lost
-        self.bind("<Key>", self._key_pressed)      # Bind event on key press
+        self.bind("<FocusOut>", self._on_focus_out)  # Bind event when focus is lost
+        self.bind("<Key>", self._on_key_pressed)      # Bind event on key press
         self._show_placeholder()                    # Initially show placeholder
 
-    def _show_placeholder(self):
+    def _show_placeholder(self) -> None:
         """
         Displays the placeholder text if the entry is empty.
         """
         if not super().get():
+            self.delete(0, tk.END)  # Ensure field is empty before adding placeholder
             self.insert(0, self.placeholder)
             self['fg'] = self.placeholder_color
 
-    def _hide_placeholder(self):
+    def _hide_placeholder(self) -> None:
         """
         Clears the placeholder text and restores the default text color.
         """
         if self['fg'] == self.placeholder_color:
-            self.delete(0, 'end')
+            self.delete(0, tk.END)
             self['fg'] = self.default_fg_color
 
-    def _key_pressed(self, event):
+    def _on_key_pressed(self, event: Any) -> None:
         """
         Event handler for key presses. Clears the placeholder when the user starts typing.
         
         :param event: The Tkinter event object.
         """
         if self['fg'] == self.placeholder_color:
-            self.delete(0, 'end')
+            self.delete(0, tk.END)
             self['fg'] = self.default_fg_color
 
-    def _focus_out(self, event):
+    def _on_focus_out(self, event: Any) -> None:
         """
         Event handler for losing focus. Restores the placeholder if the entry is empty.
         
@@ -72,7 +74,7 @@ class EntryWithPlaceholder(tk.Entry):
         if not super().get():
             self._show_placeholder()
 
-    def get(self):
+    def get(self) -> str:
         """
         Retrieves the current text in the entry. Returns an empty string if only placeholder is present.
         
@@ -84,8 +86,20 @@ class EntryWithPlaceholder(tk.Entry):
         else:
             return content
 
+    def set(self, value: str) -> None:
+        """
+        Sets the content of the entry field, handling placeholder text appropriately.
+        
+        :param value: The value to set in the entry field.
+        """
+        self.delete(0, tk.END)
+        if value:
+            self['fg'] = self.default_fg_color
+            self.insert(0, value)
+        else:
+            self._show_placeholder()
 
-# Custom dialog using EntryWithPlaceholder to collect Name, Institute, and Sample Name from users when a file name is incorrect
+
 class MultiFieldDialog(simpledialog.Dialog):
     """
     A custom dialog to collect multiple fields (Name, Institute, Sample Name) from the user.
@@ -94,16 +108,19 @@ class MultiFieldDialog(simpledialog.Dialog):
     expected naming convention, prompting the user to input the necessary components
     to rename the item correctly.
     """
-    def __init__(self, parent, title=None):
+    def __init__(self, parent: tk.Tk, title: Optional[str] = None):
         """
         Initializes the MultiFieldDialog.
         
         :param parent: The parent widget.
         :param title: The title of the dialog window.
         """
+        self.result = None
+        if title is None:
+            title = DialogPrompts.RENAME_FILE
         super().__init__(parent, title)
 
-    def body(self, master):
+    def body(self, master: tk.Frame) -> tk.Widget:
         """
         Creates the body of the dialog with labels and entry fields for user input.
         
@@ -121,9 +138,9 @@ class MultiFieldDialog(simpledialog.Dialog):
         self.sample_ID_var = tk.StringVar()
 
         # Example placeholder texts to guide the user
-        self.example_user_ID = "Ex: mus"
-        self.example_institute = "Ex: ipat"
-        self.example_sample_ID = r"Ex: ivtrap_a01"
+        self.example_user_ID = DialogPrompts.PLACEHOLDER_USER_ID
+        self.example_institute = DialogPrompts.PLACEHOLDER_INSTITUTE
+        self.example_sample_ID = DialogPrompts.PLACEHOLDER_SAMPLE_ID
 
         # Create EntryWithPlaceholder widgets for each field
         self.name_entry = EntryWithPlaceholder(
@@ -157,14 +174,33 @@ class MultiFieldDialog(simpledialog.Dialog):
         # Return the first entry widget to have initial focus
         return self.name_entry
 
-    def _bring_to_front(self):
+    def buttonbox(self) -> None:
+        """
+        Creates the standard OK and Cancel buttons.
+        This method is overridden to customize button appearance and behavior.
+        """
+        box = tk.Frame(self)
+
+        ok_button = tk.Button(box, text="OK", width=10, command=self.ok, default=tk.ACTIVE)
+        ok_button.pack(side=tk.LEFT, padx=5, pady=5)
+        
+        cancel_button = tk.Button(box, text="Cancel", width=10, command=self.cancel)
+        cancel_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+        self.bind("<Return>", self.ok)
+        self.bind("<Escape>", self.cancel)
+
+        box.pack()
+
+    def _bring_to_front(self) -> None:
         """
         Brings the dialog window to the front and keeps it above other windows.
         """
         self.lift()
         self.wm_attributes("-topmost", True)
+        self.focus_force()  # Make sure dialog gets focus
 
-    def apply(self):
+    def apply(self) -> None:
         """
         Processes the user input after the dialog is closed with 'OK'.
         
@@ -190,3 +226,90 @@ class MultiFieldDialog(simpledialog.Dialog):
             'institute': institute,
             'sample_ID': sample_ID
         }
+
+
+# class MessageDialog(tk.Toplevel):
+#     """
+#     A custom message dialog that can be used to display messages, warnings, or errors.
+#     This provides more control over appearance and behavior than the standard messagebox.
+#     """
+#     def __init__(self, parent, title, message, message_type='info', on_close=None):
+#         """
+#         Initialize a custom message dialog.
+        
+#         :param parent: The parent widget.
+#         :param title: The title of the dialog.
+#         :param message: The message to display.
+#         :param message_type: The type of message ('info', 'warning', 'error').
+#         :param on_close: Optional callback when dialog is closed.
+#         """
+#         super().__init__(parent)
+#         self.title(title)
+#         self.on_close = on_close
+#         self.attributes("-topmost", True)
+        
+#         # Configure based on message type
+#         if message_type == 'warning':
+#             bg_color = '#fff3cd'  # Light yellow
+#             fg_color = '#856404'  # Dark yellow/gold
+#             icon = '⚠️'
+#         elif message_type == 'error':
+#             bg_color = '#f8d7da'  # Light red
+#             fg_color = '#721c24'  # Dark red
+#             icon = '❌'
+#         else:  # info
+#             bg_color = '#d1ecf1'  # Light blue
+#             fg_color = '#0c5460'  # Dark blue
+#             icon = 'ℹ️'
+        
+#         # Main frame
+#         main_frame = tk.Frame(self, padx=10, pady=10, bg=bg_color)
+#         main_frame.pack(fill=tk.BOTH, expand=True)
+        
+#         # Icon and message
+#         header_frame = tk.Frame(main_frame, bg=bg_color)
+#         header_frame.pack(fill=tk.X, pady=(0, 10))
+        
+#         icon_label = tk.Label(header_frame, text=icon, font=("Arial", 24), bg=bg_color, fg=fg_color)
+#         icon_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+#         message_label = tk.Label(main_frame, text=message, wraplength=300, 
+#                                justify=tk.LEFT, bg=bg_color, fg=fg_color)
+#         message_label.pack(fill=tk.BOTH, expand=True)
+        
+#         # Button
+#         button_frame = tk.Frame(main_frame, bg=bg_color)
+#         button_frame.pack(fill=tk.X, pady=(10, 0))
+        
+#         ok_button = tk.Button(button_frame, text="OK", width=10, command=self.close)
+#         ok_button.pack(side=tk.RIGHT)
+        
+#         # Set up close behavior
+#         self.protocol("WM_DELETE_WINDOW", self.close)
+#         self.bind("<Escape>", lambda e: self.close())
+#         self.bind("<Return>", lambda e: self.close())
+        
+#         # Center the dialog relative to parent
+#         self.geometry("")  # Reset geometry to shrink wrap
+#         self.update_idletasks()  # Make sure size is updated
+        
+#         width = self.winfo_width()
+#         height = self.winfo_height()
+#         parent_x = parent.winfo_rootx()
+#         parent_y = parent.winfo_rooty()
+#         parent_width = parent.winfo_width()
+#         parent_height = parent.winfo_height()
+        
+#         x = parent_x + (parent_width - width) // 2
+#         y = parent_y + (parent_height - height) // 2
+        
+#         self.geometry(f"{width}x{height}+{x}+{y}")
+        
+#         # Focus on dialog
+#         self.focus_force()
+    
+#     def close(self):
+#         """Close the dialog and call on_close callback if provided."""
+#         if self.on_close:
+#             self.on_close()
+#         self.destroy()

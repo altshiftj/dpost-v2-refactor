@@ -2,9 +2,10 @@ import os
 from abc import ABC, abstractmethod
 
 from src.records.local_record import LocalRecord
-from src.gui.user_interface import UserInterface
 from src.app.logger import setup_logger
 from src.config.settings import DEVICE_ID, DEVICE_USER_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP, LOG_FILE
+from src.ui.ui_abstract import UserInterface
+from src.ui.ui_messages import ErrorMessages
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
@@ -47,13 +48,10 @@ class KadiSyncManager(ISyncManager):
     to a remote database using KadiManager.
     """
 
-    def __init__(self, ui: UserInterface):
+    def __init__(self, ui : UserInterface):
         """
         Initializes the SyncManager with a database manager instance.
-
-        Args:
-            db_manager (callable): A factory or context manager that provides an instance
-                                   of KadiManager for database operations.
+        UI dependency removed.
         """
         self.db_manager = KadiManager()
         self.ui = ui
@@ -67,12 +65,13 @@ class KadiSyncManager(ISyncManager):
                 db_manager: KadiManager
 
                 # 1. Retrieve the user (show error if not found; creation not supported yet)
-                db_user = self._get_db_user(db_manager, local_record)
+                db_user = self._get_db_user_from_local_record(db_manager, local_record)
 
                 # 2. Retrieve or create the user group
                 db_user_group = self._get_or_create_db_user_group(db_manager, local_record, db_user)
 
                 # 3. Retrieve or create the device data group
+                db_device_user: KadiUser = db_manager.user(username=DEVICE_ID, identity_type='local')
                 db_device_data_group = self._get_or_create_db_device_data_group(db_manager)
 
                 # 4. Retrieve or create the record
@@ -84,6 +83,7 @@ class KadiSyncManager(ISyncManager):
                     local_record=local_record,
                     db_user=db_user,
                     db_user_group=db_user_group,
+                    db_device_user=db_device_user,
                     db_device_data_group=db_device_data_group
                 )
 
@@ -109,7 +109,7 @@ class KadiSyncManager(ISyncManager):
         Retrieves or creates a user group for this record based on user/institute info.
         If user is provided, also adds the user to the group as 'admin'.
         """
-        device, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
+        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_group_id = f"{user_initials}{ID_SEP}{institute}{ID_SEP}rawdata{ID_SEP}group"
 
         try:
@@ -148,30 +148,27 @@ class KadiSyncManager(ISyncManager):
         """
         Create a new record in the database or retrieve it if it already exists.
         """
-        # Using create=True ensures that if the record does not exist, it’s created.
+        # Using create=True ensures that if the record does not exist, it's created.
         db_record: KadiRecord = db_manager.record(
             create=True, 
             identifier=local_record.identifier
         )
         return db_record
 
-    def _get_db_user(self, db_manager: KadiManager, local_record: LocalRecord) -> KadiUser:
+    def _get_db_user_from_local_record(self, db_manager: KadiManager, local_record: LocalRecord) -> KadiUser:
         """
         Retrieve the user object for this record. If the user doesn't exist, 
         show an error in the UI, and return None. (Creation is not supported yet.)
         """
-        device, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
+        _, user_initials, institute = local_record.identifier.split(ID_SEP)[:3]
         db_user_id = f"{user_initials}{ID_SEP}{institute}"
 
         try:
             db_user: KadiUser = db_manager.user(username=db_user_id, identity_type='local')
         except:
             self.ui.show_error(
-                f"User {db_user_id} not found", 
-                f"User not found in kadi4mat database.\n"
-                f"Records will be uploaded now and mapped to the {db_user_id} "
-                f"account when it is created."
-                "\nPlease contact your administrator."
+                ErrorMessages.USER_NOT_FOUND.format(user_id=db_user_id), 
+                ErrorMessages.USER_NOT_FOUND_DETAILS.format(user_id=db_user_id)
             )
             db_user = None
 
@@ -182,6 +179,7 @@ class KadiSyncManager(ISyncManager):
         db_record: KadiRecord, 
         local_record: LocalRecord, 
         db_user: KadiUser, 
+        db_device_user: KadiUser,
         db_user_group: KadiGroup, 
         db_device_data_group: KadiGroup
     ):
@@ -203,7 +201,9 @@ class KadiSyncManager(ISyncManager):
 
             # Ensure group roles
             db_record.add_group_role(group_id=db_user_group.id, role_name='member')
-            db_record.add_group_role(group_id=db_device_data_group.id, role_name='admin')
+            db_record.add_group_role(group_id=db_device_data_group.id, role_name='member')
+
+            db_record.add_user(user_id=db_device_user.id, role_name='admin')
 
             # Optionally assign user roles as well
             if db_user:
@@ -249,4 +249,3 @@ class KadiSyncManager(ISyncManager):
             db_record.upload_file(LOG_FILE, force=True)
 
         logger.info("Uploaded log file to the database.")
-
