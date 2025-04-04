@@ -7,7 +7,7 @@ consistent ID formats for easy tracking, storage, and retrieval of records withi
 application.
 """
 from src.app.logger import setup_logger
-from src.config.settings import DEVICE_ID, ID_SEP
+from src.config.settings import DEVICE_TYPE, ID_SEP
 from src.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
@@ -37,9 +37,7 @@ class IdGenerator:
         :param filename_prefix: The filename prefix to use in the identifier.
         :return: A string representing the identifier.
         """
-        device_type = DEVICE_ID.split('_')[0]
-
-        record_id = f"{device_type}{ID_SEP}{filename_prefix}"
+        record_id = f"{DEVICE_TYPE}{ID_SEP}{filename_prefix}"
         record_id = record_id.lower()
         logger.debug(f"Constructed record_id: {record_id}")
         return record_id
@@ -59,8 +57,7 @@ class IdGenerator:
         """
         # extract the sample_id as the last part of the filename prefix
         user_id, institute, sample_id = filename_prefix.split(ID_SEP)
-        device_type = DEVICE_ID.split('_')[0]
 
-        file_id = f"{device_type}{ID_SEP}{sample_id}"
+        file_id = f"{DEVICE_TYPE}{ID_SEP}{sample_id}"
 
         return file_id
