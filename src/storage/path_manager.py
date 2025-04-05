@@ -7,12 +7,20 @@ exist, sanitizes user inputs to conform to naming conventions, and generates uni
 to prevent conflicts.
 """
 
-import os
+from pathlib import Path
 
-from src.config.settings import WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
+from src.config.settings import (
+    WATCH_DIR,
+    DEST_DIR,
+    RENAME_DIR,
+    EXCEPTIONS_DIR,
+    FILENAME_PATTERN,
+    ID_SEP
+)
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
+
 
 class PathManager:
     """
@@ -26,135 +34,102 @@ class PathManager:
     """
 
     @staticmethod
-    def init_dirs():
-        # Ensure all required directories exist; create them if they don't
-        for directory in [WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR]:
-            os.makedirs(directory, exist_ok=True)
-
-    @staticmethod
-    def sanitize_and_validate_name(filename_prefix: str) -> tuple:
+    def init_dirs(directories: list[str] = None):
         """
-        Validates and sanitizes a base name against the naming convention.
-        Expected format: 'UserID-Institute-SampleID'
-        
-        Constraints:
-            - Institute: letters only
-            - UserID: letters only
-            - SampleID: Lower-case alphanumeric and underscores
+        Ensures all specified directories exist. Defaults to core application directories.
 
         Args:
-            filename_prefix (str): The original filename prefix to validate.
-
-        Returns:
-            Tuple[str, bool]:
-                - A possibly sanitized version of the filename_prefix
-                - A boolean indicating if the name is valid
+            directories (list[str], optional): A list of directory paths to initialize.
+                                               Defaults to WATCH_DIR, DEST_DIR, RENAME_DIR, and EXCEPTIONS_DIR.
         """
-        # Quick overall pattern check (if you use a compiled regex for the entire string)
-        if not FILENAME_PATTERN.match(filename_prefix):
-            return filename_prefix, False
+        if directories is None:
+            from src.config.settings import WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR
+            directories = [WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR]
 
-        # extract the inst and user_id as the first two parts of the filename
-        parts = filename_prefix.split(ID_SEP)
-        user_id, institute = parts[:2]
+        for dir_path in directories:
+            Path(dir_path).mkdir(parents=True, exist_ok=True)
 
-        # the sample_id is the rest of the filename
-        sample_id = ID_SEP.join(parts[2:])
 
-        sample_id = sample_id.replace(' ', '_')
-
-        # Rebuild and return sanitized name
-        sanitized = f"{user_id.lower()}{ID_SEP}{institute.lower()}{ID_SEP}{sample_id}"
-        return sanitized, True
-    
-    @classmethod
-    def validate_user_input(cls, dialog_result: dict) -> tuple:
-        """
-        Validates the user input collected from the dialog.
-        
-        Args:
-            dialog_result (dict or None): The result from the dialog containing user inputs.
-                Expected keys: 'name', 'institute', 'sample_ID'
-        
-        Returns:
-            Tuple[Any, bool]:
-                - (error_message, False) if invalid, or
-                - (sanitized_base_name, True) if valid
-        """
-        if dialog_result is None:
-            return "User cancelled the dialog.", False
-        
-        user_ID =   dialog_result.get('name')
-        institute = dialog_result.get('institute')
-        sample_ID = dialog_result.get('sample_ID')
-
-        # Check that all required fields are provided
-        if not (user_ID and institute and sample_ID):
-            return "All fields are required.", False
-
-        # Combine into the expected "institute_userID_sampleID" format
-        original_name = f"{user_ID}{ID_SEP}{institute}{ID_SEP}{sample_ID}"
-        sanitized_name, is_valid = cls.sanitize_and_validate_name(original_name)
-        if not is_valid:
-            return "Invalid Parts", False
-
-        return sanitized_name, True
-    
     @staticmethod
     def get_record_path(filename_prefix: str) -> str:
         """
-        Returns the directory path for a given record based on its long_id.
+        Builds and returns the directory path for a given record, creating it if needed.
+        The path is structured as: DEST_DIR / INSTITUTE.upper() / USER_ID.upper() / SAMPLE_ID.
         """
         user_ID, institute, sample_ID = filename_prefix.split(ID_SEP)
+        record_path = Path(DEST_DIR) / institute.upper() / user_ID.upper() / sample_ID
+        record_path.mkdir(parents=True, exist_ok=True)
+        return str(record_path)
 
-        # create a directory tree for the record, with institute->user_ID->sample_ID structure
-        record_path = os.path.join(DEST_DIR, institute.upper(), user_ID.upper(), sample_ID)
-
-        # Ensure the directory exists
-        os.makedirs(record_path, exist_ok=True)
-
-        return record_path
 
     @classmethod
-    def get_rename_path(cls, name: str) -> str:
+    def get_rename_path(cls, name: str, base_dir: str = None) -> str:
         """
         Returns a unique path in the rename directory.
+
+        Args:
+            name (str): The filename (with extension).
+            base_dir (str, optional): The base directory to use. Defaults to RENAME_DIR from settings.
+
+        Returns:
+            str: A unique full path in the rename directory.
         """
-        filename_prefix, extension = os.path.splitext(name)
-        return cls.get_unique_filename(RENAME_DIR, filename_prefix, extension)
+        from src.config.settings import RENAME_DIR
+        base_dir = base_dir or RENAME_DIR
+        filename_prefix, extension = Path(name).stem, Path(name).suffix
+        return cls.get_unique_filename(base_dir, filename_prefix, extension)
+
 
     @classmethod
-    def get_exception_path(cls, name: str) -> str:
+    def get_exception_path(cls, name: str, base_dir: str = None) -> str:
         """
         Returns a unique path in the exceptions directory.
+
+        Args:
+            name (str): The filename (with extension).
+            base_dir (str, optional): The base directory to use. Defaults to EXCEPTIONS_DIR from settings.
+
+        Returns:
+            str: A unique full path in the exceptions directory.
         """
-        filename_prefix, extension = os.path.splitext(name)
-        return cls.get_unique_filename(EXCEPTIONS_DIR, filename_prefix, extension)
-    
+        from src.config.settings import EXCEPTIONS_DIR
+        base_dir = base_dir or EXCEPTIONS_DIR
+        filename_prefix, extension = Path(name).stem, Path(name).suffix
+        return cls.get_unique_filename(base_dir, filename_prefix, extension)
+
+
     @staticmethod
     def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
         """
-        Generates a unique filename in the given directory by appending a counter if needed.
+        Generates a unique filename in the given directory by appending
+        an incrementing counter if needed.
+
+        e.g. if "my_file_01.txt" exists, next might be "my_file_02.txt".
         """
+        dir_path = Path(directory)
+        dir_path.mkdir(parents=True, exist_ok=True)
+
+        # Step 1: find the highest counter used by existing files with a matching extension & prefix
         counter = 1
+        for existing in dir_path.iterdir():
+            if existing.is_file() and existing.suffix == extension:
+                existing_prefix = existing.stem
+                # The logic from the original code attempts to parse 
+                # out a trailing counter from the file's name, after the last ID_SEP.
+                prefix_no_counter = existing_prefix.rsplit(ID_SEP, 1)[0]
+                if prefix_no_counter in filename_prefix:
+                    # Try to parse out that trailing number
+                    try:
+                        suffix_num = int(existing_prefix.rsplit(ID_SEP, 1)[1])
+                        if suffix_num >= counter:
+                            counter = suffix_num + 1
+                    except (ValueError, IndexError):
+                        continue
 
-        for filename in os.listdir(directory):
-            basename = os.path.basename(filename)
-            prefix, ext = os.path.splitext(basename)
-            #strip the counter from the prefix, which is the last part of the filename separated by ID_SEP
-            prefix_no_counter = prefix.rsplit(ID_SEP, 1)[0]
-
-            if basename.endswith(extension) and (prefix_no_counter in filename_prefix):
-                try:
-                    counter = max(counter, int(prefix.rsplit(ID_SEP, 1)[1]) + 1)
-                except ValueError:
-                    continue
-
+        # Step 2: build a candidate filename that doesn't exist yet
         while True:
-            candidate = f"{filename_prefix}{ID_SEP}{counter:02d}{extension}"
-
-            unique_path = os.path.join(directory, candidate)
-            if not os.path.exists(unique_path):
-                return unique_path
+            candidate_name = f"{filename_prefix}{ID_SEP}{counter:02d}{extension}"
+            candidate_path = dir_path / candidate_name
+            if not candidate_path.exists():
+                return str(candidate_path)
             counter += 1
-    

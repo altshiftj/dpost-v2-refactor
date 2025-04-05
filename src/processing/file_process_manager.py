@@ -22,6 +22,7 @@ import os
 from src.processing.metadata_extractor import MetadataExtractor
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
+from src.utils.filename_validator import FilenameValidator
 from src.records.id_generator import IdGenerator
 
 from src.records.local_record import LocalRecord
@@ -100,7 +101,7 @@ class FileProcessManager:
         or needs a new one, or if the naming is invalid.
         """
         # Sanitize the name (remove illegal chars, etc.)
-        sanitized_filename_prefix, is_valid_format = PathManager.sanitize_and_validate_name(filename_prefix)
+        sanitized_filename_prefix, is_valid_format = FilenameValidator.sanitize_and_validate(filename_prefix)
         
         record_id = IdGenerator.generate_record_id(sanitized_filename_prefix)
         record = self.records.get_record_by_id(record_id)
@@ -190,7 +191,7 @@ class FileProcessManager:
         # Keep asking until valid name or user cancels
         while True:
             user_input = self.ui.prompt_rename()  # Returns dict or None
-            result, is_valid = PathManager.validate_user_input(user_input)
+            result, is_valid = FilenameValidator.from_user_input(user_input)
 
             if not is_valid:
                 if result == "User cancelled the dialog.":
