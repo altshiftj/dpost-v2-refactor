@@ -249,3 +249,4 @@ class KadiSyncManager(ISyncManager):
             db_record.upload_file(LOG_FILE, force=True)
 
         logger.info("Uploaded log file to the database.")
+        

@@ -26,10 +26,10 @@ class IdGenerator:
     @staticmethod
     def generate_record_id(filename_prefix: str) -> str:
         """
-        Constructs a record identifier using the device name and the provided filename prefix.
+        Constructs a record identifier using the device type and the provided filename prefix.
 
         Format:
-            {device}-{user_id}-{institute}-{sample_id}
+            {device_type}-{user_id}-{institute}-{sample_id}
 
         Example:
             "rem-mus-ipat-sample_a"
@@ -38,6 +38,8 @@ class IdGenerator:
         :return: A string representing the identifier.
         """
         record_id = f"{DEVICE_TYPE}{ID_SEP}{filename_prefix}"
+
+        # Convert to lowercase for consistency
         record_id = record_id.lower()
         logger.debug(f"Constructed record_id: {record_id}")
         return record_id

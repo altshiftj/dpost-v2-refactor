@@ -25,7 +25,7 @@ class DeviceWatchdogApp:
     """
     A main application class that coordinates:
       1. File system monitoring (via watchdog),
-      2. File processing (through a file processor),
+      2. File processing (through a device specific file processor),
       3. GUI interactions (with a UI manager),
       4. Session management and database synchronization,
       5. Graceful shutdown logic.
@@ -42,18 +42,22 @@ class DeviceWatchdogApp:
         Initializes the DeviceWatchdogApp with all necessary components.
 
         :param ui: A UserInterface implementation (e.g., TKinterUI).
-        :param file_processor: A subclass of BaseFileProcessor for handling file logic.
+        :param file_processor: A device specific subclass of BaseFileProcessor for handling file logic.
         """
         self.watch_dir = WATCH_DIR
-        self.ui = ui  # UI-agnostic reference, must adhere to UserInterface
+        self.ui = ui
 
-        # Create a SessionManager with a reference to the abstract UI
+        # Create a SessionManager which handles session state and timeouts
+        # an uses the UI for indicating session state to the user
         self.session_manager = SessionManager(
             ui=self.ui,
             end_session_callback=None
         )
 
-        # Set up the file-processing workflow
+        # Set up the file-processing manager, which will handle file events
+        # and interact with the session manager for database syncs
+        # the ui is be used for displaying dialogs and messages
+        # and prompting the user for input
         self.file_processing = FileProcessManager(
             ui=self.ui,
             session_manager=self.session_manager,
@@ -72,16 +76,18 @@ class DeviceWatchdogApp:
 
         logger.info(f"Monitoring directory: {self.watch_dir}")
 
-        # Periodically check for new events
-        self.ui.schedule_task(100, self.process_events)
+        # The ui runs the main loop
+        # here we set it to periodically check for new events
+        self.ui.schedule_task(interval_ms=1000, callback=self.process_events)
 
         # Set the UI to handle window close and unhandled exceptions
         self.ui.set_close_handler(self.on_closing)
         self.ui.set_exception_handler(self.handle_exception)
 
-        # When the session manager ends a session, call self.end_session
         self.session_manager.end_session_callback = self.end_session
 
+        # initialize the log sync counter
+        # This counter is used to determine when to periodically sync logs to the database
         self.log_sync_counter = 0
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):

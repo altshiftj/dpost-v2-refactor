@@ -15,7 +15,7 @@ from src.records.local_record import LocalRecord
 from src.records import record_persistence
 
 from src.sync.sync_manager import ISyncManager
-from src.records.id_generator import IdGenerator #TODO: Phase out class for util method
+from src.records.id_generator import IdGenerator
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -62,6 +62,7 @@ class RecordManager:
         :return: The newly created LocalRecord object.
         """
         record_id = IdGenerator.generate_record_id(filename_prefix)
+
         sample_id = filename_prefix.split('-')[-1]
         self.persist_records_dict[record_id] = LocalRecord(
             identifier=record_id,

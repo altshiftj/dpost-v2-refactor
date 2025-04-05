@@ -128,14 +128,14 @@ class TKinterUI(UserInterface):
         if self.root.winfo_exists():
             self.root.destroy()
 
-    def schedule_task(self, interval_ms: int, callback: Callable[[], None]) -> Any:
+    def schedule_task(self, interval_ms: int, callback: Callable[[], None]) -> int:
         """
         Schedule a callback to run once after 'interval_ms' milliseconds.
         Returns an ID (string) that can be used to cancel the task.
         """
         return self.root.after(interval_ms, callback)
 
-    def cancel_task(self, handle: Any) -> None:
+    def cancel_task(self, handle: int) -> None:
         """
         Cancel a previously scheduled task identified by 'handle'.
         """
