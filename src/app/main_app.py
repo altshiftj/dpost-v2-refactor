@@ -1,5 +1,5 @@
 """
-device_watchdog_app.py
+main_app.py
 
 This module contains the main application class, DeviceWatchdogApp, which orchestrates
 the monitoring of a watch directory (using watchdog), processes file events, and manages
@@ -17,9 +17,11 @@ from src.ui.ui_messages import ErrorMessages
 from src.handlers.file_event_handler import FileEventHandler
 from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
 from src.sessions.session_manager import SessionManager
+from src.sync.sync_abstract import ISyncManager
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
+
 
 class DeviceWatchdogApp:
     """
@@ -31,13 +33,7 @@ class DeviceWatchdogApp:
       5. Graceful shutdown logic.
     """
 
-    event_queue = queue.Queue()
-
-    def __init__(
-        self,
-        ui: UserInterface,
-        file_processor: BaseFileProcessor
-    ):
+    def __init__(self, ui: UserInterface, sync_manager: ISyncManager, file_processor: BaseFileProcessor):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
 
@@ -46,25 +42,41 @@ class DeviceWatchdogApp:
         """
         self.watch_dir = WATCH_DIR
         self.ui = ui
+        self.event_queue = queue.Queue()  # Now an instance variable
 
-        # Create a SessionManager which handles session state and timeouts
-        # an uses the UI for indicating session state to the user
-        self.session_manager = SessionManager(
-            ui=self.ui,
-            end_session_callback=None
-        )
+        # Create a SessionManager which handles session state and timeouts,
+        # and uses the UI for indicating session state to the user.
+        self.session_manager = SessionManager(ui=self.ui, end_session_callback=None)
 
-        # Set up the file-processing manager, which will handle file events
-        # and interact with the session manager for database syncs
-        # the ui is be used for displaying dialogs and messages
-        # and prompting the user for input
+        self.sync_manager = sync_manager
+
+        # Set up the file-processing manager, which handles file events
+        # and interacts with the session manager for database syncs.
         self.file_processing = FileProcessManager(
             ui=self.ui,
+            sync_manager=self.sync_manager,
             session_manager=self.session_manager,
             file_processor=file_processor
         )
 
-        # Configure the watchdog observer
+        self._setup_observer()
+
+        logger.info(f"Monitoring directory: {self.watch_dir}")
+
+        # Schedule periodic event processing.
+        self.ui.schedule_task(interval_ms=1000, callback=self.process_events)
+
+        # Set up UI handlers.
+        self.ui.set_close_handler(self.on_closing)
+        self.ui.set_exception_handler(self.handle_exception)
+
+        self.session_manager.end_session_callback = self.end_session
+
+        # Initialize the log sync counter.
+        self.log_sync_counter = 0
+
+    def _setup_observer(self):
+        """Helper method to configure and start the watchdog observer."""
         event_handler = FileEventHandler(self.event_queue)
         self.directory_observer = Observer()
         self.directory_observer.schedule(
@@ -73,22 +85,6 @@ class DeviceWatchdogApp:
             recursive=False
         )
         self.directory_observer.start()
-
-        logger.info(f"Monitoring directory: {self.watch_dir}")
-
-        # The ui runs the main loop
-        # here we set it to periodically check for new events
-        self.ui.schedule_task(interval_ms=1000, callback=self.process_events)
-
-        # Set the UI to handle window close and unhandled exceptions
-        self.ui.set_close_handler(self.on_closing)
-        self.ui.set_exception_handler(self.handle_exception)
-
-        self.session_manager.end_session_callback = self.end_session
-
-        # initialize the log sync counter
-        # This counter is used to determine when to periodically sync logs to the database
-        self.log_sync_counter = 0
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         """
@@ -121,17 +117,17 @@ class DeviceWatchdogApp:
                 ErrorMessages.SESSION_END_ERROR_DETAILS.format(error=e)
             )
         finally:
-            # If there's a "Done" dialog open in the UI, close it (if UI tracks it).
-            # This snippet is only relevant if the UI sets self.ui.done_dialog, etc.
+            # If there's a "Done" dialog open in the UI, close it.
             if hasattr(self.ui, 'done_dialog') and self.ui.done_dialog.winfo_exists():
                 self.ui.done_dialog.destroy()
             logger.debug("End session completed.")
 
+
     def process_events(self):
         """
         Periodically invoked to:
-          1. Process any queued file system events from FileEventHandler.
-          2. Optionally handle testing logic or other tasks.
+        1. Process any queued file system events from FileEventHandler.
+        2. Periodically sync logs to the database.
         """
         while not self.event_queue.empty():
             try:
@@ -142,37 +138,38 @@ class DeviceWatchdogApp:
             self.file_processing.process_item(data_path)
 
         # Sync logs to database every 9000 iterations (~15 minutes)
-        if self.log_sync_counter >= 9000 or self.log_sync_counter == 0:
+        # Also, if the counter is 0 (initial iteration), sync logs.
+        if self.log_sync_counter == 0 or self.log_sync_counter >= 9000:
             self.file_processing.sync_logs_to_database()
             self.log_sync_counter = 0
 
+        # Increment for the next iteration.
         self.log_sync_counter += 1
 
-        # Schedule the next iteration of this loop
+        # Schedule the next iteration.
         self.ui.schedule_task(100, self.process_events)
+
 
     def on_closing(self):
         """
-        Invoked when the user attempts to close the UI, or when the system
-        catches a KeyboardInterrupt. Cleans up the observer, ends the session,
-        and destroys the UI.
+        Invoked when the user attempts to close the UI, or when a KeyboardInterrupt
+        is caught. Cleans up the observer, ends the session, and destroys the UI.
         """
-        # End the session if active
         if self.session_manager.session_active:
             self.session_manager.end_session()
 
-        # Stop watchdog and join observer thread
+        # Stop the observer and join the thread.
         self.directory_observer.stop()
         self.directory_observer.join()
 
-        # Destroy the UI
+        # Destroy the UI.
         self.ui.destroy()
         logger.info("Monitoring stopped.")
 
     def run(self):
         """
-        Main entry point for running the UI main loop. 
-        Includes handling of KeyboardInterrupt and other exceptions to gracefully shut down.
+        Main entry point for running the UI main loop.
+        Handles KeyboardInterrupt and other exceptions to gracefully shut down.
         """
         try:
             self.ui.run_main_loop()

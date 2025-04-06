@@ -1,10 +1,10 @@
-import os
 import logging
+from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
 from queue import Queue
 
-from src.config.settings import DEBOUNCE_TIME
+from src.config.settings import DEBOUNCE_TIME, ALLOWED_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -20,33 +20,46 @@ class FileEventHandler(FileSystemEventHandler):
         self.debounce_time = DEBOUNCE_TIME
         self.timers = {}
 
-    def on_created(self, event):
+    def on_created(self, event) -> None:
         logger.info(f"Path created: {event.src_path}")
         self._schedule_debounce(event.src_path)
 
-    def _schedule_debounce(self, path: str):
+    def _has_allowed_extension(self, path_obj: Path) -> bool:
+        """
+        Return True if the file extension is in the list of allowed extensions
+        as defined in the settings.
+        """
+        return path_obj.suffix.lower() in ALLOWED_EXTENSIONS
+
+    def _should_enqueue(self, path_obj: Path) -> bool:
+        """
+        Determine if the path should be enqueued based solely on its existence.
+        """
+        return path_obj.exists()
+
+    def _schedule_debounce(self, path: str) -> None:
         if path in self.timers:
             self.timers[path].cancel()
             logger.debug(f"Resetting debounce timer for: {path}")
 
-        # Normalize case
-        ext = path.lower()
-        if ext.endswith('.tif') or ext.endswith('.tiff'):
-            Timer(1, self._add_item_to_queue, args=[path]).start()
-            logger.debug(f"Started debounce timer for: {path}")
-            return
-
-        timer = Timer(self.debounce_time, self._add_item_to_queue, args=[path])
-        self.timers[path] = timer
+        path_obj = Path(path)
+        # Use a fast debounce delay (1 second) if the file has an allowed extension,
+        # otherwise use the configured debounce time.
+        delay = 1 if self._has_allowed_extension(path_obj) else self.debounce_time
+        timer = Timer(delay, self._add_item_to_queue, args=[path])
+        if delay != 1:
+            self.timers[path] = timer
+            logger.debug(f"Started/Reset debounce timer for: {path}")
+        else:
+            logger.debug(f"Started debounce timer for allowed extension file: {path}")
         timer.start()
-        logger.debug(f"Started/Reset debounce timer for: {path}")
 
-    def _add_item_to_queue(self, path: str):
+    def _add_item_to_queue(self, path: str) -> None:
         if path in self.timers:
             del self.timers[path]
 
-        ext = path.lower()
-        if os.path.exists(path) and (os.path.isdir(path) or ext.endswith('.tif') or ext.endswith('.tiff')):
+        path_obj = Path(path)
+        if self._should_enqueue(path_obj):
             logger.info(f"Path is stable and ready for processing: {path}")
             self.event_queue.put(path)
         else:

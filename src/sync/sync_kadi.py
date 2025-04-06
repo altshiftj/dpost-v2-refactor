@@ -1,46 +1,19 @@
 import os
-from abc import ABC, abstractmethod
 
-from src.records.local_record import LocalRecord
-from src.app.logger import setup_logger
 from src.config.settings import DEVICE_ID, DEVICE_USER_ID, DEVICE_RECORD_ID, DEFAULT_REM_RECORD_DESCRIPTION, ID_SEP, LOG_FILE
 from src.ui.ui_abstract import UserInterface
 from src.ui.ui_messages import ErrorMessages
+from src.records.local_record import LocalRecord
+from src.sync.sync_abstract import ISyncManager
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
 from kadi_apy.lib.resources.groups import Group as KadiGroup
 from kadi_apy.lib.resources.users import User as KadiUser
 
+from src.app.logger import setup_logger
+
 logger = setup_logger(__name__)
-
-
-class ISyncManager(ABC):
-    """
-    Interface for managing synchronization operations between local records and the database.
-    
-    This abstract base class defines the essential methods that any synchronization manager
-    implementation must provide. It ensures consistency and standardization across different
-    synchronization processes within the application.
-    """
-
-    @abstractmethod
-    def sync_record_to_database(self, local_record: LocalRecord):
-        """
-        Synchronize a local record to the database.
-
-        Args:
-            local_record (LocalRecord): The local record to synchronize.
-        """
-        pass
-
-    @abstractmethod
-    def sync_logs_to_database(self):
-        """
-        Synchronize the logs to the database.
-        """
-        pass
-
 
 class KadiSyncManager(ISyncManager):
     """

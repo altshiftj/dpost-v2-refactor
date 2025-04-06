@@ -28,7 +28,7 @@ from src.records.id_generator import IdGenerator
 from src.records.local_record import LocalRecord
 from src.sessions.session_manager import SessionManager
 from src.records.record_manager import RecordManager
-from src.sync.sync_manager import KadiSyncManager
+from src.sync.sync_abstract import ISyncManager
 from src.app.logger import setup_logger
 from src.ui.ui_abstract import UserInterface
 from src.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages
@@ -49,13 +49,14 @@ class FileProcessManager:
     def __init__(
         self,
         ui:                 UserInterface,
+        sync_manager:       ISyncManager,
         session_manager:    SessionManager,
         file_processor:     'BaseFileProcessor',
     ):
         self.ui                 = ui
         self.session_manager    = session_manager
-        self.records            = RecordManager(sync_manager=KadiSyncManager(ui=ui))
-        self.file_processor:    BaseFileProcessor   = file_processor
+        self.records            = RecordManager(sync_manager=sync_manager)
+        self.file_processor:    BaseFileProcessor = file_processor
 
         # initialize directories
         PathManager.init_dirs()

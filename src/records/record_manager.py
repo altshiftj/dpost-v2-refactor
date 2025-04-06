@@ -14,7 +14,7 @@ from typing import Dict
 from src.records.local_record import LocalRecord
 from src.records import record_persistence
 
-from src.sync.sync_manager import ISyncManager
+from src.sync.sync_abstract import ISyncManager
 from src.records.id_generator import IdGenerator
 from src.app.logger import setup_logger
 

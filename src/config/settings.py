@@ -35,6 +35,13 @@ SESSION_TIMEOUT = 600 # 10 minutes
 SYNC_LOGS = True
 LOG_SYNC_INTERVAL = 60 # 1 minute
 
+ALLOWED_EXTENSIONS = {
+   ".tiff",
+   ".tif",
+   ".TIFF",
+   ".TIF",
+}
+
 DEBOUNCE_TIME = 6
 
 # TODO move rem related metainfo to rem space
