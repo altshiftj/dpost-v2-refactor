@@ -16,7 +16,7 @@ def processor():
 def dummy_record():
     return LocalRecord(
         identifier="rem-mus-ipat-sample_a",
-        name="sample_a",
+        sample_name="sample_a",
         datatype="tiff",
         date="20250405"
     )

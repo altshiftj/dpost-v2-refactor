@@ -10,8 +10,7 @@ def sample_record():
     A pytest fixture that returns a fresh LocalRecord before each test.
     """
     return LocalRecord(
-        identifier="rem-jdoe-ipat-sample_1",
-        name="sample_1",
+        identifier="dev-jdoe-ipat-sample_1",
         datatype="tiff",
         date="20250405"
     )
@@ -23,11 +22,23 @@ def test_init_defaults():
     """
     record = LocalRecord()
     assert record.identifier == "null"
-    assert record.name == "null"
+    assert record.user == "null"
+    assert record.institute == "null"
+    assert record.sample_name == "null"
     assert record.datatype == "null"
     assert record.date == "null"
     assert record.is_in_db is False
     assert record.files_uploaded == {}
+
+
+def test_init_with_identifier():
+    """
+    When initialized with an identifier, ensure LocalRecord extracts user, institute, and sample name correctly.
+    """
+    record = LocalRecord(identifier="dev-usr-inst-sample_1")
+    assert record.user == "usr"
+    assert record.institute == "inst"
+    assert record.sample_name == "sample_1"
 
 
 def test_add_item_file_fs(sample_record):
@@ -146,7 +157,6 @@ def test_to_dict_from_dict_roundtrip():
     """
     original = LocalRecord(
         identifier="rem-jdoe-ipat-sample_1",
-        name="sample_1",
         datatype="tiff",
         date="20250405",
         is_in_db=True,
@@ -156,7 +166,9 @@ def test_to_dict_from_dict_roundtrip():
     restored = LocalRecord.from_dict(data)
 
     assert restored.identifier == original.identifier
-    assert restored.name == original.name
+    assert restored.user == original.user
+    assert restored.institute == original.institute
+    assert restored.sample_name == original.sample_name
     assert restored.datatype == original.datatype
     assert restored.date == original.date
     assert restored.is_in_db == original.is_in_db

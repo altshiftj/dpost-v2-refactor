@@ -5,13 +5,13 @@ from src.records.id_generator import IdGenerator
 from src.config.settings import DEVICE_TYPE, ID_SEP
 
 EXPECTED_PREFIX = f"{DEVICE_TYPE.lower()}{ID_SEP}"
-TEST_CASES = [
+RECORD_TEST_CASES = [
     ("mus-ipat-Sample_A", f"{EXPECTED_PREFIX}mus-ipat-sample_a"),
     ("abc-xyz-sample_1", f"{EXPECTED_PREFIX}abc-xyz-sample_1"),
     ("MUS-IPAT-SAMPLE B", f"{EXPECTED_PREFIX}mus-ipat-sample b"),
 ]
 
-@pytest.mark.parametrize("filename_prefix, expected_id", TEST_CASES)
+@pytest.mark.parametrize("filename_prefix, expected_id", RECORD_TEST_CASES)
 def test_generate_record_id(filename_prefix, expected_id):
     record_id = IdGenerator.generate_record_id(filename_prefix)
     assert record_id == expected_id

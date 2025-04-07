@@ -66,7 +66,7 @@ class RecordManager:
         sample_id = filename_prefix.split('-')[-1]
         self.persist_records_dict[record_id] = LocalRecord(
             identifier=record_id,
-            name=sample_id,
+            sample_name=sample_id,
             date = datetime.datetime.now().strftime('%Y%m%d')
         )
         

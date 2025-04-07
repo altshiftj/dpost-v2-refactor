@@ -1,25 +1,7 @@
-"""
-file_processor.py
-
-This module contains classes for processing and organizing files within the
-data-watchdog system. The classes handle file validation, renaming, moving,
-and tying them to existing or new records. They also manage interactions
-between sessions, storage operations, and database synchronization.
-
-Classes:
-    BaseFileProcessor (abstract):
-        Defines the common logic and interface for processing files (or folders)
-        and linking them to local records.
-
-    SEMFileProcessor:
-        A specific implementation of BaseFileProcessor that handles PhenomXL SEM data types
-        (e.g., TIFF images, .elid directories) with custom file/folder handling.
-"""
-
-from abc import ABC, abstractmethod
-import os
+from pathlib import Path
 
 from src.processing.metadata_extractor import MetadataExtractor
+from src.processing.file_processor_abstract import BaseFileProcessor
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
 from src.utils.filename_validator import FilenameValidator
@@ -71,10 +53,7 @@ class FileProcessManager:
         Entry point when a file/folder is created or modified.
         """
         src_path = self.file_processor.device_specific_preprocessing(src_path)
-
-        # TODO: Create helper function to extract and split the filename and extension
-        base_name = os.path.basename(src_path)
-        filename_prefix, extension = os.path.splitext(base_name)
+        filename_prefix, extension = self._parse_filename(src_path)
 
         valid_datatype = self.file_processor.is_valid_datatype(src_path)
         if not valid_datatype:
@@ -83,6 +62,14 @@ class FileProcessManager:
 
         # Route item based on record name & state
         self._route_item(src_path, filename_prefix, extension)
+
+    def _parse_filename(self, src_path: str) -> tuple[str, str]:
+        """
+        Parses the filename from the given src_path and returns a tuple:
+        (filename_prefix, extension). Uses pathlib for reliable cross-platform behavior.
+        """
+        p = Path(src_path)
+        return p.stem, p.suffix
 
     def _handle_invalid_datatype(self, src_path: str, filename_prefix: str, extension: str):
         """
@@ -97,55 +84,38 @@ class FileProcessManager:
         logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
 
     def _route_item(self, src_path: str, filename_prefix: str, extension: str):
-        """
-        Determines how to process a valid item—whether it belongs to a known record
-        or needs a new one, or if the naming is invalid.
-        """
-        # Sanitize the name (remove illegal chars, etc.)
-        sanitized_filename_prefix, is_valid_format = FilenameValidator.sanitize_and_validate(filename_prefix)
-        
-        record_id = IdGenerator.generate_record_id(sanitized_filename_prefix)
+        # Sanitize the filename and check validity.
+        sanitized_prefix, is_valid_format = FilenameValidator.sanitize_and_validate(filename_prefix)
+        record_id = IdGenerator.generate_record_id(sanitized_prefix)
         record = self.records.get_record_by_id(record_id)
+        state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension)
 
-        # Decide 'state' of the item
-        item_state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension)
+        if state == 'unappendable_record':
+            self._handle_unappendable_record(src_path, sanitized_prefix, extension)
+            return
 
-        # Match on routing state
-        match item_state:
-            case 'unappendable_record':
-                self._handle_unappendable_record(src_path, sanitized_filename_prefix, extension)
-            case 'append_to_synced':
-                self._handle_append_to_synced_record(record, src_path, sanitized_filename_prefix, extension)
-            case 'valid_name':
-                self.add_item_to_record(record, src_path, sanitized_filename_prefix, extension, notify=False)
-            case 'invalid_name':
-                self._prompt_item_rename(src_path, filename_prefix, extension)
+        if state == 'append_to_synced':
+            self._handle_append_to_synced_record(record, src_path, sanitized_prefix, extension)
+            return
+
+        if state == 'valid_name':
+            self.add_item_to_record(record, src_path, sanitized_prefix, extension, notify=False)
+            return
+
+        # invalid_name fallback
+        self._prompt_item_rename(src_path, filename_prefix, extension)
 
     def _determine_routing_state(self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str) -> str:
-        """
-        Returns a string denoting how we should handle the incoming item:
-          - 'unappendable_record'
-          - 'append_to_synced'
-          - 'valid_name'
-          - 'invalid_name'
-        """
-        if record:
-            # If record can't be appended to for device-specific reasons:
-            if not self.file_processor.is_appendable(record, filename_prefix, extension):
-                return 'unappendable_record'
-            
-            # If record is fully synced in DB and user might want to attach more data:
-            elif record.is_in_db and record.all_files_uploaded():
-                return 'append_to_synced'
-            
-            else:
-                return 'valid_name'
-        
-        elif is_valid_format:
+        if record and not self.file_processor.is_appendable(record, filename_prefix, extension):
+            return 'unappendable_record'
+
+        if record and record.is_in_db and record.all_files_uploaded():
+            return 'append_to_synced'
+
+        if record or is_valid_format:
             return 'valid_name'
-        
-        else:
-            return 'invalid_name'
+
+        return 'invalid_name'
 
     def _handle_unappendable_record(self, src_path: str, filename_prefix: str, extension: str):
         """
@@ -164,118 +134,149 @@ class FileProcessManager:
         if self.ui.prompt_append_record(filename_prefix):
             self.add_item_to_record(record, src_path, filename_prefix, extension)
         else:
-            # Prompt user for a new record name
             self._prompt_item_rename(src_path, filename_prefix, extension, bad_name_prompt=False, new_record_prompt=True)
 
-    def _prompt_item_rename(self, src_path, filename_prefix, extension, bad_name_prompt=True, new_record_prompt=False):
+
+    def _get_valid_rename(self, src_path: str, filename_prefix: str, extension: str,
+                          bad_name_prompt: bool, new_record_prompt: bool) -> str | None:
         """
-        Guides the user to rename the item properly. 
-        Allows multiple attempts or cancellation (moves to rename folder).
-        """        
-        # Optional warning prompt for invalid naming
+        Prompts the user repeatedly until valid rename data is provided or cancellation.
+        Returns the validated new filename prefix or None if the user cancels.
+        """
         if bad_name_prompt:
             self.ui.show_warning(
                 WarningMessages.INVALID_NAME,
-                WarningMessages.INVALID_NAME_DETAILS.format(
-                    filename=filename_prefix, 
-                    extension=extension
-                )
+                WarningMessages.INVALID_NAME_DETAILS.format(filename=filename_prefix, extension=extension)
             )
-        
-        # Optional message for creating a new record name
         if new_record_prompt:
             self.ui.show_info(
                 InfoMessages.NEW_RECORD,
                 InfoMessages.NEW_RECORD_DETAILS
             )
-
-        # Keep asking until valid name or user cancels
         while True:
-            user_input = self.ui.prompt_rename()  # Returns dict or None
+            user_input = self.ui.prompt_rename()  # Returns a dict or None
             result, is_valid = FilenameValidator.from_user_input(user_input)
 
-            if not is_valid:
-                if result == "User cancelled the dialog.":
-                    # Move to rename folder
-                    StorageManager.move_to_rename_folder(src_path, filename_prefix, extension)
-                    self.ui.show_info(
-                        InfoMessages.OPERATION_CANCELLED,
-                        InfoMessages.MOVED_TO_RENAME
-                    )
-                    return
-                elif result == "Invalid Parts":
-                    # Field(s) contained invalid characters
-                    self.ui.show_warning(
-                        WarningMessages.INVALID_CHARACTERS,
-                        WarningMessages.INVALID_CHARACTERS_DETAILS
-                    )
-                    continue
-                else:
-                    # Possibly incomplete fields, try again
-                    self.ui.show_warning(
-                        WarningMessages.INCOMPLETE_INFO,
-                        WarningMessages.INCOMPLETE_INFO_DETAILS
-                    )
-                    continue
+            if is_valid:
+                return result
 
-            self._route_item(src_path, result, extension)
-            break
+            if result == "User cancelled the dialog.":
+                return None
+            elif result == "Invalid Parts":
+                self.ui.show_warning(
+                    WarningMessages.INVALID_CHARACTERS,
+                    WarningMessages.INVALID_CHARACTERS_DETAILS
+                )
+            else:
+                self.ui.show_warning(
+                    WarningMessages.INCOMPLETE_INFO,
+                    WarningMessages.INCOMPLETE_INFO_DETAILS
+                )
+
+
+    def _prompt_item_rename(self, src_path: str, filename_prefix: str, extension: str,
+                            bad_name_prompt: bool = True, new_record_prompt: bool = False):
+        """
+        Simplified method to guide the user to rename the item properly.
+        It uses _get_valid_rename to repeatedly prompt the user until valid input is provided.
+        If the user cancels, the item is moved to the rename folder.
+        """
+        new_prefix = self._get_valid_rename(src_path, filename_prefix, extension,
+                                            bad_name_prompt, new_record_prompt)
+        
+        if new_prefix is not None:
+            self._route_item(src_path, new_prefix, extension)
+            return
+
+        StorageManager.move_to_rename_folder(src_path, filename_prefix, extension)
+        self.ui.show_info(
+            InfoMessages.OPERATION_CANCELLED, 
+            InfoMessages.MOVED_TO_RENAME
+            )
+
 
     def add_item_to_record(self, record, src_path, filename_prefix, extension, notify=True):
         """
         Attaches the file/folder to an existing or new record, then handles final storage.
-        """        
+        This method has been refactored to delegate:
+        1. Final path preparation (_prepare_final_path)
+        2. User notification (_notify_success)
+        3. Record update (_update_record)
+        4. Session management (_manage_session)
+        """
         try:
-            # 1) Get or create record
+            # 1) Get or create the record.
             record = self._get_or_create_record(record, filename_prefix)
-
-            # 2) Prepare final file path + device-specific ops
-            record_path = PathManager.get_record_path(filename_prefix)
-
-            file_id = IdGenerator.generate_file_id(filename_prefix)
-
-            final_path, datatype = self.file_processor.device_specific_processing(
-                src_path, record_path, file_id, extension
-            )
-
+            
+            # 2) Prepare final file path and retrieve datatype.
+            final_path, datatype = self._prepare_final_path(src_path, filename_prefix, extension)
             record.datatype = datatype
-
-            # 3) Notify the user of success
+            
+            # 3) Notify the user of success, if requested.
             if notify:
-                item_type = "Folder" if os.path.isdir(src_path) else "File"
-                self.ui.show_info(
-                    InfoMessages.SUCCESS,
-                    InfoMessages.ITEM_RENAMED.format(
-                        item_type=item_type, 
-                        filename=os.path.basename(final_path)
-                    )
-                )
-
-            logger.debug(
-                f"{'Folder' if os.path.isdir(src_path) else 'File'} '{src_path}' "
-                f"moved/renamed to '{final_path}'."
-            )
-
-            # 4) Add item to record + manage session
-            self.records.add_item_to_record(final_path, record)
-
-            if not self.session_manager.session_active:
-                # No active session; start a new one
-                self.session_manager.start_session()
-                # No need to explicitly show the dialog anymore, SessionManager does it
-                logger.debug("Started a new session.")
-            else:
-                # Session is active; reset the timer to extend the session
-                self.session_manager.reset_timer()
-                logger.debug("Session is active. Timer has been reset to extend the session.")
-
-
+                self._notify_success(src_path, final_path)
+            
+            logger.debug(f"{'Folder' if Path(src_path).is_dir() else 'File'} '{src_path}' moved/renamed to '{final_path}'.")
+            
+            # 4) Update the record with the new item.
+            self._update_record(final_path, record)
+            
+            # 5) Manage the session (start or reset).
+            self._manage_session()
+            
         except Exception as e:
             self.ui.show_error(
-                "Error",  # We should add this title to the ErrorMessages class
+                "Error", 
                 ErrorMessages.RENAME_FAILED.format(error=str(e))
-            )
+                )
+            
             StorageManager.move_to_exception_folder(src_path, filename_prefix, extension)
+
+
+    def _prepare_final_path(self, src_path: str, filename_prefix: str, extension: str) -> tuple[str, str]:
+        """
+        Prepares the final storage path for the item.
+        - Retrieves the record-specific directory.
+        - Generates a unique file ID.
+        - Delegates to the device-specific processing for any custom operations.
+        Returns the final file path and the datatype.
+        """
+        record_path = PathManager.get_record_path(filename_prefix)
+        file_id = IdGenerator.generate_file_id(filename_prefix)
+        final_path, datatype = self.file_processor.device_specific_processing(src_path, record_path, file_id, extension)
+        return final_path, datatype
+
+
+    def _notify_success(self, src_path: str, final_path: str):
+        """
+        Notifies the user of a successful move/rename.
+        Determines the type (Folder/File) and shows an info message.
+        """
+        item_type = "Folder" if Path(src_path).is_dir() else "File"
+        self.ui.show_info(
+            InfoMessages.SUCCESS,
+            InfoMessages.ITEM_RENAMED.format(item_type=item_type, filename=Path(final_path).name)
+        )
+
+
+    def _update_record(self, final_path: str, record: LocalRecord):
+        """
+        Adds the processed item to the record.
+        """
+        self.records.add_item_to_record(final_path, record)
+
+
+    def _manage_session(self):
+        """
+        Manages the session: if no session is active, starts a new one; otherwise,
+        resets the session timer.
+        """
+        if not self.session_manager.session_active:
+            self.session_manager.start_session()
+            logger.debug("Started a new session.")
+        else:
+            self.session_manager.reset_timer()
+            logger.debug("Session is active. Timer has been reset to extend the session.")
 
     def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
         """
@@ -296,41 +297,3 @@ class FileProcessManager:
         Syncs the log file to the external database.
         """
         self.records.sync_logs_to_database()
-
-class BaseFileProcessor(ABC):
-    """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
-    """
-    @abstractmethod
-    def device_specific_preprocessing(self, src_path: str)-> str:
-        """
-        Method to implement optional preprocessing steps before routing the item.
-        """
-        pass
-    
-    @abstractmethod
-    def is_valid_datatype(self, path: str):
-        """
-        Checks if the file/folder at the given path is valid for this processor.
-        Returns (bool|None) -> (is_valid, data_type).
-        """
-        pass
-
-    @abstractmethod
-    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
-        """
-        Checks if the record can be appended to with this processor's data type.
-        Return: (appendable, message_if_not_appendable)
-        """
-        pass
-
-    @abstractmethod
-    def device_specific_processing(
-        self, source_path, record_path, file_id, extension
-    ):
-        """
-        Allows subclasses to implement custom moves, renames, or metadata extraction.
-        Must return the final path of the processed item.
-        """
-        pass
