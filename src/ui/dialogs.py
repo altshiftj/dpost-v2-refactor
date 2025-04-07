@@ -227,6 +227,30 @@ class MultiFieldDialog(simpledialog.Dialog):
             'sample_ID': sample_ID
         }
 
+class ViolationHighlightDialog(tk.Toplevel):
+    def __init__(self, parent, filename: str, analysis: dict):
+        super().__init__(parent)
+        self.title("Filename Violation")
+        self.attributes("-topmost", True)
+
+        tk.Label(self, text="Invalid Filename", font=("Arial", 12, "bold")).pack(pady=(10, 5))
+
+        # Highlighted text
+        text_widget = tk.Text(self, height=2, width=len(filename) + 4)
+        text_widget.pack(padx=10)
+        text_widget.insert("1.0", filename)
+        for start, end in analysis.get("highlight_spans", []):
+            tag = f"bad_{start}"
+            text_widget.tag_add(tag, f"1.{start}", f"1.{end}")
+            text_widget.tag_config(tag, foreground="red", font=("Courier", 10, "bold"))
+        text_widget.config(state="disabled")
+
+        # Reasons
+        for reason in analysis.get("reasons", []):
+            tk.Label(self, text=f"- {reason}", anchor="w", justify="left", wraplength=400).pack(fill="x", padx=10)
+
+        tk.Button(self, text="OK", command=self.destroy).pack(pady=10)
+
 
 # class MessageDialog(tk.Toplevel):
 #     """

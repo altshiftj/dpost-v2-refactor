@@ -5,6 +5,18 @@ from src.processing.file_process_manager import FileProcessManager, BaseFileProc
 from src.records.local_record import LocalRecord
 from src.records.id_generator import IdGenerator
 
+
+# --- Fixture to disable real I/O operations ---
+
+@pytest.fixture(autouse=True)
+def prevent_filesystem_writes(monkeypatch):
+    # Block filesystem modifications
+    monkeypatch.setattr("pathlib.Path.mkdir", lambda *args, **kwargs: None)
+    monkeypatch.setattr("os.rename", lambda *args, **kwargs: None)
+    monkeypatch.setattr("shutil.move", lambda *args, **kwargs: None)
+    monkeypatch.setattr("src.records.record_persistence.save_persisted_records", lambda x: None)
+
+
 # --- Dummy classes to simulate dependencies ---
 
 class DummyFileProcessor(BaseFileProcessor):
@@ -13,7 +25,6 @@ class DummyFileProcessor(BaseFileProcessor):
         self.appendable = appendable
 
     def device_specific_preprocessing(self, src_path: str) -> str:
-        # For testing, simply return the original path.
         return src_path
 
     def is_valid_datatype(self, path: str) -> bool:
@@ -23,7 +34,6 @@ class DummyFileProcessor(BaseFileProcessor):
         return self.appendable
 
     def device_specific_processing(self, src_path, record_path, file_id, extension):
-        # Return a fake final path and dummy datatype.
         final_path = str(Path(record_path) / f"{file_id}{extension}")
         return final_path, "dummy_datatype"
 
@@ -56,9 +66,7 @@ class DummyUI:
         self.calls["prompt_append_record"].append(record_name)
         return self.prompt_append_record_return
 
-    # Minimal stubs for scheduling and handlers.
     def schedule_task(self, interval_ms, callback):
-        # For testing, execute the callback immediately.
         callback()
         return 1
 
@@ -89,7 +97,6 @@ class DummyRecordManager:
         self.records = {}
 
     def all_records_uploaded(self):
-        # Consider records as uploaded if there are no files or all files marked True.
         return all(record.all_files_uploaded() for record in self.records.values())
 
     def get_record_by_id(self, record_id):
@@ -102,7 +109,6 @@ class DummyRecordManager:
         return new_record
 
     def add_item_to_record(self, path, record):
-        # Mark the file as uploaded in the record.
         record.files_uploaded[path] = True
 
     def sync_records_to_database(self):
@@ -114,7 +120,8 @@ class DummyRecordManager:
 class DummySyncManager:
     pass
 
-# --- Pytest fixture for a FileProcessManager instance ---
+
+# --- Fixture for FileProcessManager instance ---
 
 @pytest.fixture
 def fpm():
@@ -128,7 +135,6 @@ def fpm():
         session_manager=session_manager,
         file_processor=file_processor
     )
-    # Replace the record manager with our dummy implementation.
     manager.records = DummyRecordManager()
     return manager
 

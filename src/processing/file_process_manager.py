@@ -14,6 +14,7 @@ from src.sync.sync_abstract import ISyncManager
 from src.app.logger import setup_logger
 from src.ui.ui_abstract import UserInterface
 from src.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages
+from src.ui.dialogs import ViolationHighlightDialog
 
 logger = setup_logger(__name__)
 
@@ -144,10 +145,9 @@ class FileProcessManager:
         Returns the validated new filename prefix or None if the user cancels.
         """
         if bad_name_prompt:
-            self.ui.show_warning(
-                WarningMessages.INVALID_NAME,
-                WarningMessages.INVALID_NAME_DETAILS.format(filename=filename_prefix, extension=extension)
-            )
+            analysis = FilenameValidator.explain_filename_violation(filename_prefix)
+            ViolationHighlightDialog(self.ui.get_root(), filename_prefix, analysis)
+        
         if new_record_prompt:
             self.ui.show_info(
                 InfoMessages.NEW_RECORD,

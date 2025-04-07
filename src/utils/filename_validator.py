@@ -1,6 +1,10 @@
 from src.config.settings import FILENAME_PATTERN, ID_SEP
 from src.app.logger import setup_logger
 
+from src.config.settings import FILENAME_PATTERN
+
+import re
+
 logger = setup_logger(__name__)
 
 class FilenameValidator:
@@ -96,3 +100,37 @@ class FilenameValidator:
             return "Invalid Parts", False
 
         return sanitized, True
+
+    def explain_filename_violation(filename: str) -> dict:
+        """
+        Returns a dictionary with information on which parts of the filename are invalid.
+        """
+        result = {
+            "valid": True,
+            "reasons": [],
+            "highlight_spans": []  # list of (start_index, end_index) for bad chars
+        }
+
+        # Check against pattern
+        if not FILENAME_PATTERN.match(filename):
+            result["valid"] = False
+
+            # Break down into parts
+            segments = filename.split("-")
+            if len(segments) != 3:
+                result["reasons"].append("Filename must have 3 parts separated by dashes (e.g., 'USR-INST-sample_01').")
+            else:
+                user, institute, sample = segments
+                if not re.match(r"^[A-Za-z]+$", user):
+                    result["reasons"].append("User ID must contain only letters.")
+                if not re.match(r"^[A-Za-z]+$", institute):
+                    result["reasons"].append("Institute must contain only letters.")
+                if not re.match(r"^[A-Za-z0-9_ ]{1,30}$", sample):
+                    result["reasons"].append("Sample name may only contain lowercase letters, digits, underscores, and spaces, and must be under 30 characters.")
+
+            # Character-level highlighting
+            for i, char in enumerate(filename):
+                if not re.match(r"[A-Za-z0-9_\- ]", char):
+                    result["highlight_spans"].append((i, i+1))
+
+        return result
