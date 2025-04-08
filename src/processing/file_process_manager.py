@@ -187,7 +187,7 @@ class FileProcessManager:
                 # It's correct, return sanitized name
                 return analysis["sanitized"]
             else:
-                # It's invalid. We'll remain in the loop and show the dialog again.
+                # It's invalid. Remain in the loop and show the dialog again.
                 # Set "attempted" to what the user typed, so they see the same text next time
                 attempted = f"{user_input.get('name', '')}-{user_input.get('institute', '')}-{user_input.get('sample_ID', '')}"
                 last_analysis = (
