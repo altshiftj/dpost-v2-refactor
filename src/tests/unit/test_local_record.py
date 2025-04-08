@@ -4,15 +4,14 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 
 from src.records.local_record import LocalRecord
 
+
 @pytest.fixture
 def sample_record():
     """
     A pytest fixture that returns a fresh LocalRecord before each test.
     """
     return LocalRecord(
-        identifier="dev-jdoe-ipat-sample_1",
-        datatype="tiff",
-        date="20250405"
+        identifier="dev-jdoe-ipat-sample_1", datatype="tiff", date="20250405"
     )
 
 
@@ -62,7 +61,7 @@ def test_add_item_file_fs(sample_record):
 
 def test_add_item_dir_fs(sample_record):
     """
-    Using pyfakefs to simulate a directory with subdirectories & files. 
+    Using pyfakefs to simulate a directory with subdirectories & files.
     Again, no manual patching for Path.is_file / Path.is_dir.
     """
     with Patcher() as patcher:
@@ -88,7 +87,7 @@ def test_add_item_dir_fs(sample_record):
 
 def test_add_item_neither_file_nor_dir_fs(sample_record, caplog):
     """
-    If path is neither a file nor a directory in the fake filesystem, 
+    If path is neither a file nor a directory in the fake filesystem,
     ensure a warning is logged and nothing is added.
     """
     with Patcher():
@@ -133,10 +132,7 @@ def test_all_files_uploaded_true(sample_record):
     """
     all_files_uploaded() should return True if all files in the record are True.
     """
-    sample_record.files_uploaded = {
-        "/file/one": True,
-        "/file/two": True
-    }
+    sample_record.files_uploaded = {"/file/one": True, "/file/two": True}
     assert sample_record.all_files_uploaded() is True
 
 
@@ -144,10 +140,7 @@ def test_all_files_uploaded_false(sample_record):
     """
     all_files_uploaded() should return False if any file is not yet True.
     """
-    sample_record.files_uploaded = {
-        "/file/one": True,
-        "/file/two": False
-    }
+    sample_record.files_uploaded = {"/file/one": True, "/file/two": False}
     assert sample_record.all_files_uploaded() is False
 
 
@@ -160,7 +153,7 @@ def test_to_dict_from_dict_roundtrip():
         datatype="tiff",
         date="20250405",
         is_in_db=True,
-        files_uploaded={"/file1.tif": True, "/file2.tif": False}
+        files_uploaded={"/file1.tif": True, "/file2.tif": False},
     )
     data = original.to_dict()
     restored = LocalRecord.from_dict(data)

@@ -33,7 +33,12 @@ class DeviceWatchdogApp:
       5. Graceful shutdown logic.
     """
 
-    def __init__(self, ui: UserInterface, sync_manager: ISyncManager, file_processor: BaseFileProcessor):
+    def __init__(
+        self,
+        ui: UserInterface,
+        sync_manager: ISyncManager,
+        file_processor: BaseFileProcessor,
+    ):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
 
@@ -56,7 +61,7 @@ class DeviceWatchdogApp:
             ui=self.ui,
             sync_manager=self.sync_manager,
             session_manager=self.session_manager,
-            file_processor=file_processor
+            file_processor=file_processor,
         )
 
         self._setup_observer()
@@ -80,9 +85,7 @@ class DeviceWatchdogApp:
         event_handler = FileEventHandler(self.event_queue)
         self.directory_observer = Observer()
         self.directory_observer.schedule(
-            event_handler,
-            path=self.watch_dir,
-            recursive=False
+            event_handler, path=self.watch_dir, recursive=False
         )
         self.directory_observer.start()
 
@@ -93,11 +96,10 @@ class DeviceWatchdogApp:
         """
         logger.error(
             "An unexpected error occurred",
-            exc_info=(exc_type, exc_value, exc_traceback)
+            exc_info=(exc_type, exc_value, exc_traceback),
         )
         self.ui.show_error(
-            ErrorMessages.APPLICATION_ERROR,
-            ErrorMessages.APPLICATION_ERROR_DETAILS
+            ErrorMessages.APPLICATION_ERROR, ErrorMessages.APPLICATION_ERROR_DETAILS
         )
         self.on_closing()
 
@@ -114,14 +116,13 @@ class DeviceWatchdogApp:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error(
                 ErrorMessages.SESSION_END_ERROR,
-                ErrorMessages.SESSION_END_ERROR_DETAILS.format(error=e)
+                ErrorMessages.SESSION_END_ERROR_DETAILS.format(error=e),
             )
         finally:
             # If there's a "Done" dialog open in the UI, close it.
-            if hasattr(self.ui, 'done_dialog') and self.ui.done_dialog.winfo_exists():
+            if hasattr(self.ui, "done_dialog") and self.ui.done_dialog.winfo_exists():
                 self.ui.done_dialog.destroy()
             logger.debug("End session completed.")
-
 
     def process_events(self):
         """
@@ -148,7 +149,6 @@ class DeviceWatchdogApp:
 
         # Schedule the next iteration.
         self.ui.schedule_task(100, self.process_events)
-
 
     def on_closing(self):
         """

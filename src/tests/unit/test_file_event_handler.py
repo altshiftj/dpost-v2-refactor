@@ -5,9 +5,11 @@ from queue import Queue
 
 from src.handlers.file_event_handler import FileEventHandler
 
+
 @pytest.fixture
 def event_queue():
     return Queue()
+
 
 @pytest.fixture
 def handler(event_queue):
@@ -15,9 +17,9 @@ def handler(event_queue):
 
 
 def test_on_created_tiff(handler, event_queue):
-    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=['.tif', '.tiff']), \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("src.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=[".tif", ".tiff"]), patch(
+        "pathlib.Path.exists", return_value=True
+    ), patch("src.handlers.file_event_handler.Timer") as mock_timer:
 
         fake_path = "/some/fake_image.TIFF"
         event = FileSystemEvent(fake_path)
@@ -41,9 +43,9 @@ def test_on_created_tiff(handler, event_queue):
 
 
 def test_on_created_generic_file(handler, event_queue):
-    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=['.tif', '.tiff']), \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("src.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=[".tif", ".tiff"]), patch(
+        "pathlib.Path.exists", return_value=True
+    ), patch("src.handlers.file_event_handler.Timer") as mock_timer:
 
         fake_path = "/some/file.txt"
         event = FileSystemEvent(fake_path)
@@ -65,10 +67,11 @@ def test_on_created_generic_file(handler, event_queue):
 
 
 def test_path_no_longer_exists(handler, event_queue):
-    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=['.tif', '.tiff']), \
-         patch("pathlib.Path.exists", return_value=False), \
-         patch("src.handlers.file_event_handler.Timer") as mock_timer, \
-         patch("logging.Logger.warning") as mock_warn:
+    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=[".tif", ".tiff"]), patch(
+        "pathlib.Path.exists", return_value=False
+    ), patch("src.handlers.file_event_handler.Timer") as mock_timer, patch(
+        "logging.Logger.warning"
+    ) as mock_warn:
 
         fake_path = "/nonexistent/file.doc"
         event = FileSystemEvent(fake_path)
@@ -88,10 +91,11 @@ def test_path_no_longer_exists(handler, event_queue):
 
 
 def test_on_created_directory(handler, event_queue):
-    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=['.tif', '.tiff']), \
-         patch("pathlib.Path.exists", return_value=True), \
-         patch("pathlib.Path.is_dir", return_value=True), \
-         patch("src.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("src.config.settings.ALLOWED_EXTENSIONS", new=[".tif", ".tiff"]), patch(
+        "pathlib.Path.exists", return_value=True
+    ), patch("pathlib.Path.is_dir", return_value=True), patch(
+        "src.handlers.file_event_handler.Timer"
+    ) as mock_timer:
 
         fake_dir = "/some/directory"
         event = DirCreatedEvent(fake_dir)

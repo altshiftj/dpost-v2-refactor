@@ -4,6 +4,7 @@ from src.ui.ui_abstract import UserInterface
 
 logger = setup_logger(__name__)
 
+
 class SessionManager:
     """
     Manages the lifecycle of a user session, including timeouts and session state.
@@ -14,7 +15,7 @@ class SessionManager:
     def __init__(self, ui: UserInterface, end_session_callback=None):
         """
         Initializes a new SessionManager.
-        
+
         :param ui: A UserInterface implementation for scheduling/canceling tasks and showing dialogs.
         :param end_session_callback: Optional callback function executed when a session ends.
         """

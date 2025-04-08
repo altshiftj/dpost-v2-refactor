@@ -11,6 +11,7 @@ RECORD_TEST_CASES = [
     ("MUS-IPAT-SAMPLE B", f"{EXPECTED_PREFIX}mus-ipat-sample b"),
 ]
 
+
 @pytest.mark.parametrize("filename_prefix, expected_id", RECORD_TEST_CASES)
 def test_generate_record_id(filename_prefix, expected_id):
     record_id = IdGenerator.generate_record_id(filename_prefix)
@@ -22,6 +23,7 @@ TEST_FILE_ID_CASES = [
     ("mus-ipat-sample_a", f"{EXPECTED_FILE_PREFIX}sample_a"),
     ("ABC-XYZ-sample_1", f"{EXPECTED_FILE_PREFIX}sample_1"),
 ]
+
 
 @pytest.mark.parametrize("filename_prefix, expected_file_id", TEST_FILE_ID_CASES)
 def test_generate_file_id(filename_prefix, expected_file_id):

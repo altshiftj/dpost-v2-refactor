@@ -1,7 +1,7 @@
 """
 record_persistence.py
 
-This module manages the serialization and deserialization of LocalRecord objects 
+This module manages the serialization and deserialization of LocalRecord objects
 to and from JSON files.
 """
 
@@ -12,6 +12,7 @@ from src.records.local_record import LocalRecord
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
+
 
 def load_persisted_records() -> dict[str, LocalRecord]:
     """
@@ -25,10 +26,14 @@ def load_persisted_records() -> dict[str, LocalRecord]:
         raw_data = json_path.read_text(encoding="utf-8")
         records = json.loads(raw_data)
         logger.debug(f"JSON data loaded from '{json_path}'.")
-        return {id: LocalRecord.from_dict(record_data) for id, record_data in records.items()}
+        return {
+            id: LocalRecord.from_dict(record_data)
+            for id, record_data in records.items()
+        }
     except Exception as e:
         logger.exception(f"Failed to read or convert JSON file '{json_path}': {e}")
         return {}
+
 
 def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
     """
@@ -39,7 +44,7 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
     try:
         serialized = json.dumps(
             {key: record.to_dict() for key, record in daily_records_dict.items()},
-            indent=4
+            indent=4,
         )
         json_path.write_text(serialized, encoding="utf-8")
         logger.debug(f"JSON data saved to '{json_path}'.")

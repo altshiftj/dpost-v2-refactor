@@ -10,8 +10,10 @@ from src.app.main_app import DeviceWatchdogApp
 # Dummy Implementations
 # ------------------------
 
+
 class DummyUI:
     """A dummy UI implementation that satisfies the UserInterface interface."""
+
     def __init__(self):
         self.scheduled_tasks = []
         self.destroyed = False
@@ -45,8 +47,10 @@ class DummyUI:
         # Record that a done dialog was shown with the provided callback.
         self.done_dialog_callback = callback
 
+
 class DummySyncManager:
     """A dummy sync manager that satisfies the ISyncManager interface."""
+
     def __init__(self, ui):
         self.ui = ui
         self.synced_records = []
@@ -58,8 +62,10 @@ class DummySyncManager:
     def sync_logs_to_database(self):
         self.logs_synced += 1
 
+
 class DummyFileProcessor:
     """A dummy file processor that implements the minimal BaseFileProcessor methods."""
+
     def device_specific_preprocessing(self, src_path):
         # Simply return the input path.
         return src_path
@@ -74,21 +80,26 @@ class DummyFileProcessor:
         # Return a dummy final path and a dummy datatype.
         return (f"{record_path}/dummy_file{extension}", "dummy_type")
 
+
 # ------------------------
 # Fixtures
 # ------------------------
+
 
 @pytest.fixture
 def dummy_ui():
     return DummyUI()
 
+
 @pytest.fixture
 def dummy_sync_manager(dummy_ui):
     return DummySyncManager(ui=dummy_ui)
 
+
 @pytest.fixture
 def dummy_processor():
     return DummyFileProcessor()
+
 
 @pytest.fixture
 def app(dummy_ui, dummy_processor, dummy_sync_manager):
@@ -98,17 +109,17 @@ def app(dummy_ui, dummy_processor, dummy_sync_manager):
         mock_observer.return_value = dummy_observer
         # Create an instance of the app with dummy components.
         app_instance = DeviceWatchdogApp(
-            ui=dummy_ui,
-            sync_manager=dummy_sync_manager,
-            file_processor=dummy_processor
+            ui=dummy_ui, sync_manager=dummy_sync_manager, file_processor=dummy_processor
         )
         # Store the dummy observer for later inspection.
         app_instance._dummy_observer = dummy_observer
         return app_instance
 
+
 # ------------------------
 # Tests
 # ------------------------
+
 
 def test_initialization(app, dummy_ui):
     """
@@ -120,7 +131,7 @@ def test_initialization(app, dummy_ui):
     """
     dummy_observer = app._dummy_observer
     dummy_observer.schedule.assert_called()  # Ensures schedule was called.
-    dummy_observer.start.assert_called()       # Ensures observer.start() was called.
+    dummy_observer.start.assert_called()  # Ensures observer.start() was called.
 
     # Check that the UI has at least one scheduled task (for process_events).
     assert len(dummy_ui.scheduled_tasks) >= 1
@@ -131,6 +142,7 @@ def test_initialization(app, dummy_ui):
 
     # Check that the session manager's callback is set.
     assert app.session_manager.end_session_callback == app.end_session
+
 
 def test_process_events_empty_queue(app, dummy_ui):
     """
@@ -158,6 +170,7 @@ def test_process_events_empty_queue(app, dummy_ui):
 
     # Restore the original method.
     app.file_processing.sync_logs_to_database = original_sync_logs
+
 
 def test_process_events_with_item(app):
     """
@@ -206,6 +219,7 @@ def test_on_closing(app, dummy_ui):
     # Verify the UI is destroyed.
     assert dummy_ui.destroyed is True
 
+
 def test_run_handles_keyboard_interrupt(app, dummy_ui):
     """
     Verify that if ui.run_main_loop() raises KeyboardInterrupt, on_closing is called.
@@ -214,6 +228,7 @@ def test_run_handles_keyboard_interrupt(app, dummy_ui):
     dummy_ui.run_main_loop = MagicMock(side_effect=KeyboardInterrupt)
     app.run()
     app.on_closing.assert_called_once()
+
 
 def test_run_handles_exception(app, dummy_ui):
     """

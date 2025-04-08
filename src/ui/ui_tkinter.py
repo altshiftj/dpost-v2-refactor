@@ -10,13 +10,13 @@ from tkinter import messagebox
 from typing import Dict, Optional, Callable, Any
 
 from src.ui.ui_abstract import UserInterface
-from src.ui.dialogs import UnifiedRenameDialog
+from src.ui.dialogs import RenameDialog
 from src.ui.ui_messages import InfoMessages, DialogPrompts
 
 
 class TKinterUI(UserInterface):
     """
-    A concrete implementation of the UserInterface that manages all GUI interactions 
+    A concrete implementation of the UserInterface that manages all GUI interactions
     using Tkinter. This includes displaying warnings, info popups, and error messages,
     as well as providing dialogs for renaming files/folders and confirming session-related
     actions.
@@ -36,7 +36,7 @@ class TKinterUI(UserInterface):
         self.dialog_parent = tk.Toplevel(self.root)
         self.dialog_parent.withdraw()
         self.dialog_parent.attributes("-topmost", True)
-        
+
         # Dictionary to track active dialogs by type
         self._active_dialogs = {}
 
@@ -47,7 +47,7 @@ class TKinterUI(UserInterface):
     def initialize(self) -> None:
         """
         Perform any additional initialization required for the UI.
-        For TKinter, most is done in __init__, but this method 
+        For TKinter, most is done in __init__, but this method
         can be used for post-construction setup if needed.
         """
         pass
@@ -66,11 +66,13 @@ class TKinterUI(UserInterface):
         Display a dialog prompting the user to rename a file or folder.
         Returns a dict with user input if confirmed, or None if canceled.
         """
-        dialog = UnifiedRenameDialog(self.root, "Rename File")
+        dialog = RenameDialog(self.root, "Rename File")
         return dialog.result
 
-    def show_unified_rename_dialog(self, attempted_filename: str, analysis: dict) -> Optional[dict]:
-        dialog = UnifiedRenameDialog(self.get_root(), attempted_filename, analysis)
+    def show_rename_dialog(
+        self, attempted_filename: str, analysis: dict
+    ) -> Optional[dict]:
+        dialog = RenameDialog(self.get_root(), attempted_filename, analysis)
         return dialog.result
 
     def prompt_append_record(self, record_name: str) -> bool:
@@ -80,7 +82,7 @@ class TKinterUI(UserInterface):
         return messagebox.askyesno(
             DialogPrompts.APPEND_RECORD,
             DialogPrompts.APPEND_RECORD_DETAILS.format(record_name=record_name),
-            parent=self.dialog_parent
+            parent=self.dialog_parent,
         )
 
     def show_done_dialog(self, on_done_callback: Callable[[], None]) -> None:
@@ -88,8 +90,11 @@ class TKinterUI(UserInterface):
         Show a pop-up dialog that prompts the user to confirm they are done.
         Calls 'on_done_callback' when user clicks 'Done'.
         """
-        if 'done_dialog' in self._active_dialogs and self._active_dialogs['done_dialog'].winfo_exists():
-            self._active_dialogs['done_dialog'].destroy()
+        if (
+            "done_dialog" in self._active_dialogs
+            and self._active_dialogs["done_dialog"].winfo_exists()
+        ):
+            self._active_dialogs["done_dialog"].destroy()
 
         done_dialog = tk.Toplevel(self.root)
         done_dialog.title(InfoMessages.SESSION_ACTIVE)
@@ -99,17 +104,21 @@ class TKinterUI(UserInterface):
         label.pack(padx=20, pady=10)
 
         if not callable(on_done_callback):
-            raise TypeError(f"on_done_callback must be callable, got {type(on_done_callback)}")
+            raise TypeError(
+                f"on_done_callback must be callable, got {type(on_done_callback)}"
+            )
 
         done_button = tk.Button(
-            done_dialog, 
-            text="Done", 
-            command=lambda: self._handle_done_clicked(done_dialog, on_done_callback)
+            done_dialog,
+            text="Done",
+            command=lambda: self._handle_done_clicked(done_dialog, on_done_callback),
         )
         done_button.pack(pady=10)
 
-        done_dialog.protocol("WM_DELETE_WINDOW", lambda: self._close_dialog(done_dialog))
-        self._active_dialogs['done_dialog'] = done_dialog
+        done_dialog.protocol(
+            "WM_DELETE_WINDOW", lambda: self._close_dialog(done_dialog)
+        )
+        self._active_dialogs["done_dialog"] = done_dialog
 
     def get_root(self) -> tk.Tk:
         """
@@ -126,7 +135,7 @@ class TKinterUI(UserInterface):
             if dialog.winfo_exists():
                 dialog.destroy()
         self._active_dialogs.clear()
-        
+
         if self.dialog_parent.winfo_exists():
             self.dialog_parent.destroy()
         if self.root.winfo_exists():
@@ -172,15 +181,17 @@ class TKinterUI(UserInterface):
     # Internal Helpers
     # -------------------------------------------------------------------------
 
-    def _handle_done_clicked(self, dialog: tk.Toplevel, callback: Callable[[], None]) -> None:
+    def _handle_done_clicked(
+        self, dialog: tk.Toplevel, callback: Callable[[], None]
+    ) -> None:
         """
         Invoked when the user clicks the 'Done' button in the done_dialog.
         Destroys the dialog and triggers the callback.
         """
         if dialog.winfo_exists():
             dialog.destroy()
-        if 'done_dialog' in self._active_dialogs:
-            del self._active_dialogs['done_dialog']
+        if "done_dialog" in self._active_dialogs:
+            del self._active_dialogs["done_dialog"]
         callback()
 
     def _close_dialog(self, dialog: tk.Toplevel) -> None:

@@ -4,20 +4,29 @@ from unittest.mock import patch
 from pyfakefs.fake_filesystem_unittest import Patcher
 
 # Adjust these imports to your actual locations
-from src.config.settings import WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR, FILENAME_PATTERN, ID_SEP
+from src.config.settings import (
+    WATCH_DIR,
+    DEST_DIR,
+    RENAME_DIR,
+    EXCEPTIONS_DIR,
+    FILENAME_PATTERN,
+    ID_SEP,
+)
 from src.storage.path_manager import PathManager
+
 
 @pytest.fixture
 def patch_settings_for_fs():
     """
-    A fixture that temporarily sets the paths in settings to 
+    A fixture that temporarily sets the paths in settings to
     fake directories we'll create in pyfakefs. This ensures that
     PathManager.init_dirs() and others read the correct paths.
     """
-    with patch("src.config.settings.WATCH_DIR", "/fake_watch"), \
-         patch("src.config.settings.DEST_DIR", "/fake_dest"), \
-         patch("src.config.settings.RENAME_DIR", "/fake_rename"), \
-         patch("src.config.settings.EXCEPTIONS_DIR", "/fake_exceptions"):
+    with patch("src.config.settings.WATCH_DIR", "/fake_watch"), patch(
+        "src.config.settings.DEST_DIR", "/fake_dest"
+    ), patch("src.config.settings.RENAME_DIR", "/fake_rename"), patch(
+        "src.config.settings.EXCEPTIONS_DIR", "/fake_exceptions"
+    ):
         yield  # proceed to the test
 
 
@@ -30,7 +39,7 @@ def test_init_dirs_pyfakefs():
             Path("/fake_watch"),
             Path("/fake_dest"),
             Path("/fake_rename"),
-            Path("/fake_exceptions")
+            Path("/fake_exceptions"),
         ]
 
         # Make sure none exist before
@@ -74,7 +83,9 @@ def test_get_rename_path_pyfakefs():
         patcher.fs.create_dir(str(fake_rename_dir))
         patcher.fs.create_file(str(fake_rename_dir / "existing_file-01.jpg"))
 
-        result = PathManager.get_rename_path("existing_file.jpg", base_dir=str(fake_rename_dir))
+        result = PathManager.get_rename_path(
+            "existing_file.jpg", base_dir=str(fake_rename_dir)
+        )
 
         # Assert it's in the fake directory and uses expected naming
         assert Path(result).parent == fake_rename_dir
@@ -91,7 +102,9 @@ def test_get_exception_path_pyfakefs():
         patcher.fs.create_dir(str(fake_exceptions_dir))
         patcher.fs.create_file(str(fake_exceptions_dir / "file_already-01.doc"))
 
-        result = PathManager.get_exception_path("file_already.doc", base_dir=str(fake_exceptions_dir))
+        result = PathManager.get_exception_path(
+            "file_already.doc", base_dir=str(fake_exceptions_dir)
+        )
 
         assert Path(result).parent == fake_exceptions_dir
         assert Path(result).name.startswith("file_already-")
@@ -100,7 +113,7 @@ def test_get_exception_path_pyfakefs():
 
 def test_get_record_path_pyfakefs(patch_settings_for_fs):
     """
-    get_record_path() should create a directory under DEST_DIR 
+    get_record_path() should create a directory under DEST_DIR
     with the correct substructure (institute, user, sample).
     """
     with Patcher() as patcher:

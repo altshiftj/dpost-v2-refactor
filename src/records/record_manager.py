@@ -42,8 +42,7 @@ class RecordManager:
         """
         record_id = IdGenerator.generate_record_id(filename_prefix)
         record = LocalRecord(
-            identifier=record_id,
-            date=datetime.datetime.now().strftime('%Y%m%d')
+            identifier=record_id, date=datetime.datetime.now().strftime("%Y%m%d")
         )
         self._store_record(record)
         logger.debug(f"Created new record with id '{record_id}'.")
@@ -82,7 +81,9 @@ class RecordManager:
         return record
 
     def all_records_uploaded(self) -> bool:
-        all_uploaded = all(record.all_files_uploaded() for record in self.persist_records_dict.values())
+        all_uploaded = all(
+            record.all_files_uploaded() for record in self.persist_records_dict.values()
+        )
         logger.debug(f"All records uploaded: {all_uploaded}")
         return all_uploaded
 
@@ -91,8 +92,10 @@ class RecordManager:
         synced_count = 0
 
         for record in self.persist_records_dict.values():
-            if record.institute != 'ipat':
-                logger.info(f"Record '{record.identifier}' is not applicable for syncing.")
+            if record.institute != "ipat":
+                logger.info(
+                    f"Record '{record.identifier}' is not applicable for syncing."
+                )
             elif record.all_files_uploaded():
                 logger.info(f"Record '{record.identifier}' is already fully uploaded.")
             else:

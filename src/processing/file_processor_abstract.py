@@ -1,18 +1,20 @@
 from abc import ABC, abstractmethod
 from src.records.local_record import LocalRecord
 
+
 class BaseFileProcessor(ABC):
     """
     An abstract base for processors that handle new/modified files or directories
     and associate them with records in the system.
     """
+
     @abstractmethod
-    def device_specific_preprocessing(self, src_path: str)-> str:
+    def device_specific_preprocessing(self, src_path: str) -> str:
         """
         Method to implement optional preprocessing steps before routing the item.
         """
         pass
-    
+
     @abstractmethod
     def is_valid_datatype(self, path: str):
         """
@@ -22,7 +24,9 @@ class BaseFileProcessor(ABC):
         pass
 
     @abstractmethod
-    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+    def is_appendable(
+        self, record: LocalRecord, filename_prefix: str, extension: str
+    ) -> bool:
         """
         Checks if the record can be appended to with this processor's data type.
         Return: (appendable, message_if_not_appendable)
@@ -30,9 +34,7 @@ class BaseFileProcessor(ABC):
         pass
 
     @abstractmethod
-    def device_specific_processing(
-        self, source_path, record_path, file_id, extension
-    ):
+    def device_specific_processing(self, source_path, record_path, file_id, extension):
         """
         Allows subclasses to implement custom moves, renames, or metadata extraction.
         Must return the final path of the processed item.

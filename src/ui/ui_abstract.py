@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Any, Callable
 
+
 class UserInterface(ABC):
     """
     A single abstract interface for all UI implementations.
@@ -53,7 +54,9 @@ class UserInterface(ABC):
         """
         pass
 
-    def show_unified_rename_dialog(self, attempted_filename: str, violation_info: Dict[str, str]) -> Optional[Dict[str, str]]:
+    def show_rename_dialog(
+        self, attempted_filename: str, violation_info: Dict[str, str]
+    ) -> Optional[Dict[str, str]]:
         """
         Show a unified rename dialog with the attempted filename and violation info.
         Returns a dictionary with user inputs if they confirm, or None if they cancel.

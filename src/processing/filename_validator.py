@@ -4,6 +4,7 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class FilenameValidator:
     """
     Validates and sanitizes filename prefixes using the expected format:
@@ -25,6 +26,7 @@ class FilenameValidator:
     def sanitize_prefix(raw_prefix: str) -> str:
         """
         Sanitizes a raw filename prefix:
+        - Trims whitespace from each segment
         - Lowercases user ID and institute
         - Replaces spaces with underscores in the sample ID
         """
@@ -32,9 +34,9 @@ class FilenameValidator:
         if len(parts) < 3:
             return raw_prefix
 
-        user_id = parts[0]
-        institute = parts[1]
-        sample_id = ID_SEP.join(parts[2:]).replace(' ', '_')
+        user_id = parts[0].strip()
+        institute = parts[1].strip()
+        sample_id = ID_SEP.join(part.strip() for part in parts[2:]).replace(" ", "_")
 
         return f"{user_id.lower()}{ID_SEP}{institute.lower()}{ID_SEP}{sample_id}"
 
@@ -58,7 +60,7 @@ class FilenameValidator:
         result = {
             "valid": True,
             "reasons": [],
-            "highlight_spans": []  # list of (start_index, end_index) for bad chars
+            "highlight_spans": [],  # list of (start_index, end_index) for bad chars
         }
 
         if not FILENAME_PATTERN.match(filename):
@@ -71,7 +73,7 @@ class FilenameValidator:
                 )
                 for i, char in enumerate(filename):
                     if char == ID_SEP:
-                        result["highlight_spans"].append((i, i+1))
+                        result["highlight_spans"].append((i, i + 1))
             else:
                 user, institute, sample = segments
 
@@ -90,89 +92,82 @@ class FilenameValidator:
                     result["reasons"].append("User ID must contain only letters.")
                     for i, char in enumerate(user):
                         if not re.match(r"[A-Za-z]", char):
-                            result["highlight_spans"].append((user_start + i, user_start + i + 1))
+                            result["highlight_spans"].append(
+                                (user_start + i, user_start + i + 1)
+                            )
 
                 # --- Check institute ---
                 if not re.fullmatch(r"[A-Za-z]+", institute):
                     result["reasons"].append("Institute must contain only letters.")
                     for i, char in enumerate(institute):
                         if not re.match(r"[A-Za-z]", char):
-                            result["highlight_spans"].append((inst_start + i, inst_start + i + 1))
+                            result["highlight_spans"].append(
+                                (inst_start + i, inst_start + i + 1)
+                            )
 
                 # --- Check sample ID ---
-                if not re.match(r"^[A-Za-z0-9_ ]{1,30}$", sample):
+                if len(sample) > 30:
                     result["reasons"].append(
-                        "Sample may only contain letters, digits, underscores/spaces, <30 chars."
+                        "Sample name must be 30 characters or fewer."
+                    )
+
+                if not re.fullmatch(r"^[A-Za-z0-9_ ]+", sample):
+                    result["reasons"].append(
+                        "Sample may only contain letters, digits, underscores/spaces."
                     )
                     for i, char in enumerate(sample):
                         if not re.match(r"[A-Za-z0-9_ ]", char):
-                            result["highlight_spans"].append((sample_start + i, sample_start + i + 1))
+                            result["highlight_spans"].append(
+                                (sample_start + i, sample_start + i + 1)
+                            )
 
         return result
-    
-@classmethod
-def analyze_user_input(cls, dialog_result: dict | None) -> dict:
-    """
-    Combines user-input parsing + sanitization + violation explanation.
 
-    Returns:
-        {
-            "valid": bool,
-            "sanitized": str or None,
-            "reasons": list[str],
-            "highlight_spans": list[tuple[int,int]]
+    @classmethod
+    def analyze_user_input(cls, dialog_result: dict | None) -> dict:
+        """
+        Combines user-input parsing + sanitization + violation explanation.
+
+        Returns:
+            {
+                "valid": bool,
+                "sanitized": str or None,
+                "reasons": list[str],
+                "highlight_spans": list[tuple[int,int]]
+            }
+        """
+        output = {
+            "valid": True,
+            "sanitized": None,
+            "reasons": [],
+            "highlight_spans": [],
         }
-    """
-    output = {
-        "valid": True,
-        "sanitized": None,
-        "reasons": [],
-        "highlight_spans": []
-    }
 
-    if dialog_result is None:
-        output["valid"] = False
-        output["reasons"].append("User cancelled the dialog.")
+        if dialog_result is None:
+            output["valid"] = False
+            output["reasons"].append("User cancelled the dialog.")
+            return output
+
+        user_id = dialog_result.get("name", "").strip()
+        institute = dialog_result.get("institute", "").strip()
+        sample_id = dialog_result.get("sample_ID", "").strip()
+
+        # Build raw prefix and calculate index spans for parts
+        raw_prefix = f"{user_id}{ID_SEP}{institute}{ID_SEP}{sample_id}"
+        u_start = 0
+        u_end = len(user_id)
+        i_start = u_end + 1
+        i_end = i_start + len(institute)
+        s_start = i_end + 1
+        s_end = s_start + len(sample_id)
+
+        sanitized, is_valid = cls.sanitize_and_validate(raw_prefix)
+        if is_valid:
+            output["sanitized"] = sanitized
+        else:
+            output["valid"] = False
+            violation_info = cls.explain_filename_violation(raw_prefix)
+            output["reasons"].extend(violation_info["reasons"])
+            output["highlight_spans"].extend(violation_info["highlight_spans"])
+
         return output
-
-    user_id = dialog_result.get("name", "").strip()
-    institute = dialog_result.get("institute", "").strip()
-    sample_id = dialog_result.get("sample_ID", "").strip()
-
-    # Build raw prefix and calculate index spans for parts
-    raw_prefix = f"{user_id}{ID_SEP}{institute}{ID_SEP}{sample_id}"
-    u_start = 0
-    u_end = len(user_id)
-    i_start = u_end + 1
-    i_end = i_start + len(institute)
-    s_start = i_end + 1
-    s_end = s_start + len(sample_id)
-
-    any_empty = False
-    if not user_id:
-        output["reasons"].append("User ID is required.")
-        output["highlight_spans"].append((u_start, u_end or u_start + 1))
-        any_empty = True
-    if not institute:
-        output["reasons"].append("Institute is required.")
-        output["highlight_spans"].append((i_start, i_end or i_start + 1))
-        any_empty = True
-    if not sample_id:
-        output["reasons"].append("Sample ID is required.")
-        output["highlight_spans"].append((s_start, s_end or s_start + 1))
-        any_empty = True
-
-    if any_empty:
-        output["valid"] = False
-        return output
-
-    sanitized, is_valid = cls.sanitize_and_validate(raw_prefix)
-    if is_valid:
-        output["sanitized"] = sanitized
-    else:
-        output["valid"] = False
-        violation_info = cls.explain_filename_violation(raw_prefix)
-        output["reasons"].extend(violation_info["reasons"])
-        output["highlight_spans"].extend(violation_info["highlight_spans"])
-
-    return output

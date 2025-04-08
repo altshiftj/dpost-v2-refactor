@@ -4,14 +4,15 @@ from src.ui.ui_tkinter import TKinterUI
 from src.sync.sync_kadi import KadiSyncManager
 from src.processing.file_processor_sem import SEMFileProcessor
 
+
 def main():
     logger = setup_logger(__name__)
 
     app = DeviceWatchdogApp(
-        ui = TKinterUI(),
-        sync_manager = KadiSyncManager(ui=TKinterUI()),
-        file_processor = SEMFileProcessor()
-        )   
+        ui=TKinterUI(),
+        sync_manager=KadiSyncManager(ui=TKinterUI()),
+        file_processor=SEMFileProcessor(),
+    )
 
     try:
         app.run()
@@ -19,6 +20,7 @@ def main():
         logger.exception(f"An error occurred: {e}")
     finally:
         logger.info("Application closed.")
+
 
 if __name__ == "__main__":
     main()

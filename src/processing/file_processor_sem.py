@@ -8,6 +8,7 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class SEMFileProcessor(BaseFileProcessor):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
@@ -15,13 +16,15 @@ class SEMFileProcessor(BaseFileProcessor):
 
     def device_specific_preprocessing(self, path: str) -> str:
         p = Path(path)
-        if p.suffix.lower() in {'.tiff', '.tif'}:
+        if p.suffix.lower() in {".tiff", ".tif"}:
             # Strip trailing digit from the stem, if present.
             new_stem = self._strip_trailing_digit(p.stem)
             if new_stem != p.stem:
                 new_path = p.parent / (new_stem + p.suffix)
                 p.rename(new_path)
-                logger.debug(f"Renamed file: {path} -> {new_path}, removed trailing digit.")
+                logger.debug(
+                    f"Renamed file: {path} -> {new_path}, removed trailing digit."
+                )
                 return str(new_path)
         return path
 
@@ -33,31 +36,44 @@ class SEMFileProcessor(BaseFileProcessor):
         p = Path(path)
         if p.is_dir():
             # Valid if any direct child file has the '.elid' extension.
-            if any(child.suffix.lower() == '.elid' for child in p.iterdir() if child.is_file()):
+            if any(
+                child.suffix.lower() == ".elid"
+                for child in p.iterdir()
+                if child.is_file()
+            ):
                 return True
-        if p.suffix.lower() in {'.tiff', '.tif'}:
+        if p.suffix.lower() in {".tiff", ".tif"}:
             return True
         return False
 
-    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
-        if any('.elid' in key for key in record.files_uploaded.keys()) or extension == "":
+    def is_appendable(
+        self, record: LocalRecord, filename_prefix: str, extension: str
+    ) -> bool:
+        if (
+            any(".elid" in key for key in record.files_uploaded.keys())
+            or extension == ""
+        ):
             return False
         return True
 
-    def device_specific_processing(self, src_path: str, record_path: str, filename_prefix: str, extension: str):
+    def device_specific_processing(
+        self, src_path: str, record_path: str, filename_prefix: str, extension: str
+    ):
         src = Path(src_path)
         record_p = Path(record_path)
-        if extension.lower() in {'.tif', '.tiff'}:
+        if extension.lower() in {".tif", ".tiff"}:
             # For images, generate a unique filename and move the file.
-            new_file_path = PathManager.get_unique_filename(record_path, filename_prefix, extension)
+            new_file_path = PathManager.get_unique_filename(
+                record_path, filename_prefix, extension
+            )
             StorageManager.move_item(str(src), new_file_path)
-            return new_file_path, 'img'
+            return new_file_path, "img"
         else:
             # Process ELID data.
             self._flatten_elid_directory(src, filename_prefix)
             self._move_remaining_elid_files(src, record_p)
             self._remove_directory(src)
-            return record_path, 'elid'
+            return record_path, "elid"
 
     def _flatten_elid_directory(self, folder: Path, filename_prefix: str):
         """
@@ -108,24 +124,26 @@ class SEMFileProcessor(BaseFileProcessor):
         except OSError:
             logger.warning(f"Could not remove ELID directory: '{src}'.")
 
-    def _build_new_filename(self, fname: str, root_dir: str, filename_prefix: str) -> str:
+    def _build_new_filename(
+        self, fname: str, root_dir: str, filename_prefix: str
+    ) -> str:
         """
         Builds a new filename for files in ELID data.
         Applies different renaming rules depending on the file's extension and its parent directory.
         """
         new_fname = fname
         # If the file is an .elid or .odt file, incorporate the provided filename_prefix.
-        if fname.endswith('.elid') or fname.endswith('.odt'):
+        if fname.endswith(".elid") or fname.endswith(".odt"):
             ext = Path(fname).suffix
             new_fname = f"{filename_prefix}{ext}"
-            new_fname = new_fname.replace(' ', '_')
+            new_fname = new_fname.replace(" ", "_")
         # If the file is inside an analysis directory, prefix with that directory name.
         dirname = Path(root_dir).name
-        if 'analysis' in dirname:
-            new_fname = f"{dirname}_{fname}".replace(' ', '_')
-            if 'analysis' in fname:
-                new_fname = fname.replace(' ', '_')
+        if "analysis" in dirname:
+            new_fname = f"{dirname}_{fname}".replace(" ", "_")
+            if "analysis" in fname:
+                new_fname = fname.replace(" ", "_")
         # If the file is inside an export directory, simply remove spaces.
-        if 'export' in dirname:
-            new_fname = fname.replace(' ', '_')
+        if "export" in dirname:
+            new_fname = fname.replace(" ", "_")
         return new_fname

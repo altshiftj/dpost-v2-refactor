@@ -8,6 +8,7 @@ from src.config.settings import DEBOUNCE_TIME, ALLOWED_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
+
 class FileEventHandler(FileSystemEventHandler):
     """
     Custom event handler that processes newly created or modified paths

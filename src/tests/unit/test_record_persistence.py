@@ -8,7 +8,7 @@ from src.records.local_record import LocalRecord
 
 @pytest.fixture
 def today_str():
-    return datetime.datetime.now().strftime('%Y%m%d')
+    return datetime.datetime.now().strftime("%Y%m%d")
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def local_record(record_id, today_str, file_path):
         date=today_str,
         datatype="tif",
         is_in_db=False,
-        files_uploaded={file_path: False}
+        files_uploaded={file_path: False},
     )
 
 
@@ -40,7 +40,9 @@ def temp_json_path(tmp_path):
     return test_file
 
 
-def test_save_persisted_records_creates_valid_json(temp_json_path, local_record, record_id, file_path):
+def test_save_persisted_records_creates_valid_json(
+    temp_json_path, local_record, record_id, file_path
+):
     record_persistence.save_persisted_records({record_id: local_record})
 
     data = json.loads(temp_json_path.read_text())
@@ -56,14 +58,16 @@ def test_save_persisted_records_creates_valid_json(temp_json_path, local_record,
     assert record_json["files_uploaded"][file_path] is False
 
 
-def test_load_persisted_records_returns_localrecord_objects(temp_json_path, record_id, today_str, file_path):
+def test_load_persisted_records_returns_localrecord_objects(
+    temp_json_path, record_id, today_str, file_path
+):
     test_data = {
         record_id: {
             "identifier": record_id,
             "datatype": "tif",
             "date": today_str,
             "is_in_db": True,
-            "files_uploaded": {file_path: True}
+            "files_uploaded": {file_path: True},
         }
     }
 

@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 from src.sessions.session_manager import SessionManager
 from src.config.settings import SESSION_TIMEOUT
 
+
 @pytest.fixture
 def dummy_ui():
     """
@@ -13,6 +14,7 @@ def dummy_ui():
     ui = MagicMock()
     ui.schedule_task.return_value = "dummy_timer"
     return ui
+
 
 def test_start_session(dummy_ui):
     """
@@ -32,13 +34,16 @@ def test_start_session(dummy_ui):
     assert session_manager.session_active is True
 
     # A timeout should be scheduled with SESSION_TIMEOUT * 1000 ms.
-    dummy_ui.schedule_task.assert_called_with(SESSION_TIMEOUT * 1000, session_manager.end_session)
+    dummy_ui.schedule_task.assert_called_with(
+        SESSION_TIMEOUT * 1000, session_manager.end_session
+    )
 
     # A done dialog should be shown (its argument is a callable).
     dummy_ui.show_done_dialog.assert_called()
-    
+
     # The timer_id should be updated.
     assert session_manager.timer_id == "dummy_timer"
+
 
 def test_end_session(dummy_ui):
     """
@@ -64,6 +69,7 @@ def test_end_session(dummy_ui):
     # The end-session callback should be called.
     dummy_callback.assert_called_once()
 
+
 def test_reset_timer_when_session_active(dummy_ui):
     """
     If the session is active and reset_timer() is called,
@@ -80,10 +86,13 @@ def test_reset_timer_when_session_active(dummy_ui):
     dummy_ui.cancel_task.assert_called_with("old_timer")
 
     # A new timeout should be scheduled.
-    dummy_ui.schedule_task.assert_called_with(SESSION_TIMEOUT * 1000, session_manager.end_session)
+    dummy_ui.schedule_task.assert_called_with(
+        SESSION_TIMEOUT * 1000, session_manager.end_session
+    )
 
     # Timer id should be updated.
     assert session_manager.timer_id == "dummy_timer"
+
 
 def test_reset_timer_when_session_inactive(dummy_ui):
     """

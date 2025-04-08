@@ -4,10 +4,11 @@ from abc import ABC, abstractmethod
 from src.ui.ui_abstract import UserInterface
 from src.records.local_record import LocalRecord
 
+
 class ISyncManager(ABC):
     """
     Interface for managing synchronization operations between local records and the database.
-    
+
     This abstract base class defines the essential methods that any synchronization manager
     implementation must provide. It ensures consistency and standardization across different
     synchronization processes within the application.
@@ -32,5 +33,3 @@ class ISyncManager(ABC):
         Synchronize the logs to the database.
         """
         pass
-
-

@@ -6,6 +6,7 @@ identifiers for records and files based on provided metadata. It ensures
 consistent ID formats for easy tracking, storage, and retrieval of records within the
 application.
 """
+
 from src.app.logger import setup_logger
 from src.config.settings import DEVICE_TYPE, ID_SEP
 from src.records.local_record import LocalRecord
@@ -43,7 +44,7 @@ class IdGenerator:
         record_id = record_id.lower()
         logger.debug(f"Constructed record_id: {record_id}")
         return record_id
-    
+
     @staticmethod
     def generate_file_id(filename_prefix: str) -> str:
         """

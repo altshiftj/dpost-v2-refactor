@@ -15,7 +15,7 @@ from src.config.settings import (
     RENAME_DIR,
     EXCEPTIONS_DIR,
     FILENAME_PATTERN,
-    ID_SEP
+    ID_SEP,
 )
 from src.app.logger import setup_logger
 
@@ -25,7 +25,7 @@ logger = setup_logger(__name__)
 class PathManager:
     """
     The PathManager class manages file and directory paths used in the application.
-    
+
     Responsibilities:
         - Ensures required directories exist.
         - Sanitizes and validates user inputs to adhere to naming conventions.
@@ -43,12 +43,17 @@ class PathManager:
                                                Defaults to WATCH_DIR, DEST_DIR, RENAME_DIR, and EXCEPTIONS_DIR.
         """
         if directories is None:
-            from src.config.settings import WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR
+            from src.config.settings import (
+                WATCH_DIR,
+                DEST_DIR,
+                RENAME_DIR,
+                EXCEPTIONS_DIR,
+            )
+
             directories = [WATCH_DIR, DEST_DIR, RENAME_DIR, EXCEPTIONS_DIR]
 
         for dir_path in directories:
             Path(dir_path).mkdir(parents=True, exist_ok=True)
-
 
     @staticmethod
     def get_record_path(filename_prefix: str) -> str:
@@ -60,7 +65,6 @@ class PathManager:
         record_path = Path(DEST_DIR) / institute.upper() / user_ID.upper() / sample_ID
         record_path.mkdir(parents=True, exist_ok=True)
         return str(record_path)
-
 
     @classmethod
     def get_rename_path(cls, name: str, base_dir: str = None) -> str:
@@ -75,10 +79,10 @@ class PathManager:
             str: A unique full path in the rename directory.
         """
         from src.config.settings import RENAME_DIR
+
         base_dir = base_dir or RENAME_DIR
         filename_prefix, extension = Path(name).stem, Path(name).suffix
         return cls.get_unique_filename(base_dir, filename_prefix, extension)
-
 
     @classmethod
     def get_exception_path(cls, name: str, base_dir: str = None) -> str:
@@ -93,13 +97,15 @@ class PathManager:
             str: A unique full path in the exceptions directory.
         """
         from src.config.settings import EXCEPTIONS_DIR
+
         base_dir = base_dir or EXCEPTIONS_DIR
         filename_prefix, extension = Path(name).stem, Path(name).suffix
         return cls.get_unique_filename(base_dir, filename_prefix, extension)
 
-
     @staticmethod
-    def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
+    def get_unique_filename(
+        directory: str, filename_prefix: str, extension: str
+    ) -> str:
         """
         Generates a unique filename in the given directory by appending
         an incrementing counter if needed.
@@ -114,7 +120,7 @@ class PathManager:
         for existing in dir_path.iterdir():
             if existing.is_file() and existing.suffix == extension:
                 existing_prefix = existing.stem
-                # The logic from the original code attempts to parse 
+                # The logic from the original code attempts to parse
                 # out a trailing counter from the file's name, after the last ID_SEP.
                 prefix_no_counter = existing_prefix.rsplit(ID_SEP, 1)[0]
                 if prefix_no_counter in filename_prefix:

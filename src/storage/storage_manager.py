@@ -7,6 +7,7 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 class StorageManager:
     """
     The StorageManager class provides methods to move and rename files and directories
@@ -33,11 +34,21 @@ class StorageManager:
         try:
             src_path.rename(dest_path)
         except OSError as e:
-            logger.warning("Path.rename() failed for '%s' to '%s': %s. Attempting shutil.move.", src, dest, e)
+            logger.warning(
+                "Path.rename() failed for '%s' to '%s': %s. Attempting shutil.move.",
+                src,
+                dest,
+                e,
+            )
             try:
                 shutil.move(src, dest)
             except Exception as e_move:
-                logger.error("Failed to move '%s' to '%s' using shutil.move: %s.", src, dest, e_move)
+                logger.error(
+                    "Failed to move '%s' to '%s' using shutil.move: %s.",
+                    src,
+                    dest,
+                    e_move,
+                )
                 raise e_move
 
     @classmethod
@@ -48,7 +59,7 @@ class StorageManager:
         extension: str,
         unique_path_func: Callable[[str], str],
         log_message: str,
-        log_level: int = logging.INFO
+        log_level: int = logging.INFO,
     ) -> None:
         """
         Internal helper to move items to a designated folder using a unique path function.
@@ -67,7 +78,9 @@ class StorageManager:
         logger.log(log_level, log_message.format(src, dest))
 
     @classmethod
-    def move_to_exception_folder(cls, src: str, filename_prefix: str, extension: str = "") -> None:
+    def move_to_exception_folder(
+        cls, src: str, filename_prefix: str, extension: str = ""
+    ) -> None:
         """
         Move a file to the exceptions directory with a unique name.
         """
@@ -77,11 +90,13 @@ class StorageManager:
             extension=extension,
             unique_path_func=PathManager.get_exception_path,
             log_message="Moved '{}' to exceptions folder at '{}'",
-            log_level=logging.WARNING
+            log_level=logging.WARNING,
         )
 
     @classmethod
-    def move_to_rename_folder(cls, src: str, filename_prefix: str, extension: str = "") -> None:
+    def move_to_rename_folder(
+        cls, src: str, filename_prefix: str, extension: str = ""
+    ) -> None:
         """
         Move a file to the rename directory with a unique name.
         """
@@ -91,11 +106,13 @@ class StorageManager:
             extension=extension,
             unique_path_func=PathManager.get_rename_path,
             log_message="Moved '{}' to rename folder at '{}'",
-            log_level=logging.INFO
+            log_level=logging.INFO,
         )
 
     @classmethod
-    def move_to_record_folder(cls, src: str, filename_prefix: str, extension: str = "") -> None:
+    def move_to_record_folder(
+        cls, src: str, filename_prefix: str, extension: str = ""
+    ) -> None:
         """
         Move a file to the record directory for a given record ID.
         """
@@ -105,5 +122,5 @@ class StorageManager:
             extension=extension,
             unique_path_func=PathManager.get_record_path,
             log_message="Moved '{}' to record folder for '{}'",
-            log_level=logging.INFO
+            log_level=logging.INFO,
         )

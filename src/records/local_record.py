@@ -7,17 +7,18 @@ from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
+
 @dataclass
 class LocalRecord:
     """
     A dataclass that represents a local record, tracking its unique identifiers,
     name, database status, and associated files.
-    
+
     Expanded with additional sync information:
       - user: The user part extracted from the identifier.
       - institute: The institute part extracted from the identifier.
       - sample_name: The sample name part extracted from the identifier.
-    
+
     Attributes:
         identifier (str): A concise unique identifier for the record (e.g. "usr-inst-sample").
         name (str): The record title.
@@ -29,6 +30,7 @@ class LocalRecord:
         institute (str): The institute portion from the identifier.
         sample_name (str): The sample name portion from the identifier.
     """
+
     identifier: str = "null"
     user: str = "null"
     institute: str = "null"
@@ -50,7 +52,9 @@ class LocalRecord:
             # The remainder (possibly including extra hyphens) is treated as the sample name.
             self.sample_name = ID_SEP.join(parts[3:])
         else:
-            logger.warning(f"Identifier '{self.identifier}' does not conform to expected format.")
+            logger.warning(
+                f"Identifier '{self.identifier}' does not conform to expected format."
+            )
 
     def _normalized_path(self, path: str | Path) -> str:
         """
@@ -94,7 +98,9 @@ class LocalRecord:
         Returns True if all files have been uploaded.
         """
         all_uploaded = all(self.files_uploaded.values())
-        logger.debug(f"All files uploaded for record '{self.identifier}': {all_uploaded}")
+        logger.debug(
+            f"All files uploaded for record '{self.identifier}': {all_uploaded}"
+        )
         return all_uploaded
 
     def to_dict(self) -> dict:

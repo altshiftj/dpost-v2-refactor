@@ -18,26 +18,36 @@ def ui_instance():
 def test_show_warning(ui_instance):
     with patch.object(messagebox, "showwarning") as mock_warn:
         ui_instance.show_warning("Oops", "Something's off")
-        mock_warn.assert_called_once_with("Oops", "Something's off", parent=ui_instance.dialog_parent)
+        mock_warn.assert_called_once_with(
+            "Oops", "Something's off", parent=ui_instance.dialog_parent
+        )
 
 
 def test_show_info(ui_instance):
     with patch.object(messagebox, "showinfo") as mock_info:
         ui_instance.show_info("FYI", "Hello there")
-        mock_info.assert_called_once_with("FYI", "Hello there", parent=ui_instance.dialog_parent)
+        mock_info.assert_called_once_with(
+            "FYI", "Hello there", parent=ui_instance.dialog_parent
+        )
 
 
 def test_show_error(ui_instance):
     with patch.object(messagebox, "showerror") as mock_error:
         ui_instance.show_error("Boom", "Explosion happened")
-        mock_error.assert_called_once_with("Boom", "Explosion happened", parent=ui_instance.dialog_parent)
+        mock_error.assert_called_once_with(
+            "Boom", "Explosion happened", parent=ui_instance.dialog_parent
+        )
 
 
-def test_prompt_rename_returns_dict(ui_instance):
-    with patch("src.ui.ui_tkinter.MultiFieldDialog") as MockDialog:
-        MockDialog.return_value.result = {"name": "x", "institute": "y", "sample_ID": "z"}
-        result = ui_instance.prompt_rename()
-        assert result == {"name": "x", "institute": "y", "sample_ID": "z"}
+def test_show_rename_dialog(ui_instance):
+    with patch("src.ui.ui_tkinter.RenameDialog") as MockDialog:
+        MockDialog.return_value.result = {
+            "name": "alice",
+            "institute": "lab",
+            "sample_ID": "abc123",
+        }
+        result = ui_instance.show_rename_dialog("alice-lab-abc123", {"valid": False})
+        assert result == {"name": "alice", "institute": "lab", "sample_ID": "abc123"}
 
 
 def test_prompt_append_record(ui_instance):
@@ -46,7 +56,7 @@ def test_prompt_append_record(ui_instance):
         mock_ask.assert_called_once_with(
             DialogPrompts.APPEND_RECORD,
             DialogPrompts.APPEND_RECORD_DETAILS.format(record_name="rec1"),
-            parent=ui_instance.dialog_parent
+            parent=ui_instance.dialog_parent,
         )
         assert result is True
 
