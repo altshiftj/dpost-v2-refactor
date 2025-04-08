@@ -1,5 +1,5 @@
 import pytest
-from src.utils.filename_validator import FilenameValidator
+from src.processing.filename_validator import FilenameValidator
 
 # --- sanitize_and_validate ---
 @pytest.mark.parametrize("raw, expected, valid", [

@@ -1,4 +1,5 @@
 from pathlib import Path
+import tkinter as tk
 import pytest
 from unittest.mock import MagicMock
 from src.processing.file_process_manager import FileProcessManager, BaseFileProcessor
@@ -78,6 +79,11 @@ class DummyUI:
 
     def set_exception_handler(self, callback):
         self.exception_handler = callback
+
+    def get_root(self):
+        root = tk.Tk()
+        root.withdraw()
+        return root
 
 class DummySessionManager:
     def __init__(self):

@@ -10,7 +10,7 @@ from tkinter import messagebox
 from typing import Dict, Optional, Callable, Any
 
 from src.ui.ui_abstract import UserInterface
-from src.ui.dialogs import MultiFieldDialog
+from src.ui.dialogs import UnifiedRenameDialog
 from src.ui.ui_messages import InfoMessages, DialogPrompts
 
 
@@ -66,7 +66,11 @@ class TKinterUI(UserInterface):
         Display a dialog prompting the user to rename a file or folder.
         Returns a dict with user input if confirmed, or None if canceled.
         """
-        dialog = MultiFieldDialog(self.root, "Rename File")
+        dialog = UnifiedRenameDialog(self.root, "Rename File")
+        return dialog.result
+
+    def show_unified_rename_dialog(self, attempted_filename: str, analysis: dict) -> Optional[dict]:
+        dialog = UnifiedRenameDialog(self.get_root(), attempted_filename, analysis)
         return dialog.result
 
     def prompt_append_record(self, record_name: str) -> bool:

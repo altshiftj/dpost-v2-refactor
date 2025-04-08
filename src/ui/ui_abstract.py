@@ -53,6 +53,13 @@ class UserInterface(ABC):
         """
         pass
 
+    def show_unified_rename_dialog(self, attempted_filename: str, violation_info: Dict[str, str]) -> Optional[Dict[str, str]]:
+        """
+        Show a unified rename dialog with the attempted filename and violation info.
+        Returns a dictionary with user inputs if they confirm, or None if they cancel.
+        """
+        pass
+
     @abstractmethod
     def prompt_append_record(self, record_name: str) -> bool:
         """
