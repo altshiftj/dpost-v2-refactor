@@ -158,8 +158,8 @@ class FileProcessManager:
             WarningMessages.INVALID_RECORD, WarningMessages.INVALID_RECORD_DETAILS
         )
         self._rename_flow_controller(
-            src_path, 
-            filename_prefix, 
+            src_path,
+            filename_prefix,
             extension,
             contextual_reason=(
                 f"Record '{filename_prefix}' already exists, "
@@ -178,8 +178,8 @@ class FileProcessManager:
                 filename_prefix,
                 extension,
                 contextual_reason=(
-                f"Record '{filename_prefix}' already exists, "
-                "but you chose not to append. Please choose a different name."
+                    f"Record '{filename_prefix}' already exists, "
+                    "but you chose not to append. Please choose a different name."
                 ),
             )
 
@@ -191,7 +191,7 @@ class FileProcessManager:
         contextual_reason: str = None,
     ):
         new_prefix = self._interactive_rename_loop(
-            filename_prefix, 
+            filename_prefix,
             last_attempt=None,
             contextual_reason=contextual_reason,
         )
@@ -210,7 +210,7 @@ class FileProcessManager:
         self,
         filename_prefix: str,
         last_attempt: str = None,
-        contextual_reason: str = None
+        contextual_reason: str = None,
     ) -> str | None:
         """
         Repeatedly shows a rename dialog until valid input or cancel.

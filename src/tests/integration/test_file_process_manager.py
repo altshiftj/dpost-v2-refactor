@@ -315,8 +315,12 @@ def test_append_to_synced_record_decline(fpm, monkeypatch):
     )
 
     # --- Assert ---
-    assert rename_loop_called, "Rename loop should be triggered after user declines append"
-    assert routed_prefix == "abc-def-sample-renamed", "Route item should be called with new prefix"
+    assert (
+        rename_loop_called
+    ), "Rename loop should be triggered after user declines append"
+    assert (
+        routed_prefix == "abc-def-sample-renamed"
+    ), "Route item should be called with new prefix"
 
 
 def test_append_to_unsynced_record_no_prompt(fpm):
@@ -341,7 +345,7 @@ def test_append_to_unsynced_record_no_prompt(fpm):
 def test_handle_unappendable_record_flow(fpm, monkeypatch):
     # Force is_appendable=False
     fpm.file_processor.appendable = False
-    
+
     prefix = "XYZ-TEST-sample01"
     record_id = IdGenerator.generate_record_id(prefix.lower())
     rec = LocalRecord(identifier=record_id)
