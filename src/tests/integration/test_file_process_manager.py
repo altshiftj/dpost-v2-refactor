@@ -2,7 +2,7 @@ from pathlib import Path
 import tkinter as tk
 import pytest
 from unittest.mock import MagicMock
-from src.processing.file_process_manager import FileProcessManager, BaseFileProcessor
+from src.processing.file_process_manager import FileProcessManager, FileProcessorBase
 from src.records.local_record import LocalRecord
 from src.records.id_generator import IdGenerator
 
@@ -24,7 +24,7 @@ def prevent_filesystem_writes(monkeypatch):
 # --- Dummy classes to simulate dependencies ---
 
 
-class DummyFileProcessor(BaseFileProcessor):
+class DummyFileProcessor(FileProcessorBase):
     def __init__(self, valid_datatype=True, appendable=True):
         self.valid_datatype = valid_datatype
         self.appendable = appendable

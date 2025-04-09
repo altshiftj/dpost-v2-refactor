@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from src.processing.metadata_extractor import MetadataExtractor
-from src.processing.file_processor_abstract import BaseFileProcessor
+from src.processing.file_processor_abstract import FileProcessorBase
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
 from src.processing.filename_validator import FilenameValidator
@@ -25,7 +25,7 @@ class FileProcessManager:
         ui: UserInterface,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        file_processor: BaseFileProcessor,
+        file_processor: FileProcessorBase,
     ):
         self.ui = ui
         self.session_manager = session_manager

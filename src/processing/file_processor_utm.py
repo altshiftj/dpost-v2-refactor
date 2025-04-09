@@ -1,21 +1,18 @@
-from abc import ABC, abstractmethod
+from src.processing.file_processor_abstract import FileProcessorBase
 from src.records.local_record import LocalRecord
 
-
-class FileProcessorBase(ABC):
+class FileProcessorUTM(FileProcessorBase):
     """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
+    File processor for UTM (Universal Test Machine) files.
+    Inherits from BaseFileProcessor and implements methods specific to UTM files.
     """
 
-    @abstractmethod
     def device_specific_preprocessing(self, src_path: str) -> str:
         """
         Method to implement optional preprocessing steps before routing the item.
         """
         pass
 
-    @abstractmethod
     def is_valid_datatype(self, path: str):
         """
         Checks if the file/folder at the given path is valid for this processor.
@@ -23,7 +20,6 @@ class FileProcessorBase(ABC):
         """
         pass
 
-    @abstractmethod
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
     ) -> bool:
@@ -33,10 +29,10 @@ class FileProcessorBase(ABC):
         """
         pass
 
-    @abstractmethod
     def device_specific_processing(self, source_path, record_path, file_id, extension):
         """
         Allows subclasses to implement custom moves, renames, or metadata extraction.
         Must return the final path of the processed item.
         """
         pass
+

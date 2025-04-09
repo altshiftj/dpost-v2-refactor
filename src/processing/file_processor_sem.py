@@ -3,13 +3,13 @@ import os
 from src.records.local_record import LocalRecord
 from src.storage.storage_manager import StorageManager
 from src.storage.path_manager import PathManager
-from src.processing.file_process_manager import BaseFileProcessor
+from src.processing.file_process_manager import FileProcessorBase
 from src.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
-class SEMFileProcessor(BaseFileProcessor):
+class FileProcessorSEM(FileProcessorBase):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
     """

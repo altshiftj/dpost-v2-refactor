@@ -15,7 +15,7 @@ from src.config.settings import WATCH_DIR
 from src.ui.ui_abstract import UserInterface
 from src.ui.ui_messages import ErrorMessages
 from src.handlers.file_event_handler import FileEventHandler
-from src.processing.file_process_manager import BaseFileProcessor, FileProcessManager
+from src.processing.file_process_manager import FileProcessorBase, FileProcessManager
 from src.sessions.session_manager import SessionManager
 from src.sync.sync_abstract import ISyncManager
 from src.app.logger import setup_logger
@@ -37,7 +37,7 @@ class DeviceWatchdogApp:
         self,
         ui: UserInterface,
         sync_manager: ISyncManager,
-        file_processor: BaseFileProcessor,
+        file_processor: FileProcessorBase,
     ):
         """
         Initializes the DeviceWatchdogApp with all necessary components.
