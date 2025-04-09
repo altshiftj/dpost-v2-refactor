@@ -3,6 +3,7 @@ import tkinter as tk
 import pytest
 from unittest.mock import MagicMock
 from src.processing.file_process_manager import FileProcessManager, FileProcessorBase
+from src.processing.filename_validator import FilenameValidator
 from src.records.local_record import LocalRecord
 from src.records.id_generator import IdGenerator
 
@@ -338,13 +339,13 @@ def test_append_to_unsynced_record_no_prompt(fpm):
 
 
 def test_handle_unappendable_record_flow(fpm, monkeypatch):
+    # Force is_appendable=False
+    fpm.file_processor.appendable = False
+    
     prefix = "XYZ-TEST-sample01"
     record_id = IdGenerator.generate_record_id(prefix.lower())
     rec = LocalRecord(identifier=record_id)
     fpm.records.records[record_id] = rec
-
-    # Force is_appendable=False
-    fpm.file_processor.appendable = False
 
     handle_unappendable_called = False
 
@@ -564,57 +565,6 @@ def test_add_item_to_record_success_path(fpm, monkeypatch):
     assert final_result["moved"] is True
     assert fpm.session_manager.start_session_called
     assert ("Success", "File renamed to 'fileid.txt'") in fpm.ui.calls["show_info"]
-
-
-def test_unappendable_record_flow(fpm, monkeypatch):
-    """
-    If 'is_appendable' returns False for an existing record,
-    the manager should:
-    - show a warning
-    - trigger the rename flow
-    - inject a contextual reason into the analysis
-    - route with new prefix if valid
-    """
-
-    # Setup
-    prefix = "abc-def-sample"
-    record_id = IdGenerator.generate_record_id(prefix)
-    existing_record = LocalRecord(identifier=record_id)
-    fpm.records.records[record_id] = existing_record
-
-    # Force is_appendable = False
-    fpm.file_processor.appendable = False
-
-    # Track warning display
-    warning_shown = False
-    def fake_show_warning(title, message):
-        nonlocal warning_shown
-        warning_shown = True
-    monkeypatch.setattr(fpm.ui, "show_warning", fake_show_warning)
-
-    # Simulate rename dialog result
-    rename_loop_called = False
-    def fake_rename_loop(prefix_arg, *args, **kwargs):
-        nonlocal rename_loop_called
-        rename_loop_called = True
-        return "abc-def-sample_renamed"
-
-    monkeypatch.setattr(fpm, "_interactive_rename_loop", fake_rename_loop)
-
-    # Track routing after rename
-    routed_prefix = None
-    def fake_route_item(src_path, new_prefix, extension):
-        nonlocal routed_prefix
-        routed_prefix = new_prefix
-    monkeypatch.setattr(fpm, "_route_item", fake_route_item)
-
-    # --- Act ---
-    fpm._route_item("/fake/path/ABC-DEF-sample.txt", prefix, ".txt")
-
-    # --- Assert ---
-    assert warning_shown, "Should show warning for unappendable record"
-    assert rename_loop_called, "Should enter rename loop for unappendable record"
-    assert routed_prefix == "abc-def-sample-renamed", "Should route renamed prefix"
 
 
 def test_add_item_to_record_exception(fpm, monkeypatch):
