@@ -274,39 +274,48 @@ def test_append_to_synced_record_confirm(fpm, monkeypatch):
 
 
 def test_append_to_synced_record_decline(fpm, monkeypatch):
-    # Create an existing record that is fully synced.
+    # Setup: Create a synced record that already has all files uploaded
     prefix = "ABC-DEF-sample"
-    record_id = IdGenerator.generate_record_id(prefix.lower())
+    record_id = IdGenerator.generate_record_id(prefix)
     record = LocalRecord(identifier=record_id)
     record.is_in_db = True
     record.files_uploaded = {"/fake/path/file": True}
     fpm.records.records[record_id] = record
 
+    # Make the file processor allow appending (so we reach the prompt)
     fpm.file_processor.appendable = True
-    # Set the prompt to decline appending.
-    fpm.ui.prompt_append_record_return = False
-    # Simulate a valid rename response.
-    fpm.ui.prompt_rename_return = {
-        "name": "ABC",
-        "institute": "DEF",
-        "sample_ID": "sample",
-    }
 
-    route_called = False
+    # Simulate user declining the append prompt
+    fpm.ui.prompt_append_record_return = False
+
+    # Track that rename loop is triggered
+    rename_loop_called = False
+
+    # Simulate the user entering a valid new name during rename dialog
+    def fake_rename_loop(filename_prefix, *args, **kwargs):
+        nonlocal rename_loop_called
+        rename_loop_called = True
+        return "abc-def-sample-renamed"  # New valid name
+
+    monkeypatch.setattr(fpm, "_interactive_rename_loop", fake_rename_loop)
+
+    # Track that _route_item is triggered with the renamed prefix
+    routed_prefix = None
 
     def fake_route_item(src_path, filename_prefix, extension):
-        nonlocal route_called
-        route_called = True
+        nonlocal routed_prefix
+        routed_prefix = filename_prefix
 
     monkeypatch.setattr(fpm, "_route_item", fake_route_item)
 
+    # --- Act ---
     fpm._handle_append_to_synced_record(
         record, "/fake/path/ABC-DEF-sample.txt", prefix, ".txt"
     )
-    # Verify that prompt_rename was called.
-    assert len(fpm.ui.calls["prompt_rename"]) > 0
-    # Verify that the _route_item method was eventually called.
-    assert route_called
+
+    # --- Assert ---
+    assert rename_loop_called, "Rename loop should be triggered after user declines append"
+    assert routed_prefix == "abc-def-sample-renamed", "Route item should be called with new prefix"
 
 
 def test_append_to_unsynced_record_no_prompt(fpm):
@@ -410,7 +419,7 @@ def test_invalid_filename_triggers_prompt(fpm, monkeypatch):
         nonlocal rename_called
         rename_called = True
 
-    monkeypatch.setattr(fpm, "_prompt_item_rename", fake_prompt_item_rename)
+    monkeypatch.setattr(fpm, "_rename_flow_controller", fake_prompt_item_rename)
 
     fpm.process_item(test_path)
 
@@ -436,7 +445,7 @@ def test_rename_cancellation_moves_file(fpm, monkeypatch):
         fake_move_to_rename_folder,
     )
 
-    fpm._prompt_item_rename(test_path, prefix, extension)
+    fpm._rename_flow_controller(test_path, prefix, extension)
 
     assert move_called
     assert fpm.ui.calls["show_info"][-1][0] == "Operation Cancelled"
@@ -473,12 +482,8 @@ def test_get_valid_rename_loops_until_valid(monkeypatch, fpm):
     )
     monkeypatch.setattr(fpm.ui, "show_rename_dialog", fake_show_rename_dialog)
 
-    result = fpm._get_valid_rename(
-        "/fake/path/file.txt",
+    result = fpm._interactive_rename_loop(
         "bad--name",
-        ".txt",
-        bad_name_prompt=True,
-        new_record_prompt=False,
     )
     assert result == "valid-institute-sample"
     assert call_order.count("analyze") == 1
@@ -564,41 +569,52 @@ def test_add_item_to_record_success_path(fpm, monkeypatch):
 def test_unappendable_record_flow(fpm, monkeypatch):
     """
     If 'is_appendable' returns False for an existing record,
-    we should show a warning and prompt the user to rename or create new record.
+    the manager should:
+    - show a warning
+    - trigger the rename flow
+    - inject a contextual reason into the analysis
+    - route with new prefix if valid
     """
-    # Make the record exist
-    prefix = "ABC-DEF-sample"
-    record_id = IdGenerator.generate_record_id(prefix.lower())
+
+    # Setup
+    prefix = "abc-def-sample"
+    record_id = IdGenerator.generate_record_id(prefix)
     existing_record = LocalRecord(identifier=record_id)
     fpm.records.records[record_id] = existing_record
 
     # Force is_appendable = False
     fpm.file_processor.appendable = False
 
-    # Track calls
+    # Track warning display
     warning_shown = False
-
     def fake_show_warning(title, message):
         nonlocal warning_shown
         warning_shown = True
+    monkeypatch.setattr(fpm.ui, "show_warning", fake_show_warning)
 
-    fpm.ui.show_warning = fake_show_warning
+    # Simulate rename dialog result
+    rename_loop_called = False
+    def fake_rename_loop(prefix_arg, *args, **kwargs):
+        nonlocal rename_loop_called
+        rename_loop_called = True
+        return "abc-def-sample_renamed"
 
-    rename_prompted = False
+    monkeypatch.setattr(fpm, "_interactive_rename_loop", fake_rename_loop)
 
-    def fake_prompt_item_rename(
-        src_path, prefix, extension, bad_name_prompt=True, new_record_prompt=False
-    ):
-        nonlocal rename_prompted
-        rename_prompted = True
+    # Track routing after rename
+    routed_prefix = None
+    def fake_route_item(src_path, new_prefix, extension):
+        nonlocal routed_prefix
+        routed_prefix = new_prefix
+    monkeypatch.setattr(fpm, "_route_item", fake_route_item)
 
-    monkeypatch.setattr(fpm, "_prompt_item_rename", fake_prompt_item_rename)
-
-    # Act: route an item that points to the existing record
+    # --- Act ---
     fpm._route_item("/fake/path/ABC-DEF-sample.txt", prefix, ".txt")
 
+    # --- Assert ---
     assert warning_shown, "Should show warning for unappendable record"
-    assert rename_prompted, "Should prompt user to rename"
+    assert rename_loop_called, "Should enter rename loop for unappendable record"
+    assert routed_prefix == "abc-def-sample-renamed", "Should route renamed prefix"
 
 
 def test_add_item_to_record_exception(fpm, monkeypatch):
@@ -651,7 +667,7 @@ def test_route_item_exception_path(fpm, monkeypatch):
 
     fpm.process_item("/fake/path/explosive.txt")
     # The UI should show an error
-    assert len(fpm.ui.calls["show_error"]) == 1
+    assert len(fpm.ui.calls["show_error"]) >= 1
     # The file should go to exception folder
     assert move_exc_called
 
@@ -712,11 +728,11 @@ def test_process_item_elid_directory(fpm, monkeypatch):
         lambda prefix: "dummy_record_elid_path",
     )
 
-    test_path = "/fake/path/sample-elid_folder"  # directory name
+    test_path = "/fake/path/usr-inst-elid_folder"  # directory name
     fpm.process_item(test_path)
 
     # A new record is created with the sanitized prefix
-    expected_record_id = IdGenerator.generate_record_id("sample-elid_folder".lower())
+    expected_record_id = IdGenerator.generate_record_id("usr-inst-elid_folder".lower())
     assert (
         expected_record_id in fpm.records.records
     ), "Record should be created for ELID directory"

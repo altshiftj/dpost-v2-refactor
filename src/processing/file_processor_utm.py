@@ -1,6 +1,7 @@
 from src.processing.file_processor_abstract import FileProcessorBase
 from src.records.local_record import LocalRecord
 
+
 class FileProcessorUTM(FileProcessorBase):
     """
     File processor for UTM (Universal Test Machine) files.
@@ -35,4 +36,3 @@ class FileProcessorUTM(FileProcessorBase):
         Must return the final path of the processed item.
         """
         pass
-

@@ -37,17 +37,16 @@ LOG_SYNC_INTERVAL = 60  # 1 minute
 
 ALLOWED_EXTENSIONS = {
     ".tiff",
-    ".tif"
-    ".TIFF",
+    ".tif" ".TIFF",
     ".TIF",
 }
 
 DEBOUNCE_TIME = 6
 
 # TODO move rem related metainfo to rem space
-DEVICE_ID = "rem_phenom"
-DEVICE_RECORD_ID = 1
-DEVICE_USER_ID = 2
+DEVICE_USER_KADI_ID = "test-rem-01-usr"
+DEVICE_USER_PERSISTENT_ID = 14
+DEVICE_RECORD_PERSISTENT_ID = 172
 DEVICE_TYPE = "REM"
 DEFAULT_REM_RECORD_DESCRIPTION = r"""
 # Default Description
