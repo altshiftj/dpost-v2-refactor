@@ -2,8 +2,13 @@
 /wdvenv/
 /dist/
 /build/
-/Data/
-/Upload_Ordner/
+
+Data/*
+!Data/.gitkeep
+
+Upload_Ordner/*
+!Upload_Ordner/.gitkeep
+
 /testing_data/
 /.pytest_cache/
 /.vscode/
