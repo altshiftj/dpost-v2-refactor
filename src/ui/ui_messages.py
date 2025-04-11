@@ -133,6 +133,16 @@ class DialogPrompts:
         "Record '{record_name}' already exists. Add file to existing record?"
     )
 
+    APPEND_RECORD_CANCEL_CONTEXT = (
+        "Record '{record_id}' already exists, but you chose not to append. "
+        "Please choose a different name."
+    )
+
+    UNAPPENDABLE_RECORD_CONTEXT = (
+        "Record '{record_id}' already exists, and cannot be appended. "
+        "Please choose a different name."
+    )
+
     # Entry field placeholders
     PLACEHOLDER_USER_ID = "Ex: mus"
     PLACEHOLDER_INSTITUTE = "Ex: ipat"

@@ -13,7 +13,7 @@ from src.records.record_manager import RecordManager
 from src.sync.sync_abstract import ISyncManager
 from src.app.logger import setup_logger
 from src.ui.ui_abstract import UserInterface
-from src.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages
+from src.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
 
 logger = setup_logger(__name__)
 
@@ -161,26 +161,27 @@ class FileProcessManager:
             src_path,
             filename_prefix,
             extension,
-            contextual_reason=(
-                f"Record '{filename_prefix}' already exists, "
-                "and cannot be appended. Please choose a different name."
+            contextual_reason=DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
+                record_id=filename_prefix
             ),
         )
 
     def _handle_append_to_synced_record(
         self, record, src_path, filename_prefix, extension
     ):
+        # ask user if they want to append to existing record
         if self.ui.prompt_append_record(filename_prefix):
             self.add_item_to_record(record, src_path, filename_prefix, extension)
+        
+        # if user chooses not to append, rename the file
         else:
             self._rename_flow_controller(
                 src_path,
                 filename_prefix,
                 extension,
-                contextual_reason=(
-                    f"Record '{filename_prefix}' already exists, "
-                    "but you chose not to append. Please choose a different name."
-                ),
+                contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(
+                    record_id=filename_prefix
+                )
             )
 
     def _rename_flow_controller(
