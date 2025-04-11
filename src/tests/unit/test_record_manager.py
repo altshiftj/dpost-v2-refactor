@@ -108,3 +108,17 @@ def test_persist_records_dict_lazy_loads_once(mock_sync_manager):
         _ = manager.persist_records_dict
 
         mock_load.assert_called_once()
+
+
+def test_sync_record_deletes_if_no_files_remain(record_manager):
+    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record.files_uploaded = {"dummy_path": False}
+    record_manager._persist_records_dict = {"dev-usr-ipat-sample": record}
+
+    record_manager.sync.sync_record_to_database = MagicMock(return_value=False)
+
+    with patch("src.records.record_persistence.save_persisted_records") as mock_save:
+        record_manager._sync_record(record)
+
+    assert "dev-usr-ipat-sample" not in record_manager._persist_records_dict
+    mock_save.assert_called_once()

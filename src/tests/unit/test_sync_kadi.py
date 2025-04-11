@@ -264,3 +264,20 @@ def test_upload_record_files_missing_file(dummy_ui_instance):
     assert "/dummy/path/file1.tif" not in record.files_uploaded
     assert record.files_uploaded["/dummy/path/file2.tif"] is True
     assert len(dummy_record.uploaded_files) == 1
+
+def test_upload_record_files_returns_false_when_all_missing(dummy_ui_instance):
+    record = LocalRecord(identifier="abc-ipat-sample1")
+    record.files_uploaded = {
+        "/dummy/path/missing1.tif": False,
+        "/dummy/path/missing2.tif": False,
+    }
+    dummy_record = DummyKadiRecord()
+
+    # Raise FileNotFoundError for every file
+    dummy_record.upload_file = MagicMock(side_effect=FileNotFoundError)
+
+    sync_mgr = KadiSyncManager(ui=dummy_ui_instance)
+    result = sync_mgr._upload_record_files(dummy_record, record)
+
+    assert result is False
+    assert record.files_uploaded == {}

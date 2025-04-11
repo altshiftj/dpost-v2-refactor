@@ -50,7 +50,7 @@ class KadiSyncManager(ISyncManager):
         self.db_manager = KadiManager()
         self.ui = ui
 
-    def sync_record_to_database(self, local_record: LocalRecord):
+    def sync_record_to_database(self, local_record: LocalRecord) -> bool:
         """
         Synchronizes a LocalRecord object to the remote database.
         The workflow is:
@@ -61,9 +61,7 @@ class KadiSyncManager(ISyncManager):
         """
         try:
             with self.db_manager as db_manager:
-                # Prepare all required resources as a SyncResources dataclass.
                 resources = self._prepare_resources(db_manager, local_record)
-                # Initialize the record if it's not in the DB.
                 self._initialize_new_db_record(
                     local_record=local_record,
                     db_record=resources.db_record,
@@ -72,13 +70,11 @@ class KadiSyncManager(ISyncManager):
                     db_user_group=resources.user_group,
                     db_device_data_group=resources.device_group,
                 )
-                # Upload any pending files.
-                self._upload_record_files(resources.db_record, local_record)
-                # Mark the local record as synced.
+                files_remaining = self._upload_record_files(resources.db_record, local_record)
                 local_record.is_in_db = True
-                logger.info(
-                    f"All files for record '{local_record.identifier}' have been synced to the database."
-                )
+                logger.info(f"All files for record '{local_record.identifier}' have been synced to the database.")
+                return files_remaining
+            
         except Exception as e:
             logger.exception(f"Failed to upload files to the database: {e}")
             raise e
@@ -230,10 +226,11 @@ class KadiSyncManager(ISyncManager):
                 f"Initialized new database record '{local_record.identifier}' with attributes and tags."
             )
 
-    def _upload_record_files(self, db_record: KadiRecord, local_record: LocalRecord):
+    def _upload_record_files(self, db_record: KadiRecord, local_record: LocalRecord) -> bool:
         """
         Uploads any pending files from local_record to the database.
         Marks each file as uploaded, and removes missing files.
+        Returns True if any files remain associated with the record.
         """
         missing_files = []
         for file_path, uploaded in local_record.files_uploaded.items():
@@ -247,15 +244,15 @@ class KadiSyncManager(ISyncManager):
                     missing_files.append(file_path)
                     continue
                 except Exception as e:
-                    logger.exception(
-                        f"Failed to upload file: {os.path.basename(file_path)}"
-                    )
+                    logger.exception(f"Failed to upload file: {os.path.basename(file_path)}")
                     raise e
+
         for file_path in missing_files:
             del local_record.files_uploaded[file_path]
-            logger.debug(
-                f"Removed missing file '{os.path.basename(file_path)}' from local record."
-            )
+            logger.debug(f"Removed missing file '{os.path.basename(file_path)}' from local record.")
+
+        # Return whether any files are still associated
+        return bool(local_record.files_uploaded)
 
     def sync_logs_to_database(self):
         """

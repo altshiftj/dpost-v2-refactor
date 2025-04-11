@@ -118,5 +118,10 @@ class RecordManager:
         self.persist_records_dict[record.identifier] = record
 
     def _sync_record(self, record: LocalRecord):
-        self.sync.sync_record_to_database(record)
+        files_remaining = self.sync.sync_record_to_database(record)
+
+        if not files_remaining:
+            logger.info(f"No files left for record '{record.identifier}', removing from local store.")
+            del self.persist_records_dict[record.identifier]
+
         self.save_records()
