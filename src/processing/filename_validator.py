@@ -1,6 +1,7 @@
 import re
 from src.config.settings import FILENAME_PATTERN, ID_SEP
 from src.app.logger import setup_logger
+from src.ui.ui_messages import ValidationMessages
 
 logger = setup_logger(__name__)
 
@@ -69,7 +70,7 @@ class FilenameValidator:
 
             if len(segments) != 3:
                 result["reasons"].append(
-                    f"Filename must have exactly 3 parts separated by '{ID_SEP}'."
+                    ValidationMessages.MISSING_SEPARATOR
                 )
                 for i, char in enumerate(filename):
                     if char == ID_SEP:
@@ -89,7 +90,7 @@ class FilenameValidator:
 
                 # --- Check user ID ---
                 if not re.fullmatch(r"[A-Za-z]+", user):
-                    result["reasons"].append("User ID must contain only letters.")
+                    result["reasons"].append(ValidationMessages.USER_ONLY_LETTERS)
                     for i, char in enumerate(user):
                         if not re.match(r"[A-Za-z]", char):
                             result["highlight_spans"].append(
@@ -98,7 +99,7 @@ class FilenameValidator:
 
                 # --- Check institute ---
                 if not re.fullmatch(r"[A-Za-z]+", institute):
-                    result["reasons"].append("Institute must contain only letters.")
+                    result["reasons"].append(ValidationMessages.INSTITUTE_ONLY_LETTERS)
                     for i, char in enumerate(institute):
                         if not re.match(r"[A-Za-z]", char):
                             result["highlight_spans"].append(
@@ -108,12 +109,12 @@ class FilenameValidator:
                 # --- Check sample ID ---
                 if len(sample) > 30:
                     result["reasons"].append(
-                        "Sample name must be 30 characters or fewer."
+                        ValidationMessages.SAMPLE_TOO_LONG
                     )
 
                 if not re.fullmatch(r"^[A-Za-z0-9_ ]+", sample):
                     result["reasons"].append(
-                        "Sample may only contain letters, digits, underscores/spaces."
+                        ValidationMessages.SAMPLE_INVALID_CHARS
                     )
                     for i, char in enumerate(sample):
                         if not re.match(r"[A-Za-z0-9_ ]", char):
@@ -143,10 +144,13 @@ class FilenameValidator:
             "highlight_spans": [],
         }
 
+        # NOT SURE IF THIS CODE IS NEEDED
+        # ********
         if dialog_result is None:
             output["valid"] = False
             output["reasons"].append("User cancelled the dialog.")
             return output
+        # ********
 
         user_id = dialog_result.get("name", "").strip()
         institute = dialog_result.get("institute", "").strip()

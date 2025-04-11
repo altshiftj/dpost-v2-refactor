@@ -38,6 +38,13 @@ class ErrorMessages:
         "An unexpected error occurred. Please contact the administrator."
     )
 
+    PROCESSING_ERROR = "Processing Error"
+    PROCESSING_ERROR_DETAILS = ( 
+        "Failed to process file: {filename}\n"
+        "File has been moved to the exception folder.\n"
+        "Error: {error}"
+    )
+
     SESSION_END_ERROR = "Session End Error"
     SESSION_END_ERROR_DETAILS = "An error occurred during session end: {error}"
 
@@ -65,7 +72,7 @@ class WarningMessages:
     )
 
     # Naming convention warnings
-    INVALID_NAME = "Invalid Name"
+    INVALID_NAME = "Invalid Filename"
     INVALID_NAME_DETAILS = (
         "'{filename}{extension}' does not follow the naming convention.\n"
         "Format: User-Institute-Sample_Name\n"
@@ -105,7 +112,7 @@ class InfoMessages:
 
     # Session messages
     SESSION_ACTIVE = "Session Active"
-    SESSION_ACTIVE_DETAILS = "A session is in progress. Click 'Done' when finished."
+    SESSION_ACTIVE_DETAILS = "A session is in progress. Click 'Done' when finished adding files."
 
 
 # ===============================================================================
@@ -118,6 +125,7 @@ class DialogPrompts:
 
     # Rename dialog
     RENAME_FILE = "Rename File"
+    RENAME_EXAMPLE = "Example: MuS-inst-Sample_A"
 
     # Record prompts
     APPEND_RECORD = "Append to Existing Record"
@@ -134,3 +142,11 @@ class DialogPrompts:
     LABEL_NAME = "Name (Initials):"
     LABEL_INSTITUTE = "Institute (Initials):"
     LABEL_SAMPLE_NAME = "Sample Name:"
+
+
+class ValidationMessages:
+    MISSING_SEPARATOR = "Filename must have exactly 3 parts separated by '-'."  
+    USER_ONLY_LETTERS = "User ID must contain only letters."
+    INSTITUTE_ONLY_LETTERS = "Institute must contain only letters."
+    SAMPLE_TOO_LONG = "Sample name must be 30 characters or fewer."
+    SAMPLE_INVALID_CHARS = "Sample may only contain letters, digits, underscores/spaces."

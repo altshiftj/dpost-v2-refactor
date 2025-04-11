@@ -8,7 +8,7 @@ It provides reusable dialog components that encapsulate specific UI interactions
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from typing import Dict, Optional, Any
-from src.ui.ui_messages import DialogPrompts, InfoMessages
+from src.ui.ui_messages import DialogPrompts, InfoMessages, WarningMessages 
 
 
 class EntryWithPlaceholder(tk.Entry):
@@ -120,11 +120,11 @@ class RenameDialog(simpledialog.Dialog):
 
     def body(self, master: tk.Frame) -> tk.Widget:
         tk.Label(
-            master, text="Example: MuS-inst-Sample_A", font=("Arial", 10, "italic")
+            master, text=DialogPrompts.RENAME_EXAMPLE, font=("Arial", 10, "italic")
         ).pack(pady=(5, 0))
 
         # --- Highlighted Filename Display ---
-        tk.Label(master, text="Invalid Filename:", font=("Arial", 10, "bold")).pack(
+        tk.Label(master, text=WarningMessages.INVALID_NAME, font=("Arial", 10, "bold")).pack(
             pady=(5, 0)
         )
 
@@ -149,13 +149,13 @@ class RenameDialog(simpledialog.Dialog):
         form_frame = tk.Frame(master)
         form_frame.pack(pady=(10, 0), padx=10, fill="x")
 
-        tk.Label(form_frame, text="Name (Initials):").grid(
+        tk.Label(form_frame, text=DialogPrompts.LABEL_NAME).grid(
             row=0, column=0, sticky="e", padx=5, pady=2
         )
-        tk.Label(form_frame, text="Institute (Initials):").grid(
+        tk.Label(form_frame, text=DialogPrompts.LABEL_INSTITUTE).grid(
             row=1, column=0, sticky="e", padx=5, pady=2
         )
-        tk.Label(form_frame, text="Sample Name:").grid(
+        tk.Label(form_frame, text=DialogPrompts.LABEL_SAMPLE_NAME).grid(
             row=2, column=0, sticky="e", padx=5, pady=2
         )
 
@@ -190,8 +190,8 @@ class RenameDialog(simpledialog.Dialog):
 
         if not user or not institute or not sample:
             messagebox.showerror(
-                "All fields required",
-                "All fields are required. Please try again.",
+                WarningMessages.INCOMPLETE_INFO,
+                WarningMessages.INCOMPLETE_INFO_DETAILS,
                 parent=self,
             )
             return False

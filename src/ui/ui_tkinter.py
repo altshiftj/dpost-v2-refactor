@@ -115,9 +115,9 @@ class TKinterUI(UserInterface):
         )
         done_button.pack(pady=10)
 
-        done_dialog.protocol(
-            "WM_DELETE_WINDOW", lambda: self._close_dialog(done_dialog)
-        )
+        # Disable 'X' button by overriding close protocol with a no-op
+        done_dialog.protocol("WM_DELETE_WINDOW", lambda: None)
+        
         self._active_dialogs["done_dialog"] = done_dialog
 
     def get_root(self) -> tk.Tk:

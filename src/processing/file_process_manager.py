@@ -57,17 +57,17 @@ class FileProcessManager:
             self._route_item(src_path, filename_prefix, extension)
         except Exception as e:
             logger.exception(f"Error while routing item: {e}")
-            self.ui.show_error(
-                "Processing Error", f"Failed to process file '{src_path}': {str(e)}"
-            )
 
             self._move_to_exception_and_inform(
                 src_path,
                 filename_prefix,
                 extension,
-                severity="Error",
-                message="Failed to process file.",
+                severity=ErrorMessages.PROCESSING_ERROR,
+                message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
+                    filename=Path(src_path).name, error=str(e)
+                ),
             )
+
 
     def _parse_filename(self, src_path: str) -> tuple[str, str]:
         p = Path(src_path)
