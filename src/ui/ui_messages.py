@@ -19,8 +19,6 @@ Using a centralized message repository makes it easier to:
 class ErrorMessages:
     """Error messages displayed to the user."""
 
-    GENERAL_ERROR = "Error"
-
     # General errors
     RENAME_FAILED = "Failed to rename: {error}"
 
@@ -73,18 +71,6 @@ class WarningMessages:
 
     # Naming convention warnings
     INVALID_NAME = "Invalid Filename"
-    INVALID_NAME_DETAILS = (
-        "'{filename}{extension}' does not follow the naming convention.\n"
-        "Format: User-Institute-Sample_Name\n"
-        "No special characters (e.g., !@#$%^&*-+=)\n"
-        "30 character limit for Sample Name."
-    )
-
-    INVALID_CHARACTERS = "Invalid Name"
-    INVALID_CHARACTERS_DETAILS = (
-        "Please avoid special characters (e.g., !@#$%^&*-+=)\n"
-        "30 character limit for Sample Name."
-    )
 
     INCOMPLETE_INFO = "Incomplete Information"
     INCOMPLETE_INFO_DETAILS = "All fields are required. Please try again."
@@ -105,10 +91,6 @@ class InfoMessages:
     # Operation cancelled messages
     OPERATION_CANCELLED = "Operation Cancelled"
     MOVED_TO_RENAME = "The item has been moved to the rename folder."
-
-    # New record messages
-    NEW_RECORD = "New Record"
-    NEW_RECORD_DETAILS = "Please enter a name for the new record."
 
     # Session messages
     SESSION_ACTIVE = "Session Active"
@@ -146,7 +128,7 @@ class DialogPrompts:
     # Entry field placeholders
     PLACEHOLDER_USER_ID = "Ex: mus"
     PLACEHOLDER_INSTITUTE = "Ex: ipat"
-    PLACEHOLDER_SAMPLE_ID = "Ex: ivtrap_a01"
+    PLACEHOLDER_SAMPLE_ID = "Ex: Sample_a01"
 
     # Field labels
     LABEL_NAME = "Name (Initials):"

@@ -8,7 +8,7 @@ It provides reusable dialog components that encapsulate specific UI interactions
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from typing import Dict, Optional, Any
-from src.ui.ui_messages import DialogPrompts, InfoMessages, WarningMessages 
+from src.ui.ui_messages import DialogPrompts, WarningMessages 
 
 
 class EntryWithPlaceholder(tk.Entry):
