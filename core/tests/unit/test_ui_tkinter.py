@@ -40,7 +40,7 @@ def test_show_error(ui_instance):
 
 
 def test_show_rename_dialog(ui_instance):
-    with patch("src.ui.ui_tkinter.RenameDialog") as MockDialog:
+    with patch("core.ui.ui_tkinter.RenameDialog") as MockDialog:
         MockDialog.return_value.result = {
             "name": "alice",
             "institute": "lab",

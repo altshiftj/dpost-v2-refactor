@@ -1,0 +1,2 @@
+[console_scripts]
+device_watchdog = main:main

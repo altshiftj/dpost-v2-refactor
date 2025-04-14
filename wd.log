@@ -1,0 +1,42 @@
+2025-04-13 23:48:50,660 - core.records.record_manager - DEBUG - Lazy loading persisted records from disk...
+2025-04-13 23:48:50,660 - core.storage.filesystem_utils - DEBUG - JSON data loaded from 'C:\Repos\Gitlab\ipat_data_watchdog\Data\record_persistence.json'.
+2025-04-13 23:48:50,661 - core.records.local_record - DEBUG - All files uploaded for record 'rem-jfi-ipat-testingabc': True
+2025-04-13 23:48:50,661 - core.records.record_manager - DEBUG - All records uploaded: True
+2025-04-13 23:48:50,663 - core.device_watchdog_app - INFO - Monitoring directory: C:\Repos\Gitlab\ipat_data_watchdog\Upload_Ordner
+2025-04-13 23:48:51,678 - core.records.record_manager - INFO - Starting synchronization of logs to the database.
+2025-04-13 23:48:54,919 - core.sync.sync_kadi - INFO - Uploaded log file to the database.
+2025-04-13 23:48:54,925 - core.records.record_manager - INFO - Synchronization of logs completed.
+2025-04-13 23:49:28,119 - devices.SEM_TischREM_BLB.file_processor_tischrem - DEBUG - Renamed file: /path/to/image3.tif -> \path\to\image.tif, removed trailing digit.
+2025-04-13 23:49:28,322 - core.records.local_record - WARNING - Identifier 'null' does not conform to expected format.
+2025-04-13 23:49:28,425 - core.records.local_record - DEBUG - Added file to record: \path\to\fake_file.tif
+2025-04-13 23:49:28,451 - core.records.local_record - DEBUG - Added file to record from directory: \path\to\fake_dir\file1.tif
+2025-04-13 23:49:28,457 - core.records.local_record - DEBUG - Added file to record from directory: \path\to\fake_dir\subdir\file2.tif
+2025-04-13 23:49:28,474 - core.records.local_record - WARNING - Path '\some\odd\path' is neither a file nor a directory.
+2025-04-13 23:49:28,481 - core.records.local_record - DEBUG - Marked file as uploaded: C:\path\to\fake_file.tif
+2025-04-13 23:49:28,491 - core.records.local_record - WARNING - Tried to mark non-existent file as uploaded: C:\file\not\in\record
+2025-04-13 23:49:28,496 - core.records.local_record - DEBUG - All files uploaded for record 'dev-jdoe-ipat-sample_1': True
+2025-04-13 23:49:28,502 - core.records.local_record - DEBUG - All files uploaded for record 'dev-jdoe-ipat-sample_1': False
+2025-04-13 23:49:29,430 - core.records.local_record - WARNING - Identifier 'x' does not conform to expected format.
+2025-04-13 23:49:29,703 - core.sessions.session_manager - DEBUG - Starting a new session.
+2025-04-13 23:49:29,873 - core.sessions.session_manager - DEBUG - Ending the current session.
+2025-04-13 23:49:29,878 - core.sessions.session_manager - DEBUG - Resetting session timeout timer.
+2025-04-13 23:49:29,900 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,917 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,931 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,947 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,947 - core.sync.sync_kadi - DEBUG - Created new group with ID: null-null-rawdata-group
+2025-04-13 23:49:29,965 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,981 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,982 - core.sync.sync_kadi - DEBUG - Initialized new database record 'abc-ipat-sample1' with attributes and tags.
+2025-04-13 23:49:29,992 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,992 - core.sync.sync_kadi - DEBUG - Uploaded file: file1.tif
+2025-04-13 23:49:29,993 - core.sync.sync_kadi - DEBUG - Uploaded file: file2.tif
+2025-04-13 23:49:29,997 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:29,997 - core.sync.sync_kadi - WARNING - File not found: file1.tif
+2025-04-13 23:49:29,997 - core.sync.sync_kadi - DEBUG - Uploaded file: file2.tif
+2025-04-13 23:49:29,997 - core.sync.sync_kadi - DEBUG - Removed missing file 'file1.tif' from local record.
+2025-04-13 23:49:30,008 - core.records.local_record - WARNING - Identifier 'abc-ipat-sample1' does not conform to expected format.
+2025-04-13 23:49:30,008 - core.sync.sync_kadi - WARNING - File not found: missing1.tif
+2025-04-13 23:49:30,008 - core.sync.sync_kadi - WARNING - File not found: missing2.tif
+2025-04-13 23:49:30,008 - core.sync.sync_kadi - DEBUG - Removed missing file 'missing1.tif' from local record.
+2025-04-13 23:49:30,008 - core.sync.sync_kadi - DEBUG - Removed missing file 'missing2.tif' from local record.

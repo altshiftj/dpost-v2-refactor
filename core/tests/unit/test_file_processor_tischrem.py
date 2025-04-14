@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from unittest.mock import patch
-from core.processing.file_processor_sem import FileProcessorSEM
+from devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
 from core.records.local_record import LocalRecord
 
 # -----------------------
@@ -11,7 +11,7 @@ from core.records.local_record import LocalRecord
 
 @pytest.fixture
 def processor():
-    return FileProcessorSEM()
+    return FileProcessorTischREM()
 
 
 @pytest.fixture

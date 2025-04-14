@@ -9,7 +9,7 @@
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false,
     "python.testing.pytestArgs": [
-        "src"
+        "core"
     ],
     "terminal.integrated.env.windows": {
         "PYTHONPATH": "${workspaceFolder}"

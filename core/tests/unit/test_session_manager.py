@@ -2,7 +2,6 @@ import pytest
 from unittest.mock import MagicMock
 
 from core.sessions.session_manager import SessionManager
-from core.config.constants import SESSION_TIMEOUT
 
 
 @pytest.fixture
@@ -35,7 +34,7 @@ def test_start_session(dummy_ui):
 
     # A timeout should be scheduled with SESSION_TIMEOUT * 1000 ms.
     dummy_ui.schedule_task.assert_called_with(
-        SESSION_TIMEOUT * 1000, session_manager.end_session
+        1 * 1000, session_manager.end_session
     )
 
     # A done dialog should be shown (its argument is a callable).

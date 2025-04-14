@@ -8,11 +8,10 @@ from core.processing.file_processor_sem import FileProcessorSEM
 
 
 def main():
-    logger = setup_logger(__name__)
-
     device_settings = TischREMSettings()
-
     SettingsStore.set(device_settings)
+
+    logger = setup_logger(__name__)
 
     app = DeviceWatchdogApp(
         ui=TKinterUI(),
