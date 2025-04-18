@@ -1,0 +1,31 @@
+from ipat_watchdog.app.logger import setup_logger
+logger = setup_logger(__name__)    
+
+from ipat_watchdog.app.device_watchdog_app import DeviceWatchdogApp
+from ipat_watchdog.plugins.loader import load_device_plugin
+from ipat_watchdog.config.settings_store import SettingsStore
+from ipat_watchdog.sync.sync_kadi import KadiSyncManager
+from ipat_watchdog.ui.ui_tkinter import TKinterUI
+from ipat_watchdog.storage.filesystem_utils import init_dirs
+
+
+
+def main():
+    plugin = load_device_plugin("SEM_TischREM_BLB")
+    SettingsStore.set(plugin.get_settings())
+    init_dirs()
+
+    ui = TKinterUI()
+    sync = KadiSyncManager(ui=ui)
+    file_processor = plugin.get_file_processor()
+
+    app = DeviceWatchdogApp(
+        ui=ui,
+        sync_manager=sync,
+        file_processor=file_processor,
+    )
+    app.run()
+
+
+if __name__ == "__main__":
+    main()

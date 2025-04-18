@@ -1,0 +1,2 @@
+[console_scripts]
+ipat-watchdog = ipat_watchdog.__main__:main

@@ -1,0 +1,11 @@
+kadi-apy
+watchdog
+pytest
+pyinstaller
+prometheus_client
+python-dotenv
+
+[dev]
+ruff
+black
+mypy
