@@ -1,111 +1,83 @@
 import pytest
-from unittest.mock import MagicMock
-
-from core.sessions.session_manager import SessionManager
+from sessions.session_manager import SessionManager
 
 
-@pytest.fixture
-def dummy_ui():
-    """
-    Provides a dummy UI that simulates the UserInterface.
-    The schedule_task method returns a fixed dummy timer ID.
-    """
-    ui = MagicMock()
-    ui.schedule_task.return_value = "dummy_timer"
-    return ui
-
-
-def test_start_session(dummy_ui):
+def test_start_session(fake_ui, tmp_settings):
     """
     When start_session() is called on an inactive session,
     it should mark the session as active, schedule a timeout task,
-    and show the done dialog.
+    and show the done dialog — but not end the session unless the user says so.
     """
-    session_manager = SessionManager(ui=dummy_ui)
-    # Initial state: inactive, no timer scheduled.
+    fake_ui.auto_close_session = False  # Control when session ends
+    session_manager = SessionManager(ui=fake_ui)
+
     assert not session_manager.session_active
     assert session_manager.timer_id is None
 
-    # Start the session.
     session_manager.start_session()
 
-    # The session should now be active.
     assert session_manager.session_active is True
-
-    # A timeout should be scheduled with SESSION_TIMEOUT * 1000 ms.
-    dummy_ui.schedule_task.assert_called_with(
-        1 * 1000, session_manager.end_session
-    )
-
-    # A done dialog should be shown (its argument is a callable).
-    dummy_ui.show_done_dialog.assert_called()
-
-    # The timer_id should be updated.
-    assert session_manager.timer_id == "dummy_timer"
+    assert session_manager.timer_id == 1  # HeadlessUI returns task handle as int
 
 
-def test_end_session(dummy_ui):
+def test_end_session_calls_callback(fake_ui, tmp_settings):
     """
-    When end_session() is invoked on an active session,
-    it should mark the session inactive, cancel the timer,
-    and invoke the end-session callback if provided.
+    When end_session() is called, the session should deactivate,
+    cancel its timer, and invoke the callback.
     """
-    dummy_callback = MagicMock()
-    session_manager = SessionManager(ui=dummy_ui, end_session_callback=dummy_callback)
+    ended = []
+
+    def on_done():
+        ended.append(True)
+
+    session_manager = SessionManager(ui=fake_ui, end_session_callback=on_done)
     session_manager.session_active = True
-    session_manager.timer_id = "dummy_timer"
+    session_manager.timer_id = 1
 
-    # End the session.
     session_manager.end_session()
 
-    # The session should be inactive.
     assert session_manager.session_active is False
-
-    # The timer should be cancelled.
-    dummy_ui.cancel_task.assert_called_with("dummy_timer")
     assert session_manager.timer_id is None
-
-    # The end-session callback should be called.
-    dummy_callback.assert_called_once()
+    assert ended == [True]
 
 
-def test_reset_timer_when_session_active(dummy_ui):
-    """
-    If the session is active and reset_timer() is called,
-    the existing timer is cancelled and a new one is scheduled.
-    """
-    session_manager = SessionManager(ui=dummy_ui)
+def test_reset_timer_reschedules(fake_ui, tmp_settings):
+    session_manager = SessionManager(ui=fake_ui)
     session_manager.session_active = True
-    session_manager.timer_id = "old_timer"
+    session_manager.timer_id = 1
 
-    # Call reset_timer.
     session_manager.reset_timer()
 
-    # The old timer should be cancelled.
-    dummy_ui.cancel_task.assert_called_with("old_timer")
-
-    # A new timeout should be scheduled.
-    dummy_ui.schedule_task.assert_called_with(
-        SESSION_TIMEOUT * 1000, session_manager.end_session
-    )
-
-    # Timer id should be updated.
-    assert session_manager.timer_id == "dummy_timer"
+    assert session_manager.timer_id == 2
+    assert fake_ui.scheduled_tasks[-1][0] == tmp_settings.SESSION_TIMEOUT * 1000
 
 
-def test_reset_timer_when_session_inactive(dummy_ui):
+def test_reset_timer_when_inactive_does_nothing(fake_ui, tmp_settings):
     """
-    If the session is inactive, reset_timer() should do nothing.
+    When reset_timer() is called on an inactive session, it should not schedule anything.
     """
-    session_manager = SessionManager(ui=dummy_ui)
+    session_manager = SessionManager(ui=fake_ui)
     session_manager.session_active = False
-    session_manager.timer_id = "old_timer"
+    session_manager.timer_id = None
 
-    # Call reset_timer.
     session_manager.reset_timer()
 
-    # schedule_task should not be called.
-    dummy_ui.schedule_task.assert_not_called()
+    assert session_manager.timer_id is None
+    assert fake_ui.scheduled_tasks == []
 
-    # Timer id remains unchanged.
-    assert session_manager.timer_id == "old_timer"
+
+def test_auto_end_session(fake_ui, tmp_settings):
+    """
+    If HeadlessUI is set to auto-close sessions, start_session() should immediately end it.
+    """
+    fake_ui.auto_close_session = True
+    ended = []
+
+    def on_done():
+        ended.append(True)
+
+    session_manager = SessionManager(ui=fake_ui, end_session_callback=on_done)
+    session_manager.start_session()
+
+    assert session_manager.session_active is False
+    assert ended == [True]

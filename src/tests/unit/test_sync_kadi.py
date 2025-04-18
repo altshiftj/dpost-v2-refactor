@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from core.sync.sync_kadi import KadiSyncManager
-from core.records.local_record import LocalRecord
+from sync.sync_kadi import KadiSyncManager
+from records.local_record import LocalRecord
 
 
 # --- Dummy Classes to Simulate KadiManager Resources ---
@@ -91,7 +91,8 @@ def dummy_ui_instance():
 
 
 @pytest.fixture
-def local_record(tmp_path):
+def local_record(tmp_path, tmp_settings):
+    # tmp_settings ensures SettingsStore is initialized before LocalRecord.__post_init__
     fake_file = tmp_path / "image.tif"
     fake_file.write_text("dummy image data")
     record = LocalRecord(
@@ -105,67 +106,55 @@ def local_record(tmp_path):
 
 
 @pytest.fixture
-def mocked_settings():
-    settings = MagicMock()
-    settings.ID_SEP = "-"
-    settings.DEVICE_RECORD_PERSISTENT_ID = 42
-    settings.DEVICE_USER_KADI_ID = "deviceuser"
-    settings.DEVICE_USER_PERSISTENT_ID = 99
-    settings.DEFAULT_RECORD_DESCRIPTION = "Test Description"
-    settings.RECORD_TAGS = ["Electron Microscopy"]
-    settings.LOG_FILE = "/dummy/logfile.log"
-    return settings
-
-
-@pytest.fixture
-def sync_mgr(dummy_ui_instance, mocked_settings):
-    return KadiSyncManager(ui=dummy_ui_instance, settings=mocked_settings)
-
-
-# --- Updated Unit Tests ---
+def sync_mgr(fake_ui, tmp_settings, monkeypatch):
+    # Monkey-patch KadiManager inside the module under test
+    import sync.sync_kadi as _mod
+    monkeypatch.setattr(_mod, "KadiManager", DummyKadiManager)
+    return KadiSyncManager(ui=fake_ui)
 
 
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):
-    dummy_manager = DummyKadiManager()
-    dummy_manager.user = MagicMock(return_value=DummyKadiUser("abc-ipat"))
-    user = sync_mgr._get_db_user_from_local_record(dummy_manager, local_record)
+    dummy_mgr = DummyKadiManager()
+    dummy_mgr.user.return_value = DummyKadiUser("abc-ipat")
+    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
     assert user.id == "abc-ipat"
 
 
-def test_get_db_user_from_local_record_user_not_found(sync_mgr, dummy_ui_instance, local_record):
-    dummy_manager = DummyKadiManager()
-    dummy_manager.user = MagicMock(side_effect=Exception("User not found"))
-    user = sync_mgr._get_db_user_from_local_record(dummy_manager, local_record)
+def test_get_db_user_from_local_record_user_not_found(sync_mgr, fake_ui, local_record):
+    dummy_mgr = DummyKadiManager()
+    dummy_mgr.user.side_effect = Exception("User not found")
+    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
     assert user is None
-    assert dummy_ui_instance.error_shown is not None
+    # HeadlessUI records errors in .errors
+    assert fake_ui.errors
 
 
 def test_get_or_create_db_user_group_existing(sync_mgr, local_record):
-    dummy_manager = DummyKadiManager()
-    dummy_manager.group = MagicMock(return_value=DummyKadiGroup("existing_group"))
+    dummy_mgr = DummyKadiManager()
+    dummy_mgr.group.return_value = DummyKadiGroup("existing_group")
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_manager, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
     assert group.id == "existing_group"
 
 
 def test_get_or_create_db_user_group_create(sync_mgr, local_record):
-    def group_side_effect(*args, **kwargs):
+    def side_effect(*args, **kwargs):
         if kwargs.get("create"):
             return DummyKadiGroup("created_group")
         raise Exception("Group not found")
 
-    dummy_manager = DummyKadiManager()
-    dummy_manager.group = MagicMock(side_effect=group_side_effect)
+    dummy_mgr = DummyKadiManager()
+    dummy_mgr.group.side_effect = side_effect
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_manager, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
     assert group.id == "created_group"
 
 
 def test_get_or_create_db_record(sync_mgr, local_record):
-    dummy_manager = DummyKadiManager()
-    record = sync_mgr._get_or_create_db_record(dummy_manager, local_record)
+    dummy_mgr = DummyKadiManager()
+    record = sync_mgr._get_or_create_db_record(dummy_mgr, local_record)
     assert record is not None
-    dummy_manager.record.assert_any_call(create=True, identifier=local_record.identifier)
+    dummy_mgr.record.assert_any_call(create=True, identifier=local_record.identifier)
 
 
 def test_initialize_new_db_record(sync_mgr, local_record):
@@ -182,12 +171,23 @@ def test_initialize_new_db_record(sync_mgr, local_record):
     user_group = DummyKadiGroup("user_group")
     device_group = DummyKadiGroup("device_group")
 
-    sync_mgr._initialize_new_db_record(local_record, dummy_record, user, device_user, user_group, device_group)
+    sync_mgr._initialize_new_db_record(
+        local_record,
+        dummy_record,
+        user,
+        device_user,
+        user_group,
+        device_group,
+    )
 
     dummy_record.set_attribute.assert_any_call("title", local_record.sample_name)
-    dummy_record.set_attribute.assert_any_call("description", sync_mgr.settings.DEFAULT_RECORD_DESCRIPTION)
+    dummy_record.set_attribute.assert_any_call(
+        "description", sync_mgr.s.DEFAULT_RECORD_DESCRIPTION
+    )
     dummy_record.set_attribute.assert_any_call("type", "rawdata")
-    dummy_record.link_record.assert_called_with(sync_mgr.settings.DEVICE_RECORD_PERSISTENT_ID, "generated by")
+    dummy_record.link_record.assert_called_with(
+        sync_mgr.s.DEVICE_RECORD_PERSISTENT_ID, "generated by"
+    )
     dummy_record.add_user.assert_any_call(user_id=user.id, role_name="admin")
 
 
@@ -206,8 +206,9 @@ def test_upload_record_files_success(sync_mgr):
     dummy_record.upload_file = MagicMock()
 
     sync_mgr._upload_record_files(dummy_record, record)
-    for status in record.files_uploaded.values():
-        assert status is True
+
+    # All statuses should become True
+    assert all(record.files_uploaded.values())
     assert dummy_record.upload_file.call_count == 2
 
 
@@ -222,17 +223,18 @@ def test_upload_record_files_missing(sync_mgr):
         "/dummy/path/file1.tif": False,
         "/dummy/path/file2.tif": False,
     }
-
     dummy_record = DummyKadiRecord()
 
-    def side_effect(path, force=False):
+    def upload_side_effect(path, force=False):
         if "file1" in path:
             raise FileNotFoundError
         dummy_record.uploaded_files.append((path, force))
 
-    dummy_record.upload_file = MagicMock(side_effect=side_effect)
+    dummy_record.upload_file = MagicMock(side_effect=upload_side_effect)
+
     sync_mgr._upload_record_files(dummy_record, record)
 
+    # file1 should be removed, file2 marked True
     assert "/dummy/path/file1.tif" not in record.files_uploaded
     assert record.files_uploaded["/dummy/path/file2.tif"] is True
 
@@ -247,5 +249,6 @@ def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
     dummy_record.upload_file = MagicMock(side_effect=FileNotFoundError)
 
     result = sync_mgr._upload_record_files(dummy_record, record)
+
     assert result is False
     assert record.files_uploaded == {}

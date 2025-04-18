@@ -80,6 +80,14 @@ def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
+def remove_directory_if_empty(path: Path) -> None:
+    try:
+        path.rmdir()
+        logger.debug(f"Removed empty directory: '{path}'.")
+    except OSError:
+        logger.warning(f"Could not remove directory: '{path}'.")
+
+
 # -------------------------------
 # FILE MOVEMENT / STORAGE ACTIONS
 # -------------------------------

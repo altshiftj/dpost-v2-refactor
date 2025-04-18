@@ -38,7 +38,8 @@ class LocalRecord:
             self.device_type = parts[0].lower()
             self.user = parts[1].lower()
             self.institute = parts[2].lower()
-            self.sample_name = sep.join(parts[3:])
+            if self.sample_name == "null":
+                self.sample_name = sep.join(parts[3:])
         else:
             logger.warning(
                 f"Identifier '{self.identifier}' does not conform to expected format."

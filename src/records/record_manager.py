@@ -44,8 +44,10 @@ class RecordManager:
         Creates and stores a new LocalRecord using the filename prefix.
         """
         record_id = generate_record_id(filename_prefix)
+        sample_name = filename_prefix.split("-")[-1]
         record = LocalRecord(
             identifier=record_id,
+            sample_name=sample_name,
             date=datetime.datetime.now().strftime("%Y%m%d"),
         )
         self._store_record(record)
@@ -95,7 +97,7 @@ class RecordManager:
         logger.info("Starting synchronization of records to the database.")
         synced_count = 0
 
-        for record in self.persist_records_dict.values():
+        for record in list(self.persist_records_dict.values()):
             if record.institute != "ipat":
                 logger.info(
                     f"Record '{record.identifier}' is not applicable for syncing."

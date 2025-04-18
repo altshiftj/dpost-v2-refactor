@@ -2,7 +2,12 @@ from pathlib import Path
 import os
 from records.local_record import LocalRecord
 from processing.file_processor_abstract import FileProcessorABS
-from storage.filesystem_utils import move_item, get_unique_filename
+from storage.filesystem_utils import (
+    move_item,
+    get_unique_filename,
+    remove_directory_if_empty,
+    parse_filename,
+)
 from app.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -60,7 +65,7 @@ class FileProcessorTischREM(FileProcessorABS):
 
     def _flatten_elid_directory(self, folder: Path, filename_prefix: str):
         logger.debug(f"Flattening ELID directory: {folder}")
-        renamed_files = {}
+        renamed_files = set()
         target_dir = folder
 
         for root, dirs, files in os.walk(str(folder), topdown=False):
@@ -70,27 +75,24 @@ class FileProcessorTischREM(FileProcessorABS):
                 new_fname = self._build_new_filename(fname, root, filename_prefix)
                 counter = 1
                 original_new_fname = new_fname
+
                 while new_fname in renamed_files or (target_dir / new_fname).exists():
                     name_only = Path(original_new_fname).stem
                     ext = Path(original_new_fname).suffix
                     new_fname = f"{name_only}_{counter}{ext}"
                     counter += 1
 
-                renamed_files[new_fname] = True
+                renamed_files.add(new_fname)
                 new_path = target_dir / new_fname
                 try:
-                    move_item(old_path, new_path)
+                    move_item(str(old_path), str(new_path))
                     logger.debug(f"Moved and renamed '{old_path}' to '{new_path}'.")
                 except OSError as e:
                     logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")
 
             for d in dirs:
                 subdir_path = root_path / d
-                try:
-                    subdir_path.rmdir()
-                    logger.debug(f"Removed empty directory: '{subdir_path}'.")
-                except OSError:
-                    logger.warning(f"Could not remove directory: '{subdir_path}'.")
+                remove_directory_if_empty(subdir_path)
 
         logger.debug("Subdirectories flattened for ELID data.")
 
@@ -98,21 +100,21 @@ class FileProcessorTischREM(FileProcessorABS):
         for child in src.iterdir():
             if child.is_file():
                 dest = record_dir / child.name
-                move_item(child, dest)
+                try:
+                    move_item(str(child), str(dest))
+                    logger.debug(f"Moved remaining ELID file '{child}' to '{dest}'.")
+                except Exception as e:
+                    logger.error(f"Failed to move ELID file '{child}' to '{dest}': {e}")
 
     def _remove_directory(self, src: Path):
-        try:
-            src.rmdir()
-            logger.debug(f"Removed ELID directory: '{src}'.")
-        except OSError:
-            logger.warning(f"Could not remove ELID directory: '{src}'.")
+        remove_directory_if_empty(src)
 
     def _build_new_filename(
         self, fname: str, root_dir: str, filename_prefix: str
     ) -> str:
         new_fname = fname
         if fname.endswith(".elid") or fname.endswith(".odt"):
-            ext = Path(fname).suffix
+            _, ext = parse_filename(fname)
             new_fname = f"{filename_prefix}{ext}".replace(" ", "_")
 
         dirname = Path(root_dir).name

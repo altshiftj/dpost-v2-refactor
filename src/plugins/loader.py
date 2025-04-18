@@ -14,7 +14,7 @@ def load_device_plugin(device_folder: str) -> DevicePlugin:
     Dynamically import `<device_folder>.plugin` and return its *only*
     `DevicePlugin` subclass.
     """
-    module_path = f"src.devices.{device_folder}.plugin"
+    module_path = f"devices.{device_folder}.plugin"
     module: ModuleType = importlib.import_module(module_path)
 
     # Find the first class that inherits from DevicePlugin

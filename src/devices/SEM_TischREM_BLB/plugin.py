@@ -1,8 +1,8 @@
 # devices/SEM_TischREM_BLB/plugin.py
 from __future__ import annotations
 
-from src.devices.SEM_TischREM_BLB.settings_tischrem import TischREMSettings
-from src.devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
+from devices.SEM_TischREM_BLB.settings_tischrem import TischREMSettings
+from devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
 from plugins.device_plugin import DevicePlugin
 from processing.file_processor_abstract import FileProcessorABS
 from config.settings_base import BaseSettings

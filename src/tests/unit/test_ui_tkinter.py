@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 import tkinter.messagebox as messagebox
-from core.ui.ui_tkinter import TKinterUI
-from core.ui.ui_messages import DialogPrompts, InfoMessages
+from ui.ui_tkinter import TKinterUI
+from ui.ui_messages import DialogPrompts, InfoMessages
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def test_show_error(ui_instance):
 
 
 def test_show_rename_dialog(ui_instance):
-    with patch("core.ui.ui_tkinter.RenameDialog") as MockDialog:
+    with patch("ui.ui_tkinter.RenameDialog") as MockDialog:
         MockDialog.return_value.result = {
             "name": "alice",
             "institute": "lab",
