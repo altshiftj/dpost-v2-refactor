@@ -1,4 +1,4 @@
-from src.core.config.settings_base import BaseSettings
+from config.settings_base import BaseSettings
 
 
 class TischREMSettings(BaseSettings):

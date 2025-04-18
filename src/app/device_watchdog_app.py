@@ -3,16 +3,16 @@ import queue
 from pathlib import Path
 from watchdog.observers import Observer
 
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
 
-from src.core.ui.ui_abstract import UserInterface
-from src.core.ui.ui_messages import ErrorMessages
-from src.core.handlers.file_event_handler import FileEventHandler
-from src.core.processing.file_process_manager import FileProcessorABS, FileProcessManager
-from src.core.sessions.session_manager import SessionManager
-from src.core.sync.sync_abstract import ISyncManager
-from src.core.app.logger import setup_logger
+from ui.ui_abstract import UserInterface
+from ui.ui_messages import ErrorMessages
+from handlers.file_event_handler import FileEventHandler
+from processing.file_process_manager import FileProcessorABS, FileProcessManager
+from sessions.session_manager import SessionManager
+from sync.sync_abstract import ISyncManager
+from app.logger import setup_logger
 
 logger = setup_logger(__name__)
 

@@ -1,8 +1,7 @@
-import os
 from abc import ABC, abstractmethod
 
-from src.core.ui.ui_abstract import UserInterface
-from src.core.records.local_record import LocalRecord
+from ui.ui_abstract import UserInterface
+from records.local_record import LocalRecord
 
 
 class ISyncManager(ABC):

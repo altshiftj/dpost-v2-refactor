@@ -7,7 +7,7 @@ import re
 import hashlib
 import xmltodict
 import tifffile
-from src.core.app.logger import setup_logger
+from app.logger import setup_logger
 
 logger = setup_logger(__name__)
 

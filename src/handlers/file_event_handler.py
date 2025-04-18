@@ -4,8 +4,8 @@ from watchdog.events import FileSystemEventHandler
 from threading import Timer
 from queue import Queue
 
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
 
 logger = logging.getLogger(__name__)
 

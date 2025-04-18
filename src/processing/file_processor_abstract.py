@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from src.core.records.local_record import LocalRecord
+from records.local_record import LocalRecord
 
 
 class FileProcessorABS(ABC):

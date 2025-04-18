@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from src.devices.SEM_TischREM_BLB.settings_tischrem import TischREMSettings
 from src.devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
-from src.core.plugins.device_plugin import DevicePlugin
-from src.core.processing.file_processor_abstract import FileProcessorABS
-from src.core.config.settings_base import BaseSettings
+from plugins.device_plugin import DevicePlugin
+from processing.file_processor_abstract import FileProcessorABS
+from config.settings_base import BaseSettings
 
 class TischREMPlugin(DevicePlugin):
     """Registers the Phenom XL TischREM device with the Watchdog app."""

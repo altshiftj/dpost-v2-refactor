@@ -4,7 +4,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Type
 
-from src.core.plugins.device_plugin import DevicePlugin
+from plugins.device_plugin import DevicePlugin
 
 def _camel_to_snake(name: str) -> str:
     return ''.join(f"_{c.lower()}" if c.isupper() else c for c in name).lstrip('_')

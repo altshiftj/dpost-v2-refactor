@@ -1,14 +1,14 @@
 import datetime
 from typing import Dict, Optional
 
-from src.core.records.local_record import LocalRecord
-from src.core.storage.filesystem_utils import (
+from records.local_record import LocalRecord
+from storage.filesystem_utils import (
     load_persisted_records,
     save_persisted_records,
     generate_record_id,
 )
-from src.core.sync.sync_abstract import ISyncManager
-from src.core.app.logger import setup_logger
+from sync.sync_abstract import ISyncManager
+from app.logger import setup_logger
 
 logger = setup_logger(__name__)
 

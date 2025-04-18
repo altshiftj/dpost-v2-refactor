@@ -5,11 +5,11 @@ import json
 import re
 from typing import Callable, Optional
 
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
-from src.core.records.local_record import LocalRecord
-from src.core.app.logger import setup_logger
-from src.core.ui.ui_messages import ValidationMessages
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
+from records.local_record import LocalRecord
+from app.logger import setup_logger
+from ui.ui_messages import ValidationMessages
 
 logger = setup_logger(__name__)
 

@@ -2,19 +2,19 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from src.core.ui.ui_abstract import UserInterface
-from src.core.ui.ui_messages import ErrorMessages
-from src.core.records.local_record import LocalRecord
-from src.core.sync.sync_abstract import ISyncManager
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
+from ui.ui_abstract import UserInterface
+from ui.ui_messages import ErrorMessages
+from records.local_record import LocalRecord
+from sync.sync_abstract import ISyncManager
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
+from app.logger import setup_logger
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
 from kadi_apy.lib.resources.groups import Group as KadiGroup
 from kadi_apy.lib.resources.users import User as KadiUser
 
-from src.core.app.logger import setup_logger
 
 logger = setup_logger(__name__)
 

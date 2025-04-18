@@ -1,9 +1,8 @@
 import logging
 
-
 def setup_logger(name=__name__, level=logging.DEBUG):
-    from src.core.config.settings_store import SettingsStore
-    from src.core.config.settings_base import BaseSettings
+    from config.settings_store import SettingsStore
+    from config.settings_base import BaseSettings
 
     try:
         settings = SettingsStore.get()

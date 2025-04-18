@@ -9,9 +9,9 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import Dict, Optional, Callable, Any
 
-from src.core.ui.ui_abstract import UserInterface
-from src.core.ui.dialogs import RenameDialog
-from src.core.ui.ui_messages import InfoMessages, DialogPrompts
+from ui.ui_abstract import UserInterface
+from ui.dialogs import RenameDialog
+from ui.ui_messages import InfoMessages, DialogPrompts
 
 
 class TKinterUI(UserInterface):

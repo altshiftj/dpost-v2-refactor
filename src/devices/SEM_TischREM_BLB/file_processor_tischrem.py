@@ -1,9 +1,9 @@
 from pathlib import Path
 import os
-from src.core.records.local_record import LocalRecord
-from src.core.processing.file_processor_abstract import FileProcessorABS
-from src.core.storage.filesystem_utils import move_item, get_unique_filename
-from src.core.app.logger import setup_logger
+from records.local_record import LocalRecord
+from processing.file_processor_abstract import FileProcessorABS
+from storage.filesystem_utils import move_item, get_unique_filename
+from app.logger import setup_logger
 
 logger = setup_logger(__name__)
 

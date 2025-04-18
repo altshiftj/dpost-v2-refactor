@@ -1,7 +1,7 @@
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
-from src.core.app.logger import setup_logger
-from src.core.ui.ui_abstract import UserInterface
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
+from app.logger import setup_logger
+from ui.ui_abstract import UserInterface
 
 logger = setup_logger(__name__)
 

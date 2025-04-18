@@ -1,10 +1,9 @@
 from pathlib import Path
 
-from src.core.processing.metadata_extractor import MetadataExtractor
-from src.core.processing.file_processor_abstract import FileProcessorABS
-from src.core.storage.filesystem_utils import (
+from processing.metadata_extractor import MetadataExtractor
+from processing.file_processor_abstract import FileProcessorABS
+from storage.filesystem_utils import (
     parse_filename,
-    init_dirs,
     move_to_exception_folder,
     move_to_rename_folder,
     get_record_path,
@@ -14,13 +13,13 @@ from src.core.storage.filesystem_utils import (
     explain_filename_violation,
     analyze_user_input,
 )
-from src.core.records.local_record import LocalRecord
-from src.core.sessions.session_manager import SessionManager
-from src.core.records.record_manager import RecordManager
-from src.core.sync.sync_abstract import ISyncManager
-from src.core.app.logger import setup_logger
-from src.core.ui.ui_abstract import UserInterface
-from src.core.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
+from records.local_record import LocalRecord
+from sessions.session_manager import SessionManager
+from records.record_manager import RecordManager
+from sync.sync_abstract import ISyncManager
+from app.logger import setup_logger
+from ui.ui_abstract import UserInterface
+from ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
 
 logger = setup_logger(__name__)
 
@@ -42,8 +41,6 @@ class FileProcessManager:
         self.session_manager = session_manager
         self.records = RecordManager(sync_manager=sync_manager)
         self.file_processor = file_processor
-
-        init_dirs()
 
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")

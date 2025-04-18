@@ -2,9 +2,9 @@ from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import Dict
 
-from src.core.config.settings_store import SettingsStore
-from src.core.config.settings_base import BaseSettings
-from src.core.app.logger import setup_logger
+from config.settings_store import SettingsStore
+from config.settings_base import BaseSettings
+from app.logger import setup_logger
 
 logger = setup_logger(__name__)
 
