@@ -25,29 +25,30 @@ build:
   stage: build
   image: python:3.12
   before_script:
-    - pip install pyinstaller
+    - pip install pyinstaller python-dotenv
+    - echo "DEVICE_NAME=SEM_TischREM_BLB" > .env  # or inject from GitLab CI var
   script:
-    - pyinstaller --onefile run.py
+    - pyinstaller build/run.spec
   artifacts:
     paths:
-      - dist/
+      - dist/run.exe
     expire_in: 1 week
 
 # ──────────────────────────────────────────────
-# DEPLOY STAGE
+# DEPLOY STAGE – TischREM App
 # ──────────────────────────────────────────────
-deploy:
+deploy-tischrem:
   stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache samba-client
   script:
     - echo "Deploying to $TARGET_USER@$TARGET_IP"
-    - scp dist/run.exe $TARGET_USER@$TARGET_IP:/opt/watchdog/run.exe
-    - ssh $TARGET_USER@$TARGET_IP 'sudo systemctl restart watchdog'
+    - smbclient "//$TARGET_IP/C$/Watchdog" -U "$TARGET_USER%$TARGET_PASS" -c "put dist/run.exe"
   environment:
-    name: prod-lab-pc
+    name: prod-tischrem
     url: http://$TARGET_IP:8001/health
-    on_stop: stop
   only:
     - tags
   tags:
-    - deploy-runner  # optional: tag your runner if needed
-
+    - docker-alpine

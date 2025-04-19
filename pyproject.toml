@@ -1,5 +1,6 @@
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"
+
 [project]
 name = "ipat-watchdog"
 version = "0.1.0"
@@ -16,6 +17,7 @@ dependencies = [
 ]
 
 
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 packages = ["ipat_watchdog"]
@@ -23,6 +25,7 @@ packages = ["ipat_watchdog"]
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
 [project.optional-dependencies]
 dev = [
   "ruff",

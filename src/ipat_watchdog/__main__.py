@@ -1,6 +1,8 @@
 from ipat_watchdog.app.logger import setup_logger
 logger = setup_logger(__name__)    
 
+import os
+from dotenv import load_dotenv
 from prometheus_client import start_http_server
 import time
 
@@ -23,8 +25,11 @@ from ipat_watchdog.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.ui.ui_tkinter import TKinterUI
 from ipat_watchdog.storage.filesystem_utils import init_dirs
 
+load_dotenv()
+
 def main():
-    plugin = load_device_plugin("SEM_TischREM_BLB")
+    device_name = os.getenv("DEVICE_NAME", "SEM_TischREM_BLB")
+    plugin = load_device_plugin(device_name)
     SettingsStore.set(plugin.get_settings())
     init_dirs()
 
