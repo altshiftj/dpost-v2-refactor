@@ -1,0 +1,53 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  PYTHONUNBUFFERED: "1"
+
+# ──────────────────────────────────────────────
+# TEST STAGE
+# ──────────────────────────────────────────────
+test:
+  stage: test
+  image: python:3.12
+  before_script:
+    - pip install -e .[dev]
+  script:
+    - pytest -v --tb=short tests/
+
+# ──────────────────────────────────────────────
+# BUILD STAGE
+# ──────────────────────────────────────────────
+build:
+  stage: build
+  image: python:3.12
+  before_script:
+    - pip install pyinstaller
+  script:
+    - pyinstaller --onefile run.py
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 week
+
+# ──────────────────────────────────────────────
+# DEPLOY STAGE
+# ──────────────────────────────────────────────
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying to $TARGET_USER@$TARGET_IP"
+    - scp dist/run.exe $TARGET_USER@$TARGET_IP:/opt/watchdog/run.exe
+    - ssh $TARGET_USER@$TARGET_IP 'sudo systemctl restart watchdog'
+  environment:
+    name: prod-lab-pc
+    url: http://$TARGET_IP:8001/health
+    on_stop: stop
+  only:
+    - tags
+  tags:
+    - deploy-runner  # optional: tag your runner if needed
+
