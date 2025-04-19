@@ -1,7 +1,7 @@
 import datetime
 from typing import Dict, Optional
 
-from ipat_watchdog.__main__ import FILES_PROCESSED_BY_RECORD
+from ipat_watchdog.metrics import FILES_PROCESSED_BY_RECORD
 from ipat_watchdog.records.local_record import LocalRecord
 from ipat_watchdog.storage.filesystem_utils import (
     load_persisted_records,
