@@ -5,6 +5,16 @@ import queue
 from pathlib import Path
 from watchdog.observers import Observer
 
+from ipat_watchdog.metrics import(
+ FILES_PROCESSED,
+ SESSION_DURATION,
+ EXCEPTIONS_THROWN,
+ FILES_FAILED,
+ EVENTS_PROCESSED,
+ FILE_PROCESS_TIME,
+ SESSION_EXIT_STATUS
+)
+
 from ipat_watchdog.config.settings_store import SettingsStore
 from ipat_watchdog.config.settings_base import BaseSettings
 
@@ -91,14 +101,17 @@ class DeviceWatchdogApp:
 
     def process_events(self):
         while not self.event_queue.empty():
+            EVENTS_PROCESSED.inc()
             try:
                 data_path = self.event_queue.get_nowait()
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
-            self.file_processing.process_item(data_path)
+            with FILE_PROCESS_TIME.time():
+                self.file_processing.process_item(data_path)
 
             self.files_processed += 1
+            FILES_PROCESSED.inc()      # Global Prometheus counte
 
         if self._should_sync_logs():
             self.file_processing.sync_logs_to_database()
@@ -108,6 +121,9 @@ class DeviceWatchdogApp:
         self._schedule_next_event_check()
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):
+        EXCEPTIONS_THROWN.inc()
+        FILES_FAILED.inc()
+        SESSION_EXIT_STATUS.set(1)
         logger.error("An unexpected error occurred", exc_info=(exc_type, exc_value, exc_traceback))
         self.ui.show_error(
             ErrorMessages.APPLICATION_ERROR,
@@ -132,7 +148,9 @@ class DeviceWatchdogApp:
     def on_closing(self):
         end_time = datetime.now()
         duration = end_time - self.start_time
+        SESSION_DURATION.set(duration.total_seconds())
         logger.info(f"WatchdogApp shutdown at {end_time.isoformat()} (uptime: {duration})")
+        SESSION_EXIT_STATUS.set(0)
 
         if self.session_manager.session_active:
             self.session_manager.end_session()

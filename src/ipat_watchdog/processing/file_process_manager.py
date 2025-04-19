@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from ipat_watchdog.__main__ import FILES_FAILED
 from ipat_watchdog.processing.metadata_extractor import MetadataExtractor
 from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.storage.filesystem_utils import (
@@ -52,6 +53,7 @@ class FileProcessManager:
 
         if not self.file_processor.is_valid_datatype(src_path):
             self._handle_invalid_datatype(src_path, filename_prefix, extension)
+            FILES_FAILED.inc()
             return
 
         try:

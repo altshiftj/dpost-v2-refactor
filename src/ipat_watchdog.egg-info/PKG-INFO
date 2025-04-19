@@ -14,6 +14,7 @@ Provides-Extra: dev
 Requires-Dist: ruff; extra == "dev"
 Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
+Requires-Dist: flask; extra == "dev"
 
 
 # IPAT Data Watchdog Service
