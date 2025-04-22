@@ -1,11 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from pathlib import Path
+
+env_path = str(Path.cwd() / ".env")
 
 a = Analysis(
     ['..\\src\\ipat_watchdog\\__main__.py'],
     pathex=[],
     binaries=[],
-    datas=[('.env', '.env')],
+    datas=[(env_path, '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -14,6 +17,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(

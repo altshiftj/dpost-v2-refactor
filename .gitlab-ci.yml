@@ -11,9 +11,9 @@ build:
   before_script:
     - pip install pyinstaller python-dotenv
     - pip uninstall -y PyQt5 PySide6
-    - echo "DEVICE_NAME=$DEVICE_NAME" > .env
+    - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
     - if (!(Test-Path -Path "build")) { New-Item -ItemType Directory -Path "build" }
-    - cp .env build/.env
+    - Copy-Item .env build/.env
   script:
     - pyinstaller build/run.spec
   artifacts:
@@ -22,23 +22,20 @@ build:
     name: "run-$CI_COMMIT_REF_NAME"
     expire_in: 1 week
   tags:
-    - local  # Optional: restrict to local runner if desired
+    - local
 
 # ──────────────────────────────────────────────
-# 🚀 DEPLOY STAGE
+# 🚀 DEPLOY STAGE – TISCHREM
 # ──────────────────────────────────────────────
 deploy-tischrem:
   stage: deploy
-  image: alpine:latest
-  before_script:
-    - apk add --no-cache samba-client
   script:
-    - echo "Deploying run.exe to //$TARGET_IP/WatchdogDeploy"
-    - smbclient "//$TARGET_IP/WatchdogDeploy" -U "$TARGET_USER%$TARGET_PASS" -c "put dist/run.exe"
+    - echo "Deploying run.exe to \\$env:TARGET_IP\WatchdogDeploy"
+    - Copy-Item "dist\run.exe" "\\$env:TARGET_IP\WatchdogDeploy\run.exe" -Force
   only:
     - tags
   tags:
-    - local  # Must match the tags from your registered runner
+    - local
   environment:
     name: prod-tischrem
-    url: http://$TARGET_IP:8001/health
+    url: http://$env:TARGET_IP:8001/health
