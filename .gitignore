@@ -1,7 +1,6 @@
 /ipatwatchdogvenv/
 /wdvenv/
 /dist/
-/build/
 
 Data/*
 !Data/.gitkeep
