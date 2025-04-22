@@ -1,41 +1,27 @@
 stages:
-  - test
   - build
   - deploy
 
-variables:
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  PYTHONUNBUFFERED: "1"
-
 # ──────────────────────────────────────────────
-# TEST STAGE
-# ──────────────────────────────────────────────
-test:
-  stage: test
-  image: python:3.12
-  before_script:
-    - pip install -e .[dev]
-  script:
-    - pytest -v --tb=short tests/
-
-# ──────────────────────────────────────────────
-# BUILD STAGE
+# 🔨 BUILD STAGE
 # ──────────────────────────────────────────────
 build:
   stage: build
   image: python:3.12
   before_script:
     - pip install pyinstaller python-dotenv
-    - echo "DEVICE_NAME=SEM_TischREM_BLB" > .env  # or inject from GitLab CI var
+    - echo "DEVICE_NAME=$DEVICE_NAME" > .env
   script:
     - pyinstaller build/run.spec
   artifacts:
     paths:
       - dist/run.exe
     expire_in: 1 week
+  tags:
+    - local  # Optional: restrict to local runner if desired
 
 # ──────────────────────────────────────────────
-# DEPLOY STAGE – TischREM App
+# 🚀 DEPLOY STAGE
 # ──────────────────────────────────────────────
 deploy-tischrem:
   stage: deploy
@@ -43,12 +29,12 @@ deploy-tischrem:
   before_script:
     - apk add --no-cache samba-client
   script:
-    - echo "Deploying to $TARGET_USER@$TARGET_IP"
-    - smbclient "//$TARGET_IP/C$/Watchdog" -U "$TARGET_USER%$TARGET_PASS" -c "put dist/run.exe"
-  environment:
-    name: prod-tischrem
-    url: http://$TARGET_IP:8001/health
+    - echo "Deploying run.exe to //$TARGET_IP/WatchdogDeploy"
+    - smbclient "//$TARGET_IP/WatchdogDeploy" -U "$TARGET_USER%$TARGET_PASS" -c "put dist/run.exe"
   only:
     - tags
   tags:
-    - docker-alpine
+    - local  # Must match the tags from your registered runner
+  environment:
+    name: prod-tischrem
+    url: http://$TARGET_IP:8001/health

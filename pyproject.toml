@@ -15,6 +15,7 @@ dependencies = [
     "prometheus_client",
     "python-dotenv",
     "xmltodict",
+    "tifffile",
 ]
 
 
