@@ -11,7 +11,7 @@ build:
   before_script:
     - pip install pyinstaller python-dotenv
     - echo "DEVICE_NAME=$DEVICE_NAME" > .env
-    - mkdir -p build
+    - if (!(Test-Path -Path "build")) { New-Item -ItemType Directory -Path "build" }
     - cp .env build/.env
   script:
     - pyinstaller build/run.spec
