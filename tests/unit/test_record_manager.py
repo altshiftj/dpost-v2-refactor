@@ -35,13 +35,30 @@ def test_add_item_to_record_saves_it(tmp_path, record_manager):
     file_path = tmp_path / "file.tif"
     file_path.write_text("fake content")
 
-    record = LocalRecord(identifier="dev-usr-ipat-sampleX", sample_name="sampleX", date="20240101")
+    record = LocalRecord(identifier="dev-usr-ipat-samplex", sample_name="sampleX", date="20240101")
     with patch("ipat_watchdog.records.record_manager.save_persisted_records") as mock_save:
         record_manager.add_item_to_record(str(file_path), record)
 
     resolved_path = str(file_path.resolve())
     assert resolved_path in record.files_uploaded
     assert not record.files_uploaded[resolved_path]
+    mock_save.assert_called_once()
+
+
+# work in progress 04.19.25
+def test_remove_item_from_record(tmp_path, record_manager):
+    file_path = tmp_path / "f1.txt"
+    file_path.write_text("fuax")
+
+    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record.files_uploaded = {file_path: False, "f2.txt": False}
+    record_manager._persist_records_dict = {record.identifier: record}
+
+    with patch('ipat_watchdog.records.record_manager.save_persisted_records') as mock_save:
+        record_manager.remove_item_from_record(str(file_path), record)
+
+    resolved_path = str(file_path.resolve())
+    assert resolved_path not in record.files_uploaded
     mock_save.assert_called_once()
 
 

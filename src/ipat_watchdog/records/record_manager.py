@@ -64,6 +64,9 @@ class RecordManager:
         FILES_PROCESSED_BY_RECORD.labels(record_id=record.identifier).inc()
         self.save_records()
 
+    def remove_item_from_record(self, path: str, record: LocalRecord):
+        self.save_records()
+
     def save_records(self):
         """
         Persists all records to disk.
