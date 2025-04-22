@@ -3,7 +3,7 @@ stages:
   - deploy
 
 # ──────────────────────────────────────────────
-# 🔨 BUILD STAGE
+# 🔨 BUILD
 # ──────────────────────────────────────────────
 build:
   stage: build
@@ -12,32 +12,34 @@ build:
     - pip install pyinstaller python-dotenv
     - pip uninstall -y PyQt5 PySide6
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
-    - if (!(Test-Path -Path "build")) { New-Item -ItemType Directory -Path "build" }
+    - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
   script:
     - pyinstaller build/run.spec
   artifacts:
-    paths:
-      - dist/run.exe
-    name: "run-$CI_COMMIT_REF_NAME"
+    paths:                       # ▼ keep the raw file, no ZIP
+      - dist/run.exe             #   GitLab will unpack this as dist/run.exe
     expire_in: 1 week
-  tags:
+  tags:                          # runs only on your local runner
     - local
 
-
 # ──────────────────────────────────────────────
-# 🚀 DEPLOY STAGE – TISCHREM
+# 🚀 DEPLOY – TischREM
 # ──────────────────────────────────────────────
 deploy-tischrem:
   stage: deploy
-  script:
-    - echo "Deploying run.exe to \\$env:TARGET_IP\WatchdogDeploy"
-    - $targetPath = "\\$env:TARGET_IP\WatchdogDeploy\run.exe"
-    - Copy-Item "dist\run.exe" $targetPath -Force
+  needs:                         # ▼ pulls artifacts from the *build* job
+    - job: build
+      artifacts: true
+  script: |
+    echo "Deploying run.exe to \\$env:TARGET_IP\WatchdogDeploy"
+    $targetPath = "\\$env:TARGET_IP\WatchdogDeploy\run.exe"
+    Copy-Item "dist\run.exe" $targetPath -Force
+  when: manual                   # (optional) click ▶ in GitLab to deploy
   only:
-    - tags
+    - tags                       # runs on tag pipelines
   tags:
     - local
   environment:
     name: prod-tischrem
-    url: http://$env:TARGET_IP:8001/health
+    url:  http://$env:TARGET_IP:8001/health
