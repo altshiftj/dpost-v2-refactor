@@ -11,11 +11,14 @@ build:
   before_script:
     - pip install pyinstaller python-dotenv
     - echo "DEVICE_NAME=$DEVICE_NAME" > .env
+    - mkdir -p build
+    - cp .env build/.env
   script:
     - pyinstaller build/run.spec
   artifacts:
     paths:
       - dist/run.exe
+    name: "run-$CI_COMMIT_REF_NAME"
     expire_in: 1 week
   tags:
     - local  # Optional: restrict to local runner if desired
