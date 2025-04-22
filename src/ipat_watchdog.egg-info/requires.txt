@@ -4,6 +4,8 @@ pytest
 pyinstaller
 prometheus_client
 python-dotenv
+xmltodict
+tifffile
 
 [dev]
 ruff

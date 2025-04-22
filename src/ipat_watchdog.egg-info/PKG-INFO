@@ -10,6 +10,8 @@ Requires-Dist: pytest
 Requires-Dist: pyinstaller
 Requires-Dist: prometheus_client
 Requires-Dist: python-dotenv
+Requires-Dist: xmltodict
+Requires-Dist: tifffile
 Provides-Extra: dev
 Requires-Dist: ruff; extra == "dev"
 Requires-Dist: black; extra == "dev"
