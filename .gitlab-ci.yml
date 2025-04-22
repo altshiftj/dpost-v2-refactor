@@ -10,6 +10,7 @@ build:
   image: python:3.12
   before_script:
     - pip install pyinstaller python-dotenv
+    - pip uninstall -y PyQt5 PySide6
     - echo "DEVICE_NAME=$DEVICE_NAME" > .env
     - if (!(Test-Path -Path "build")) { New-Item -ItemType Directory -Path "build" }
     - cp .env build/.env
