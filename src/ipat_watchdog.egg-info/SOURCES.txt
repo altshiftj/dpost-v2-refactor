@@ -1,6 +1,8 @@
 README.md
 pyproject.toml
 src/ipat_watchdog/__main__.py
+src/ipat_watchdog/metrics.py
+src/ipat_watchdog/observability.py
 src/ipat_watchdog.egg-info/PKG-INFO
 src/ipat_watchdog.egg-info/SOURCES.txt
 src/ipat_watchdog.egg-info/dependency_links.txt
