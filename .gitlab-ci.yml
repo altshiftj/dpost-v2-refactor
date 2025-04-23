@@ -9,11 +9,8 @@ build:
   stage: build
   image: python:3.12
   before_script:
-    # create frozen executable
     - pip install pyinstaller python-dotenv
-    # strip unused GUI libs to keep build small
     - pip uninstall -y PyQt5 PySide6
-    # forward DEVICE_NAME from CI variable into .env
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
     - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
@@ -26,7 +23,7 @@ build:
   tags: [local]
 
 # ─────────────────────────────────────────
-# 🚀 DEPLOY  (TischREM)
+# 🚀 DEPLOY – TischREM
 # ─────────────────────────────────────────
 deploy-tischrem:
   stage: deploy
@@ -35,7 +32,6 @@ deploy-tischrem:
       artifacts: true
   script:
     - |
-      # PowerShell block -------------------------------------------------
       $ip   = $env:TARGET_IP
       $user = $env:TARGET_USER
 
@@ -43,14 +39,14 @@ deploy-tischrem:
       if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
       ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
+      if (!(Test-Path "dist\run.exe")) {
+        Write-Error "❌ run.exe not found in dist/. Artifact may have been lost or renamed."
+        exit 1
+      }
+
       Write-Host "🚀 Copying run.exe …"
       scp -o StrictHostKeyChecking=accept-new `
-          dist/run.exe  "$user@$ip:d:/WatchdogDeploy/run.exe"
-
-      Write-Host "📦 Copying .env …"
-      'DEVICE_NAME=SEM_TischREM_BLB' | Out-File -Encoding ascii .env
-      scp -o StrictHostKeyChecking=accept-new `
-          .env          "$user@$ip:d:/WatchdogDeploy/.env"
+          ".\dist\run.exe" "$user@$ip:d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
   environment:
