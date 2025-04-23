@@ -13,11 +13,7 @@ build:
     - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
   script:
-    - pyinstaller build/run.spec
-    # make sure the file is called run.exe for later steps
-    - if (Test-Path "dist/run" -and !(Test-Path "dist/run.exe")) {
-        Rename-Item "dist/run" "dist/run.exe"
-      }
+    - pyinstaller build/run.spec          # this already creates dist\run.exe
   artifacts:
     paths:
       - dist/run.exe
@@ -45,10 +41,9 @@ deploy-tischrem:
 
     Write-Host "🚀 Copying run.exe …"
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
+             ".\dist\run.exe" "$user@$ip:/d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
-
   environment:
     name: prod-tischrem
     url: http://$env:TARGET_IP:8001/health
