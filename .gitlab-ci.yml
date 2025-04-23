@@ -2,9 +2,7 @@ stages:
   - build
   - deploy
 
-# ─────────────────────────────────────────
-# 🔨 BUILD
-# ─────────────────────────────────────────
+# ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
   image: python:3.12
@@ -16,37 +14,37 @@ build:
     - Copy-Item .env build/.env
   script:
     - pyinstaller build/run.spec
+    # make sure the file is called run.exe for later steps
+    - if (Test-Path "dist/run" -and !(Test-Path "dist/run.exe")) {
+        Rename-Item "dist/run" "dist/run.exe"
+      }
   artifacts:
     paths:
       - dist/run.exe
     expire_in: 1 week
   tags: [local]
 
-# ─────────────────────────────────────────
-# 🚀 DEPLOY – TischREM
-# ─────────────────────────────────────────
+# ─────────────── 🚀 DEPLOY ───────────────
 deploy-tischrem:
   stage: deploy
-  needs:
-    - job: build
-      artifacts: true
-  script:
-    - |
-      $ip   = $env:TARGET_IP
-      $user = $env:TARGET_USER
+  needs: [build]
+  script: |
+    $ip   = $env:TARGET_IP
+    $user = $env:TARGET_USER
 
-      Write-Host "`n🔑  Adding $ip to known_hosts …"
-      if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
-      ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
+    Write-Host "`n🔑  Adding $ip to known_hosts …"
+    if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
+    ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-      if (!(Test-Path "dist\run.exe")) {
-        Write-Error "❌ run.exe not found in dist/. Artifact may have been lost or renamed."
-        exit 1
-      }
+    if (!(Test-Path "dist\run.exe")) {
+      Write-Error "❌ dist\run.exe is missing — build artifact not found!"
+      exit 1
+    }
 
-      Write-Host "🚀 Copying run.exe …"
-      scp -o StrictHostKeyChecking=accept-new `
-          ".\dist\run.exe" "${user}@${ip}:d:/WatchdogDeploy/run.exe"
+    Write-Host "🚀 Copying run.exe …"
+    scp -o StrictHostKeyChecking=accept-new `
+        ".\dist\run.exe" `
+        "${user}@${ip}:d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
   environment:
