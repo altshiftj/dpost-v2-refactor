@@ -54,9 +54,7 @@ deploy-tischrem:
     Write-Host "📦 Copying .env…"
     "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
     .\pscp.exe -pw "$pass" .env "${user}@${ip}:/d:/WatchdogDeploy/.env"
-
-
-  when: manual
+    
   only: [tags]
   tags: [local]
   environment:
