@@ -49,12 +49,12 @@ deploy-tischrem:
     echo y | .\pscp.exe -pw "$pass" -batch -ls "${user}@${ip}:/d:/"
 
     Write-Host "🚀 Copying run.exe to $ip via SCP…"
-    .\pscp.exe -pw "$pass" dist\run.exe "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
+    echo y | .\pscp.exe -pw "$pass" dist\run.exe "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
 
     Write-Host "📦 Copying .env…"
     "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
     .\pscp.exe -pw "$pass" .env "${user}@${ip}:/d:/WatchdogDeploy/.env"
-    
+
   only: [tags]
   tags: [local]
   environment:
