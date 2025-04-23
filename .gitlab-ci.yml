@@ -46,7 +46,7 @@ deploy-tischrem:
 
       Write-Host "🚀 Copying run.exe …"
       scp -o StrictHostKeyChecking=accept-new `
-          ".\dist\run.exe" "$user@$ip:d:/WatchdogDeploy/run.exe"
+          ".\dist\run.exe" "${user}@${ip}:d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
   environment:
