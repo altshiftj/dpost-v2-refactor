@@ -13,7 +13,7 @@ build:
     - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
   script:
-    - pyinstaller build/run.spec          # creates dist\run.exe
+    - pyinstaller build/run.spec          # this already creates dist\run.exe
   artifacts:
     paths:
       - dist/run.exe
@@ -25,29 +25,23 @@ deploy-tischrem:
   stage: deploy
   needs: [build]
   script: |
-    $ErrorActionPreference = 'Stop'
-
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
-    $keyPath = "$HOME\deploy_key"
+    $pass = $env:TARGET_PASS
+    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
 
-    Write-Host "`n🔐 Writing deploy SSH key to $keyPath"
-    $env:DEPLOY_SSH_KEY | Out-File -Encoding ascii $keyPath
-
-    Write-Host "🔒 Restricting permissions on key file"
-    icacls $keyPath /inheritance:r /grant:r "$($env:USERNAME):(R)"
-
-    Write-Host "🔑 Adding $ip to known_hosts (TOFU)"
+    Write-Host "`n🔑  Adding $ip to known_hosts …"
     if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
     if (!(Test-Path "dist\run.exe")) {
-      throw "❌ dist\run.exe is missing — build artifact not found!"
+      Write-Error "❌ dist\run.exe is missing — build artifact not found!"
+      exit 1
     }
 
-    Write-Host "🚀 Copying run.exe to $ip"
-    scp -i $keyPath -o StrictHostKeyChecking=accept-new `
-        ".\dist\run.exe" "${user}@${ip}:d:/WatchdogDeploy/run.exe"
+    Write-Host "🚀 Copying run.exe …"
+    pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
+             ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
   environment:
