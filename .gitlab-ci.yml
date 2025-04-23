@@ -36,6 +36,9 @@ deploy-tischrem:
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
 
+    # Do a one-time trust step (non-batch mode, no file actually needed)
+    Write-Host "⏳ Accepting host key for $ip..."
+    echo y | pscp.exe -pw "$pass" -ls "$user@$ip:/"
 
     Write-Host "⏳ Pre-accepting host key if needed…"
     echo y | pscp.exe -pw "$pass" -batch -ls "${user}@${ip}:/d:/"
