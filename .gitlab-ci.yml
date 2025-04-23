@@ -37,14 +37,14 @@ deploy-tischrem:
     $pass = $env:TARGET_PASS
 
     Write-Host "⏳ Accepting SSH host key for $ip (one-time trust)..."
-    echo y | pscp.exe -pw "$pass" -ls "${user}@${ip}:/"
+    echo y | pscp.exe -pw "${pass}" -ls "${user}@${ip}:/"
 
     Write-Host "🚀 Copying run.exe to $ip via SCP (batch mode)..."
-    pscp.exe -batch -pw "$pass" dist\run.exe "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
+    pscp.exe -batch -pw "${pass}" dist\run.exe "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
 
     Write-Host "📦 Copying .env…"
     "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
-    pscp.exe -batch -pw "$pass" .env "${user}@${ip}:/d:/WatchdogDeploy/.env"
+    pscp.exe -batch -pw "${pass}" .env "${user}@${ip}:/d:/WatchdogDeploy/.env"
 
   only: [tags]
   tags: [local]
