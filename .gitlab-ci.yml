@@ -31,19 +31,10 @@ deploy-tischrem:
   needs:
     - job: build
       artifacts: true
-  before_script:
-    - |
-      if (-not (Test-Path ".\pscp.exe")) {
-        Invoke-WebRequest -Uri "https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe" -OutFile "pscp.exe"
-      }
   script: |
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
-
-    if (-not (Test-Path ".\pscp.exe")) {
-      Invoke-WebRequest -Uri "https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe" -OutFile "pscp.exe"
-    }
 
     Write-Host "⏳ Pre-accepting host key if needed…"
     echo y | .\pscp.exe -pw "$pass" -batch -ls "${user}@${ip}:/d:/"
