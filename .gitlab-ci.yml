@@ -45,7 +45,7 @@ deploy-tischrem:
 
     Write-Host "🚀 Copying run.exe …"
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\dist\run.exe" "$user@$ip:/d:/WatchdogDeploy/run.exe"
+             ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
 
