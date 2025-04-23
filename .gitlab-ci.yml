@@ -3,7 +3,7 @@ stages:
   - deploy
 
 # ──────────────────────────────────────────────
-# 🔨 BUILD
+# 🔨 BUILD STAGE
 # ──────────────────────────────────────────────
 build:
   stage: build
@@ -17,29 +17,45 @@ build:
   script:
     - pyinstaller build/run.spec
   artifacts:
-    paths:                       # ▼ keep the raw file, no ZIP
-      - dist/run.exe             #   GitLab will unpack this as dist/run.exe
+    paths:
+      - dist/run.exe
     expire_in: 1 week
-  tags:                          # runs only on your local runner
+  tags:
     - local
 
 # ──────────────────────────────────────────────
-# 🚀 DEPLOY – TischREM
+# 🚀 DEPLOY STAGE – TISCHREM (SECURE PSDrive)
 # ──────────────────────────────────────────────
 deploy-tischrem:
   stage: deploy
-  needs:                         # ▼ pulls artifacts from the *build* job
+  needs:
     - job: build
       artifacts: true
   script: |
-    echo "Deploying run.exe to \\$env:TARGET_IP\WatchdogDeploy"
-    $targetPath = "\\$env:TARGET_IP\WatchdogDeploy\run.exe"
-    Copy-Item "dist\run.exe" $targetPath -Force
-  when: manual                   # (optional) click ▶ in GitLab to deploy
+    $ip   = $env:TARGET_IP
+    $user = $env:TARGET_USER
+    $pass = $env:TARGET_PASS
+
+    echo "Deploying run.exe to \\$ip\WatchdogDeploy using temporary PSDrive..."
+
+    # Mount network share as Z: using provided credentials
+    New-PSDrive -Name Z -PSProvider FileSystem `
+      -Root "\\$ip\WatchdogDeploy" `
+      -Persist:$false `
+      -Credential (New-Object pscredential `
+                     $user `
+                     (ConvertTo-SecureString $pass -AsPlainText -Force))
+
+    # Deploy the executable
+    Copy-Item "dist\run.exe" "Z:\run.exe" -Force
+
+    # Clean up the mapped drive
+    Remove-PSDrive Z
+  when: manual
   only:
-    - tags                       # runs on tag pipelines
+    - tags
   tags:
     - local
   environment:
     name: prod-tischrem
-    url:  http://$env:TARGET_IP:8001/health
+    url: http://$env:TARGET_IP:8001/health
