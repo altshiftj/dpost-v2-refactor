@@ -41,12 +41,18 @@ deploy-tischrem:
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
 
-    echo "Copying run.exe to $ip via SCP…"
-    .\pscp.exe -pw "$pass" dist\run.exe "$user@$ip:D:\WatchdogDeploy\run.exe"
+    # Download pscp if it isn't in the repo yet
+    if (-not (Test-Path ".\pscp.exe")) {
+      Invoke-WebRequest -Uri "https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe" -OutFile "pscp.exe"
+    }
 
-    echo "Deploying .env…"
+    Write-Host "Copying run.exe to $ip via SCP…"
+    .\pscp.exe -pw "$pass" dist\run.exe "$user@$ip:/d/WatchdogDeploy/run.exe"
+
+    Write-Host "Copying .env…"
     echo "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
-    .\pscp.exe -pw "$pass" .env "$user@$ip:D:\WatchdogDeploy\.env"
+    .\pscp.exe -pw "$pass" .env "$user@$ip:/d/WatchdogDeploy/.env"
+
   when: manual
   only: [tags]
   tags: [local]
