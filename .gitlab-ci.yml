@@ -47,7 +47,7 @@ deploy-tischrem:
     }
 
     Write-Host "Copying run.exe to $ip via SCP…"
-    .\pscp.exe -pw "$pass" dist\run.exe "$user@$ip:/d/WatchdogDeploy/run.exe"
+    .\pscp.exe -pw "$pass" dist\run.exe "$user@$ip:D:/WatchdogDeploy/run.exe"
 
     Write-Host "Copying .env…"
     echo "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
