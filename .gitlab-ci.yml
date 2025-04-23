@@ -31,31 +31,25 @@ deploy-tischrem:
   needs:
     - job: build
       artifacts: true
+  before_script:
+    - |
+      if (-not (Test-Path ".\pscp.exe")) {
+        Invoke-WebRequest -Uri "https://the.earth.li/~sgtatham/putty/latest/w64/pscp.exe" -OutFile "pscp.exe"
+      }
   script: |
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
 
-    echo "Deploying run.exe to \\$ip\WatchdogDeploy using temporary PSDrive..."
+    echo "Copying run.exe to $ip via SCP…"
+    .\pscp.exe -pw "$pass" dist\run.exe "$user@$ip:D:\WatchdogDeploy\run.exe"
 
-    # Mount network share as Z: using provided credentials
-    New-PSDrive -Name Z -PSProvider FileSystem `
-      -Root "\\$ip\WatchdogDeploy" `
-      -Persist:$false `
-      -Credential (New-Object pscredential `
-                     $user `
-                     (ConvertTo-SecureString $pass -AsPlainText -Force))
-
-    # Deploy the executable
-    Copy-Item "dist\run.exe" "Z:\run.exe" -Force
-
-    # Clean up the mapped drive
-    Remove-PSDrive Z
+    echo "Deploying .env…"
+    echo "DEVICE_NAME=SEM_TischREM_BLB" | Out-File -Encoding ascii .env
+    .\pscp.exe -pw "$pass" .env "$user@$ip:D:\WatchdogDeploy\.env"
   when: manual
-  only:
-    - tags
-  tags:
-    - local
+  only: [tags]
+  tags: [local]
   environment:
     name: prod-tischrem
     url: http://$env:TARGET_IP:8001/health
