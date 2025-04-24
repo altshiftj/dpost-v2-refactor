@@ -6,7 +6,7 @@ env_path = str(Path.cwd() / ".env")
 
 a = Analysis(
     ['..\\src\\ipat_watchdog\\__main__.py'],
-    pathex=[],
+    pathex=['.', 'src'],
     binaries=[],
     datas=[(env_path, '.')],
     hiddenimports=[],
