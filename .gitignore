@@ -6,6 +6,7 @@
 /build/
 /*.spec
 *.exe
+/.env
 
 # ─── Python Cache & Test Artifacts ────────────
 __pycache__/

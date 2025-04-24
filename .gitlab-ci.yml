@@ -20,6 +20,9 @@ build:
     # 2️⃣ Create & activate isolated virtual environment
     - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
+    - $env:PYTHONPATH = "$PWD\src"
+    - echo "PYTHONPATH set to: $env:PYTHONPATH"
+    - python -c "import ipat_watchdog"
 
     # 3️⃣ Install ONLY clean dependencies
     - pip install -r requirements.txt
