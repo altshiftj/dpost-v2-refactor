@@ -10,3 +10,4 @@ pywin32
 pywin32-ctypes
 Pint
 PyYAML
+flask
