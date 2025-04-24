@@ -6,9 +6,9 @@ prometheus_client
 python-dotenv
 xmltodict
 tifffile
+flask
 
 [dev]
 ruff
 black
 mypy
-flask
