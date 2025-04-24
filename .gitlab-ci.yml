@@ -4,25 +4,33 @@ stages:
 
 build:
   stage: build
-  image: python:3.12          # still a plain Windows image
+  # (image: field removed – Shell executor ignores it anyway)
+
   before_script:
-    # 1️⃣  Create isolated env
-    - python -m venv .build-venv
+    # 1️⃣  Locate real CPython (adjust path if yours differs)
+    - $pythonExe = 'C:\Python\Python312\python.exe'
+    - |
+      if (-Not (Test-Path $pythonExe)) {
+        Write-Error "❌  $pythonExe not found.  Install real CPython and adjust the path in .gitlab-ci.yml."
+        exit 1
+      }
+      Write-Host "✅  Using $pythonExe"
+
+    # 2️⃣  Create & activate isolated env
+    - & $pythonExe -m venv .build-venv
     - .\.build-venv\Scripts\activate
 
-    # 2️⃣  Install ONLY runtime deps + PyInstaller
+    # 3️⃣  Install only the packages we care about
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
 
-    # 3️⃣  Write a tiny .env so DEVICE_NAME is baked in
+    # 4️⃣  Pass DEVICE_NAME into the build context
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
-    - Copy-Item -Force .env build/.env      # build/run.spec already exists
+    - Copy-Item -Force .env build/.env
 
-    # 4️⃣  (optional diagnostics)
-    - pip list --format=columns
-    - pip check
   script:
-    - pyinstaller build/run.spec            # uses venv’s site-packages only
+    - pyinstaller build/run.spec          # now uses clean venv
+
   artifacts:
     paths: [dist/run.exe]
     expire_in: 1 week
