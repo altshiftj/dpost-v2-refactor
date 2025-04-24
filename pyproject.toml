@@ -1,23 +1,39 @@
-[project.scripts]
-ipat-watchdog = "ipat_watchdog.__main__:main"
-
 [project]
 name = "ipat-watchdog"
 version = "0.1.0"
 description = "Scientific watchdog app for automated data ingestion"
 readme = "README.md"
 requires-python = ">=3.10"
+
 dependencies = [
     "kadi-apy",
     "watchdog",
-    "pytest",
-    "pyinstaller",
     "prometheus_client",
     "python-dotenv",
     "xmltodict",
     "tifffile",
-    "flask"
+    "requests",
+    "rdflib",
+    "pywin32",
+    "pywin32-ctypes",
+    "Pint",
+    "PyYAML"
 ]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "mypy",
+    "ruff",
+    "pytest",
+    "pyinstaller",
+    "pyfakefs",
+    "jupyter",
+    "ipython"
+]
+
+[project.scripts]
+ipat-watchdog = "ipat_watchdog.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -26,10 +42,3 @@ packages = ["ipat_watchdog"]
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-[project.optional-dependencies]
-dev = [
-  "ruff",
-  "black",
-  "mypy",
-]

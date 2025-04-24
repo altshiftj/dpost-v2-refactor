@@ -6,17 +6,25 @@ Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: kadi-apy
 Requires-Dist: watchdog
-Requires-Dist: pytest
-Requires-Dist: pyinstaller
 Requires-Dist: prometheus_client
 Requires-Dist: python-dotenv
 Requires-Dist: xmltodict
 Requires-Dist: tifffile
-Requires-Dist: flask
+Requires-Dist: requests
+Requires-Dist: rdflib
+Requires-Dist: pywin32
+Requires-Dist: pywin32-ctypes
+Requires-Dist: Pint
+Requires-Dist: PyYAML
 Provides-Extra: dev
-Requires-Dist: ruff; extra == "dev"
 Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pyinstaller; extra == "dev"
+Requires-Dist: pyfakefs; extra == "dev"
+Requires-Dist: jupyter; extra == "dev"
+Requires-Dist: ipython; extra == "dev"
 
 
 # IPAT Data Watchdog Service

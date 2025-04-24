@@ -1,14 +1,22 @@
 kadi-apy
 watchdog
-pytest
-pyinstaller
 prometheus_client
 python-dotenv
 xmltodict
 tifffile
-flask
+requests
+rdflib
+pywin32
+pywin32-ctypes
+Pint
+PyYAML
 
 [dev]
-ruff
 black
 mypy
+ruff
+pytest
+pyinstaller
+pyfakefs
+jupyter
+ipython

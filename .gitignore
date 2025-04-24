@@ -1,20 +1,26 @@
-/ipatwatchdogvenv/
-/.venv/
-/dist/
+# ─── Python Virtual Environments ─────────────
+.venv/
 
+# ─── Build & Distribution ─────────────────────
+/dist/
+/build/
+/*.spec
+*.exe
+
+# ─── Python Cache & Test Artifacts ────────────
+__pycache__/
+/.pytest_cache/
+/testing_data/
+
+# ─── VSCode & Editor Files ────────────────────
+.vscode/
+
+# ─── Logs ─────────────────────────────────────
+watchdog.log
+
+# ─── Project-specific Data Folders ────────────
 Data/*
 !Data/.gitkeep
 
 Upload_Ordner/*
 !Upload_Ordner/.gitkeep
-
-/testing_data/
-/.pytest_cache/
-/.vscode/
-
-**/__pycache__/
-
-watchdog.log
-.gitignore
-watchdog_app.spec
-watchdog_app.exe

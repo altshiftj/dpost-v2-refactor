@@ -7,13 +7,13 @@ build:
   stage: build
   image: python:3.12
   before_script:
+    - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
-    - pip uninstall -y PyQt5 PySide6
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
-    - if (!(Test-Path build)) { New-Item build -ItemType Directory }
-    - Copy-Item .env build/.env
+    - mkdir -p build
+    - cp .env build/.env
   script:
-    - pyinstaller build/run.spec          # this already creates dist\run.exe
+    - pyinstaller build/run.spec
   artifacts:
     paths:
       - dist/run.exe
@@ -31,7 +31,7 @@ deploy-tischrem:
     $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
 
     Write-Host "`n🔑  Adding $ip to known_hosts …"
-    if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
+    mkdir -Force "$HOME\.ssh" | Out-Null
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
     if (!(Test-Path "dist\run.exe")) {
