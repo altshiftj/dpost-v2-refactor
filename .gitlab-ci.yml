@@ -5,37 +5,37 @@ stages:
 # ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
-  image: python:3.12           # gives us a *known* CPython in PATH
+  image: python:3.12
   before_script:
-    # 1️⃣   Make sure we are NOT picking up the Windows-Apps shim
+    # 0️⃣  Verify Python is real CPython, not Windows-Apps shim
     - |
-      $realPython = (Get-Command python).Source
-      if ($realPython -match "WindowsApps") {
-        Write-Error "❌  'python' resolves to the Microsoft-Store shim. \
-                     Install a real CPython and add it to PATH."
+      $pythonPath = (Get-Command python).Source
+      if ($pythonPath -match "WindowsApps") {
+        Write-Error "❌  'python' resolves to Windows-Store shim. Install real CPython and put it on PATH."
         exit 1
       }
-      Write-Host "✅  Using Python at $realPython"
+      Write-Host "✅  Using Python at $pythonPath"
 
-    # 2️⃣   Create isolated env inside the job dir
-    - python -m venv .build-venv
-    - .\.build-venv\Scripts\activate
-
-    # 3️⃣   Install strict, minimal deps + build tools
+    # 1️⃣  Install build-time deps into global env (simple & quick)
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
 
-    # 4️⃣   Hand the DEVICE_NAME into a tiny .env file bundled by PyInstaller
+    # 2️⃣  Package-inventory + sanity checks
+    - Write-Host "`n📦  Full package list:" 
+    - pip list --format=columns
+    - |
+      Write-Host "`n🔎  Extras outside allow-list:"
+      pip list --format=freeze | sort > all_pkgs.txt
+      Select-String -Path all_pkgs.txt -NotMatch '(kadi-apy|watchdog|prometheus_client|python-dotenv|xmltodict|tifffile|requests|rdflib|pywin32|pywin32-ctypes|Pint|PyYAML|pyinstaller)' || echo "none"
+    - Write-Host "`n🩺  pip check:"
+    - pip check
+
+    # 3️⃣  Hand DEVICE_NAME to PyInstaller
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
     - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
-
-    # (diagnostics – optional, but helpful if something goes wrong)
-    - Write-Host "🛠  PyInstaller path: $(Get-Command pyinstaller).Source"
-    - pip list --format=columns
-
   script:
-    - pyinstaller build/run.spec            # produces dist/run.exe
+    - pyinstaller build/run.spec            # produces dist\run.exe
   artifacts:
     paths:
       - dist/run.exe
@@ -69,4 +69,3 @@ deploy-tischrem:
   environment:
     name: prod-tischrem
     url: http://$env:TARGET_IP:8001/health
-
