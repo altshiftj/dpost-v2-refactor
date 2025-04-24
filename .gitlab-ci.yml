@@ -10,8 +10,8 @@ build:
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
-    - mkdir -p build
-    - cp .env build/.env
+    - if (!(Test-Path build)) { New-Item build -ItemType Directory }
+    - Copy-Item .env build/.env
   script:
     - pyinstaller build/run.spec
   artifacts:
