@@ -2,40 +2,43 @@ stages:
   - build
   - deploy
 
+# ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
-  # (image: field removed – Shell executor ignores it anyway)
+  # image: not used — Shell executor ignores it
 
   before_script:
-    # 1️⃣  Locate real CPython (adjust path if yours differs)
+    # 1️⃣ Locate real CPython (edit this if your path differs)
     - $pythonExe = 'C:\Python\Python312\python.exe'
     - |
       if (-Not (Test-Path $pythonExe)) {
-        Write-Error "❌  $pythonExe not found.  Install real CPython and adjust the path in .gitlab-ci.yml."
+        Write-Error "❌  $pythonExe not found. Install real CPython and adjust path in .gitlab-ci.yml."
         exit 1
       }
       Write-Host "✅  Using $pythonExe"
 
-    # 2️⃣  Create & activate isolated env
-    - & $pythonExe -m venv .build-venv
+    # 2️⃣ Create & activate isolated virtual environment
+    - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
 
-    # 3️⃣  Install only the packages we care about
+    # 3️⃣ Install ONLY clean dependencies
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
 
-    # 4️⃣  Pass DEVICE_NAME into the build context
+    # 4️⃣ Write .env file for build context
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
     - Copy-Item -Force .env build/.env
 
   script:
-    - pyinstaller build/run.spec          # now uses clean venv
+    - pyinstaller build/run.spec
 
   artifacts:
-    paths: [dist/run.exe]
+    paths:
+      - dist/run.exe
     expire_in: 1 week
   tags: [local]
 
+# ─────────────── 🚀 DEPLOY ───────────────
 deploy-tischrem:
   stage: deploy
   needs: [build]
@@ -48,7 +51,10 @@ deploy-tischrem:
     if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    if (!(Test-Path "dist\run.exe")) { Write-Error "dist/run.exe missing"; exit 1 }
+    if (!(Test-Path "dist\run.exe")) {
+      Write-Error "❌ dist/run.exe missing"
+      exit 1
+    }
 
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
