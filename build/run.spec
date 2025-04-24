@@ -1,15 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 from pathlib import Path
+from PyInstaller.utils.hooks import collect_submodules
 
 env_path = str(Path.cwd() / ".env")
+device_plugins = collect_submodules('ipat_watchdog.devices')
 
 a = Analysis(
     ['..\\src\\ipat_watchdog\\__main__.py'],
     pathex=['.', 'src'],
     binaries=[],
     datas=[(env_path, '.')],
-    hiddenimports=[],
+    hiddenimports=device_plugins,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
