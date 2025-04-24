@@ -7,13 +7,19 @@ build:
   stage: build
   image: python:3.12
   before_script:
+    - python -m venv .build-venv
+    - .\.build-venv\Scripts\activate
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
     - if (!(Test-Path build)) { New-Item build -ItemType Directory }
     - Copy-Item .env build/.env
+    - echo "🛠  Using PyInstaller from:"
+    - where pyinstaller
+    - echo "📦 Installed packages:"
+    - pip list
   script:
-    - pyinstaller build/run.spec
+    - .\.build-venv\Scripts\pyinstaller build/run.spec
   artifacts:
     paths:
       - dist/run.exe
