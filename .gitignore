@@ -1,5 +1,5 @@
 /ipatwatchdogvenv/
-/wdvenv/
+/.venv/
 /dist/
 
 Data/*
