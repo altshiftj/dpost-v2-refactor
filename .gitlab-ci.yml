@@ -2,25 +2,32 @@ stages:
   - build
   - deploy
 
-# ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
-  image: python:3.12
+  image: python:3.12          # still a plain Windows image
   before_script:
+    # 1️⃣  Create isolated env
+    - python -m venv .build-venv
+    - .\.build-venv\Scripts\activate
+
+    # 2️⃣  Install ONLY runtime deps + PyInstaller
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
+
+    # 3️⃣  Write a tiny .env so DEVICE_NAME is baked in
     - echo "DEVICE_NAME=$env:DEVICE_NAME" > .env
-    - if (!(Test-Path build)) { New-Item build -ItemType Directory }
-    - Copy-Item .env build/.env
+    - Copy-Item -Force .env build/.env      # build/run.spec already exists
+
+    # 4️⃣  (optional diagnostics)
+    - pip list --format=columns
+    - pip check
   script:
-    - pyinstaller build/run.spec
+    - pyinstaller build/run.spec            # uses venv’s site-packages only
   artifacts:
-    paths:
-      - dist/run.exe
+    paths: [dist/run.exe]
     expire_in: 1 week
   tags: [local]
 
-# ─────────────── 🚀 DEPLOY ───────────────
 deploy-tischrem:
   stage: deploy
   needs: [build]
@@ -30,16 +37,11 @@ deploy-tischrem:
     $pass = $env:TARGET_PASS
     $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
 
-    Write-Host "`n🔑  Adding $ip to known_hosts …"
     if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    if (!(Test-Path "dist\run.exe")) {
-      Write-Error "❌ dist\run.exe is missing — build artifact not found!"
-      exit 1
-    }
+    if (!(Test-Path "dist\run.exe")) { Write-Error "dist/run.exe missing"; exit 1 }
 
-    Write-Host "🚀 Copying run.exe …"
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
   only: [tags]
