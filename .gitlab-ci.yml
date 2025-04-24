@@ -31,7 +31,7 @@ deploy-tischrem:
     $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
 
     Write-Host "`n🔑  Adding $ip to known_hosts …"
-    mkdir -Force "$HOME\.ssh" | Out-Null
+    if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
     if (!(Test-Path "dist\run.exe")) {
