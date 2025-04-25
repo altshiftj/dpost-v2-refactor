@@ -78,6 +78,7 @@ deploy-tischrem:
     url:  http://$env:TARGET_IP:8001/health
 
 # ─────────────── ▶️ RUN ───────────────
+# ─────────────── ▶️ RUN ───────────────
 run-prod:
   stage: run
   needs: [deploy-tischrem]
@@ -89,20 +90,24 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    # Register the Windows service once, then always (re)start it
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" `
-      "$user@$ip" `
-      "powershell -NoProfile -Command `
-        \"if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) { `
-             New-Service -Name ipat_watchdog `
-                          -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
-                          -StartupType Automatic `
-                          -DisplayName 'IPAT-Watchdog' `
-                          -Description 'Automated data-ingestion watchdog' } ; `
-          Start-Service ipat_watchdog\""
+    # ---------- ONE-LINER REMOTE POWERSHELL SCRIPT ----------
+    $remoteCmd = @'
+    powershell -NoProfile -Command "
+    if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
+        New-Service -Name ipat_watchdog `
+                    -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
+                    -StartupType Automatic `
+                    -DisplayName 'IPAT-Watchdog' `
+                    -Description 'Automated data-ingestion watchdog'
+    }
+    Start-Service ipat_watchdog
+    "
+    '@
+
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" $remoteCmd
   environment:
     name: prod-tischrem
-    action: start          # GitLab renders a Start button
+    action: start
   tags: [local]
 
 # ─────────────── ⏹️ STOP (manual) ───────────────
@@ -116,12 +121,13 @@ stop-prod:
     $pass = $env:TARGET_PASS
     $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
 
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" `
-      "$user@$ip" "powershell -NoProfile -Command \"Stop-Service ipat_watchdog\""
+    $remoteCmd = 'powershell -NoProfile -Command "Stop-Service ipat_watchdog"'
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" $remoteCmd
   environment:
     name: prod-tischrem
-    action: stop           # GitLab renders a Stop button
+    action: stop
   tags: [local]
+
 
 # ─────────────── ❤️ HEALTH ───────────────
 health-check:
