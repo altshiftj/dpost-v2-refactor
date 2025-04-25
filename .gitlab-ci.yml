@@ -81,7 +81,6 @@ deploy-tischrem:
 # ─────────────── ▶️ RUN ───────────────
 run-prod:
   stage: run
-  needs: [deploy-tischrem]
   script: |
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
@@ -90,21 +89,18 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    # ----------- ONE-LINER REMOTE COMMAND (no CR/LF) -----------
-    $remoteCmd = @'
-    powershell -NoProfile -Command "& { 
-        if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) { 
-            New-Service -Name ipat_watchdog `
-                        -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
-                        -StartupType Automatic `
-                        -DisplayName 'IPAT-Watchdog' `
-                        -Description 'Automated data-ingestion watchdog' 
-        } 
-        Start-Service ipat_watchdog 
-    }"
-    '@.Trim()      # <-- removes the leading line-break produced by @' … '@
-
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" $remoteCmd
+    # Full remote PowerShell inline as quoted string
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
+      "powershell -NoProfile -Command `"& {
+        if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
+          New-Service -Name ipat_watchdog `
+                      -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
+                      -StartupType Automatic `
+                      -DisplayName 'IPAT-Watchdog' `
+                      -Description 'Automated data-ingestion watchdog'
+        }
+        Start-Service ipat_watchdog
+      }`""
   environment:
     name: prod-tischrem
     action: start
