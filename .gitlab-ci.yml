@@ -2,6 +2,11 @@ stages:
   - build
   - deploy
 
+# 🛠️ Cache pip downloads between builds
+cache:
+  paths:
+    - .cache/pip
+
 # ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
@@ -21,16 +26,16 @@ build:
     - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
 
-    # 3️⃣ Install only clean dependencies into venv
-    - pip install -r requirements.txt
-    - pip install pyinstaller python-dotenv
+    # 3️⃣ Install dependencies using pip cache
+    - pip install --cache-dir .cache/pip -r requirements.txt
+    - pip install --cache-dir .cache/pip pyinstaller python-dotenv
 
     # 4️⃣ Write .env for DEVICE_NAME
     - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
     - Copy-Item -Force .env build/.env
 
   script:
-    # 5️⃣ Run PyInstaller with PYTHONPATH explicitly set for this command only
+    # 5️⃣ Run PyInstaller with PYTHONPATH explicitly set
     - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
 
   artifacts:
