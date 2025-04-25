@@ -80,6 +80,7 @@ deploy-tischrem:
 run-prod:
   stage: run
   script: |
+    # ----- vars ---------------------------------------------------
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
@@ -87,22 +88,31 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
+    # ----- remote PowerShell script (plain text) ------------------
+    $remoteScript = @'
+    if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
+        New-Service -Name ipat_watchdog `
+                    -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
+                    -StartupType Automatic `
+                    -DisplayName 'IPAT-Watchdog' `
+                    -Description 'Automated data-ingestion watchdog'
+    }
+    Start-Service ipat_watchdog
+    Get-Service ipat_watchdog | Format-Table Name,Status,StartType -AutoSize
+    '@
+
+    # Encode for -EncodedCommand (UTF-16LE → Base64)
+    $bytes   = [System.Text.Encoding]::Unicode.GetBytes($remoteScript)
+    $encoded = [Convert]::ToBase64String($bytes)
+
+    # ----- fire it off via plink ----------------------------------
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -Command `"& {
-        if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
-          New-Service -Name ipat_watchdog `
-                      -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
-                      -StartupType Automatic `
-                      -DisplayName 'IPAT-Watchdog' `
-                      -Description 'Automated data-ingestion watchdog'
-        }
-        Start-Service ipat_watchdog
-        Get-Service ipat_watchdog | Format-Table Name, Status, StartType -AutoSize
-      }`""
+      "powershell -NoProfile -EncodedCommand $encoded"
   environment:
     name: prod-tischrem
     action: start
   tags: [local]
+
 
 # ─────────────── ⏹️ STOP (manual) ───────────────
 stop-prod:
