@@ -8,32 +8,30 @@ build:
   # image: not used — Shell executor ignores it
 
   before_script:
-    # 1️⃣ Locate real CPython (edit this if your path differs)
+    # 1️⃣ Locate real CPython (adjust path if needed)
     - $pythonExe = 'C:\Python\Python312\python.exe'
     - |
       if (-Not (Test-Path $pythonExe)) {
-        Write-Error "❌  $pythonExe not found. Install real CPython and adjust path in .gitlab-ci.yml."
+        Write-Error "❌  $pythonExe not found. Install CPython and update .gitlab-ci.yml."
         exit 1
       }
       Write-Host "✅  Using $pythonExe"
 
-    # 2️⃣ Create & activate isolated virtual environment
+    # 2️⃣ Create and activate isolated virtual environment
     - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
-    - "$env:PYTHONPATH = \"$PWD\\src\""
-    - "echo PYTHONPATH set to: $env:PYTHONPATH"
-    - "python -c \"import ipat_watchdog\""
 
-    # 3️⃣ Install ONLY clean dependencies
+    # 3️⃣ Install only clean dependencies into venv
     - pip install -r requirements.txt
     - pip install pyinstaller python-dotenv
 
-    # 4️⃣ Write .env file for build context
+    # 4️⃣ Write .env for DEVICE_NAME
     - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
     - Copy-Item -Force .env build/.env
 
   script:
-    - pyinstaller build/run.spec
+    # 5️⃣ Run PyInstaller with PYTHONPATH explicitly set for this command only
+    - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
 
   artifacts:
     paths:

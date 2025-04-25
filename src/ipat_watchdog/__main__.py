@@ -52,4 +52,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        logger.error("❌ An unhandled exception occurred", exc_info=True)
+        print("❌ An unhandled exception occurred:")
+        print(e)
+        traceback.print_exc()
+        input("\nPress Enter to close...")
