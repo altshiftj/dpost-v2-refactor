@@ -90,25 +90,26 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    # ---------- ONE-LINER REMOTE POWERSHELL SCRIPT ----------
+    # ----------- ONE-LINER REMOTE COMMAND (no CR/LF) -----------
     $remoteCmd = @'
-    powershell -NoProfile -Command "
-    if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
-        New-Service -Name ipat_watchdog `
-                    -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
-                    -StartupType Automatic `
-                    -DisplayName 'IPAT-Watchdog' `
-                    -Description 'Automated data-ingestion watchdog'
-    }
-    Start-Service ipat_watchdog
-    "
-    '@
+    powershell -NoProfile -Command "& { 
+        if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) { 
+            New-Service -Name ipat_watchdog `
+                        -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
+                        -StartupType Automatic `
+                        -DisplayName 'IPAT-Watchdog' `
+                        -Description 'Automated data-ingestion watchdog' 
+        } 
+        Start-Service ipat_watchdog 
+    }"
+    '@.Trim()      # <-- removes the leading line-break produced by @' … '@
 
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" $remoteCmd
   environment:
     name: prod-tischrem
     action: start
   tags: [local]
+
 
 # ─────────────── ⏹️ STOP (manual) ───────────────
 stop-prod:
