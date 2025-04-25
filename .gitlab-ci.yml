@@ -1,6 +1,12 @@
+# ────────────────  CI/CD PIPELINE FOR IPAT-WATCHDOG  ────────────────
+# build  ➜  deploy  ➜  run  ➜  health
+# Requires PuTTY’s pscp.exe & plink.exe in %PATH% on the GitLab runner.
+# -------------------------------------------------------------------
 stages:
   - build
   - deploy
+  - run
+  - health
 
 # 🛠️ Cache pip downloads between builds
 cache:
@@ -10,7 +16,7 @@ cache:
 # ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
-  # image: not used — Shell executor ignores it
+  # image: ignored by Shell executor
 
   before_script:
     # 1️⃣ Locate real CPython (adjust path if needed)
@@ -62,10 +68,77 @@ deploy-tischrem:
       exit 1
     }
 
+    # copy the freshly built EXE to the target PC
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
   only: [tags]
   tags: [local]
   environment:
+    name: prod-tischrem           # GitLab “Environment” name
+    url:  http://$env:TARGET_IP:8001/health
+
+# ─────────────── ▶️ RUN ───────────────
+run-prod:
+  stage: run
+  needs: [deploy-tischrem]
+  script: |
+    $ip   = $env:TARGET_IP
+    $user = $env:TARGET_USER
+    $pass = $env:TARGET_PASS
+    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
+
+    ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
+
+    # Register the Windows service once, then always (re)start it
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" `
+      "$user@$ip" `
+      "powershell -NoProfile -Command `
+        \"if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) { `
+             New-Service -Name ipat_watchdog `
+                          -BinaryPathName 'D:\WatchdogDeploy\run.exe' `
+                          -StartupType Automatic `
+                          -DisplayName 'IPAT-Watchdog' `
+                          -Description 'Automated data-ingestion watchdog' } ; `
+          Start-Service ipat_watchdog\""
+  environment:
     name: prod-tischrem
-    url: http://$env:TARGET_IP:8001/health
+    action: start          # GitLab renders a Start button
+  tags: [local]
+
+# ─────────────── ⏹️ STOP (manual) ───────────────
+stop-prod:
+  stage: run
+  when: manual
+  allow_failure: false
+  script: |
+    $ip   = $env:TARGET_IP
+    $user = $env:TARGET_USER
+    $pass = $env:TARGET_PASS
+    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
+
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" `
+      "$user@$ip" "powershell -NoProfile -Command \"Stop-Service ipat_watchdog\""
+  environment:
+    name: prod-tischrem
+    action: stop           # GitLab renders a Stop button
+  tags: [local]
+
+# ─────────────── ❤️ HEALTH ───────────────
+health-check:
+  stage: health
+  needs: [run-prod]
+  allow_failure: false
+  script: |
+    $url = "http://$env:TARGET_IP:8001/health"
+    Write-Host "⏱️  Waiting for $url …"
+    for ($i=0; $i -lt 30; $i++) {
+      try {
+        Invoke-RestMethod -Uri $url -TimeoutSec 3
+        Write-Host "✅  Service is healthy"; exit 0
+      } catch {
+        Start-Sleep -Seconds 2
+      }
+    }
+    Write-Error "❌ Service did not become healthy in time"; exit 1
+  environment: prod-tischrem
+  tags: [local]
