@@ -1,6 +1,6 @@
 # ────────────────  CI/CD PIPELINE FOR IPAT-WATCHDOG  ────────────────
 # build  ➜  deploy  ➜  run  ➜  health
-# Requires PuTTY’s pscp.exe & plink.exe in %PATH% on the GitLab runner.
+# PuTTY’s pscp.exe & plink.exe must be in PATH on the GitLab runner
 # -------------------------------------------------------------------
 stages:
   - build
@@ -16,10 +16,11 @@ cache:
 # ─────────────── 🔨 BUILD ───────────────
 build:
   stage: build
-  # image: ignored by Shell executor
-
+  rules:
+    - changes: ["requirements.txt", "build/run.spec", "src/**/*"]
+      when: on_success
+    - when: never
   before_script:
-    # 1️⃣ Locate real CPython (adjust path if needed)
     - $pythonExe = 'C:\Python\Python312\python.exe'
     - |
       if (-Not (Test-Path $pythonExe)) {
@@ -27,21 +28,14 @@ build:
         exit 1
       }
       Write-Host "✅  Using $pythonExe"
-
-    # 2️⃣ Create and activate isolated virtual environment
     - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
-
-    # 3️⃣ Install dependencies using pip cache
     - pip install --cache-dir .cache/pip -r requirements.txt
     - pip install --cache-dir .cache/pip pyinstaller python-dotenv
-
-    # 4️⃣ Write .env for DEVICE_NAME
     - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
     - Copy-Item -Force .env build/.env
 
   script:
-    # 5️⃣ Run PyInstaller with PYTHONPATH explicitly set
     - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
 
   artifacts:
@@ -54,6 +48,10 @@ build:
 deploy-tischrem:
   stage: deploy
   needs: [build]
+  rules:
+    - changes: ["dist/run.exe", ".gitlab-ci.yml"]
+      when: on_success
+    - when: never
   script: |
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
@@ -68,16 +66,14 @@ deploy-tischrem:
       exit 1
     }
 
-    # copy the freshly built EXE to the target PC
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
-  only: [tags]
   tags: [local]
+  only: [tags]
   environment:
-    name: prod-tischrem           # GitLab “Environment” name
+    name: prod-tischrem
     url:  http://$env:TARGET_IP:8001/health
 
-# ─────────────── ▶️ RUN ───────────────
 # ─────────────── ▶️ RUN ───────────────
 run-prod:
   stage: run
@@ -89,7 +85,6 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    # Full remote PowerShell inline as quoted string
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
       "powershell -NoProfile -Command `"& {
         if (-not (Get-Service ipat_watchdog -ErrorAction SilentlyContinue)) {
@@ -100,12 +95,12 @@ run-prod:
                       -Description 'Automated data-ingestion watchdog'
         }
         Start-Service ipat_watchdog
+        Get-Service ipat_watchdog | Format-Table Name, Status, StartType -AutoSize
       }`""
   environment:
     name: prod-tischrem
     action: start
   tags: [local]
-
 
 # ─────────────── ⏹️ STOP (manual) ───────────────
 stop-prod:
@@ -124,7 +119,6 @@ stop-prod:
     name: prod-tischrem
     action: stop
   tags: [local]
-
 
 # ─────────────── ❤️ HEALTH ───────────────
 health-check:
