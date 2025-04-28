@@ -8,7 +8,7 @@ stages:
   - health
 
 variables:
-  PYTHON_VERSION: "3.12"
+  PYTHON_VERSION: "312"
   PYTHON_EXE: "C:\\Python\\Python${PYTHON_VERSION}\\python.exe"
   VENV_DIR: ".build-venv"
   BINARY_NAME: "run.exe"
