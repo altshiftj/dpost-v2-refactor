@@ -109,7 +109,7 @@ health-check:
   needs: [run-prod]
   allow_failure: false
   script: |
-    $url = "http://$env:TARGET_IP:8001/health"
+    $url = "http://$($env:TARGET_IP):8001/health"   # ← fixed
     Write-Host "⏱️  Waiting for $url …"
     for ($i=0; $i -lt 30; $i++) {
       try {
@@ -122,3 +122,4 @@ health-check:
     Write-Error "❌ Service did not become healthy in time"; exit 1
   environment: prod-tischrem
   tags: [local]
+
