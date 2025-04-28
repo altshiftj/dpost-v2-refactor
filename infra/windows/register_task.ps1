@@ -24,6 +24,29 @@ $LogDir    = 'D:\WatchdogDeploy\logs'
 $LogPath   = Join-Path $LogDir 'app_output.log'
 $UserName  = "$env:USERNAME"
 
+# ─────────────────────────────────────────────
+# Stop any existing Watchdog task and running app
+# ─────────────────────────────────────────────
+
+# Stop the scheduled task if running
+try {
+    $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+    if ($task -and $task.State -eq 'Running') {
+        Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    }
+} catch {
+    Write-Host "ℹ️ No running scheduled task to stop."
+}
+
+# Kill lingering run.exe processes (safety net)
+Get-Process run -ErrorAction SilentlyContinue | ForEach-Object {
+    Write-Host "⚠️ Killing leftover process PID=$($_.Id)"
+    $_ | Stop-Process -Force
+    Start-Sleep -Seconds 1
+}
+
+
 # Restart policy
 $RestartInterval = New-TimeSpan -Minutes 1
 $RestartCount    = 9999
