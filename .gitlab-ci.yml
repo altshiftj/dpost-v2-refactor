@@ -1,115 +1,120 @@
-# ────────────────  CI/CD PIPELINE FOR IPAT-WATCHDOG  ────────────────
-# build  ➜  deploy  ➜  run (Scheduled Task)  ➜  health
-# -------------------------------------------------------------------
+# GitLab CI Pipeline for IPAT-Watchdog
+# build ➜ deploy ➜ run ➜ health
+
 stages:
   - build
   - deploy
   - run
   - health
 
-# 🛠️ Cache pip downloads between builds
+variables:
+  PYTHON_VERSION: "3.12"
+  PYTHON_EXE: "C:\\Python\\Python${PYTHON_VERSION}\\python.exe"
+  VENV_DIR: ".build-venv"
+  BINARY_NAME: "run.exe"
+  DEPLOY_DIR: "D:\\WatchdogDeploy"
+  HOST_KEY_FPR: ""
+  MONITOR_PORT: "8001"
+
+  TARGET_IP: ""
+  TARGET_USER: ""
+  TARGET_PASS: ""
+  DEVICE_NAME: "SEM_TischREM_BLB"
+
 cache:
   paths:
     - .cache/pip
 
-# ─────────────── 🔨 BUILD ───────────────
+.ps-ssh-init: &ps_ssh_init |
+  $ip   = $env:TARGET_IP
+  $user = $env:TARGET_USER
+  $pass = $env:TARGET_PASS
+  $fpr  = $env:HOST_KEY_FPR
+  if (!(Test-Path "$HOME\\.ssh")) { New-Item "$HOME\\.ssh" -ItemType Directory | Out-Null }
+  ssh-keyscan -H $ip | Out-File -Append "$HOME\\.ssh\\known_hosts"
+
+.ps-copy-dist: &ps_copy_dist |
+  pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
+           ".\\dist\\$env:BINARY_NAME" `
+           "$user@$ip:$env:DEPLOY_DIR\\$env:BINARY_NAME"
+
+.ps-copy-task-script: &ps_copy_task_script |
+  pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
+           ".\\infra\\windows\\register_task.ps1" `
+           "$user@$ip:$env:DEPLOY_DIR\\register_task.ps1"
+
 build:
   stage: build
+  tags: [windows-runner]
   rules:
-    - changes: ["requirements.txt", "build/run.spec", "src/**/*"]
+    - changes:
+        - requirements.txt
+        - build/run.spec
+        - src/**/*
       when: on_success
-    - when: never
   before_script:
-    - $pythonExe = 'C:\Python\Python312\python.exe'
+    - $pythonExe = "$env:PYTHON_EXE"
     - |
       if (-Not (Test-Path $pythonExe)) {
-        Write-Error "❌  $pythonExe not found. Install CPython and update .gitlab-ci.yml."
+        Write-Error "❌  $pythonExe not found. Install CPython or set PYTHON_EXE."
         exit 1
       }
       Write-Host "✅  Using $pythonExe"
-    - "& $pythonExe -m venv .build-venv"
-    - .\.build-venv\Scripts\activate
+    - "& $pythonExe -m venv $env:VENV_DIR"
+    - ".\\$env:VENV_DIR\\Scripts\\activate"
     - pip install --cache-dir .cache/pip -r requirements.txt
     - pip install --cache-dir .cache/pip pyinstaller python-dotenv
     - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
     - Copy-Item -Force .env build/.env
-
   script:
-    - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
-
+    - cmd /c "set PYTHONPATH=%CD%\\src && .\\$env:VENV_DIR\\Scripts\\pyinstaller.exe build\\run.spec"
   artifacts:
-    paths:
-      - dist/run.exe
+    paths: [dist]
     expire_in: 1 week
-  tags: [local]
 
-# ─────────────── 🚀 DEPLOY ───────────────
-deploy-tischrem:
+deploy-lab:
   stage: deploy
   needs: [build]
+  tags: [windows-runner]
+  when: manual
+  environment:
+    name: "lab/$TARGET_IP"
+    action: prepare
+    url: "http://$TARGET_IP:$MONITOR_PORT/health"
   rules:
-    - if: '$CI_COMMIT_TAG'
-      changes:
-        - dist/run.exe
-        - .gitlab-ci.yml
-      when: on_success
-    - when: never
-  script: |
-    $ip   = $env:TARGET_IP
-    $user = $env:TARGET_USER
-    $pass = $env:TARGET_PASS
-    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
+    - if: '$TARGET_IP != ""'
+  before_script:
+    - *ps_ssh_init
+  script:
+    - *ps_copy_dist
+    - *ps_copy_task_script
 
-    if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
-    ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
-
-    if (!(Test-Path "dist\run.exe")) {
-      Write-Error "❌ dist/run.exe missing"
-      exit 1
-    }
-
-    # Copy the compiled exe and the task script
-    pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
-
-    pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\infra\windows\register_task.ps1" "${user}@${ip}:/d:/WatchdogDeploy/register_task.ps1"
-  tags: [local]
-  environment:
-    name: prod-tischrem
-    url:  http://$env:TARGET_IP:8001/health
-
-# ─────────────── ▶️ RUN ───────────────
-run-prod:
+run-lab:
   stage: run
-  script: |
-    $ip   = $env:TARGET_IP
-    $user = $env:TARGET_USER
-    $pass = $env:TARGET_PASS
-    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
-
-    ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
-
-    # 1) register / update the scheduled task
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -File D:\WatchdogDeploy\register_task.ps1"
-
-    # 2) start it immediately
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -Command Start-ScheduledTask -TaskName 'IPAT-Watchdog'"
+  needs: [deploy-lab]
+  when: manual
+  tags: [windows-runner]
   environment:
-    name: prod-tischrem
+    name: "lab/$TARGET_IP"
     action: start
-  tags: [local]
+  before_script:
+    - *ps_ssh_init
+  script: |
+    plink.exe -batch -pw "$env:TARGET_PASS" -hostkey "$env:HOST_KEY_FPR" `
+      "$env:TARGET_USER@$env:TARGET_IP" `
+      "powershell -NoProfile -ExecutionPolicy Bypass -File $env:DEPLOY_DIR\\register_task.ps1"
+    plink.exe -batch -pw "$env:TARGET_PASS" -hostkey "$env:HOST_KEY_FPR" `
+      "$env:TARGET_USER@$env:TARGET_IP" `
+      "powershell -NoProfile -Command Start-ScheduledTask -TaskName 'IPAT-Watchdog'"
 
-
-# ─────────────── ❤️ HEALTH ───────────────
 health-check:
   stage: health
-  needs: [run-prod]
+  needs: [run-lab]
   allow_failure: false
+  tags: [windows-runner]
+  before_script: []
   script: |
-    $url = "http://$($env:TARGET_IP):8001/health"   # ← fixed
+    $url = "http://$env:TARGET_IP:$env:MONITOR_PORT/health"
     Write-Host "⏱️  Waiting for $url …"
     for ($i=0; $i -lt 30; $i++) {
       try {
@@ -120,6 +125,5 @@ health-check:
       }
     }
     Write-Error "❌ Service did not become healthy in time"; exit 1
-  environment: prod-tischrem
-  tags: [local]
-
+  environment:
+    name: "lab/$TARGET_IP"

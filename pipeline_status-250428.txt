@@ -1,0 +1,511 @@
+Build
+Running with gitlab-runner 17.11.0 (0f67ff19)
+  on wd-deploy t3_dgXe9L, system ID: s_9a8c0d907e25
+Preparing the "shell" executor 00:00
+Using Shell (powershell) executor...
+Preparing environment 00:01
+Running on NB-JFI...
+Getting source from Git repository 00:14
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in D:/GitLab-Runner/builds/t3_dgXe9L/0/james.fitz/ipat_data_watchdog/.git/
+Checking out 64b56078 as detached HEAD (ref is v0.1.54)...
+Removing .cache/
+git-lfs/3.4.1 (GitHub; windows amd64; go 1.20.11; git 0898dcbc)
+Skipping Git submodules setup
+Restoring cache 01:28
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Checking cache for default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=24236 revision=0f67ff19 version=17.11.0
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Executing "step_script" stage of the job script 05:37
+$ $pythonExe = 'C:\Python\Python312\python.exe'
+$ if (-Not (Test-Path $pythonExe)) { # collapsed multi-line command
+✅  Using C:\Python\Python312\python.exe
+$ & $pythonExe -m venv .build-venv
+$ .\.build-venv\Scripts\activate
+$ pip install --cache-dir .cache/pip -r requirements.txt
+Collecting kadi-apy (from -r requirements.txt (line 1))
+  Using cached kadi_apy-0.46.0-py3-none-any.whl.metadata (4.0 kB)
+Collecting watchdog (from -r requirements.txt (line 2))
+  Using cached watchdog-6.0.0-py3-none-win_amd64.whl.metadata (44 kB)
+Collecting prometheus_client (from -r requirements.txt (line 3))
+  Using cached prometheus_client-0.21.1-py3-none-any.whl.metadata (1.8 kB)
+Collecting python-dotenv (from -r requirements.txt (line 4))
+  Using cached python_dotenv-1.1.0-py3-none-any.whl.metadata (24 kB)
+Collecting xmltodict (from -r requirements.txt (line 5))
+  Using cached xmltodict-0.14.2-py2.py3-none-any.whl.metadata (8.0 kB)
+Collecting tifffile (from -r requirements.txt (line 6))
+  Using cached tifffile-2025.3.30-py3-none-any.whl.metadata (32 kB)
+Collecting requests (from -r requirements.txt (line 7))
+  Using cached requests-2.32.3-py3-none-any.whl.metadata (4.6 kB)
+Collecting rdflib (from -r requirements.txt (line 8))
+  Using cached rdflib-7.1.4-py3-none-any.whl.metadata (11 kB)
+Collecting pywin32 (from -r requirements.txt (line 9))
+  Using cached pywin32-310-cp312-cp312-win_amd64.whl.metadata (9.4 kB)
+Collecting pywin32-ctypes (from -r requirements.txt (line 10))
+  Using cached pywin32_ctypes-0.2.3-py3-none-any.whl.metadata (3.9 kB)
+Collecting Pint (from -r requirements.txt (line 11))
+  Using cached Pint-0.24.4-py3-none-any.whl.metadata (8.5 kB)
+Collecting PyYAML (from -r requirements.txt (line 12))
+  Using cached PyYAML-6.0.2-cp312-cp312-win_amd64.whl.metadata (2.1 kB)
+Collecting flask (from -r requirements.txt (line 13))
+  Using cached flask-3.1.0-py3-none-any.whl.metadata (2.7 kB)
+Collecting click<9.0.0,>=8.0.0 (from kadi-apy->-r requirements.txt (line 1))
+  Using cached click-8.1.8-py3-none-any.whl.metadata (2.3 kB)
+Collecting jsonref<2.0.0,>=1.1.0 (from kadi-apy->-r requirements.txt (line 1))
+  Using cached jsonref-1.1.0-py3-none-any.whl.metadata (2.7 kB)
+Collecting python-dateutil<3.0.0,>=2.8.2 (from kadi-apy->-r requirements.txt (line 1))
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Collecting niquests<4.0.0,>=3.13.0 (from kadi-apy->-r requirements.txt (line 1))
+  Using cached niquests-3.14.0-py3-none-any.whl.metadata (16 kB)
+Collecting xmlhelpy<0.15.0,>=0.14.0 (from kadi-apy->-r requirements.txt (line 1))
+  Using cached xmlhelpy-0.14.0-py3-none-any.whl.metadata (9.7 kB)
+Collecting numpy (from tifffile->-r requirements.txt (line 6))
+  Using cached numpy-2.2.5-cp312-cp312-win_amd64.whl.metadata (60 kB)
+Collecting charset-normalizer<4,>=2 (from requests->-r requirements.txt (line 7))
+  Using cached charset_normalizer-3.4.1-cp312-cp312-win_amd64.whl.metadata (36 kB)
+Collecting idna<4,>=2.5 (from requests->-r requirements.txt (line 7))
+  Using cached idna-3.10-py3-none-any.whl.metadata (10 kB)
+Collecting urllib3<3,>=1.21.1 (from requests->-r requirements.txt (line 7))
+  Using cached urllib3-2.4.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting certifi>=2017.4.17 (from requests->-r requirements.txt (line 7))
+  Using cached certifi-2025.4.26-py3-none-any.whl.metadata (2.5 kB)
+Collecting pyparsing<4,>=2.1.0 (from rdflib->-r requirements.txt (line 8))
+  Using cached pyparsing-3.2.3-py3-none-any.whl.metadata (5.0 kB)
+Collecting platformdirs>=2.1.0 (from Pint->-r requirements.txt (line 11))
+  Using cached platformdirs-4.3.7-py3-none-any.whl.metadata (11 kB)
+Collecting typing-extensions>=4.0.0 (from Pint->-r requirements.txt (line 11))
+  Using cached typing_extensions-4.13.2-py3-none-any.whl.metadata (3.0 kB)
+Collecting flexcache>=0.3 (from Pint->-r requirements.txt (line 11))
+  Using cached flexcache-0.3-py3-none-any.whl.metadata (7.0 kB)
+Collecting flexparser>=0.4 (from Pint->-r requirements.txt (line 11))
+  Using cached flexparser-0.4-py3-none-any.whl.metadata (18 kB)
+Collecting Werkzeug>=3.1 (from flask->-r requirements.txt (line 13))
+  Using cached werkzeug-3.1.3-py3-none-any.whl.metadata (3.7 kB)
+Collecting Jinja2>=3.1.2 (from flask->-r requirements.txt (line 13))
+  Using cached jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+Collecting itsdangerous>=2.2 (from flask->-r requirements.txt (line 13))
+  Using cached itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+Collecting blinker>=1.9 (from flask->-r requirements.txt (line 13))
+  Using cached blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+Collecting colorama (from click<9.0.0,>=8.0.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+Collecting MarkupSafe>=2.0 (from Jinja2>=3.1.2->flask->-r requirements.txt (line 13))
+  Using cached MarkupSafe-3.0.2-cp312-cp312-win_amd64.whl.metadata (4.1 kB)
+Collecting urllib3-future<3,>=2.12.900 (from niquests<4.0.0,>=3.13.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached urllib3_future-2.12.919-py3-none-any.whl.metadata (15 kB)
+Collecting wassima<2,>=1.0.1 (from niquests<4.0.0,>=3.13.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached wassima-1.2.2-cp37-abi3-win_amd64.whl.metadata (6.8 kB)
+Collecting six>=1.5 (from python-dateutil<3.0.0,>=2.8.2->kadi-apy->-r requirements.txt (line 1))
+  Using cached six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Collecting lxml<6.0.0,>=5.0.0 (from xmlhelpy<0.15.0,>=0.14.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached lxml-5.4.0-cp312-cp312-win_amd64.whl.metadata (3.6 kB)
+Collecting h11<1.0.0,>=0.11.0 (from urllib3-future<3,>=2.12.900->niquests<4.0.0,>=3.13.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting jh2<6.0.0,>=5.0.3 (from urllib3-future<3,>=2.12.900->niquests<4.0.0,>=3.13.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached jh2-5.0.9-cp37-abi3-win_amd64.whl.metadata (4.0 kB)
+Collecting qh3<2.0.0,>=1.2.0 (from urllib3-future<3,>=2.12.900->niquests<4.0.0,>=3.13.0->kadi-apy->-r requirements.txt (line 1))
+  Using cached qh3-1.5.0-cp37-abi3-win_amd64.whl.metadata (4.8 kB)
+Using cached kadi_apy-0.46.0-py3-none-any.whl (86 kB)
+Using cached watchdog-6.0.0-py3-none-win_amd64.whl (79 kB)
+Using cached prometheus_client-0.21.1-py3-none-any.whl (54 kB)
+Using cached python_dotenv-1.1.0-py3-none-any.whl (20 kB)
+Using cached xmltodict-0.14.2-py2.py3-none-any.whl (10.0 kB)
+Using cached tifffile-2025.3.30-py3-none-any.whl (226 kB)
+Using cached requests-2.32.3-py3-none-any.whl (64 kB)
+Using cached rdflib-7.1.4-py3-none-any.whl (565 kB)
+Using cached pywin32-310-cp312-cp312-win_amd64.whl (9.5 MB)
+Using cached pywin32_ctypes-0.2.3-py3-none-any.whl (30 kB)
+Using cached Pint-0.24.4-py3-none-any.whl (302 kB)
+Using cached PyYAML-6.0.2-cp312-cp312-win_amd64.whl (156 kB)
+Using cached flask-3.1.0-py3-none-any.whl (102 kB)
+Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)
+Using cached certifi-2025.4.26-py3-none-any.whl (159 kB)
+Using cached charset_normalizer-3.4.1-cp312-cp312-win_amd64.whl (102 kB)
+Using cached click-8.1.8-py3-none-any.whl (98 kB)
+Using cached flexcache-0.3-py3-none-any.whl (13 kB)
+Using cached flexparser-0.4-py3-none-any.whl (27 kB)
+Using cached idna-3.10-py3-none-any.whl (70 kB)
+Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+Using cached jinja2-3.1.6-py3-none-any.whl (134 kB)
+Using cached jsonref-1.1.0-py3-none-any.whl (9.4 kB)
+Using cached niquests-3.14.0-py3-none-any.whl (164 kB)
+Using cached platformdirs-4.3.7-py3-none-any.whl (18 kB)
+Using cached pyparsing-3.2.3-py3-none-any.whl (111 kB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Using cached typing_extensions-4.13.2-py3-none-any.whl (45 kB)
+Using cached urllib3-2.4.0-py3-none-any.whl (128 kB)
+Using cached werkzeug-3.1.3-py3-none-any.whl (224 kB)
+Using cached xmlhelpy-0.14.0-py3-none-any.whl (18 kB)
+Using cached numpy-2.2.5-cp312-cp312-win_amd64.whl (12.6 MB)
+Using cached lxml-5.4.0-cp312-cp312-win_amd64.whl (3.8 MB)
+Using cached MarkupSafe-3.0.2-cp312-cp312-win_amd64.whl (15 kB)
+Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Using cached urllib3_future-2.12.919-py3-none-any.whl (655 kB)
+Using cached wassima-1.2.2-cp37-abi3-win_amd64.whl (126 kB)
+Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Using cached jh2-5.0.9-cp37-abi3-win_amd64.whl (251 kB)
+Using cached qh3-1.5.0-cp37-abi3-win_amd64.whl (2.0 MB)
+Installing collected packages: pywin32, xmltodict, watchdog, wassima, urllib3, typing-extensions, six, qh3, PyYAML, pywin32-ctypes, python-dotenv, pyparsing, prometheus_client, platformdirs, numpy, MarkupSafe, lxml, jsonref, jh2, itsdangerous, idna, h11, colorama, charset-normalizer, certifi, blinker, Werkzeug, urllib3-future, tifffile, requests, rdflib, python-dateutil, Jinja2, flexparser, flexcache, click, xmlhelpy, Pint, niquests, flask, kadi-apy
+Successfully installed Jinja2-3.1.6 MarkupSafe-3.0.2 Pint-0.24.4 PyYAML-6.0.2 Werkzeug-3.1.3 blinker-1.9.0 certifi-2025.4.26 charset-normalizer-3.4.1 click-8.1.8 colorama-0.4.6 flask-3.1.0 flexcache-0.3 flexparser-0.4 h11-0.16.0 idna-3.10 itsdangerous-2.2.0 jh2-5.0.9 jsonref-1.1.0 kadi-apy-0.46.0 lxml-5.4.0 niquests-3.14.0 numpy-2.2.5 platformdirs-4.3.7 prometheus_client-0.21.1 pyparsing-3.2.3 python-dateutil-2.9.0.post0 python-dotenv-1.1.0 pywin32-310 pywin32-ctypes-0.2.3 qh3-1.5.0 rdflib-7.1.4 requests-2.32.3 six-1.17.0 tifffile-2025.3.30 typing-extensions-4.13.2 urllib3-2.4.0 urllib3-future-2.12.919 wassima-1.2.2 watchdog-6.0.0 xmlhelpy-0.14.0 xmltodict-0.14.2
+[notice] A new release of pip is available: 24.2 -> 25.0.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+$ pip install --cache-dir .cache/pip pyinstaller python-dotenv
+Collecting pyinstaller
+  Using cached pyinstaller-6.13.0-py3-none-win_amd64.whl.metadata (8.3 kB)
+Requirement already satisfied: python-dotenv in d:\gitlab-runner\builds\t3_dgxe9l\0\james.fitz\ipat_data_watchdog\.build-venv\lib\site-packages (1.1.0)
+Collecting setuptools>=42.0.0 (from pyinstaller)
+  Using cached setuptools-80.0.0-py3-none-any.whl.metadata (6.5 kB)
+Collecting altgraph (from pyinstaller)
+  Using cached altgraph-0.17.4-py2.py3-none-any.whl.metadata (7.3 kB)
+Collecting pefile!=2024.8.26,>=2022.5.30 (from pyinstaller)
+  Using cached pefile-2023.2.7-py3-none-any.whl.metadata (1.4 kB)
+Requirement already satisfied: pywin32-ctypes>=0.2.1 in d:\gitlab-runner\builds\t3_dgxe9l\0\james.fitz\ipat_data_watchdog\.build-venv\lib\site-packages (from pyinstaller) (0.2.3)
+Collecting pyinstaller-hooks-contrib>=2025.2 (from pyinstaller)
+  Using cached pyinstaller_hooks_contrib-2025.3-py3-none-any.whl.metadata (16 kB)
+Collecting packaging>=22.0 (from pyinstaller)
+  Using cached packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+Using cached pyinstaller-6.13.0-py3-none-win_amd64.whl (1.4 MB)
+Using cached packaging-25.0-py3-none-any.whl (66 kB)
+Using cached pefile-2023.2.7-py3-none-any.whl (71 kB)
+Using cached pyinstaller_hooks_contrib-2025.3-py3-none-any.whl (434 kB)
+Using cached setuptools-80.0.0-py3-none-any.whl (1.2 MB)
+Using cached altgraph-0.17.4-py2.py3-none-any.whl (21 kB)
+Installing collected packages: altgraph, setuptools, pefile, packaging, pyinstaller-hooks-contrib, pyinstaller
+Successfully installed altgraph-0.17.4 packaging-25.0 pefile-2023.2.7 pyinstaller-6.13.0 pyinstaller-hooks-contrib-2025.3 setuptools-80.0.0
+[notice] A new release of pip is available: 24.2 -> 25.0.1
+[notice] To update, run: python.exe -m pip install --upgrade pip
+$ echo DEVICE_NAME=$env:DEVICE_NAME > .env
+$ Copy-Item -Force .env build/.env
+$ cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
+460 INFO: PyInstaller: 6.13.0, contrib hooks: 2025.3
+460 INFO: Python: 3.12.7
+565 INFO: Platform: Windows-11-10.0.22631-SP0
+565 INFO: Python environment: D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\.build-venv
+1965 INFO: Module search paths (PYTHONPATH):
+['D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Scripts\\pyinstaller.exe',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\src',
+ 'C:\\Python\\Python312\\python312.zip',
+ 'C:\\Python\\Python312\\DLLs',
+ 'C:\\Python\\Python312\\Lib',
+ 'C:\\Python\\Python312',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\win32',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\win32\\lib',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\Pythonwin',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\setuptools\\_vendor',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\src\\ipat_watchdog',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog',
+ 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\src']
+3976 INFO: Appending 'datas' from .spec
+3982 INFO: checking Analysis
+4054 INFO: Building because inputs changed
+4054 INFO: Running Analysis Analysis-00.toc
+4054 INFO: Target bytecode optimization level: 0
+4054 INFO: Initializing module dependency graph...
+4070 INFO: Initializing module graph hook caches...
+4149 INFO: Analyzing modules for base_library.zip ...
+8749 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+15267 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+19053 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+21174 INFO: Caching module dependency graph...
+21348 INFO: Looking for Python shared library...
+21379 INFO: Using Python shared library: C:\Python\Python312\python312.dll
+21379 INFO: Analyzing D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\src\ipat_watchdog\__main__.py
+23327 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+24505 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+24522 INFO: SetuptoolsInfo: initializing cached setuptools info...
+32740 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+33080 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+37404 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+39697 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+39953 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+39955 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+39980 INFO: Processing standard module hook 'hook-setuptools.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+40045 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+40182 INFO: Processing pre-safe-import-module hook 'hook-jaraco.functools.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+40183 INFO: Setuptools: 'jaraco.functools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.functools'!
+40222 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+40222 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+41012 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41060 INFO: Processing standard module hook 'hook-packaging.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+41574 INFO: Processing pre-safe-import-module hook 'hook-jaraco.text.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41576 INFO: Setuptools: 'jaraco.text' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.text'!
+41614 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+41622 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41630 INFO: Processing pre-safe-import-module hook 'hook-jaraco.context.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41634 INFO: Setuptools: 'jaraco.context' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.context'!
+41680 INFO: Processing pre-safe-import-module hook 'hook-backports.tarfile.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+41684 INFO: Setuptools: 'backports.tarfile' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.backports.tarfile'!
+41994 INFO: Processing standard module hook 'hook-backports.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+43370 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+43370 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+45016 INFO: Processing standard module hook 'hook-pkg_resources.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+46297 INFO: Processing pre-safe-import-module hook 'hook-platformdirs.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+46338 INFO: Processing standard module hook 'hook-platformdirs.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+47044 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+47048 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+47912 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+47928 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+47928 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+48626 INFO: Processing standard module hook 'hook-jinja2.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+55276 INFO: Processing standard module hook 'hook-numpy.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+64991 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+66845 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+66861 INFO: Processing standard module hook 'hook-lxml.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+68290 INFO: Processing standard module hook 'hook-lxml.etree.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+68494 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+68497 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+70081 INFO: Processing standard module hook 'hook-_tkinter.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+71149 INFO: Processing standard module hook 'hook-urllib3.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+81326 INFO: Processing standard module hook 'hook-certifi.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+81877 INFO: Processing standard module hook 'hook-dateutil.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+82630 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+83164 INFO: Processing standard module hook 'hook-rdflib.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+85786 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+89996 INFO: Processing standard module hook 'hook-niquests.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+91990 INFO: Processing standard module hook 'hook-urllib3_future.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+100410 INFO: Analyzing hidden import 'ipat_watchdog.devices'
+100416 INFO: Analyzing hidden import 'ipat_watchdog.devices.SEM_TischREM_BLB'
+100420 INFO: Analyzing hidden import 'ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem'
+100442 INFO: Analyzing hidden import 'ipat_watchdog.devices.SEM_TischREM_BLB.plugin'
+100458 INFO: Processing module hooks (post-graph stage)...
+101307 INFO: Processing standard module hook 'hook-lxml.isoschematron.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+107589 INFO: Processing standard module hook 'hook-_tkinter.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks'
+107592 INFO: Processing standard module hook 'hook-lxml.objectify.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+107668 INFO: Performing binary vs. data reclassification (947 entries)
+109629 INFO: Looking for ctypes DLLs
+110309 INFO: Analyzing run-time hooks ...
+110337 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110353 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110356 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110379 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110385 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110389 INFO: Including run-time hook 'pyi_rth_pkgres.py' from 'D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+110637 INFO: Creating base_library.zip...
+115119 INFO: Looking for dynamic libraries
+125476 INFO: Extra DLL search directories (AddDllDirectory): ['D:\\GitLab-Runner\\builds\\t3_dgXe9L\\0\\james.fitz\\ipat_data_watchdog\\.build-venv\\Lib\\site-packages\\numpy.libs']
+125476 INFO: Extra DLL search directories (PATH): []
+129715 INFO: Warnings written to D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\build\run\warn-run.txt
+130563 INFO: Graph cross-reference written to D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\build\run\xref-run.html
+131096 INFO: checking PYZ
+131143 INFO: Building because name changed
+131143 INFO: Building PYZ (ZlibArchive) D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\build\run\PYZ-00.pyz
+140407 INFO: Building PYZ (ZlibArchive) D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\build\run\PYZ-00.pyz completed successfully.
+140831 INFO: checking PKG
+140878 INFO: Building because name changed
+140878 INFO: Building PKG (CArchive) run.pkg
+180651 INFO: Building PKG (CArchive) run.pkg completed successfully.
+180704 INFO: Bootloader D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\.build-venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+180705 INFO: checking EXE
+180735 INFO: Rebuilding EXE-00.toc because run.exe missing
+180736 INFO: Building EXE from EXE-00.toc
+180738 INFO: Copying bootloader EXE to D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\dist\run.exe
+180826 INFO: Copying icon to EXE
+180897 INFO: Copying 0 resources to EXE
+180897 INFO: Embedding manifest in EXE
+181031 INFO: Appending PKG archive to EXE
+181227 INFO: Fixing EXE headers
+182122 INFO: Building EXE from EXE-00.toc completed successfully.
+182190 INFO: Build complete! The results are available in: D:\GitLab-Runner\builds\t3_dgXe9L\0\james.fitz\ipat_data_watchdog\dist
+Saving cache for successful job 00:11
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Creating cache default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=5200 revision=0f67ff19 version=17.11.0
+.cache/pip: found 871 matching artifact files and directories 
+No URL provided, cache will not be uploaded to shared cache server. Cache will be stored only locally. 
+Created cache
+Uploading artifacts for successful job 00:19
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Uploading artifacts...
+Runtime platform                                    arch=amd64 os=windows pid=27676 revision=0f67ff19 version=17.11.0
+dist/run.exe: found 1 matching artifact files and directories 
+Uploading artifacts as "archive" to coordinator... 201 Created  id=300403 responseStatus=201 Created token=64_6Y6WYt
+Cleaning up project directory and file based variables 00:01
+Job succeeded
+
+Deploy
+Running with gitlab-runner 17.11.0 (0f67ff19)
+  on wd-deploy t3_dgXe9L, system ID: s_9a8c0d907e25
+Preparing the "shell" executor 00:00
+Using Shell (powershell) executor...
+Preparing environment 00:01
+Running on NB-JFI...
+Getting source from Git repository 00:17
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in D:/GitLab-Runner/builds/t3_dgXe9L/0/james.fitz/ipat_data_watchdog/.git/
+Checking out 64b56078 as detached HEAD (ref is v0.1.54)...
+Removing .cache/
+Removing dist/
+git-lfs/3.4.1 (GitHub; windows amd64; go 1.20.11; git 0898dcbc)
+Skipping Git submodules setup
+Restoring cache 01:12
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Checking cache for default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=20124 revision=0f67ff19 version=17.11.0
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Downloading artifacts 00:10
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Downloading artifacts for build (300403)...
+Runtime platform                                    arch=amd64 os=windows pid=25812 revision=0f67ff19 version=17.11.0
+Downloading artifacts from coordinator... ok        host=git.rz.tu-bs.de id=300403 responseStatus=200 OK token=64_jrwZBb
+Executing "step_script" stage of the job script 00:03
+$ $ip   = $env:TARGET_IP # collapsed multi-line command
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+run.exe                   | 34745 kB | 34745.0 kB/s | ETA: 00:00:00 | 100%
+register_task.ps1         | 3 kB |   3.8 kB/s | ETA: 00:00:00 | 100%
+Saving cache for successful job 00:09
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Creating cache default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=7200 revision=0f67ff19 version=17.11.0
+.cache/pip: found 871 matching artifact files and directories 
+Archive is up to date!                             
+Created cache
+Cleaning up project directory and file based variables 00:01
+Job succeeded
+
+Run
+Running with gitlab-runner 17.11.0 (0f67ff19)
+  on wd-deploy t3_dgXe9L, system ID: s_9a8c0d907e25
+Preparing the "shell" executor 00:00
+Using Shell (powershell) executor...
+Preparing environment 00:01
+Running on NB-JFI...
+Getting source from Git repository 00:15
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in D:/GitLab-Runner/builds/t3_dgXe9L/0/james.fitz/ipat_data_watchdog/.git/
+Checking out 64b56078 as detached HEAD (ref is v0.1.54)...
+Removing .cache/
+Removing dist/
+git-lfs/3.4.1 (GitHub; windows amd64; go 1.20.11; git 0898dcbc)
+Skipping Git submodules setup
+Restoring cache 01:27
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Checking cache for default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=18936 revision=0f67ff19 version=17.11.0
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Downloading artifacts 00:11
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Downloading artifacts for build (300403)...
+Runtime platform                                    arch=amd64 os=windows pid=4012 revision=0f67ff19 version=17.11.0
+Downloading artifacts from coordinator... ok        host=git.rz.tu-bs.de id=300403 responseStatus=200 OK token=64_GaGdnE
+Executing "step_script" stage of the job script 00:05
+$ $ip   = $env:TARGET_IP # collapsed multi-line command
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+# 134.169.58.176:22 SSH-2.0-OpenSSH_for_Windows_9.5
+TaskPath                                       TaskName                          State     
+--------                                       --------                          -----     
+\                                              IPAT-Watchdog                     Ready     
+ o. Scheduled Task 'IPAT-Watchdog' (re)registered successfully.
+Saving cache for successful job 00:09
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Creating cache default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=17324 revision=0f67ff19 version=17.11.0
+.cache/pip: found 871 matching artifact files and directories 
+Archive is up to date!                             
+Created cache
+Cleaning up project directory and file based variables 00:01
+Job succeeded
+
+Health
+
+Running with gitlab-runner 17.11.0 (0f67ff19)
+  on wd-deploy t3_dgXe9L, system ID: s_9a8c0d907e25
+Preparing the "shell" executor 00:00
+Using Shell (powershell) executor...
+Preparing environment 00:01
+Running on NB-JFI...
+Getting source from Git repository 00:14
+Fetching changes with git depth set to 20...
+Reinitialized existing Git repository in D:/GitLab-Runner/builds/t3_dgXe9L/0/james.fitz/ipat_data_watchdog/.git/
+Checking out 64b56078 as detached HEAD (ref is v0.1.54)...
+Removing .cache/
+Removing dist/
+git-lfs/3.4.1 (GitHub; windows amd64; go 1.20.11; git 0898dcbc)
+Skipping Git submodules setup
+Restoring cache 01:27
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Checking cache for default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=11480 revision=0f67ff19 version=17.11.0
+No URL provided, cache will not be downloaded from shared cache server. Instead a local version of cache will be extracted. 
+Successfully extracted cache
+Executing "step_script" stage of the job script 00:02
+$ $url = "http://$($env:TARGET_IP):8001/health"   # ← fixed # collapsed multi-line command
+⏱️  Waiting for http://134.169.58.176:8001/health …
+✅  Service is healthy
+Saving cache for successful job 00:09
+Version:      17.11.0
+Git revision: 0f67ff19
+Git branch:   17-11-stable
+GO version:   go1.23.6 X:cacheprog
+Built:        2025-04-14T10:18:18Z
+OS/Arch:      windows/amd64
+Creating cache default-non_protected...
+Runtime platform                                    arch=amd64 os=windows pid=17988 revision=0f67ff19 version=17.11.0
+.cache/pip: found 871 matching artifact files and directories 
+Archive is up to date!                             
+Created cache
+Cleaning up project directory and file based variables 00:01
+Job succeeded

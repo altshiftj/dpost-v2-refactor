@@ -1,0 +1,407 @@
+Folder PATH listing for volume Data
+Volume serial number is DC60-E827
+D:.
+�   .env
+�   .gitignore
+�   .gitlab-ci.yml
+�   Makefile
+�   pipeline_status-250428.txt
+�   project_structure.txt
+�   pyproject.toml
+�   README.md
+�   requirements.txt
+�   SEM_testing_data.zip
+�   __init__.py
+�   
++---.pytest_cache
+�   �   .gitignore
+�   �   CACHEDIR.TAG
+�   �   README.md
+�   �   
+�   +---v
+�       +---cache
+�               lastfailed
+�               nodeids
+�               stepwise
+�                                  
++---build
+�   �   run.spec
+�   �   
+�   +---run
+�       �   Analysis-00.toc
+�       �   base_library.zip
+�       �   EXE-00.toc
+�       �   PKG-00.toc
+�       �   PYZ-00.pyz
+�       �   PYZ-00.toc
+�       �   run.pkg
+�       �   warn-run.txt
+�       �   xref-run.html
+�       �   
+�       +---localpycs
+�               pyimod01_archive.pyc
+�               pyimod02_importers.pyc
+�               pyimod03_ctypes.pyc
+�               pyimod04_pywin32.pyc
+�               struct.pyc
+�               
++---dist
+�       run.exe
+�       
++---infra
+�   +---windows
+�           register_task.ps1
+�           
++---src
+�   �   __init__.py
+�   �   
+�   +---ipat_watchdog
+�   �   �   metrics.py
+�   �   �   observability.py
+�   �   �   __main__.py
+�   �   �   
+�   �   +---app
+�   �   �   �   device_watchdog_app.py
+�   �   �   �   logger.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           device_watchdog_app.cpython-312.pyc
+�   �   �           logger.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---config
+�   �   �   �   settings_base.py
+�   �   �   �   settings_store.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           settings_base.cpython-312.pyc
+�   �   �           settings_store.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---devices
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---SEM_TischREM_BLB
+�   �   �   �   �   file_processor_tischrem.py
+�   �   �   �   �   plugin.py
+�   �   �   �   �   settings_tischrem.py
+�   �   �   �   �   __init__.py
+�   �   �   �   �   
+�   �   �   �   +---__pycache__
+�   �   �   �           file_processor_tischrem.cpython-312.pyc
+�   �   �   �           plugin.cpython-312.pyc
+�   �   �   �           settings_tischrem.cpython-312.pyc
+�   �   �   �           __init__.cpython-312.pyc
+�   �   �   �           
+�   �   �   +---__pycache__
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---handlers
+�   �   �   �   file_event_handler.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           file_event_handler.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---plugins
+�   �   �   �   device_plugin.py
+�   �   �   �   loader.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           device_plugin.cpython-312.pyc
+�   �   �           loader.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---processing
+�   �   �   �   file_processor_abstract.py
+�   �   �   �   file_process_manager.py
+�   �   �   �   metadata_extractor.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           file_processor_abstract.cpython-312.pyc
+�   �   �           file_process_manager.cpython-312.pyc
+�   �   �           metadata_extractor.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---records
+�   �   �   �   local_record.py
+�   �   �   �   record_manager.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           local_record.cpython-312.pyc
+�   �   �           record_manager.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---sessions
+�   �   �   �   session_manager.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           session_manager.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---storage
+�   �   �   �   filesystem_utils.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           filesystem_utils.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---sync
+�   �   �   �   sync_abstract.py
+�   �   �   �   sync_kadi.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           sync_abstract.cpython-312.pyc
+�   �   �           sync_kadi.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---ui
+�   �   �   �   dialogs.py
+�   �   �   �   ui_abstract.py
+�   �   �   �   ui_messages.py
+�   �   �   �   ui_tkinter.py
+�   �   �   �   __init__.py
+�   �   �   �   
+�   �   �   +---__pycache__
+�   �   �           dialogs.cpython-312.pyc
+�   �   �           ui_abstract.cpython-312.pyc
+�   �   �           ui_messages.cpython-312.pyc
+�   �   �           ui_tkinter.cpython-312.pyc
+�   �   �           __init__.cpython-312.pyc
+�   �   �           
+�   �   +---__pycache__
+�   �           metrics.cpython-312.pyc
+�   �           observability.cpython-312.pyc
+�   �           __main__.cpython-312.pyc
+�   �           
+�   +---ipat_watchdog.egg-info
+�   �       dependency_links.txt
+�   �       entry_points.txt
+�   �       PKG-INFO
+�   �       requires.txt
+�   �       SOURCES.txt
+�   �       top_level.txt
+�   �       
+�   +---__pycache__
+�           __init__.cpython-312.pyc
+�           
++---testing_data
+�   �   alk-ipat-NCM_1231.tiff
+�   �   alk-ipat-NCM_2341.tiff
+�   �   compile_codebase.py
+�   �   jfi-ipat-rik_test.tiff
+�   �   jfi-ipat-tiff21.tiff
+�   �   jfi-ipat-trace!.tiff
+�   �   jfi-ipat-trace.tiff
+�   �   jfi-ipat-trace_append.tiff
+�   �   REM-Test.tiff
+�   �   REM_Test.tiff
+�   �   
+�   +---jfi-ipat-elid
+�   �   �   test.elid
+�   �   �   test.odt
+�   �   �   
+�   �   +---export
+�   �       �   Image 1.tiff
+�   �       �   Image 2.tiff
+�   �       �   Image 3.tiff
+�   �       �   Image 4.tiff
+�   �       �   Image 5.tiff
+�   �       �   
+�   �       +---Image 1_analysis_1_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 2_analysis_1_linescan
+�   �       �       Image 2_analysis_1_linescan_Carbon_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_atomic.csv
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_weight.csv
+�   �       �       Image 2_analysis_1_linescan_Oxygen_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_Silicon_(32 points).tiff
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 3_analysis_1_region
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 4_analysis_1_map
+�   �       �       Image 4_analysis_1_map_Carbon_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_C_O_Si_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_Oxygen_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_Silicon_(64x48 points).tiff
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_1_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_2_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_3_spot
+�   �               quantification.csv
+�   �               spectrum.emsa
+�   �               spectrum.tiff
+�   �               
+�   +---jfi-ipat-elid_test
+�   �   �   test.elid
+�   �   �   test.odt
+�   �   �   
+�   �   +---export
+�   �       �   Image 1.tiff
+�   �       �   Image 2.tiff
+�   �       �   Image 3.tiff
+�   �       �   Image 4.tiff
+�   �       �   Image 5.tiff
+�   �       �   
+�   �       +---Image 1_analysis_1_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 2_analysis_1_linescan
+�   �       �       Image 2_analysis_1_linescan_Carbon_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_atomic.csv
+�   �       �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_weight.csv
+�   �       �       Image 2_analysis_1_linescan_Oxygen_(32 points).tiff
+�   �       �       Image 2_analysis_1_linescan_Silicon_(32 points).tiff
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 3_analysis_1_region
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 4_analysis_1_map
+�   �       �       Image 4_analysis_1_map_Carbon_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_C_O_Si_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_Oxygen_(64x48 points).tiff
+�   �       �       Image 4_analysis_1_map_Silicon_(64x48 points).tiff
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_1_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_2_spot
+�   �       �       quantification.csv
+�   �       �       spectrum.emsa
+�   �       �       spectrum.tiff
+�   �       �       
+�   �       +---Image 5_analysis_3_spot
+�   �               quantification.csv
+�   �               spectrum.emsa
+�   �               spectrum.tiff
+�   �               
+�   +---test_elid
+�       �   test.elid
+�       �   test.odt
+�       �   
+�       +---export
+�           �   Image 1.tiff
+�           �   Image 2.tiff
+�           �   Image 3.tiff
+�           �   Image 4.tiff
+�           �   Image 5.tiff
+�           �   
+�           +---Image 1_analysis_1_spot
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 2_analysis_1_linescan
+�           �       Image 2_analysis_1_linescan_Carbon_(32 points).tiff
+�           �       Image 2_analysis_1_linescan_C_O_Si_(32 points).tiff
+�           �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_atomic.csv
+�           �       Image 2_analysis_1_linescan_C_O_Si_(32 points)_weight.csv
+�           �       Image 2_analysis_1_linescan_Oxygen_(32 points).tiff
+�           �       Image 2_analysis_1_linescan_Silicon_(32 points).tiff
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 3_analysis_1_region
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 4_analysis_1_map
+�           �       Image 4_analysis_1_map_Carbon_(64x48 points).tiff
+�           �       Image 4_analysis_1_map_C_O_Si_(64x48 points).tiff
+�           �       Image 4_analysis_1_map_Oxygen_(64x48 points).tiff
+�           �       Image 4_analysis_1_map_Silicon_(64x48 points).tiff
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 5_analysis_1_spot
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 5_analysis_2_spot
+�           �       quantification.csv
+�           �       spectrum.emsa
+�           �       spectrum.tiff
+�           �       
+�           +---Image 5_analysis_3_spot
+�                   quantification.csv
+�                   spectrum.emsa
+�                   spectrum.tiff
+�                   
++---tests
+    �   conftest.py
+    �   __init__.py
+    �   
+    +---helpers
+    �       fake_handler.py
+    �       fake_observer.py
+    �       fake_processor.py
+    �       fake_process_manager.py
+    �       fake_session.py
+    �       fake_sync.py
+    �       fake_ui.py
+    �       __init__.py
+    �       
+    +---integration
+    �       test_integration.py
+    �       __init__.py
+    �       
+    +---unit
+            test_device_watchdog_app.py
+            test_dialogs.py
+            test_file_event_handler.py
+            test_file_processor_tischrem.py
+            test_file_process_manager.py
+            test_local_record.py
+            test_record_manager.py
+            test_session_manager.py
+            test_sync_kadi.py
+            test_ui_tkinter.py
+            __init__.py
+            
