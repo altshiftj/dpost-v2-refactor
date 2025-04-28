@@ -10,7 +10,7 @@ stages:
 variables:
   PYTHON_VERSION: "312"
   PYTHON_EXE: "C:\\Python\\Python${PYTHON_VERSION}\\python.exe"
-  VENV_DIR: ".build-venv"
+  VENV_DIR: ".venv"
   BINARY_NAME: "run.exe"
   DEPLOY_DIR: "D:\\WatchdogDeploy"
   HOST_KEY_FPR: ""
