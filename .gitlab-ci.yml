@@ -61,7 +61,7 @@ build:
       }
       Write-Host "✅  Using $pythonExe"
     - "& $pythonExe -m venv $env:VENV_DIR"
-    - ".\\$env:VENV_DIR\\Scripts\\activate"
+    - ".\\$env:{VENV_DIR}\\Scripts\\activate"
     - pip install --cache-dir .cache/pip -r requirements.txt
     - pip install --cache-dir .cache/pip pyinstaller python-dotenv
     - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
