@@ -90,13 +90,18 @@ run-prod:
 
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
-    # Register the scheduled task and start it immediately
-    $remoteCmd = 'powershell -NoProfile -ExecutionPolicy Bypass -File D:\WatchdogDeploy\register_task.ps1; Start-ScheduledTask -TaskName "IPAT-Watchdog"'
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" $remoteCmd
+    # 1) register / update the scheduled task
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
+      "powershell -NoProfile -ExecutionPolicy Bypass -File D:\WatchdogDeploy\register_task.ps1"
+
+    # 2) start it immediately
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
+      "powershell -NoProfile -Command Start-ScheduledTask -TaskName 'IPAT-Watchdog'"
   environment:
     name: prod-tischrem
     action: start
   tags: [local]
+
 
 # ─────────────── ❤️ HEALTH ───────────────
 health-check:
