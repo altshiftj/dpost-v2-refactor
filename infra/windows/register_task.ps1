@@ -19,8 +19,8 @@ Set-StrictMode -Version Latest
 # Configurable variables
 # ─────────────────────────────────────────────
 $TaskName  = 'IPAT-Watchdog'
-$ExePath   = 'D:\WatchdogDeploy\run.exe'
-$LogDir    = 'D:\WatchdogDeploy\logs'
+$ExePath   = 'C:\WatchdogDeploy\run.exe'
+$LogDir    = 'C:\WatchdogDeploy\logs'
 $LogPath   = Join-Path $LogDir 'app_output.log'
 $UserName  = "$env:USERNAME"
 
@@ -36,12 +36,12 @@ try {
         Start-Sleep -Seconds 2
     }
 } catch {
-    Write-Host "ℹ️ No running scheduled task to stop."
+    Write-Host "No running scheduled task to stop."
 }
 
 # Kill lingering run.exe processes (safety net)
 Get-Process run -ErrorAction SilentlyContinue | ForEach-Object {
-    Write-Host "⚠️ Killing leftover process PID=$($_.Id)"
+    Write-Host "Killing leftover process PID=$($_.Id)"
     $_ | Stop-Process -Force
     Start-Sleep -Seconds 1
 }
@@ -74,7 +74,7 @@ Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Silent
 # Launch powershell.exe → Push to D:\WatchdogDeploy → Run run.exe → Redirect stdout+stderr to log
 $Action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'D:\WatchdogDeploy'; & '$ExePath' *> '$LogPath'; Pop-Location`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\WatchdogDeploy'; & '$ExePath' *> '$LogPath'; Pop-Location`""
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 
@@ -101,4 +101,4 @@ Register-ScheduledTask `
     -Settings  $Settings `
     -Principal $Principal
 
-Write-Host "✅ Scheduled Task '$TaskName' (re)registered successfully."
+Write-Host "Scheduled Task '$TaskName' (re)registered successfully."

@@ -1,5 +1,6 @@
 # ─── Python Virtual Environments ─────────────
 .venv/
+.build-venv/
 
 # ─── Build & Distribution ─────────────────────
 /dist/
@@ -7,6 +8,7 @@
 /*.spec
 *.exe
 /.env
+.cache/
 
 # ─── Python Cache & Test Artifacts ────────────
 __pycache__/
