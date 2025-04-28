@@ -74,7 +74,9 @@ build:
 
 deploy-lab:
   stage: deploy
-  needs: [build]
+  needs:
+    - job: build
+      optional: true
   tags: [windows-runner]
   when: manual
   environment:
@@ -91,7 +93,9 @@ deploy-lab:
 
 run-lab:
   stage: run
-  needs: [deploy-lab]
+  needs:
+    - job: deploy-lab
+      optional: true
   when: manual
   tags: [windows-runner]
   environment:
@@ -109,7 +113,9 @@ run-lab:
 
 health-check:
   stage: health
-  needs: [run-lab]
+  needs:
+    - job: run-lab
+      optional: true
   allow_failure: false
   tags: [windows-runner]
   before_script: []
