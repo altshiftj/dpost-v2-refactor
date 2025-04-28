@@ -45,7 +45,7 @@ cache:
 
 build:
   stage: build
-  tags: [windows-runner]
+  tags: [local]
   rules:
     - changes:
         - requirements.txt
@@ -77,7 +77,7 @@ deploy-lab:
   needs:
     - job: build
       optional: true
-  tags: [windows-runner]
+  tags: [local]
   when: manual
   environment:
     name: "lab/$TARGET_IP"
@@ -97,7 +97,7 @@ run-lab:
     - job: deploy-lab
       optional: true
   when: manual
-  tags: [windows-runner]
+  tags: [local]
   environment:
     name: "lab/$TARGET_IP"
     action: start
@@ -117,7 +117,7 @@ health-check:
     - job: run-lab
       optional: true
   allow_failure: false
-  tags: [windows-runner]
+  tags: [local]
   before_script: []
   script: |
     $url = "http://$env:TARGET_IP:$env:MONITOR_PORT/health"
