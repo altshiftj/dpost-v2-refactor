@@ -1,56 +1,57 @@
 <#
     register_task.ps1
     -----------------
-    Installs / updates the IPAT-Watchdog Scheduled Task.
+    Creates or updates the IPAT-Watchdog Scheduled Task for correct deployment.
 
-    Requirements
-    ------------
-    • Windows 8 / Server 2012 or newer (Task Scheduler v2)
-    • The user account that runs this script must be allowed to create Scheduled Tasks.
+    • Starts the app from D:\WatchdogDeploy
+    • Captures both stdout and stderr into logs\app_output.log
+    • Restarts on crash (retry every 1 minute)
+    • Works even if user is not admin
 #>
 
 # ─────────────────────────────────────────────
-# 1 – strict settings so problems fail the CI
+# Strict settings
 # ─────────────────────────────────────────────
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 # ─────────────────────────────────────────────
-# 2 – configurable variables
+# Configurable variables
 # ─────────────────────────────────────────────
 $TaskName  = 'IPAT-Watchdog'
 $ExePath   = 'D:\WatchdogDeploy\run.exe'
 $LogDir    = 'D:\WatchdogDeploy\logs'
 $LogPath   = Join-Path $LogDir 'app_output.log'
-$UserName  = "$env:USERNAME"          # current interactive user
+$UserName  = "$env:USERNAME"
 
-# Restart policy – must be at least PT1M
-$RestartInterval = New-TimeSpan -Minutes 1   # 1 minute
-$RestartCount    = 9999                      # practically forever
+# Restart policy
+$RestartInterval = New-TimeSpan -Minutes 1
+$RestartCount    = 9999
 
 # ─────────────────────────────────────────────
-# 3 – prepare log folder & rotate previous log
+# Prepare log folder
 # ─────────────────────────────────────────────
 if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
-
 if (Test-Path $LogPath) {
     $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
     Move-Item $LogPath "$LogPath.$timestamp"
 }
 
 # ─────────────────────────────────────────────
-# 4 – remove any existing task (idempotent)
+# Unregister old task if it exists
 # ─────────────────────────────────────────────
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
 # ─────────────────────────────────────────────
-# 5 – define the new task pieces
+# Define the Scheduled Task parts
 # ─────────────────────────────────────────────
+
+# Launch powershell.exe → Push to D:\WatchdogDeploy → Run run.exe → Redirect stdout+stderr to log
 $Action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Start-Process -FilePath '$ExePath' -RedirectStandardOutput '$LogPath' -RedirectStandardError '$LogPath' -NoNewWindow`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'D:\WatchdogDeploy'; & '$ExePath' *> '$LogPath'; Pop-Location`""
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 
@@ -68,7 +69,7 @@ $Principal = New-ScheduledTaskPrincipal `
     -RunLevel Highest
 
 # ─────────────────────────────────────────────
-# 6 – register the task
+# Register the new Scheduled Task
 # ─────────────────────────────────────────────
 Register-ScheduledTask `
     -TaskName  $TaskName `
@@ -77,4 +78,4 @@ Register-ScheduledTask `
     -Settings  $Settings `
     -Principal $Principal
 
-Write-Host "✅  Scheduled Task '$TaskName' (re)registered successfully."
+Write-Host "✅ Scheduled Task '$TaskName' (re)registered successfully."
