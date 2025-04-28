@@ -68,7 +68,21 @@ deploy-tischrem:
       exit 1
     }
 
-    # Copy the compiled exe and the task script
+    # 🛑 Step 1: Stop the running app before overwriting
+    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
+      "powershell -NoProfile -ExecutionPolicy Bypass -Command `
+        try {
+          if (Get-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue) {
+            Stop-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
+          }
+          Get-Process run -ErrorAction SilentlyContinue | Stop-Process -Force
+        } catch {
+          Write-Host '⚠️ Could not fully stop old watchdog app.'
+        }
+      "
+
+    # 🚚 Step 2: Now safe to copy the new binary
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
 
