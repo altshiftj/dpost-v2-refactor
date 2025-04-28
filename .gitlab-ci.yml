@@ -36,12 +36,12 @@ cache:
 .ps-copy-dist: &ps_copy_dist |
   pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
            ".\\dist\\$env:BINARY_NAME" `
-           "$user@$ip:$env:DEPLOY_DIR\\$env:BINARY_NAME"
+           "${user}@${ip}:${env:DEPLOY_DIR}\\${env:BINARY_NAME}"
 
 .ps-copy-task-script: &ps_copy_task_script |
   pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
            ".\\infra\\windows\\register_task.ps1" `
-           "$user@$ip:$env:DEPLOY_DIR\\register_task.ps1"
+           "${user}@${ip}:${env:DEPLOY_DIR}\\register_task.ps1"
 
 build:
   stage: build
@@ -105,10 +105,10 @@ run-lab:
     - *ps_ssh_init
   script: |
     plink.exe -batch -pw "$env:TARGET_PASS" -hostkey "$env:HOST_KEY_FPR" `
-      "$env:TARGET_USER@$env:TARGET_IP" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -File $env:DEPLOY_DIR\\register_task.ps1"
+      "${env:TARGET_USER}@${env:TARGET_IP}" `
+      "powershell -NoProfile -ExecutionPolicy Bypass -File ${env:DEPLOY_DIR}\\register_task.ps1"
     plink.exe -batch -pw "$env:TARGET_PASS" -hostkey "$env:HOST_KEY_FPR" `
-      "$env:TARGET_USER@$env:TARGET_IP" `
+      "${env:TARGET_USER}@${env:TARGET_IP}" `
       "powershell -NoProfile -Command Start-ScheduledTask -TaskName 'IPAT-Watchdog'"
 
 health-check:
