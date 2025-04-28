@@ -22,6 +22,9 @@ def logs():
 
 
 def start_observability_server():
-    thread = threading.Thread(target=app.run, kwargs={"port": 8001})
+    thread = threading.Thread(
+        target=app.run,
+        kwargs={"host": "0.0.0.0", "port": 8001, "debug": False, "use_reloader": False}
+    )
     thread.daemon = True
     thread.start()
