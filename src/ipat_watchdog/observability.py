@@ -1,6 +1,7 @@
 from flask import Flask, Response
 import threading
 import os
+from waitress import serve
 
 LOG_PATH = os.getenv("LOG_FILE_PATH", "Data/watchdog.log")
 
@@ -26,5 +27,14 @@ def start_observability_server():
         target=app.run,
         kwargs={"host": "0.0.0.0", "port": 8001, "debug": False, "use_reloader": False}
     )
+
+    # Waitress blocks the main thread, so we need to run it in a separate thread
+    thread = threading.Thread(
+        target=serve,
+        kwargs={"app": app, "host": "0.0.0.0", "port": 8001, "threads": 4}
+    )
+
     thread.daemon = True
     thread.start()
+
+

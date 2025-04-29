@@ -61,4 +61,4 @@ $endTime = Get-Date
 $duration = $endTime - $startTime
 
 Write-Host "Deployment simulation complete."
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) -ForegroundColor Green
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green

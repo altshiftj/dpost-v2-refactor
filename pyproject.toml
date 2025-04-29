@@ -17,7 +17,9 @@ dependencies = [
     "pywin32",
     "pywin32-ctypes",
     "Pint",
-    "PyYAML"
+    "PyYAML",
+    "flask",
+    "waitress",
 ]
 
 [project.optional-dependencies]

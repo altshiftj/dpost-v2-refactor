@@ -11,3 +11,4 @@ pywin32-ctypes
 Pint
 PyYAML
 flask
+waitress

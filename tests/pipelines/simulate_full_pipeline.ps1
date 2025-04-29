@@ -22,5 +22,5 @@ if ($LASTEXITCODE -ne 0) { Write-Error "Health check failed."; exit 1 }
 $endTime = Get-Date
 $duration = $endTime - $startTime
 
-Write-Host "Full pipeline simulation completed successfully!" -ForegroundColor Green
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) -ForegroundColor Green
+Write-Host "Full pipeline simulation completed successfully!" #-ForegroundColor Green
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green

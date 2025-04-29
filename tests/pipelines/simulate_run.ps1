@@ -26,7 +26,7 @@ if ($targetIP -eq "127.0.0.1") {
     $duration = $endTime - $startTime
 
     Write-Host "Local run simulation complete."
-    Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) -ForegroundColor Green
+    Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green
     exit 0
 }
 
@@ -48,4 +48,4 @@ $endTime = Get-Date
 $duration = $endTime - $startTime
 
 Write-Host "Run simulation complete."
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) -ForegroundColor Green
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green
