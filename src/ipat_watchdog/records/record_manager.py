@@ -116,10 +116,6 @@ class RecordManager:
 
         logger.info(f"Synchronization of records completed. Synced: {synced_count}")
 
-    def sync_logs_to_database(self):
-        logger.info("Starting synchronization of logs to the database.")
-        self.sync.sync_logs_to_database()
-        logger.info("Synchronization of logs completed.")
 
     # --------------------------
     # Internal Helper Methods

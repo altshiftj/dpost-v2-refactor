@@ -82,9 +82,6 @@ def test_happy_path(real_processing_app, tmp_settings):
     assert not tif_path.exists()
     assert any(path.endswith(".tif") for path in record.files_uploaded.keys())
 
-    # log sync called exactly once
-    assert real_processing_app.sync_manager.synced_logs == 1
-
     # no UI errors/warnings
     assert real_processing_app.ui.errors == []
     assert real_processing_app.ui.warnings == []
@@ -177,7 +174,5 @@ def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
     real_processing_app.process_events()
 
     # after process_events:
-    #  - first log‑sync (from process_events)
-    #  - then session.start → show_done → end_session → sync_records + sync_logs
-    assert real_processing_app.sync_manager.synced_logs >= 2
+    #  - then session.start → show_done → end_session → sync_records
     assert len(real_processing_app.sync_manager.synced_records) >= 1

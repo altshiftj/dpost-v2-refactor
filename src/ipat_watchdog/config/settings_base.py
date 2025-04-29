@@ -1,27 +1,31 @@
 from pathlib import Path
 import re
 from typing import Set, List, Pattern
+import os
 
 class BaseSettings:
     # --- Directory Paths ---
-    WATCH_DIR: Path = Path("Upload_Ordner").resolve()
-    DEST_DIR: Path = Path("Data").resolve()
+    APP_DIR: Path = Path("C:/Watchdog")
+    DESKTOP_DIR: Path = Path(os.path.join(os.environ["USERPROFILE"], "Desktop"))
+
+    # --- Directory Paths ---
+    WATCH_DIR: Path = DESKTOP_DIR / "Upload_Ordner"
+    DEST_DIR: Path = DESKTOP_DIR / "Data"
     RENAME_DIR: Path = DEST_DIR / "00_To_Rename"
     EXCEPTIONS_DIR: Path = DEST_DIR / "01_Exceptions"
-    DAILY_RECORDS_JSON: Path = DEST_DIR / "record_persistence.json"
-    LOG_FILE: Path = DEST_DIR / "watchdog.log"
+    DAILY_RECORDS_JSON: Path = APP_DIR / "record_persistence.json"
 
     DIRECTORY_LIST: List[Path] = [
+        APP_DIR,
+        DESKTOP_DIR,
         WATCH_DIR,
         DEST_DIR,
         RENAME_DIR,
         EXCEPTIONS_DIR,
     ]
 
-    # --- Session & Sync ---
+    # --- Session ---
     SESSION_TIMEOUT: int = 600
-    SYNC_LOGS: bool = True
-    LOG_SYNC_INTERVAL: int = 60
 
     # --- Naming Conventions ---
     ID_SEP: str = "-"

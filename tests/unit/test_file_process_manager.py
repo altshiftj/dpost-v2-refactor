@@ -28,8 +28,6 @@ def init_settings():
         FILENAME_PATTERN = BaseSettings.FILENAME_PATTERN
         ALLOWED_EXTENSIONS = {'.txt'}
         DEBOUNCE_TIME = 0
-        SYNC_LOGS = False
-        LOG_SYNC_INTERVAL = 0
         SESSION_TIMEOUT = 1
     SettingsStore.set(DummySettings())
     yield
@@ -147,9 +145,6 @@ class DummyRecordManager:
     def sync_records_to_database(self):
         self.synced = True
 
-    def sync_logs_to_database(self):
-        self.logs_synced = True
-
 class DummySyncManager:
     pass
 
@@ -180,9 +175,6 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
 
         def sync_records_to_database(self):
             self.synced = True
-
-        def sync_logs_to_database(self):
-            pass
 
     ui = DummyUI()
     session_manager = DummySessionManager()
@@ -497,10 +489,7 @@ def test_process_item_resets_session_if_active(fpm):
     assert not fpm.session_manager.start_session_called
 
 
-def test_sync_records_and_logs(fpm):
+def test_sync_records(fpm):
     fpm.records.synced = False
-    fpm.records.logs_synced = False
     fpm.sync_records_to_database()
-    fpm.sync_logs_to_database()
     assert fpm.records.synced is True
-    assert fpm.records.logs_synced is True

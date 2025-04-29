@@ -6,8 +6,8 @@ $pscpPath = "C:\\Program Files\\PuTTY\\pscp.exe"  # Adjust if different
 $targetIP = "127.0.0.1"   # or your local VM IP
 $targetUser = "testuser"
 $targetPass = "password"
-$deployPath = "/C:/WatchdogDeploy/"   # SSH remote path format
-$localDeployPath = "C:\WatchdogDeploy"  # Local folder if testing without SSH
+$deployPath = "/C:/Watchdog/"   # SSH remote path format
+$localDeployPath = "C:\Watchdog"  # Local folder if testing without SSH
 
 # --- TIMER START ---
 $startTime = Get-Date

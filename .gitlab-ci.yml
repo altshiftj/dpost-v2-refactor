@@ -84,10 +84,10 @@ deploy-tischrem:
 
     # 🚚 Step 2: Now safe to copy the new binary
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\dist\run.exe" "${user}@${ip}:/d:/WatchdogDeploy/run.exe"
+             ".\dist\run.exe" "${user}@${ip}:/C:/Watchdog/run.exe"
 
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\infra\windows\register_task.ps1" "${user}@${ip}:/d:/WatchdogDeploy/register_task.ps1"
+             ".\infra\windows\register_task.ps1" "${user}@${ip}:/C:/Watchdog/register_task.ps1"
   tags: [local]
   environment:
     name: prod-tischrem
@@ -106,7 +106,7 @@ run-prod:
 
     # 1) register / update the scheduled task
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -File D:\WatchdogDeploy\register_task.ps1"
+      "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1"
 
     # 2) start it immediately
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `

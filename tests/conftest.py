@@ -40,7 +40,6 @@ def tmp_settings(tmp_path) -> BaseSettings:
 
         # Session / Sync
         SESSION_TIMEOUT = 5
-        SYNC_LOGS = True
         LOG_SYNC_INTERVAL = 1
 
         # File rules

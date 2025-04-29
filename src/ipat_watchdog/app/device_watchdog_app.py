@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime
-import uuid
 import queue
 from pathlib import Path
 from watchdog.observers import Observer
@@ -96,9 +95,6 @@ class DeviceWatchdogApp:
     def _schedule_next_event_check(self):
         self.ui.schedule_task(100, self.process_events)
 
-    def _should_sync_logs(self) -> bool:
-        return self.log_sync_counter == 0 or self.log_sync_counter >= 9000
-
     def process_events(self):
         while not self.event_queue.empty():
             EVENTS_PROCESSED.inc()
@@ -113,11 +109,6 @@ class DeviceWatchdogApp:
             self.files_processed += 1
             FILES_PROCESSED.inc()      # Global Prometheus counte
 
-        if self._should_sync_logs():
-            self.file_processing.sync_logs_to_database()
-            self.log_sync_counter = 0
-
-        self.log_sync_counter += 1
         self._schedule_next_event_check()
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):
@@ -135,7 +126,6 @@ class DeviceWatchdogApp:
         logger.debug("End session called.")
         try:
             self.file_processing.sync_records_to_database()
-            self.file_processing.sync_logs_to_database()
         except Exception as e:
             logger.exception(f"An error occurred during session end: {e}")
             self.ui.show_error(

@@ -163,9 +163,3 @@ class KadiSyncManager(ISyncManager):
             logger.debug(f"Removed missing file '{os.path.basename(file_path)}' from local record.")
 
         return bool(local_record.files_uploaded)
-
-    def sync_logs_to_database(self):
-        with self.db_manager as db_manager:
-            db_record = db_manager.record(id=self.s.DEVICE_RECORD_PERSISTENT_ID)
-            db_record.upload_file(self.s.LOG_FILE, force=True)
-        logger.info("Uploaded log file to the database.")

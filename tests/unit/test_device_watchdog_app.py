@@ -28,16 +28,7 @@ def test_initialization(watchdog_app, fake_ui):
         watchdog_app.session_manager.end_session_callback.__func__
         is watchdog_app.end_session.__func__
     )
-
-
-def test_process_events_empty_queue(watchdog_app):
-    watchdog_app.log_sync_counter = 0
-    watchdog_app.file_processing.logs_synced = False
-
-    watchdog_app.process_events()
-
-    assert watchdog_app.file_processing.logs_synced is True
-
+    
 
 def test_process_events_with_item(watchdog_app):
     sample_path = "/tmp/MuS-ipat-sample.tif"

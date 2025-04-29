@@ -25,10 +25,3 @@ class ISyncManager(ABC):
             local_record (LocalRecord): The local record to synchronize.
         """
         pass
-
-    @abstractmethod
-    def sync_logs_to_database(self):
-        """
-        Synchronize the logs to the database.
-        """
-        pass

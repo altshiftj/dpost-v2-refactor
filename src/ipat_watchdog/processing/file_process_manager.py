@@ -248,6 +248,3 @@ class FileProcessManager:
 
     def sync_records_to_database(self):
         self.records.sync_records_to_database()
-
-    def sync_logs_to_database(self):
-        self.records.sync_logs_to_database()
