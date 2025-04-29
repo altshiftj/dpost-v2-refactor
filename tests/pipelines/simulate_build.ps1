@@ -2,7 +2,7 @@
 # Simulate your GitLab "build" job locally in PowerShell
 
 # --- SETTINGS ---
-$pythonExe = "C:\Python\Python312\python.exe"
+$pythonExe = "C:\Program Files\Python312\python.exe"
 
 # --- TIMER START ---
 $startTime = Get-Date
