@@ -34,7 +34,7 @@ def setup_logger(name: str = "watchdog") -> logging.Logger:
         formatter = JSONFormatter()
 
         # File handler
-        file_handler = RotatingFileHandler(str(LOG_FILE), maxBytes=1_000_000, backupCount=3)
+        file_handler = RotatingFileHandler(str(LOG_FILE), maxBytes=5_000_000, backupCount=3)
         file_handler.setFormatter(formatter)
         file_handler.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
