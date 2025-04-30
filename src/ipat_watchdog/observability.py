@@ -1,9 +1,9 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 import threading
 import os
 from waitress import serve
 
-LOG_PATH = os.getenv("LOG_FILE_PATH", "Data/watchdog.log")
+LOG_PATH = os.getenv("LOG_FILE_PATH", "C:/Program Files/Watchdog/logs/watchdog.log")
 
 app = Flask(__name__)
 
@@ -14,27 +14,30 @@ def health():
 @app.route("/logs")
 def logs():
     if not os.path.exists(LOG_PATH):
-        return "Log file not found", 404
+        return Response("Log file not found", status=404, mimetype="text/plain")
 
-    with open(LOG_PATH, "r", encoding="utf-8") as f:
-        content = f.read()
+    # Optional tail query param
+    try:
+        tail_lines = int(request.args.get("tail", "0"))
+    except ValueError:
+        return Response("Invalid 'tail' parameter", status=400, mimetype="text/plain")
 
-    return Response(content, mimetype="text/plain")
+    try:
+        with open(LOG_PATH, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    except Exception as e:
+        return Response(f"Failed to read log: {str(e)}", status=500, mimetype="text/plain")
 
+    if tail_lines > 0:
+        lines = lines[-tail_lines:]
+
+    return Response("".join(lines), mimetype="text/plain")
 
 def start_observability_server():
-    thread = threading.Thread(
-        target=app.run,
-        kwargs={"host": "0.0.0.0", "port": 8001, "debug": False, "use_reloader": False}
-    )
-
-    # Waitress blocks the main thread, so we need to run it in a separate thread
+    # Waitress blocks the main thread, so we run it in a background thread
     thread = threading.Thread(
         target=serve,
         kwargs={"app": app, "host": "0.0.0.0", "port": 8001, "threads": 4}
     )
-
     thread.daemon = True
     thread.start()
-
-
