@@ -70,7 +70,7 @@ build:
       - dist/run.exe
       - dist/ipat_watchdog_signing.cer
     expire_in: 1 week
-  tags: [local]
+  tags: [worktop]
 
 # ─────────────── 🚀 DEPLOY ───────────────
 deploy-tischrem:
@@ -117,7 +117,7 @@ deploy-tischrem:
 
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
              ".\infra\windows\register_task.ps1" "${user}@${ip}:\C:\Program Files\Watchdog\register_task.ps1"
-  tags: [local]
+  tags: [worktop]
   environment:
     name: prod-tischrem
     url:  http://$env:TARGET_IP:8001/health
@@ -143,7 +143,7 @@ run-prod:
   environment:
     name: prod-tischrem
     action: start
-  tags: [local]
+  tags: [worktop]
 
 
 # ─────────────── ❤️ HEALTH ───────────────
@@ -164,5 +164,5 @@ health-check:
     }
     Write-Error "Service did not become healthy in time"; exit 1
   environment: prod-tischrem
-  tags: [local]
+  tags: [worktop]
 
