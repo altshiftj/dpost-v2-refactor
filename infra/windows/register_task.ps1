@@ -16,6 +16,24 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 # ─────────────────────────────────────────────
+# Trust the code-signing certificate (if present)
+# ─────────────────────────────────────────────
+$CertPath = 'C:\Program Files\Watchdog\ipat_watchdog_signing.cer'
+
+if (Test-Path $CertPath) {
+    try {
+        Write-Host "Installing code-signing certificate trust from: $CertPath"
+        certutil -addstore -f "TrustedPublisher" $CertPath | Out-Null
+        certutil -addstore -f "Root" $CertPath | Out-Null
+        Write-Host "✅ Certificate installed to TrustedPublisher and Root stores."
+    } catch {
+        Write-Warning "⚠️ Failed to install certificate trust: $($_.Exception.Message)"
+    }
+} else {
+    Write-Warning "⚠️ No certificate found at $CertPath — skipping trust installation."
+}
+
+# ─────────────────────────────────────────────
 # Configurable variables
 # ─────────────────────────────────────────────
 $TaskName  = 'IPAT-Watchdog'
@@ -46,7 +64,6 @@ Get-Process run -ErrorAction SilentlyContinue | ForEach-Object {
     Start-Sleep -Seconds 1
 }
 
-
 # Restart policy
 $RestartInterval = New-TimeSpan -Minutes 1
 $RestartCount    = 9999
@@ -74,7 +91,7 @@ Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Silent
 # Launch powershell.exe → Push to C:\Program Files\Watchdog → Run run.exe → Redirect stdout+stderr to log
 $Action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\Program Files\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command \"Push-Location 'C:\Program Files\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location\""
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 
