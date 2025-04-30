@@ -3,7 +3,7 @@
     -----------------
     Creates or updates the IPAT-Watchdog Scheduled Task for correct deployment.
 
-    • Starts the app from C:\Watchdog
+    • Starts the app from C:\Program Files\Watchdog
     • Captures both stdout and stderr into logs\app_output.log
     • Restarts on crash (retry every 1 minute)
     • Works even if user is not admin
@@ -19,8 +19,8 @@ Set-StrictMode -Version Latest
 # Configurable variables
 # ─────────────────────────────────────────────
 $TaskName  = 'IPAT-Watchdog'
-$ExePath   = 'C:\Watchdog\run.exe'
-$LogDir    = 'C:\Watchdog\logs'
+$ExePath   = 'C:\Program Files\Watchdog\run.exe'
+$LogDir    = 'C:\Program Files\Watchdog\logs'
 $LogPath   = Join-Path $LogDir 'watchdog.log'
 $UserName  = "$env:USERNAME"
 
@@ -71,10 +71,10 @@ Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Silent
 # Define the Scheduled Task parts
 # ─────────────────────────────────────────────
 
-# Launch powershell.exe → Push to C:\Watchdog → Run run.exe → Redirect stdout+stderr to log
+# Launch powershell.exe → Push to C:\Program Files\Watchdog → Run run.exe → Redirect stdout+stderr to log
 $Action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\Program Files\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location`""
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 

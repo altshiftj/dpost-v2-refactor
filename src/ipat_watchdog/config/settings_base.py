@@ -5,7 +5,7 @@ import os
 
 class BaseSettings:
     # --- Directory Paths ---
-    APP_DIR: Path = Path("C:/Watchdog")
+    APP_DIR: Path = Path("C:\Program Files\Watchdog")
     DESKTOP_DIR: Path = Path(os.path.join(os.environ["USERPROFILE"], "Desktop"))
 
     # --- Directory Paths ---

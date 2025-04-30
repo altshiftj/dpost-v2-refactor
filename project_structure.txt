@@ -5,7 +5,6 @@ D:.
 �   .gitignore
 �   .gitlab-ci.yml
 �   Makefile
-�   pipeline_status-250428.txt
 �   project_structure.txt
 �   pyproject.toml
 �   README.md
@@ -13,18 +12,8 @@ D:.
 �   SEM_testing_data.zip
 �   __init__.py
 �   
-+---.pytest_cache
-�   �   .gitignore
-�   �   CACHEDIR.TAG
-�   �   README.md
-�   �   
-�   +---v
-�       +---cache
-�               lastfailed
-�               nodeids
-�               stepwise
-�                                  
 +---build
+�   �   .env
 �   �   run.spec
 �   �   
 �   +---run
@@ -35,6 +24,9 @@ D:.
 �       �   PYZ-00.pyz
 �       �   PYZ-00.toc
 �       �   run.pkg
+�       �   Tree-00.toc
+�       �   Tree-01.toc
+�       �   Tree-02.toc
 �       �   warn-run.txt
 �       �   xref-run.html
 �       �   
@@ -375,33 +367,75 @@ D:.
 �                   spectrum.tiff
 �                   
 +---tests
-    �   conftest.py
-    �   __init__.py
-    �   
-    +---helpers
-    �       fake_handler.py
-    �       fake_observer.py
-    �       fake_processor.py
-    �       fake_process_manager.py
-    �       fake_session.py
-    �       fake_sync.py
-    �       fake_ui.py
-    �       __init__.py
-    �       
-    +---integration
-    �       test_integration.py
-    �       __init__.py
-    �       
-    +---unit
-            test_device_watchdog_app.py
-            test_dialogs.py
-            test_file_event_handler.py
-            test_file_processor_tischrem.py
-            test_file_process_manager.py
-            test_local_record.py
-            test_record_manager.py
-            test_session_manager.py
-            test_sync_kadi.py
-            test_ui_tkinter.py
-            __init__.py
-            
+�   �   conftest.py
+�   �   __init__.py
+�   �   
+�   +---helpers
+�   �   �   fake_handler.py
+�   �   �   fake_observer.py
+�   �   �   fake_processor.py
+�   �   �   fake_process_manager.py
+�   �   �   fake_session.py
+�   �   �   fake_sync.py
+�   �   �   fake_ui.py
+�   �   �   __init__.py
+�   �   �   
+�   �   +---__pycache__
+�   �           fake_handler.cpython-312.pyc
+�   �           fake_observer.cpython-312.pyc
+�   �           fake_processor.cpython-312.pyc
+�   �           fake_process_manager.cpython-312.pyc
+�   �           fake_session.cpython-312.pyc
+�   �           fake_sync.cpython-312.pyc
+�   �           fake_ui.cpython-312.pyc
+�   �           __init__.cpython-312.pyc
+�   �           
+�   +---integration
+�   �   �   test_integration.py
+�   �   �   __init__.py
+�   �   �   
+�   �   +---__pycache__
+�   �           test_integration.cpython-312-pytest-8.3.5.pyc
+�   �           __init__.cpython-312.pyc
+�   �           
+�   +---pipelines
+�   �       README.md
+�   �       simulate_build.ps1
+�   �       simulate_deploy.ps1
+�   �       simulate_full_pipeline.ps1
+�   �       simulate_health.ps1
+�   �       simulate_run.ps1
+�   �       
+�   +---unit
+�   �   �   test_device_watchdog_app.py
+�   �   �   test_dialogs.py
+�   �   �   test_file_event_handler.py
+�   �   �   test_file_processor_tischrem.py
+�   �   �   test_file_process_manager.py
+�   �   �   test_local_record.py
+�   �   �   test_record_manager.py
+�   �   �   test_session_manager.py
+�   �   �   test_sync_kadi.py
+�   �   �   test_ui_tkinter.py
+�   �   �   __init__.py
+�   �   �   
+�   �   +---__pycache__
+�   �           test_device_watchdog_app.cpython-312-pytest-8.3.5.pyc
+�   �           test_dialogs.cpython-312-pytest-8.3.5.pyc
+�   �           test_file_event_handler.cpython-312-pytest-8.3.5.pyc
+�   �           test_file_processor_tischrem.cpython-312-pytest-8.3.5.pyc
+�   �           test_file_process_manager.cpython-312-pytest-8.3.5.pyc
+�   �           test_local_record.cpython-312-pytest-8.3.5.pyc
+�   �           test_record_manager.cpython-312-pytest-8.3.5.pyc
+�   �           test_session_manager.cpython-312-pytest-8.3.5.pyc
+�   �           test_sync_kadi.cpython-312-pytest-8.3.5.pyc
+�   �           test_ui_tkinter.cpython-312-pytest-8.3.5.pyc
+�   �           __init__.cpython-312.pyc
+�   �           
+�   +---__pycache__
+�           conftest.cpython-312-pytest-8.3.5.pyc
+�           __init__.cpython-312.pyc
+�           
++---__pycache__
+        __init__.cpython-312.pyc
+        

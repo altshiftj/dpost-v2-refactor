@@ -23,10 +23,10 @@ build:
     - $pythonExe = 'C:\Python\Python312\python.exe'
     - |
       if (-Not (Test-Path $pythonExe)) {
-        Write-Error "❌  $pythonExe not found. Install CPython and update .gitlab-ci.yml."
+        Write-Error "$pythonExe not found. Install CPython and update .gitlab-ci.yml."
         exit 1
       }
-      Write-Host "✅  Using $pythonExe"
+      Write-Host "Using $pythonExe"
     - "& $pythonExe -m venv .build-venv"
     - .\.build-venv\Scripts\activate
     - pip install --cache-dir .cache/pip -r requirements.txt
@@ -64,7 +64,7 @@ deploy-tischrem:
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
 
     if (!(Test-Path "dist\run.exe")) {
-      Write-Error "❌ dist/run.exe missing"
+      Write-Error "dist/run.exe missing"
       exit 1
     }
 
@@ -78,16 +78,16 @@ deploy-tischrem:
           }
           Get-Process run -ErrorAction SilentlyContinue | Stop-Process -Force
         } catch {
-          Write-Host '⚠️ Could not fully stop old watchdog app.'
+          Write-Host 'Could not fully stop old watchdog app.'
         }
       "
 
     # 🚚 Step 2: Now safe to copy the new binary
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\dist\run.exe" "${user}@${ip}:/C:/Watchdog/run.exe"
+             ".\dist\run.exe" "${user}@${ip}:\C:\Program Files\Watchdog\run.exe"
 
     pscp.exe -batch -pw "$pass" -hostkey "$fpr" `
-             ".\infra\windows\register_task.ps1" "${user}@${ip}:/C:/Watchdog/register_task.ps1"
+             ".\infra\windows\register_task.ps1" "${user}@${ip}:\C:\Program Files\Watchdog\register_task.ps1"
   tags: [local]
   environment:
     name: prod-tischrem
@@ -106,7 +106,7 @@ run-prod:
 
     # 1) register / update the scheduled task
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1"
+      "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Program Files\Watchdog\register_task.ps1"
 
     # 2) start it immediately
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
@@ -124,16 +124,16 @@ health-check:
   allow_failure: false
   script: |
     $url = "http://$($env:TARGET_IP):8001/health"   # ← fixed
-    Write-Host "⏱️  Waiting for $url …"
+    Write-Host "Waiting for $url …"
     for ($i=0; $i -lt 30; $i++) {
       try {
         Invoke-RestMethod -Uri $url -TimeoutSec 3
-        Write-Host "✅  Service is healthy"; exit 0
+        Write-Host "Service is healthy"; exit 0
       } catch {
         Start-Sleep -Seconds 2
       }
     }
-    Write-Error "❌ Service did not become healthy in time"; exit 1
+    Write-Error "Service did not become healthy in time"; exit 1
   environment: prod-tischrem
   tags: [local]
 
