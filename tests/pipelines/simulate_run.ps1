@@ -16,7 +16,7 @@ if ($targetIP -eq "127.0.0.1") {
     Write-Host "Running scheduled task setup locally..."
 
     # Register the scheduled task locally
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\\Watchdog\\register_task.ps1"
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\\Program Files\\Watchdog\\register_task.ps1"
 
     # Start the task immediately
     Start-ScheduledTask -TaskName $taskName
@@ -38,7 +38,7 @@ if (-Not (Test-Path $plinkPath)) {
 Write-Host "Found plink.exe."
 
 Write-Host "Registering scheduled task remotely..."
-& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" "powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Watchdog\\register_task.ps1"
+& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" "powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Program Files\\Watchdog\\register_task.ps1"
 
 Write-Host "Starting scheduled task '$taskName' remotely..."
 & $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" "powershell -NoProfile -Command Start-ScheduledTask -TaskName '${taskName}'"
