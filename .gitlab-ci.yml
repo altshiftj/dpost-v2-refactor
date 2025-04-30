@@ -35,40 +35,11 @@ build:
     - Copy-Item -Force .env build/.env
 
   script:
-    # Step 1: Build the executable
     - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
-
-    # Step 2: Reconstruct and save the PFX from base64
-    - |
-      $certPath = "ipat_watchdog_signing.pfx"
-      $certBytes = [System.Convert]::FromBase64String($env:SIGNING_CERT_B64)
-      [System.IO.File]::WriteAllBytes($certPath, $certBytes)
-      $certPass = $env:SIGNING_CERT_PASSWORD
-      $timestamp = "http://timestamp.sectigo.com"
-
-    # Step 3: Sign the executable
-    - |
-      Write-Host "Signing dist\\run.exe with internal cert..."
-      signtool sign `
-        /f $certPath /p $certPass `
-        /fd SHA256 /tr $timestamp /td SHA256 `
-        /d "IPAT Watchdog App" `
-        dist\run.exe
-
-    # Step 4: Export the public .cer file from the cert
-    - |
-      $store = New-Object System.Security.Cryptography.X509Certificates.X509Store "My","CurrentUser"
-      $store.Open("ReadOnly")
-      $cert = $store.Certificates | Where-Object { $_.Subject -eq "CN=IPAT Watchdog" }
-      if (-not $cert) { Write-Error "Certificate not found in store"; exit 1 }
-      $bytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
-      [System.IO.File]::WriteAllBytes("dist\\ipat_watchdog_signing.cer", $bytes)
-      $store.Close()
 
   artifacts:
     paths:
       - dist/run.exe
-      - dist/ipat_watchdog_signing.cer
     expire_in: 1 week
   tags: [worktop]
 
