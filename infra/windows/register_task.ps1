@@ -3,32 +3,39 @@
     -----------------
     Creates or updates the IPAT-Watchdog Scheduled Task for correct deployment.
 
-    • Starts the app from C:\Program Files\Watchdog
-    • Captures both stdout and stderr into logs\app_output.log
+    • Starts the app from C:\Watchdog
+    • Captures both stdout and stderr into logs\watchdog.log
     • Restarts on crash (retry every 1 minute)
-    • Works even if user is not admin
+    • Requires Administrator privileges (checked at runtime)
 #>
 
 # ─────────────────────────────────────────────
-# Strict settings
+# Strict settings and admin check
 # ─────────────────────────────────────────────
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
+
+# Check for admin rights
+$isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()
+).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+
+if (-not $isAdmin) {
+    Write-Warning "This script must be run as Administrator. Exiting."
+    exit 1
+}
 
 # ─────────────────────────────────────────────
 # Configurable variables
 # ─────────────────────────────────────────────
 $TaskName  = 'IPAT-Watchdog'
-$ExePath   = 'C:\Program Files\Watchdog\run.exe'
-$LogDir    = 'C:\Program Files\Watchdog\logs'
+$ExePath   = 'C:\Watchdog\run.exe'
+$LogDir    = 'C:\Watchdog\logs'
 $LogPath   = Join-Path $LogDir 'watchdog.log'
 $UserName  = "$env:USERNAME"
 
 # ─────────────────────────────────────────────
 # Stop any existing Watchdog task and running app
 # ─────────────────────────────────────────────
-
-# Stop the scheduled task if running
 try {
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     if ($task -and $task.State -eq 'Running') {
@@ -39,15 +46,15 @@ try {
     Write-Host "No running scheduled task to stop."
 }
 
-# Kill lingering run.exe processes (safety net)
 Get-Process run -ErrorAction SilentlyContinue | ForEach-Object {
     Write-Host "Killing leftover process PID=$($_.Id)"
     $_ | Stop-Process -Force
     Start-Sleep -Seconds 1
 }
 
-
+# ─────────────────────────────────────────────
 # Restart policy
+# ─────────────────────────────────────────────
 $RestartInterval = New-TimeSpan -Minutes 1
 $RestartCount    = 9999
 
@@ -70,11 +77,9 @@ Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Silent
 # ─────────────────────────────────────────────
 # Define the Scheduled Task parts
 # ─────────────────────────────────────────────
-
-# Launch powershell.exe → Push to C:\Program Files\Watchdog → Run run.exe → Redirect stdout+stderr to log
 $Action = New-ScheduledTaskAction `
     -Execute 'powershell.exe' `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\Program Files\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -Command `"Push-Location 'C:\Watchdog'; & '$ExePath' *> '$LogPath'; Pop-Location`""
 
 $Trigger = New-ScheduledTaskTrigger -AtLogOn
 

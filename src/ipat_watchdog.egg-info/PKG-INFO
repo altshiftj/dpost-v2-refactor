@@ -8,14 +8,12 @@ Requires-Dist: kadi-apy
 Requires-Dist: watchdog
 Requires-Dist: prometheus_client
 Requires-Dist: python-dotenv
-Requires-Dist: xmltodict
-Requires-Dist: tifffile
 Requires-Dist: requests
-Requires-Dist: rdflib
 Requires-Dist: pywin32
 Requires-Dist: pywin32-ctypes
-Requires-Dist: Pint
 Requires-Dist: PyYAML
+Requires-Dist: flask
+Requires-Dist: waitress
 Provides-Extra: dev
 Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"

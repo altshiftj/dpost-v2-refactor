@@ -2,50 +2,65 @@
 # Simulate your GitLab "run" stage locally in PowerShell
 
 # --- SETTINGS ---
-$plinkPath = "C:\\Program Files\\PuTTY\\plink.exe"  # Adjust if different
+$plinkPath = "C:\Program Files\PuTTY\plink.exe"
 $targetIP = "127.0.0.1"
 $targetUser = "testuser"
 $targetPass = "password"
 $taskName = "IPAT-Watchdog"
+$taskScript = "C:\Watchdog\register_task.ps1"
 
 # --- TIMER START ---
 $startTime = Get-Date
 
-# --- Step 1: LOCAL run if on 127.0.0.1 ---
+# --- LOCAL Execution ---
 if ($targetIP -eq "127.0.0.1") {
     Write-Host "Running scheduled task setup locally..."
 
-    # Register the scheduled task locally
-    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:\\Program Files\\Watchdog\\register_task.ps1"
+    if (-Not (Test-Path $taskScript)) {
+        Write-Error "$taskScript not found at $taskScript"
+        exit 1
+    }
 
-    # Start the task immediately
-    Start-ScheduledTask -TaskName $taskName
+    try {
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $taskScript
+        Start-ScheduledTask -TaskName $taskName
+    } catch {
+        Write-Error "Failed to register or start scheduled task locally: $_"
+        exit 1
+    }
 
-    # --- TIMER END ---
     $endTime = Get-Date
     $duration = $endTime - $startTime
-
     Write-Host "Local run simulation complete."
-    Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green
+    Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)
     exit 0
 }
 
-# --- Step 2: REMOTE SSH if real target ---
+# --- REMOTE Execution ---
 if (-Not (Test-Path $plinkPath)) {
-    Write-Error "plink.exe not found. Install PuTTY tools or adjust path."
+    Write-Error "plink.exe not found. Install PuTTY tools or check the path."
     exit 1
 }
-Write-Host "Found plink.exe."
+Write-Host "Found plink.exe. Executing on remote target $targetIP..."
 
-Write-Host "Registering scheduled task remotely..."
-& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" "powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Program Files\\Watchdog\\register_task.ps1"
+# Register the scheduled task remotely
+& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" `
+    "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Remote task registration failed."
+    exit 1
+}
 
-Write-Host "Starting scheduled task '$taskName' remotely..."
-& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" "powershell -NoProfile -Command Start-ScheduledTask -TaskName '${taskName}'"
+# Start the task remotely
+& $plinkPath -batch -pw "$targetPass" "${targetUser}@${targetIP}" `
+    "powershell -NoProfile -Command Start-ScheduledTask -TaskName '$taskName'"
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Remote task start failed."
+    exit 1
+}
 
 # --- TIMER END ---
 $endTime = Get-Date
 $duration = $endTime - $startTime
-
-Write-Host "Run simulation complete."
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) #-ForegroundColor Green
+Write-Host "Remote run simulation complete."
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)

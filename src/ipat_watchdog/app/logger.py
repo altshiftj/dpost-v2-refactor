@@ -5,8 +5,7 @@ import sys
 from pathlib import Path
 from logging.handlers import RotatingFileHandler
 
-# Define base log directory inside Program Files
-BASE_DIR = Path("C:/Program Files/Watchdog")
+BASE_DIR = Path("C:/Watchdog")
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -24,6 +23,8 @@ class JSONFormatter(logging.Formatter):
         }
         if hasattr(record, "session_id"):
             log_record["session_id"] = record.session_id
+        if record.exc_info:
+            log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)
 
 def setup_logger(name: str = "watchdog") -> logging.Logger:
@@ -39,7 +40,6 @@ def setup_logger(name: str = "watchdog") -> logging.Logger:
         file_handler.setLevel(logging.DEBUG)
         logger.addHandler(file_handler)
 
-        # Console handler (dev use only)
         if sys.stdout:
             try:
                 console_handler = logging.StreamHandler(stream=sys.stdout)
@@ -50,6 +50,3 @@ def setup_logger(name: str = "watchdog") -> logging.Logger:
                 pass
 
     return logger
-
-# Default logger
-logger = setup_logger()

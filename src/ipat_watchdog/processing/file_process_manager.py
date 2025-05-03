@@ -1,7 +1,6 @@
 from pathlib import Path
 
 from ipat_watchdog.metrics import FILES_FAILED
-from ipat_watchdog.processing.metadata_extractor import MetadataExtractor
 from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.storage.filesystem_utils import (
     parse_filename,

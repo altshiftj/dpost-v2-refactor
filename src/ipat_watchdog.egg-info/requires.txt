@@ -2,14 +2,12 @@ kadi-apy
 watchdog
 prometheus_client
 python-dotenv
-xmltodict
-tifffile
 requests
-rdflib
 pywin32
 pywin32-ctypes
-Pint
 PyYAML
+flask
+waitress
 
 [dev]
 black
