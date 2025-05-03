@@ -46,7 +46,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        tb_str = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
-        logger.error("Unhandled exception occurred", extra={"exception": tb_str})
+    except Exception:
+        logger.exception("Unhandled exception occurred")
         sys.exit(1)
+

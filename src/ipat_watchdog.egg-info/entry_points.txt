@@ -2,4 +2,4 @@
 ipat-watchdog = ipat_watchdog.__main__:main
 
 [ipat_watchdog.plugins]
-sem_tischrem_blb = ipat_watchdog.plugins.sem_tischrem.plugin:TischREMPlugin
+SEM_TischREM_BLB = ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin

@@ -9,6 +9,8 @@ PyYAML
 flask
 waitress
 
+[SEM_TischREM_BLB]
+
 [dev]
 black
 mypy
@@ -16,7 +18,4 @@ ruff
 pytest
 pyinstaller
 pyfakefs
-jupyter
 ipython
-
-[sem_tischrem_blb]

@@ -1,6 +1,6 @@
 # ─── Python Virtual Environments ─────────────
 .venv/
-.build-venv/
+.build_venv/
 
 # ─── Build & Distribution ─────────────────────
 /dist/

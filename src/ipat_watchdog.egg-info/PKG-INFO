@@ -21,7 +21,6 @@ Requires-Dist: ruff; extra == "dev"
 Requires-Dist: pytest; extra == "dev"
 Requires-Dist: pyinstaller; extra == "dev"
 Requires-Dist: pyfakefs; extra == "dev"
-Requires-Dist: jupyter; extra == "dev"
 Requires-Dist: ipython; extra == "dev"
 Provides-Extra: sem-tischrem-blb
 
