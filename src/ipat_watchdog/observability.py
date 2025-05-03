@@ -3,7 +3,7 @@ import threading
 import os
 from waitress import serve
 
-LOG_PATH = os.getenv("LOG_FILE_PATH", "C:/Program Files/Watchdog/logs/watchdog.log")
+LOG_PATH = os.getenv("LOG_FILE_PATH", "C:/Watchdog/logs/watchdog.log")
 
 app = Flask(__name__)
 
