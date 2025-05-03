@@ -4,7 +4,7 @@ from watchdog.events import FileSystemEvent, DirCreatedEvent
 from queue import Queue
 from pathlib import Path
 
-from ipat_watchdog.handlers.file_event_handler import FileEventHandler
+from ipat_watchdog.core.handlers.file_event_handler import FileEventHandler
 
 # ─────────────────────────────────────────────
 # Fixtures
@@ -19,7 +19,7 @@ def event_queue():
 @pytest.fixture
 def handler(event_queue, tmp_settings):
     """Fixture to provide the handler with settings."""
-    with patch("ipat_watchdog.handlers.file_event_handler.SettingsStore.get", return_value=tmp_settings):
+    with patch("ipat_watchdog.core.handlers.file_event_handler.SettingsStore.get", return_value=tmp_settings):
         return FileEventHandler(event_queue)
 
 
@@ -38,7 +38,7 @@ def test_on_created_tiff(handler, event_queue, tmp_path):
     event = FileSystemEvent(str(test_file))
 
     # Patch Timer to simulate the debounce behavior
-    with patch("ipat_watchdog.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("ipat_watchdog.core.handlers.file_event_handler.Timer") as mock_timer:
         handler.on_created(event)
 
         # Check that the timer was set with the correct delay
@@ -67,7 +67,7 @@ def test_on_created_generic_file(handler, event_queue, tmp_path):
     test_file.touch()
     event = FileSystemEvent(str(test_file))
 
-    with patch("ipat_watchdog.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("ipat_watchdog.core.handlers.file_event_handler.Timer") as mock_timer:
         handler.on_created(event)
 
         # Check that the timer was set with the correct delay
@@ -97,8 +97,8 @@ def test_path_no_longer_exists(handler, event_queue, tmp_path):
     event = FileSystemEvent(str(test_file))
 
     with patch("pathlib.Path.exists", return_value=False), patch(
-        "ipat_watchdog.handlers.file_event_handler.Timer"
-    ) as mock_timer, patch("ipat_watchdog.handlers.file_event_handler.logger.warning") as mock_warn:
+        "ipat_watchdog.core.handlers.file_event_handler.Timer"
+    ) as mock_timer, patch("ipat_watchdog.core.handlers.file_event_handler.logger.warning") as mock_warn:
         handler.on_created(event)
 
         # Ensure the timer was set
@@ -127,7 +127,7 @@ def test_on_created_directory(handler, event_queue, tmp_path):
     test_dir.mkdir()
     event = DirCreatedEvent(str(test_dir))
 
-    with patch("ipat_watchdog.handlers.file_event_handler.Timer") as mock_timer:
+    with patch("ipat_watchdog.core.handlers.file_event_handler.Timer") as mock_timer:
         handler.on_created(event)
 
         # Ensure the timer was set

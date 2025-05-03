@@ -1,5 +1,5 @@
 import pytest
-from ipat_watchdog.sessions.session_manager import SessionManager
+from ipat_watchdog.core.session.session_manager import SessionManager
 
 
 def test_start_session(fake_ui, tmp_settings):

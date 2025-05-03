@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import MagicMock, patch
 
-from ipat_watchdog.sync.sync_kadi import KadiSyncManager
-from ipat_watchdog.records.local_record import LocalRecord
+from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 # --- Dummy Classes to Simulate KadiManager Resources ---
@@ -108,7 +108,7 @@ def local_record(tmp_path, tmp_settings):
 @pytest.fixture
 def sync_mgr(fake_ui, tmp_settings, monkeypatch):
     # Monkey-patch KadiManager inside the module under test
-    import ipat_watchdog.sync.sync_kadi as _mod
+    import ipat_watchdog.core.sync.sync_kadi as _mod
     monkeypatch.setattr(_mod, "KadiManager", DummyKadiManager)
     return KadiSyncManager(ui=fake_ui)
 

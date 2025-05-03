@@ -19,10 +19,10 @@ from pathlib import Path
 import pytest
 from watchdog.observers.polling import PollingObserver
 
-from ipat_watchdog.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.storage.filesystem_utils import init_dirs, generate_record_id
-from ipat_watchdog.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
+from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from ipat_watchdog.core.storage.filesystem_utils import init_dirs, generate_record_id
+from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
 
 from tests.helpers.fake_ui import HeadlessUI
 from tests.helpers.fake_sync import DummySyncManager
@@ -86,8 +86,7 @@ def test_happy_path(real_processing_app, tmp_settings):
     assert real_processing_app.ui.errors == []
     assert real_processing_app.ui.warnings == []
 
-from ipat_watchdog.storage.filesystem_utils import get_exception_path, get_rename_path
-from ipat_watchdog.ui.ui_messages import InfoMessages, ErrorMessages, WarningMessages
+from ipat_watchdog.core.ui.ui_messages import InfoMessages, WarningMessages
 
 def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings):
     bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"

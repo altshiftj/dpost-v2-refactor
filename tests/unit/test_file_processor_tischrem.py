@@ -3,10 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.storage.filesystem_utils import *
-from ipat_watchdog.config.settings_store import SettingsStore
+from ipat_watchdog.plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import *
 
 
 @pytest.fixture(autouse=True)
@@ -112,8 +111,8 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
 
     unique_file = record_dir / "prefix-01.tif"
 
-    with patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.get_unique_filename", return_value=str(unique_file)) as mock_unique, \
-         patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.move_item") as mock_move:
+    with patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.get_unique_filename", return_value=str(unique_file)) as mock_unique, \
+         patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.move_item") as mock_move:
 
         result, dtype = processor.device_specific_processing(
             str(src_file), str(record_dir), "prefix", ".tif"
@@ -134,8 +133,8 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
     record_dir = tmp_path / "record"
     record_dir.mkdir()
 
-    with patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.move_item") as mock_move, \
-         patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.remove_directory_if_empty") as mock_remove:
+    with patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.move_item") as mock_move, \
+         patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.remove_directory_if_empty") as mock_remove:
 
         result_path, dtype = processor.device_specific_processing(
             str(elid_dir), str(record_dir), "prefix", ".elid"
@@ -161,8 +160,8 @@ def test_device_specific_processing_flattens_elid_subfolders(tmp_path, processor
     record_dir = tmp_path / "RECORD"
     record_dir.mkdir()
 
-    with patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.move_item") as mock_move, \
-         patch("ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem.remove_directory_if_empty") as mock_remove:
+    with patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.move_item") as mock_move, \
+         patch("ipat_watchdog.plugins.sem_tischrem_blb.file_processor.remove_directory_if_empty") as mock_remove:
 
         result_path, dtype = processor.device_specific_processing(
             str(elid_dir), str(record_dir), "REM-testingelid", ".elid"

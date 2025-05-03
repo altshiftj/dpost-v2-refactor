@@ -2,9 +2,9 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.records.local_record import LocalRecord
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 # ──────────────────────────────── Fixtures ──────────────────────────────── #

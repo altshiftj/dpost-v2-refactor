@@ -18,3 +18,5 @@ pyinstaller
 pyfakefs
 jupyter
 ipython
+
+[sem_tischrem_blb]

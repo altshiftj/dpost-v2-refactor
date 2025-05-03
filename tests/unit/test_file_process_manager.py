@@ -3,13 +3,13 @@ import tkinter as tk
 import pytest
 from unittest.mock import MagicMock
 
-from ipat_watchdog.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.storage.filesystem_utils import generate_record_id
+from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import generate_record_id
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
 
 @pytest.fixture(autouse=True)
 def init_settings():
@@ -181,7 +181,7 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
     sync_manager = DummySyncManager()
     file_processor = DummyFileProcessor()
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(
         mod, "RecordManager", lambda sync_manager: DummyRecordManagerWithPending()
     )
@@ -204,7 +204,7 @@ def test_process_item_invalid_datatype(fpm, monkeypatch):
         nonlocal move_exception_called
         move_exception_called = True
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "move_to_exception_folder", fake_move_to_exception_folder)
 
     fpm.process_item(test_path)
@@ -217,7 +217,7 @@ def test_process_item_valid_new_record(fpm, monkeypatch):
     fpm.file_processor.valid_datatype = True
     test_path = "/fake/path/ABC-DEF-sample.txt"
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "get_record_path", lambda prefix: "dummy_record_path")
 
     expected_id = generate_record_id("abc-def-sample")
@@ -330,7 +330,7 @@ def test_auto_rename_when_conflict(fpm, monkeypatch):
         return f"{record_path}/fileid_02{extension}", "dummy_datatype"
     fpm.file_processor.device_specific_processing = mock_device_specific_processing
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "get_record_path", lambda pfx: "dummy_record_path")
 
     fpm.add_item_to_record(rec, "/fake/path/user-inst-sample.txt", prefix, ".txt")
@@ -342,7 +342,7 @@ def test_auto_rename_when_conflict(fpm, monkeypatch):
 def test_invalid_filename_triggers_prompt(fpm, monkeypatch):
     test_path = "/fake/path/invalid--name.txt"
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "sanitize_and_validate", lambda prefix: ("sanitized-invalid--name", False))
 
     fpm.ui.prompt_rename_return = {"name": "ABC", "institute": "DEF", "sample_ID": "sample"}
@@ -370,7 +370,7 @@ def test_rename_cancellation_moves_file(fpm, monkeypatch):
         nonlocal move_called
         move_called = True
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "move_to_rename_folder", fake_move_to_rename_folder)
 
     fpm._rename_flow_controller(test_path, prefix, extension)
@@ -391,7 +391,7 @@ def test_get_valid_rename_loops_until_valid(monkeypatch, fpm):
         call_order.append("show_dialog")
         return {"name": "Valid", "institute": "Institute", "sample_ID": "Sample"}
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "explain_filename_violation", fake_explain_violation)
     monkeypatch.setattr(mod, "analyze_user_input", fake_analyze_user_input)
     fpm.ui.show_rename_dialog = fake_show_rename_dialog
@@ -411,7 +411,7 @@ def test_process_item_elid_directory(fpm, monkeypatch):
         return f"{record_path}/processed_elid_dir", "elid"
     fpm.file_processor.device_specific_processing = mock_device_processing
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "get_record_path", lambda prefix: "dummy_record_elid_path")
 
     test_path = "/fake/path/usr-inst-elid_folder"
@@ -431,7 +431,7 @@ def test_add_item_to_record_success_path(fpm, monkeypatch):
     filename_prefix = "abc-def-sample"
     extension = ".txt"
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "get_record_path", lambda prefix: "record_path")
     monkeypatch.setattr(mod, "generate_file_id", lambda prefix: "fileid")
 
@@ -457,7 +457,7 @@ def test_add_item_to_record_exception(fpm, monkeypatch):
         nonlocal move_called
         move_called = True
 
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "move_to_exception_folder", fake_move_to_exception_folder)
 
     fpm.add_item_to_record(None, "/fake/path/ABC-DEF-sample.txt", "ABC-DEF-sample", ".txt")
@@ -466,7 +466,7 @@ def test_add_item_to_record_exception(fpm, monkeypatch):
 
 
 def test_route_item_exception_path(fpm, monkeypatch):
-    import ipat_watchdog.processing.file_process_manager as mod
+    import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(mod, "sanitize_and_validate", lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("Boom!")))
 
     exc_called = False
