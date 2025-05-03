@@ -2,9 +2,9 @@ from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import Dict
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 

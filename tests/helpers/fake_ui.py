@@ -1,5 +1,5 @@
 # tests/helpers/fake_ui.py
-from ipat_watchdog.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 class HeadlessUI(UserInterface):
     def __init__(self):

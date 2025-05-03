@@ -2,13 +2,13 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-from ipat_watchdog.ui.ui_abstract import UserInterface
-from ipat_watchdog.ui.ui_messages import ErrorMessages
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.sync.sync_abstract import ISyncManager
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.ui.ui_messages import ErrorMessages
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.logging.logger import setup_logger
 
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord

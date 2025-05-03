@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from ipat_watchdog.records.local_record import LocalRecord
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 class FileProcessorABS(ABC):

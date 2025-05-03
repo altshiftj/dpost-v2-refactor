@@ -1,11 +1,12 @@
-# core/tests/conftest.py
-import threading
-from pathlib import Path
+# tests/conftest.py
 import pytest
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.app.device_watchdog_app import DeviceWatchdogApp
+import dotenv
+dotenv.load_dotenv()
+
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 from tests.helpers.fake_ui import HeadlessUI
 from tests.helpers.fake_sync import DummySyncManager

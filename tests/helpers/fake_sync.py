@@ -1,4 +1,4 @@
-from ipat_watchdog.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 
 class DummySyncManager(ISyncManager):
     def __init__(self, ui=None):

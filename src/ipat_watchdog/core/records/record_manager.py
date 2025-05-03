@@ -2,14 +2,14 @@ import datetime
 from typing import Dict, Optional
 
 from ipat_watchdog.metrics import FILES_PROCESSED_BY_RECORD
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.storage.filesystem_utils import (
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import (
     load_persisted_records,
     save_persisted_records,
     generate_record_id,
 )
-from ipat_watchdog.sync.sync_abstract import ISyncManager
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 

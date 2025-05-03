@@ -1,7 +1,7 @@
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.app.logger import setup_logger
-from ipat_watchdog.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 logger = setup_logger(__name__)
 

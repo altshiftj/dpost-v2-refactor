@@ -4,14 +4,14 @@ import traceback
 from dotenv import load_dotenv
 from prometheus_client import start_http_server
 
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.observability import start_observability_server
-from ipat_watchdog.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.plugins.loader import load_device_plugin
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.sync.sync_kadi import KadiSyncManager
-from ipat_watchdog.ui.ui_tkinter import TKinterUI
-from ipat_watchdog.storage.filesystem_utils import init_dirs
+from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from ipat_watchdog.loader import load_device_plugin
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
+from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 
 # Load environment variables
 load_dotenv()

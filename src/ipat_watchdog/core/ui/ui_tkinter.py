@@ -9,9 +9,9 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import Dict, Optional, Callable, Any
 
-from ipat_watchdog.ui.ui_abstract import UserInterface
-from ipat_watchdog.ui.dialogs import RenameDialog
-from ipat_watchdog.ui.ui_messages import InfoMessages, DialogPrompts
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.ui.dialogs import RenameDialog
+from ipat_watchdog.core.ui.ui_messages import InfoMessages, DialogPrompts
 
 
 class TKinterUI(UserInterface):

@@ -1,4 +1,4 @@
-from ipat_watchdog.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.settings_base import BaseSettings
 
 
 class TischREMSettings(BaseSettings):

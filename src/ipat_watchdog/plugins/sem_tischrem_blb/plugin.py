@@ -1,11 +1,11 @@
-# devices/SEM_TischREM_BLB/plugin.py
+# src/ipat_watchdog/plugins/sem_tischrem_blb/plugin.py
 from __future__ import annotations
 
-from ipat_watchdog.devices.SEM_TischREM_BLB.settings_tischrem import TischREMSettings
-from ipat_watchdog.devices.SEM_TischREM_BLB.file_processor_tischrem import FileProcessorTischREM
 from ipat_watchdog.plugins.device_plugin import DevicePlugin
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.config.settings_base import BaseSettings
+from ipat_watchdog.plugins.sem_tischrem_blb.settings import TischREMSettings
+from ipat_watchdog.plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.config.settings_base import BaseSettings
 
 class TischREMPlugin(DevicePlugin):
     """Registers the Phenom XL TischREM device with the Watchdog app."""

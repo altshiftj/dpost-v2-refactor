@@ -14,17 +14,17 @@ from ipat_watchdog.metrics import(
  SESSION_EXIT_STATUS
 )
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
 
-from ipat_watchdog.ui.ui_abstract import UserInterface
-from ipat_watchdog.ui.ui_messages import ErrorMessages
-from ipat_watchdog.handlers.file_event_handler import FileEventHandler
-from ipat_watchdog.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorBase
-from ipat_watchdog.sessions.session_manager import SessionManager
-from ipat_watchdog.sync.sync_abstract import ISyncManager
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.ui.ui_messages import ErrorMessages
+from ipat_watchdog.core.handlers.file_event_handler import FileEventHandler
+from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorBase
+from ipat_watchdog.core.session.session_manager import SessionManager
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 

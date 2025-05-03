@@ -7,15 +7,15 @@ env_path = str(Path.cwd() / ".env")
 device_plugins = collect_submodules('ipat_watchdog.devices')
 
 a = Analysis(
-    ['..\\src\\ipat_watchdog\\__main__.py'],
+    ['-m', 'ipat_watchdog'],
     pathex=['.', 'src'],
     binaries=[],
-    datas=[(env_path, '.')],
-    hiddenimports=device_plugins,
+    datas=[],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=['PyQt5', 'PySide6'],
+    excludes=[],
     noarchive=False,
     optimize=0,
 )
@@ -28,7 +28,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='run',
+    name='watchdog_core',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

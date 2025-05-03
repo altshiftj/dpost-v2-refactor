@@ -1,4 +1,4 @@
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 
 class DummyProcessor(FileProcessorABS):
     def device_specific_preprocessing(self, src_path: str) -> str:

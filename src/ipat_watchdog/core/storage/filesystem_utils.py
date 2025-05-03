@@ -1,16 +1,16 @@
 from pathlib import Path
 import shutil
 import logging
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.logging.logger import setup_logger
 import json
 import re
 from typing import Callable, Optional
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.app.logger import setup_logger
-from ipat_watchdog.ui.ui_messages import ValidationMessages
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.ui.ui_messages import ValidationMessages
 
 logger = setup_logger(__name__)
 

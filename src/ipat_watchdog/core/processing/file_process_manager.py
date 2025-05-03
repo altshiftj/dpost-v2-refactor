@@ -1,8 +1,8 @@
 from pathlib import Path
 
 from ipat_watchdog.metrics import FILES_FAILED
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.storage.filesystem_utils import (
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
     move_to_exception_folder,
     move_to_rename_folder,
@@ -13,13 +13,13 @@ from ipat_watchdog.storage.filesystem_utils import (
     explain_filename_violation,
     analyze_user_input,
 )
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.sessions.session_manager import SessionManager
-from ipat_watchdog.records.record_manager import RecordManager
-from ipat_watchdog.sync.sync_abstract import ISyncManager
-from ipat_watchdog.app.logger import setup_logger
-from ipat_watchdog.ui.ui_abstract import UserInterface
-from ipat_watchdog.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.session.session_manager import SessionManager
+from ipat_watchdog.core.records.record_manager import RecordManager
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
 
 logger = setup_logger(__name__)
 

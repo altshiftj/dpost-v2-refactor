@@ -1,11 +1,11 @@
-from ipat_watchdog.app.logger import setup_logger
 from pathlib import Path
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
 from queue import Queue
 
-from ipat_watchdog.config.settings_store import SettingsStore
-from ipat_watchdog.config.settings_base import BaseSettings
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_base import BaseSettings
 
 logger = setup_logger(__name__)
 

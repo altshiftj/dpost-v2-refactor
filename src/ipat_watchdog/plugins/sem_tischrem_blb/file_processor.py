@@ -1,14 +1,14 @@
 from pathlib import Path
 import os
-from ipat_watchdog.records.local_record import LocalRecord
-from ipat_watchdog.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.storage.filesystem_utils import (
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.storage.filesystem_utils import (
     move_item,
     get_unique_filename,
     remove_directory_if_empty,
     parse_filename,
 )
-from ipat_watchdog.app.logger import setup_logger
+from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 

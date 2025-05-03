@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 import tkinter.messagebox as messagebox
-from ipat_watchdog.ui.ui_tkinter import TKinterUI
-from ipat_watchdog.ui.ui_messages import DialogPrompts, InfoMessages
+from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from ipat_watchdog.core.ui.ui_messages import DialogPrompts, InfoMessages
 
 
 @pytest.fixture

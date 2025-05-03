@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from ipat_watchdog.ui.ui_abstract import UserInterface
-from ipat_watchdog.records.local_record import LocalRecord
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 class ISyncManager(ABC):

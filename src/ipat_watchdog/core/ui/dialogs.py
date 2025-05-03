@@ -8,7 +8,7 @@ It provides reusable dialog components that encapsulate specific UI interactions
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from typing import Optional, Any
-from ipat_watchdog.ui.ui_messages import DialogPrompts, WarningMessages 
+from ipat_watchdog.core.ui.ui_messages import DialogPrompts, WarningMessages 
 
 
 class EntryWithPlaceholder(tk.Entry):
