@@ -4,11 +4,10 @@
 
 # ─── Build & Distribution ─────────────────────
 /dist/
-/build/
-/*.spec
 *.exe
 /.env
 .cache/
+build/tischrem_blb
 
 # ─── Python Cache & Test Artifacts ────────────
 __pycache__/
