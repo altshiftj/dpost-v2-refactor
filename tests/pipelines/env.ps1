@@ -3,7 +3,7 @@
 # Load CI-related values
 $env:CI_JOB_NAME = "sem_tischrem_blb"
 $env:TARGET_IP = "127.0.0.1"
-$env:TARGET_USER = "testuser"
+$env:TARGET_USER = "deploy"
 
 # .pfx certificate path
 $env:SIGNING_CERT_PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"

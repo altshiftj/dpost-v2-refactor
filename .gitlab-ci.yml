@@ -5,22 +5,14 @@ stages: [build, sign, deploy, run, health, rollback]
 
 variables:
   PY_VER:        "3.12"
-  DEVICE_LIST:   "sem_tischrem_blb core"   # <── add more slugs here
+  DEVICE_LIST:   "sem_tischrem_blb core"
   PIP_CACHE_DIR: ".cache/pip"
 cache: { paths: [.cache/pip] }
 
-# Helper ─ convert slug → device name used in code / extras
-#   slug  : sem_tischrem_blb
-#   DEVICE_NAME : SEM_TischREM_BLB
 .before_script_common: &before_script_common |
   python -m venv .buildvenv
   .\.buildvenv\Scripts\activate
   pip install -U pip setuptools wheel
-
-.slug_to_var: &slug_to_var |
-  $deviceName = "${CI_JOB_NAME}".ToUpper().Replace("_", "-")
-  $deviceName = $deviceName.Substring(0,3) + "_" + $deviceName.Substring(3)  # crude, adjust if needed
-  echo "DEVICE_NAME=$deviceName" >> device.env
 
 # ────────────────────────────────────────────────────────────────
 #  BUILD  (PyInstaller)
@@ -29,13 +21,12 @@ cache: { paths: [.cache/pip] }
   stage: build
   before_script:
     - *before_script_common
-    - *slug_to_var
     - pip install -e .[dev,$env:DEVICE_NAME]
     - echo "$env:CI_COMMIT_TAG" > version.txt
     - Copy-Item version.txt build/version.txt
     - Copy-Item device.env build/.env
   script: |
-    pyinstaller "build/specs/${CI_JOB_NAME}.spec" --clean --noconfirm --copy-metadata ipat-watchdog
+    pyinstaller "build/specs/${CI_JOB_NAME}.spec" --clean --noconfirm
   artifacts:
     paths: [dist/wd_${CI_JOB_NAME}.exe, version.txt]
     expire_in: 1 week
