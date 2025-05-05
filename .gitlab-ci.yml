@@ -1,195 +1,163 @@
-stages:
-  - build
-  - sign
-  - deploy
-  - run
-  - health
-  - rollback_if_needed
+# ────────────────────────────────────────────────────────────────
+#  GLOBALS
+# ────────────────────────────────────────────────────────────────
+stages: [build, sign, deploy, run, health, rollback]
 
-cache:
-  paths:
-    - .cache/pip
+variables:
+  PY_VER:        "3.12"
+  DEVICE_LIST:   "sem_tischrem_blb core"   # <── add more slugs here
+  PIP_CACHE_DIR: ".cache/pip"
+cache: { paths: [.cache/pip] }
 
-build:
+# Helper ─ convert slug → device name used in code / extras
+#   slug  : sem_tischrem_blb
+#   DEVICE_NAME : SEM_TischREM_BLB
+.before_script_common: &before_script_common |
+  python -m venv venv
+  .\venv\Scripts\activate
+  pip install -U pip setuptools wheel
+
+.slug_to_var: &slug_to_var |
+  $deviceName = "${CI_JOB_NAME}".ToUpper().Replace("_", "-")
+  $deviceName = $deviceName.Substring(0,3) + "_" + $deviceName.Substring(3)  # crude, adjust if needed
+  echo "DEVICE_NAME=$deviceName" >> device.env
+
+# ────────────────────────────────────────────────────────────────
+#  BUILD  (PyInstaller)
+# ────────────────────────────────────────────────────────────────
+.build_template:
   stage: build
-  rules:
-    - changes: ["requirements.txt", "build/run.spec", "src/**/*"]
-      when: on_success
-    - when: never
   before_script:
-    - $pythonExe = 'C:\\Python\\Python312\\python.exe'
-    - |
-      if (-Not (Test-Path $pythonExe)) {
-        Write-Error "$pythonExe not found. Install CPython and update .gitlab-ci.yml."
-        exit 1
-      }
-      Write-Host "Using $pythonExe"
-    - "& $pythonExe -m venv .build-venv"
-    - .\.build-venv\Scripts\activate
-    - pip install --cache-dir .cache/pip -r requirements.txt
-    - pip install --cache-dir .cache/pip pyinstaller python-dotenv
+    - *before_script_common
+    - *slug_to_var
+    - pip install -e .[dev,$env:DEVICE_NAME]
     - echo "$env:CI_COMMIT_TAG" > version.txt
-    - Copy-Item -Force version.txt build/version.txt
-    - "echo DEVICE_NAME=$env:DEVICE_NAME > .env"
-    - Copy-Item -Force .env build/.env
-  script:
-    - cmd /c "set PYTHONPATH=%CD%\\src && .build-venv\\Scripts\\pyinstaller.exe build\\run.spec"
+    - Copy-Item version.txt build/version.txt
+    - Copy-Item device.env build/.env
+  script: |
+    pyinstaller "build/specs/${CI_JOB_NAME}.spec" --clean --noconfirm --copy-metadata ipat-watchdog
   artifacts:
-    paths:
-      - dist/run.exe
-      - version.txt
+    paths: [dist/wd_${CI_JOB_NAME}.exe, version.txt]
     expire_in: 1 week
   tags: [worktop]
+  rules:
+    - changes:
+        - "pyproject.toml"
+        - "build/specs/${CI_JOB_NAME}.spec"
+        - "src/ipat_watchdog/plugins/${CI_JOB_NAME}/**/*"
+      when: always
 
-sign-exe:
+# one build‑job per slug
+.build_jobs:
+  <<: .build_template
+  parallel:
+    matrix:
+      - CI_JOB_NAME: $DEVICE_LIST
+
+# ────────────────────────────────────────────────────────────────
+#  SIGN  (signtool)
+# ────────────────────────────────────────────────────────────────
+.sign_template:
   stage: sign
-  needs: [build]
+  needs: ["build_${CI_JOB_NAME}"]
+  before_script:
+    - *before_script_common
   script: |
     $signtool = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\x64\\signtool.exe"
-    $pfxPath = "$env:SIGNING_CERT_PFX"
-    $pfxPass = "$env:SIGNING_CERT_PASS"
-
-    if (!(Test-Path $signtool)) {
-      Write-Error "signtool.exe not found. Ensure Windows SDK is installed."
-      exit 1
-    }
-
-    & "$signtool" sign /f "$pfxPath" /p "$pfxPass" /tr http://timestamp.digicert.com `
-      /td sha256 /fd sha256 ".\dist\run.exe"
+    & "$signtool" sign /f "$env:SIGNING_CERT_PFX" /p "$env:SIGNING_CERT_PASS" `
+      /tr http://timestamp.digicert.com /td sha256 /fd sha256 "dist\wd_${CI_JOB_NAME}.exe"
+  artifacts: { paths: [dist/wd_${CI_JOB_NAME}.exe] }
   tags: [worktop]
 
-deploy-tischrem:
+.sign_jobs:
+  <<: .sign_template
+  parallel:
+    matrix: [ { CI_JOB_NAME: $DEVICE_LIST } ]
+
+# ────────────────────────────────────────────────────────────────
+#  DEPLOY
+# ────────────────────────────────────────────────────────────────
+.deploy_template:
   stage: deploy
-  needs: [sign-exe]
-  rules:
-    - if: '$CI_COMMIT_TAG'
-      changes:
-        - dist/run.exe
-        - .gitlab-ci.yml
-      when: on_success
-    - when: never
+  needs: ["sign_${CI_JOB_NAME}"]
   script: |
     $ip   = $env:TARGET_IP
     $user = $env:TARGET_USER
     $pass = $env:TARGET_PASS
     $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
-
-    if (!(Test-Path "$HOME\.ssh")) { New-Item "$HOME\.ssh" -ItemType Directory | Out-Null }
+    $bin  = "wd_${CI_JOB_NAME}.exe"
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
-
-    if (!(Test-Path "dist\run.exe")) {
-      Write-Error "dist/run.exe missing"
-      exit 1
-    }
-
-    # Stop old app
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -Command `
-        try {
-          if (Get-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue) {
-            Stop-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
-            Start-Sleep -Seconds 2
-          }
-          Get-Process run -ErrorAction SilentlyContinue | Stop-Process -Force
-        } catch {
-          Write-Host 'Could not fully stop old watchdog app.'
-        }
-      "
-
-    # Backup current binary and version
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -Command `
-        if (Test-Path 'C:\\Watchdog\\run.exe') {
-          Copy-Item -Force 'C:\\Watchdog\\run.exe' 'C:\\Watchdog\\run_backup.exe'
-        }
-        if (Test-Path 'C:\\Watchdog\\version.txt') {
-          Copy-Item -Force 'C:\\Watchdog\\version.txt' 'C:\\Watchdog\\version_backup.txt'
-        }"
-
-    # Copy new binary and version
-    pscp.exe -batch -pw "$pass" -hostkey "$fpr" ".\dist\run.exe" "$user@$ip:\\C:\\Watchdog\\run.exe"
-    pscp.exe -batch -pw "$pass" -hostkey "$fpr" ".\version.txt" "$user@$ip:\\C:\\Watchdog\\version.txt"
-    pscp.exe -batch -pw "$pass" -hostkey "$fpr" ".\infra\windows\register_task.ps1" "$user@$ip:\\C:\\Watchdog\\register_task.ps1"
+    pscp.exe -batch -pw "$pass" -hostkey "$fpr" "dist\\$bin" "$user@$ip:\\C:\\Watchdog\\$bin"
+    pscp.exe -batch -pw "$pass" -hostkey "$fpr" "version.txt" "$user@$ip:\\C:\\Watchdog\\version.txt"
+  environment: { name: prod-${CI_JOB_NAME}, url: http://$TARGET_IP:8001/health }
   tags: [worktop]
-  environment:
-    name: prod-tischrem
-    url:  http://$env:TARGET_IP:8001/health
 
-run-prod:
+.deploy_jobs:
+  <<: .deploy_template
+  parallel: { matrix: [ { CI_JOB_NAME: $DEVICE_LIST } ] }
+
+# ────────────────────────────────────────────────────────────────
+#  RUN  (register + start task)
+# ────────────────────────────────────────────────────────────────
+.run_template:
   stage: run
+  needs: ["deploy_${CI_JOB_NAME}"]
   script: |
-    $ip   = $env:TARGET_IP
-    $user = $env:TARGET_USER
-    $pass = $env:TARGET_PASS
-    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
-
+    $ip=$env:TARGET_IP; $user=$env:TARGET_USER; $pass=$env:TARGET_PASS
+    $fpr="ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
+    $task="IPAT-Watchdog-${CI_JOB_NAME}"
+    $exe='C:\Watchdog\wd_${CI_JOB_NAME}.exe'
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
-
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -File C:\\Watchdog\\register_task.ps1"
-
-    plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -Command Start-ScheduledTask -TaskName 'IPAT-Watchdog'"
-  environment:
-    name: prod-tischrem
-    action: start
-  allow_failure: false
+      "powershell -Command `
+        \$a=New-ScheduledTaskAction -Execute '$exe'; `
+        \$t=New-ScheduledTaskTrigger -AtStartup; `
+        Register-ScheduledTask -TaskName '$task' -Action \$a -Trigger \$t -Force; `
+        Start-ScheduledTask -TaskName '$task'"
+  environment: { name: prod-${CI_JOB_NAME}, action: start }
   tags: [worktop]
 
-health-check:
+.run_jobs:
+  <<: .run_template
+  parallel: { matrix: [ { CI_JOB_NAME: $DEVICE_LIST } ] }
+
+# ────────────────────────────────────────────────────────────────
+#  HEALTH
+# ────────────────────────────────────────────────────────────────
+.health_template:
   stage: health
-  needs: [run-prod]
-  allow_failure: false
+  needs: ["run_${CI_JOB_NAME}"]
   script: |
-    $url = "http://$($env:TARGET_IP):8001/health"
-    Write-Host "Waiting for $url …"
-    for ($i=0; $i -lt 30; $i++) {
-      try {
-        Invoke-RestMethod -Uri $url -TimeoutSec 3
-        Write-Host "Service is healthy"
-        exit 0
-      } catch {
-        Write-Host "Health check attempt $($i + 1) failed"
-        Start-Sleep -Seconds 2
-      }
-    }
-    Write-Error "Service did not become healthy in time"
-    exit 1
-  environment: prod-tischrem
+    $url="http://$env:TARGET_IP:8001/health"
+    for ($i=0; $i -lt 30; $i++){ try{Invoke-RestMethod -Uri $url; exit 0} catch{Start-Sleep 2} }
+    Write-Error "Service unhealthy"; exit 1
+  environment: prod-${CI_JOB_NAME}
   tags: [worktop]
 
-rollback-if-needed:
+.health_jobs:
+  <<: .health_template
+  parallel: { matrix: [ { CI_JOB_NAME: $DEVICE_LIST } ] }
+
+# ────────────────────────────────────────────────────────────────
+#  ROLLBACK
+# ────────────────────────────────────────────────────────────────
+.rollback_template:
   stage: rollback
   when: on_failure
-  needs: [health-check]
+  needs: ["health_${CI_JOB_NAME}"]
   script: |
-    $ip   = $env:TARGET_IP
-    $user = $env:TARGET_USER
-    $pass = $env:TARGET_PASS
-    $fpr  = "ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
-
+    $ip=$env:TARGET_IP;$user=$env:TARGET_USER;$pass=$env:TARGET_PASS
+    $fpr="ssh-ed25519 255 SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI"
+    $task="IPAT-Watchdog-${CI_JOB_NAME}"
+    $exe='C:\Watchdog\wd_${CI_JOB_NAME}.exe'
     ssh-keyscan -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
-
     plink.exe -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
-      "powershell -NoProfile -ExecutionPolicy Bypass -Command `
-        try {
-          Stop-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
-          if (Test-Path 'C:\\Watchdog\\run_backup.exe') {
-            Copy-Item -Force 'C:\\Watchdog\\run_backup.exe' 'C:\\Watchdog\\run.exe'
-            if (Test-Path 'C:\\Watchdog\\version_backup.txt') {
-              Copy-Item -Force 'C:\\Watchdog\\version_backup.txt' 'C:\\Watchdog\\version.txt'
-              $ver = Get-Content 'C:\\Watchdog\\version.txt'
-              Write-Host \"Rolled back to version: $ver\"
-            } else {
-              Write-Host \"Rolled back binary but no version tag found.\"
-            }
-            Start-ScheduledTask -TaskName 'IPAT-Watchdog'
-          } else {
-            Write-Host 'No backup binary found for rollback.'
-          }
-        } catch {
-          Write-Host 'Rollback failed.'
-        }
-      "
-  allow_failure: false
+      "powershell -Command `
+        Stop-ScheduledTask -TaskName '$task' -ErrorAction SilentlyContinue; `
+        if(Test-Path '${exe}_backup'){ Copy-Item '${exe}_backup' '${exe}' -Force }; `
+        Start-ScheduledTask -TaskName '$task'"
   tags: [worktop]
+
+.rollback_jobs:
+  <<: .rollback_template
+  parallel: { matrix: [ { CI_JOB_NAME: $DEVICE_LIST } ] }
