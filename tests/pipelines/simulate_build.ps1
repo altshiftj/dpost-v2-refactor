@@ -1,53 +1,53 @@
+. "$PSScriptRoot\env.ps1"
+
 # simulate_build.ps1
-# Simulate your GitLab "build" job locally in PowerShell
+# Simulate GitLab "build" job locally in PowerShell
 
 # --- SETTINGS ---
-$pythonExe = "C:\Program Files\Python312\python.exe"
-$commitTag = "vLocalTest"  # Simulate CI_COMMIT_TAG
+$CI_JOB_NAME = "sem_tischrem_blb"         # Simulate CI_JOB_NAME
+$CI_COMMIT_TAG = "vLocalTest"            # Simulate CI_COMMIT_TAG
 
 # --- TIMER START ---
 $startTime = Get-Date
 
-# --- Step 1: Check Python ---
-if (-Not (Test-Path $pythonExe)) {
-    Write-Error "$pythonExe not found. Please install Python 3.12 or adjust path." # -ForegroundColor Red
-    exit 1
+# --- Step 1: Create Virtual Environment ---
+if (!(Test-Path ".testbuildvenv")) {
+    python -m venv .testbuildvenv
 }
-Write-Host "Using $pythonExe" # -ForegroundColor Green
 
-# --- Step 2: Create Virtual Environment ---
-& $pythonExe -m venv .build-venv
+# --- Step 2: Activate Virtual Environment ---
+. .\.testbuildvenv\Scripts\Activate.ps1
+python -m pip install --upgrade pip setuptools wheel pyinstaller
 
-# --- Step 3: Activate Virtual Environment ---
-. .\.build-venv\Scripts\Activate.ps1
+# --- Step 3: Derive DEVICE_NAME from CI_JOB_NAME ---
+$DEVICE_NAME = $CI_JOB_NAME
 
-# --- Step 4: Install Dependencies ---
-Write-Host "Installing dependencies..." # -ForegroundColor Yellow
-pip install --cache-dir .cache/pip -r requirements.txt
-pip install --cache-dir .cache/pip pyinstaller python-dotenv
+Write-Host "Using DEVICE_NAME: $DEVICE_NAME"
 
-# --- Step 5: Mock Environment Variables ---
-Write-Host "Setting up mock environment variables..." # -ForegroundColor Yellow
-$env:DEVICE_NAME = "SEM_TischREM_BLB"
+# --- Step 4: Install Project Dependencies ---
+Write-Host "Installing dependencies for device variant '$DEVICE_NAME'..."
+pip install --cache-dir .cache/pip -e .[dev,$DEVICE_NAME]
 
-# Create .env for consistency
-"DEVICE_NAME=$($env:DEVICE_NAME)" | Out-File -Encoding ascii .env -Force
-Copy-Item -Force .env build/.env
+# --- Step 5: Create environment and version files ---
+Write-Host "Creating .env and version files..."
+"DEVICE_NAME=$DEVICE_NAME" | Out-File -Encoding ascii device.env -Force
+Copy-Item -Force device.env build/.env
 
-# Simulate GitLab version tag
-$commitTag | Out-File -Encoding ascii version.txt -Force
+$CI_COMMIT_TAG | Out-File -Encoding ascii version.txt -Force
 Copy-Item -Force version.txt build/version.txt
 
 # --- Step 6: Build Executable ---
-Write-Host "Running PyInstaller..." # -ForegroundColor Yellow
+$specFile = "build/specs/$CI_JOB_NAME.spec"
+Write-Host "Running PyInstaller using spec file: $specFile"
 $env:PYTHONPATH = "$(Get-Location)\src"
-pyinstaller build/run.spec
+pyinstaller $specFile --clean --noconfirm
 
 # --- Step 7: Check Result ---
-if (Test-Path dist/run.exe) {
-    Write-Host "Build succeeded! run.exe available in dist/" # -ForegroundColor Green
+$outputPath = "dist/wd-$CI_JOB_NAME.exe"
+if (Test-Path $outputPath) {
+    Write-Host "Build succeeded! Executable: $outputPath"
 } else {
-    Write-Error "Build failed! dist/run.exe was not created." # -ForegroundColor Red
+    Write-Error "Build failed! Expected output not found: $outputPath"
     exit 1
 }
 
@@ -55,5 +55,5 @@ if (Test-Path dist/run.exe) {
 $endTime = Get-Date
 $duration = $endTime - $startTime
 
-Write-Host "Build simulation complete!" # -ForegroundColor Green
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration) # -ForegroundColor Green
+Write-Host "Build simulation complete!"
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)

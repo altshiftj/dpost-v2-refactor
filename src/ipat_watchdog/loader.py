@@ -5,7 +5,7 @@ from ipat_watchdog.plugins.device_plugin import DevicePlugin
 def load_device_plugin(device_name: str) -> DevicePlugin:
     """
     Resolve a plugin published via the 'ipat_watchdog.plugins' entry‑point group.
-    `device_name` must match the *key* in pyproject.toml (e.g. 'SEM_TischREM_BLB').
+    `device_name` must match the *key* in pyproject.toml (e.g. 'sem_tischrem_blb').
     """
     eps = entry_points(group="ipat_watchdog.plugins")
     try:
@@ -15,4 +15,5 @@ def load_device_plugin(device_name: str) -> DevicePlugin:
         raise RuntimeError(
             f"No plugin named {device_name!r} installed. "
             "Run `pip install ipat-watchdog[{device_name_lower}]`."
+            "or check casing of the device name (only lowercase names, please :)."
         ) from exc

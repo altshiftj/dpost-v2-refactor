@@ -20,7 +20,7 @@ load_dotenv()
 logger = setup_logger(__name__)
 
 def main():
-    device_name = os.getenv("DEVICE_NAME", "SEM_TischREM_BLB")
+    device_name = os.getenv("DEVICE_NAME", "sem_tischrem_blb")
     plugin = load_device_plugin(device_name)
     SettingsStore.set(plugin.get_settings())
 

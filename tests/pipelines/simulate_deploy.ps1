@@ -1,21 +1,34 @@
+. "$PSScriptRoot\env.ps1"
+
 # simulate_deploy.ps1
 # Simulate your GitLab "deploy" job locally in PowerShell
 
 # --- SETTINGS ---
-$pscpPath = "C:\Program Files\PuTTY\pscp.exe"
+$pscpPath  = "C:\Program Files\PuTTY\pscp.exe"
 $plinkPath = "C:\Program Files\PuTTY\plink.exe"
-$targetIP = "127.0.0.1"
-$targetUser = "testuser"
-$targetPass = "password"
 $remotePath = "C:\Watchdog"
 $deployPath = "$remotePath\"  # Local or remote depending on IP
+
+# Read from environment variables (mimic GitLab CI behavior)
+$targetIP   = $env:TARGET_IP
+$targetUser = $env:TARGET_USER
+$targetPass = $env:TARGET_PASS
+$ciJobName  = $env:CI_JOB_NAME
+
+# Fallback values for local testing
+if (-not $targetIP)   { $targetIP = "127.0.0.1" }
+if (-not $targetUser) { $targetUser = "testuser" }
+if (-not $targetPass) { $targetPass = "password" }
+if (-not $ciJobName)  { $ciJobName = "run" }
+
+$binaryName = "wd-${ciJobName}.exe"
 
 # --- TIMER START ---
 $startTime = Get-Date
 
 # --- Step 1: Validate required files ---
-if (-Not (Test-Path "dist/run.exe")) {
-    Write-Error "dist/run.exe not found! Build it first."
+if (-Not (Test-Path "dist\$binaryName")) {
+    Write-Error "dist\$binaryName not found! Build it first."
     exit 1
 }
 if (-Not (Test-Path "version.txt")) {
@@ -32,24 +45,21 @@ if ($targetIP -eq "127.0.0.1") {
         New-Item -Path $remotePath -ItemType Directory -Force | Out-Null
     }
 
-    # Stop any running scheduled task or process
     try {
         Stop-ScheduledTask -TaskName "IPAT-Watchdog" -ErrorAction SilentlyContinue
-        Get-Process run -ErrorAction SilentlyContinue | Stop-Process -Force
+        Get-Process $ciJobName -ErrorAction SilentlyContinue | Stop-Process -Force
     } catch {
         Write-Host "Warning: Could not stop existing task or process."
     }
 
-    # Backup old binary and version
-    if (Test-Path "${remotePath}\run.exe") {
-        Copy-Item -Force "$remotePath\run.exe" "${remotePath}\run_backup.exe"
+    if (Test-Path "${remotePath}\$binaryName") {
+        Copy-Item -Force "$remotePath\$binaryName" "${remotePath}\${binaryName}_backup.exe"
     }
     if (Test-Path "${remotePath}\version.txt") {
         Copy-Item -Force "${remotePath}\version.txt" "${remotePath}\version_backup.txt"
     }
 
-    # Copy new files
-    Copy-Item -Force "dist/run.exe" "${remotePath}\run.exe"
+    Copy-Item -Force "dist\$binaryName" "${remotePath}\$binaryName"
     Copy-Item -Force "version.txt" "${remotePath}\version.txt"
     Copy-Item -Force "infra\windows\register_task.ps1" "${remotePath}\register_task.ps1"
 
@@ -67,6 +77,7 @@ if (-Not (Test-Path $pscpPath) -or -Not (Test-Path $plinkPath)) {
 }
 
 Write-Host "Performing remote deployment to ${targetIP}..."
+Write-Host "Note: SSH host key verification is skipped in this simulation."
 
 # Optional: Stop task and process remotely
 & $plinkPath -batch -pw "${targetPass}" "${targetUser}@${targetIP}" `
@@ -76,24 +87,24 @@ Write-Host "Performing remote deployment to ${targetIP}..."
                 Stop-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
                 Start-Sleep -Seconds 2
             }
-            Get-Process run -ErrorAction SilentlyContinue | Stop-Process -Force
+            Get-Process $ciJobName -ErrorAction SilentlyContinue | Stop-Process -Force
         } catch {
             Write-Host 'Could not fully stop old watchdog app.'
         }"
 
-# Backup current run.exe and version.txt
+# Backup old files
 & $plinkPath -batch -pw "${targetPass}" "${targetUser}@${targetIP}" `
     "powershell -NoProfile -ExecutionPolicy Bypass -Command `
-        if (Test-Path '${remotePath}\run.exe') {
-            Copy-Item -Force '${remotePath}\run.exe' '${remotePath}\run_backup.exe'
+        if (Test-Path '${remotePath}\$binaryName') {
+            Copy-Item -Force '${remotePath}\$binaryName' '${remotePath}\${binaryName}_backup.exe'
         }
         if (Test-Path '${remotePath}\version.txt') {
             Copy-Item -Force '${remotePath}\version.txt' '${remotePath}\version_backup.txt'
         }"
 
 # Copy new files
-& $pscpPath -batch -pw "${targetPass}" "dist/run.exe" "${targetUser}@${targetIP}:${remotePath}\run.exe"
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy run.exe"; exit 1 }
+& $pscpPath -batch -pw "${targetPass}" "dist\$binaryName" "${targetUser}@${targetIP}:${remotePath}\$binaryName"
+if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy $binaryName"; exit 1 }
 
 & $pscpPath -batch -pw "${targetPass}" "version.txt" "${targetUser}@${targetIP}:${remotePath}\version.txt"
 if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy version.txt"; exit 1 }

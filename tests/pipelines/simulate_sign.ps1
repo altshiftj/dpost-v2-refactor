@@ -1,53 +1,50 @@
 # simulate_sign.ps1
-# Securely sign your executable using an encrypted PFX password
+# Simulate the GitLab CI "sign" stage locally using environment variables
+# --- Load shared environment variables ---
+. "$PSScriptRoot\env.ps1"
 
 # --- SETTINGS ---
 $signtool = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64\signtool.exe"
-$pfxPath = "C:\Users\jrfit\.signcert\ipat_wd.pfx"
-$pfxPassPath = "$env:USERPROFILE\.signcert\pfxpass.txt"  # Encrypted SecureString file
+$ciJobName = $env:CI_JOB_NAME
+if (-not $ciJobName) { $ciJobName = "run" }
 
-# --- STEP 1: Validate paths ---
+$binaryName = "wd-${ciJobName}.exe"
+$binaryPath = "C:\Repos\Gitlab\ipat_data_watchdog\dist\$binaryName"
+
+$pfxPath  = $env:SIGNING_CERT_PFX
+$pfxPass  = $env:SIGNING_CERT_PASS
+
+# --- STEP 1: Validate inputs ---
 if (!(Test-Path $signtool)) {
     Write-Error "signtool.exe not found. Install Windows SDK."
     exit 1
 }
 
-if (!(Test-Path "dist\run.exe")) {
-    Write-Error "run.exe not found in dist/"
+if (!(Test-Path $binaryPath)) {
+    Write-Error "$binaryPath not found. Build the binary first."
     exit 1
 }
 
-if (!(Test-Path $pfxPath)) {
-    Write-Error "PFX file not found at $pfxPath"
+if (-not $pfxPath -or !(Test-Path $pfxPath)) {
+    Write-Error "SIGNING_CERT_PFX environment variable not set or path invalid."
     exit 1
 }
 
-if (!(Test-Path $pfxPassPath)) {
-    Write-Error "Password file not found at $pfxPassPath. Run the setup step first."
+if (-not $pfxPass) {
+    Write-Error "SIGNING_CERT_PASS environment variable is missing."
     exit 1
 }
 
-# --- STEP 2: Read and decrypt password securely ---
-try {
-    $securePass = Get-Content $pfxPassPath | ConvertTo-SecureString
-    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)
-    $plainPass = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
-} catch {
-    Write-Error "Failed to decrypt password."
-    exit 1
-}
+# --- STEP 2: Sign the executable ---
+Write-Host "Signing $binaryPath..."
+& "$signtool" sign /f "$pfxPath" /p "$pfxPass" /tr http://timestamp.digicert.com `
+    /td sha256 /fd sha256 "$binaryPath"
 
-# --- STEP 3: Sign the executable ---
-Write-Host "Signing dist\run.exe..."
-& "$signtool" sign /f "$pfxPath" /p "$plainPass" /tr http://timestamp.digicert.com `
-    /td sha256 /fd sha256 "dist\run.exe"
-
-# --- Cleanup sensitive memory ---
-[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-
-# --- STEP 4: Check result ---
+# --- STEP 3: Verfiy the .exe ---
+Write-Host "Verifying $binaryPath..."
+& "$signtool" verify /pa "$binaryPath"
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Signing failed."
+    Write-Error "Verification failed. Check the output above."
     exit 1
 }
 

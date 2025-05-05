@@ -13,8 +13,8 @@ cache: { paths: [.cache/pip] }
 #   slug  : sem_tischrem_blb
 #   DEVICE_NAME : SEM_TischREM_BLB
 .before_script_common: &before_script_common |
-  python -m venv venv
-  .\venv\Scripts\activate
+  python -m venv .buildvenv
+  .\.buildvenv\Scripts\activate
   pip install -U pip setuptools wheel
 
 .slug_to_var: &slug_to_var |

@@ -1,3 +1,5 @@
+. "$PSScriptRoot\env.ps1"
+
 # tests\pipelines\simulate_full_pipeline.ps1
 $ErrorActionPreference = 'Stop'
 

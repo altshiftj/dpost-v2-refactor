@@ -1,3 +1,5 @@
+. "$PSScriptRoot\env.ps1"
+
 # simulate_health.ps1
 # Simulate your GitLab "health" stage locally in PowerShell
 

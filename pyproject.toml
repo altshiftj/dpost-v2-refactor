@@ -28,10 +28,10 @@ dev = [
     "pyfakefs",
     "ipython"
 ]
-SEM_TischREM_BLB = []
+sem_tischrem_blb = []
 
 [project.entry-points."ipat_watchdog.plugins"]
-SEM_TischREM_BLB = "ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin"
+sem_tischrem_blb = "ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"
