@@ -1,4 +1,5 @@
 . "$PSScriptRoot\env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # simulate_rollback.ps1
 # Simulate GitLab rollback stage locally or remotely

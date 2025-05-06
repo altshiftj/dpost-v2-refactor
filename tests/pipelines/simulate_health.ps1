@@ -1,4 +1,5 @@
 . "$PSScriptRoot\env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # simulate_health.ps1
 # Simulate your GitLab "health" stage locally in PowerShell

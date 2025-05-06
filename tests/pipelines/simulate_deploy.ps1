@@ -1,38 +1,34 @@
-. "$PSScriptRoot\env.ps1"
-
 # simulate_deploy.ps1
-# Simulate your GitLab "deploy" job locally in PowerShell
+# Simulate GitLab "deploy" job locally or remotely in PowerShell
+
+. "$PSScriptRoot/env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # --- SETTINGS ---
-$pscpPath  = "C:\Program Files\PuTTY\pscp.exe"
-$plinkPath = "C:\Program Files\PuTTY\plink.exe"
 $remotePath = "C:\Watchdog"
-$deployPath = "$remotePath\"  # Local or remote depending on IP
-
-# Read from environment variables (mimic GitLab CI behavior)
+$ciJobName  = $env:CI_JOB_NAME
 $targetIP   = $env:TARGET_IP
 $targetUser = $env:TARGET_USER
 $targetPass = $env:TARGET_PASS
-$ciJobName  = $env:CI_JOB_NAME
 
-# Fallback values for local testing
+if (-not $ciJobName)  { $ciJobName = "run" }
 if (-not $targetIP)   { $targetIP = "127.0.0.1" }
 if (-not $targetUser) { $targetUser = "testuser" }
 if (-not $targetPass) { $targetPass = "password" }
-if (-not $ciJobName)  { $ciJobName = "run" }
 
 $binaryName = "wd-${ciJobName}.exe"
+$distBinaryPath = "dist\$binaryName"
 
 # --- TIMER START ---
 $startTime = Get-Date
 
 # --- Step 1: Validate required files ---
-if (-Not (Test-Path "dist\$binaryName")) {
-    Write-Error "dist\$binaryName not found! Build it first."
+if (-Not (Test-Path $distBinaryPath)) {
+    Write-Error "$distBinaryPath not found. Run the build first."
     exit 1
 }
 if (-Not (Test-Path "version.txt")) {
-    Write-Error "version.txt not found! Ensure build step ran successfully."
+    Write-Error "version.txt not found. Ensure build step ran successfully."
     exit 1
 }
 Write-Host "All artifacts are ready."
@@ -52,68 +48,89 @@ if ($targetIP -eq "127.0.0.1") {
         Write-Host "Warning: Could not stop existing task or process."
     }
 
-    if (Test-Path "${remotePath}\$binaryName") {
-        Copy-Item -Force "$remotePath\$binaryName" "${remotePath}\${binaryName}_backup.exe"
-    }
-    if (Test-Path "${remotePath}\version.txt") {
-        Copy-Item -Force "${remotePath}\version.txt" "${remotePath}\version_backup.txt"
+    $files = @($binaryName, "version.txt")
+    foreach ($f in $files) {
+        $src = Join-Path $remotePath $f
+        $bak = $src -replace '\.(\w+)$', '_backup.$1'
+        if (Test-Path $src) {
+            Copy-Item -Force $src $bak
+        }
     }
 
-    Copy-Item -Force "dist\$binaryName" "${remotePath}\$binaryName"
-    Copy-Item -Force "version.txt" "${remotePath}\version.txt"
-    Copy-Item -Force "infra\windows\register_task.ps1" "${remotePath}\register_task.ps1"
+    Copy-Item -Force $distBinaryPath (Join-Path $remotePath $binaryName)
+    Copy-Item -Force "version.txt" (Join-Path $remotePath "version.txt")
+    Copy-Item -Force "infra/windows/register_task.ps1" (Join-Path $remotePath "register_task.ps1")
 
-    $endTime = Get-Date
-    $duration = $endTime - $startTime
+    $duration = (Get-Date) - $startTime
+    Write-Host ""
     Write-Host "Local deployment simulation complete."
     Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)
     exit 0
 }
 
 # --- Step 3: REMOTE deployment ---
-if (-Not (Test-Path $pscpPath) -or -Not (Test-Path $plinkPath)) {
-    Write-Error "PuTTY tools not found. Install pscp.exe and plink.exe or adjust paths."
+if (-not (Get-Command "plink" -ErrorAction SilentlyContinue) -or
+    -not (Get-Command "pscp"  -ErrorAction SilentlyContinue)) {
+    Write-Error "plink and/or pscp not found in PATH."
     exit 1
 }
 
-Write-Host "Performing remote deployment to ${targetIP}..."
-Write-Host "Note: SSH host key verification is skipped in this simulation."
+Write-Host "Performing remote deployment to $targetIP..."
 
-# Optional: Stop task and process remotely
-& $plinkPath -batch -pw "${targetPass}" "${targetUser}@${targetIP}" `
-    "powershell -NoProfile -ExecutionPolicy Bypass -Command `
-        try {
-            if (Get-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue) {
-                Stop-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
-                Start-Sleep -Seconds 2
-            }
-            Get-Process $ciJobName -ErrorAction SilentlyContinue | Stop-Process -Force
-        } catch {
-            Write-Host 'Could not fully stop old watchdog app.'
-        }"
+# --- Remote prep script: stop services, backup files, ensure dir ---
+$prepTemplate = @'
+$path = "{0}"
+if (-not (Test-Path $path)) {{
+    New-Item -Path $path -ItemType Directory -Force | Out-Null
+}}
 
-# Backup old files
-& $plinkPath -batch -pw "${targetPass}" "${targetUser}@${targetIP}" `
-    "powershell -NoProfile -ExecutionPolicy Bypass -Command `
-        if (Test-Path '${remotePath}\$binaryName') {
-            Copy-Item -Force '${remotePath}\$binaryName' '${remotePath}\${binaryName}_backup.exe'
-        }
-        if (Test-Path '${remotePath}\version.txt') {
-            Copy-Item -Force '${remotePath}\version.txt' '${remotePath}\version_backup.txt'
-        }"
+try {{
+    if (Get-ScheduledTask -TaskName "IPAT-Watchdog" -ErrorAction SilentlyContinue) {{
+        Stop-ScheduledTask -TaskName "IPAT-Watchdog" -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    }}
+    Get-Process "{1}" -ErrorAction SilentlyContinue | Stop-Process -Force
+}} catch {{
+    Write-Host "Could not fully stop old watchdog app."
+}}
 
-# Copy new files
-& $pscpPath -batch -pw "${targetPass}" "dist\$binaryName" "${targetUser}@${targetIP}:${remotePath}\$binaryName"
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy $binaryName"; exit 1 }
+$files = @("{2}", "version.txt")
+foreach ($f in $files) {{
+    $src = Join-Path $path $f
+    $bak = $src -replace '\.(\w+)$', '_backup.$1'
+    if (Test-Path $src) {{
+        Copy-Item -Force $src $bak
+    }}
+}}
+'@
 
-& $pscpPath -batch -pw "${targetPass}" "version.txt" "${targetUser}@${targetIP}:${remotePath}\version.txt"
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy version.txt"; exit 1 }
+$prepScript     = [string]::Format($prepTemplate, $remotePath, $ciJobName, $binaryName)
+$encodedCommand = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($prepScript))
+$cmd            = "powershell -NoProfile -EncodedCommand $encodedCommand"
 
-& $pscpPath -batch -pw "${targetPass}" "infra\windows\register_task.ps1" "${targetUser}@${targetIP}:${remotePath}\register_task.ps1"
-if ($LASTEXITCODE -ne 0) { Write-Error "Failed to copy register_task.ps1"; exit 1 }
+& plink -batch -pw "$targetPass" "$targetUser@$targetIP" $cmd | Out-Null
+
+# --- Step 4: Copy files via SCP ---
+$copyTargets = @(
+    @{ Src = $distBinaryPath;                   Dst = "$remotePath/$binaryName" },
+    @{ Src = "version.txt";                     Dst = "$remotePath/version.txt" },
+    @{ Src = "infra/windows/register_task.ps1"; Dst = "$remotePath/register_task.ps1" }
+)
+
+foreach ($target in $copyTargets) {
+    $src = $target.Src
+    $dst = $target.Dst -replace '\\', '/'
+    $remote = "$targetUser@${targetIP}:$dst"
+
+    & pscp -batch -pw "$targetPass" "$src" "$remote"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to copy $src to $remote"
+        exit 1
+    }
+}
 
 # --- TIMER END ---
-$endTime = Get-Date
-$duration = $endTime - $startTime
+$duration = (Get-Date) - $startTime
+Write-Host ""
 Write-Host "Remote deployment simulation complete."
 Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)

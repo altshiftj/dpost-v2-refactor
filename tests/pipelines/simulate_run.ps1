@@ -1,7 +1,8 @@
 # simulate_run.ps1
-# Simulate GitLab CI "run" stage using remote execution via plink (no password principal)
+# Simulate GitLab CI "run" stage using remote execution via plink and register_task.ps1
 
 . "$PSScriptRoot\env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 try {
     # --- SETTINGS ---
@@ -13,14 +14,15 @@ try {
     $targetPass = $env:TARGET_PASS
     $ciJobName  = $env:CI_JOB_NAME
 
-    # Fallbacks for testing
+    # Fallbacks for local testing
     if (-not $targetIP)   { $targetIP = "127.0.0.1" }
     if (-not $targetUser) { $targetUser = "testuser" }
     if (-not $targetPass) { $targetPass = "password" }
     if (-not $ciJobName)  { $ciJobName = "run" }
 
+    # Define task name and exe path for this job
     $taskName = "IPAT-Watchdog-$ciJobName"
-    $exePath  = "C:\Watchdog\wd-${ciJobName}.exe"
+    $exePath  = "C:\Watchdog\wd-$ciJobName.exe"
 
     # --- Ensure plink is available ---
     if (-not (Test-Path $plinkPath)) {
@@ -29,31 +31,26 @@ try {
 
     # --- TIMER START ---
     $startTime = Get-Date
-    Write-Host "Performing remote run task setup on $targetIP as $targetUser..."
+    Write-Host "Registering task '$taskName' on $targetIP as $targetUser..."
 
-    # --- Build the remote command ---
-    $remoteScriptLines = @(
-        "`$a = New-ScheduledTaskAction -Execute '$exePath';",
-        "`$t = New-ScheduledTaskTrigger -AtLogon;",
-        "Register-ScheduledTask -TaskName '$taskName' -Action `$a -Trigger `$t -Force;",
-        "Start-ScheduledTask -TaskName '$taskName';",
-        "`n'Task state:';",
-        "Get-ScheduledTask -TaskName '$taskName' | Get-ScheduledTaskInfo | Format-List *"
-    )
-    $remoteScript = ($remoteScriptLines -join ' ')
-    $cmd = "powershell -NoProfile -Command `"$remoteScript`""
+    # --- Build command to call register_task.ps1 with parameters ---
+    $remoteScript = @(
+        "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1",
+        "-TaskName `"$taskName`"",
+        "-ExePath `"$exePath`""
+    ) -join " "
 
     # --- Fire the command over SSH ---
-    & $plinkPath -batch -pw "$targetPass" "$targetUser@$targetIP" $cmd
+    & $plinkPath -batch -pw "$targetPass" "$targetUser@$targetIP" $remoteScript
 
     if ($LASTEXITCODE -ne 0) {
-        throw "Remote task registration or start failed (exit code $LASTEXITCODE)."
+        throw "Remote task registration failed (exit code $LASTEXITCODE)."
     }
 
     # --- TIMER END ---
     $endTime = Get-Date
     $duration = $endTime - $startTime
-    Write-Host "Remote run simulation complete."
+    Write-Host "`nRemote run task setup complete."
     Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)
     Read-Host "Press Enter to exit"
 }

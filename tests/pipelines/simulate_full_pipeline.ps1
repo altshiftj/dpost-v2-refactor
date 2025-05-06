@@ -1,4 +1,5 @@
 . "$PSScriptRoot\env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # tests\pipelines\simulate_full_pipeline.ps1
 $ErrorActionPreference = 'Stop'
