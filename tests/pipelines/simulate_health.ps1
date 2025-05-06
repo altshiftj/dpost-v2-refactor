@@ -1,49 +1,50 @@
-. "$PSScriptRoot\env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
+<#
+    Simulate GitLab "health" stage by polling a /health endpoint
+    Works with Windows PowerShell 5+ and doesn't rely on env.ps1 for optional config
+#>
 
-# simulate_health.ps1
-# Simulate your GitLab "health" stage locally in PowerShell
+# ── ENV + LOCATION ────────────────────────────────────────────────────
+. "$PSScriptRoot\env.ps1"  # only loads TARGET_IP and login info
+Set-Location -Path (Resolve-Path "$PSScriptRoot\../..")
 
-# --- SETTINGS ---
-$targetIP = "127.0.0.1"
-$healthPort = 8001
-$healthPath = "/health"
+# ── CONFIG ────────────────────────────────────────────────────────────
+$targetIP    = if ($env:TARGET_IP) { $env:TARGET_IP } else { '127.0.0.1' }
+$healthPort  = 8001
+$healthPath  = '/health'
 $maxAttempts = 30
 $waitSeconds = 2
 
-# --- TIMER START ---
-$startTime = Get-Date
+$url = "http://$targetIP`:$healthPort$healthPath"
 
-# --- Step 1: Define Health Check Function ---
+# ── TIMER ─────────────────────────────────────────────────────────────
+$startTime = Get-Date
+Write-Host "Waiting for service at $url ..."
+
+# ── FUNCTION ──────────────────────────────────────────────────────────
 function Test-Health {
-    param (
-        [string]$url
-    )
+    param ([string]$uri)
 
     try {
-        $response = Invoke-RestMethod -Uri $url -TimeoutSec 3
+        $null = Invoke-RestMethod -Uri $uri -TimeoutSec 3
         return $true
     } catch {
         return $false
     }
 }
 
-# --- Step 2: Start Health Checking ---
-$url = "http://$targetIP`:$healthPort$healthPath"
-Write-Host "Waiting for service at $url ..."
-
-for ($i = 0; $i -lt $maxAttempts; $i++) {
-    if (Test-Health -url $url) {
-        Write-Host "Service is healthy!"
-        $endTime = Get-Date
-        $duration = $endTime - $startTime
-        Write-Host ("Health check complete. Elapsed time: {0:hh\:mm\:ss}" -f $duration)
+# ── HEALTH LOOP ───────────────────────────────────────────────────────
+for ($i = 1; $i -le $maxAttempts; $i++) {
+    if (Test-Health $url) {
+        $elapsed = (Get-Date) - $startTime
+        Write-Host "`nService is healthy after $i attempt(s)."
+        Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $elapsed)
         exit 0
     }
 
-    Write-Host "Health check attempt $($i + 1) failed. Retrying in $waitSeconds second(s)..."
+    Write-Host "[$i/$maxAttempts] Not ready. Retrying in $waitSeconds second(s)..."
     Start-Sleep -Seconds $waitSeconds
 }
 
-Write-Error "Service did not become healthy in time!"
+# ── FAILURE ───────────────────────────────────────────────────────────
+Write-Error "`nService did not become healthy in time: $url"
 exit 1

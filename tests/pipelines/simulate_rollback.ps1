@@ -1,57 +1,52 @@
+<#
+    Simulate GitLab "rollback" stage
+    Reverts .exe and version.txt to previous backups
+#>
+
+# ── ENV + LOCATION ────────────────────────────────────────────────────
 . "$PSScriptRoot\env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
+Set-Location -Path (Resolve-Path "$PSScriptRoot\../..")
 
-# simulate_rollback.ps1
-# Simulate GitLab rollback stage locally or remotely
+# ── CONFIG ────────────────────────────────────────────────────────────
+$targetIP   = $env:TARGET_IP    ; if (-not $targetIP)   { $targetIP   = '127.0.0.1' }
+$targetUser = $env:TARGET_USER  ; if (-not $targetUser) { $targetUser = 'testuser' }
+$targetPass = $env:TARGET_PASS  ; if (-not $targetPass) { $targetPass = 'password' }
+$ciJobName  = $env:CI_JOB_NAME  ; if (-not $ciJobName)  { $ciJobName  = 'run' }
 
-# --- SETTINGS ---
-$plinkPath = "C:\Program Files\PuTTY\plink.exe"
+$taskName   = "IPAT-Watchdog-$ciJobName"
+$exe        = "C:\Watchdog\wd-$ciJobName.exe"
+$exeBackup  = $exe -replace '\.exe$','_backup.exe'
+$verPath    = "C:\Watchdog\version.txt"
+$verBackup  = "C:\Watchdog\version_backup.txt"
 
-# Load env vars (or fallbacks)
-$targetIP   = $env:TARGET_IP
-$targetUser = $env:TARGET_USER
-$targetPass = $env:TARGET_PASS
-$ciJobName  = $env:CI_JOB_NAME
+$start = Get-Date
 
-if (-not $targetIP)   { $targetIP = "127.0.0.1" }
-if (-not $targetUser) { $targetUser = "testuser" }
-if (-not $targetPass) { $targetPass = "password" }
-if (-not $ciJobName)  { $ciJobName = "run" }
-
-$taskName = "IPAT-Watchdog-$ciJobName"
-$exe      = "C:\Watchdog\wd_${ciJobName}.exe"
-$exeBackup = "${exe}_backup"
-
-# --- TIMER START ---
-$startTime = Get-Date
-
-# --- LOCAL Rollback ---
-if ($targetIP -eq "127.0.0.1") {
+# ── LOCAL ROLLBACK ────────────────────────────────────────────────────
+if ($targetIP -eq '127.0.0.1') {
     Write-Host "Performing local rollback..."
 
-    try {
-        Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    } catch {
-        Write-Warning "Could not stop scheduled task: $taskName"
+    Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+    # Kill leftover processes if running
+    Get-Process -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe } | ForEach-Object {
+        Write-Host "Killing process PID=$($_.Id)"
+        Stop-Process -Id $_.Id -Force
+        Start-Sleep -Seconds 1
     }
 
     if (Test-Path $exeBackup) {
-        Copy-Item -Force $exeBackup $exe
-        Write-Host "Restored $exe from backup."
+        Copy-Item $exeBackup $exe -Force
+        Write-Host "Restored EXE: $exe"
     } else {
-        Write-Warning "Backup not found: $exeBackup"
+        Write-Warning "EXE backup not found: $exeBackup"
     }
 
-    $versionBackup = "C:\Watchdog\version_backup.txt"
-    $versionPath   = "C:\Watchdog\version.txt"
-
-    if (Test-Path $versionBackup) {
-        Copy-Item -Force $versionBackup $versionPath
+    if (Test-Path $verBackup) {
+        Copy-Item $verBackup $verPath -Force
         Write-Host "Restored version.txt"
-        $ver = Get-Content $versionPath
-        Write-Host "Rolled back to version: $ver"
+        Write-Host "Rolled back to version: $(Get-Content $verPath)"
     } else {
-        Write-Warning "No version backup found."
+        Write-Warning "version.txt backup not found."
     }
 
     Start-ScheduledTask -TaskName $taskName
@@ -59,28 +54,68 @@ if ($targetIP -eq "127.0.0.1") {
     exit 0
 }
 
-# --- REMOTE Rollback ---
-if (-not (Test-Path $plinkPath)) {
-    Write-Error "plink.exe not found at $plinkPath"
+# ── REMOTE ROLLBACK ───────────────────────────────────────────────────
+if (!(Get-Command plink -ErrorAction SilentlyContinue)) {
+    Write-Error "plink not found in PATH. Aborting."
     exit 1
 }
 
 Write-Host "Performing remote rollback on $targetIP..."
 
-& $plinkPath -batch -pw "$targetPass" "$targetUser@$targetIP" `
-    "powershell -Command `" `
-    Stop-ScheduledTask -TaskName '$taskName' -ErrorAction SilentlyContinue; `
-    if (Test-Path '$exeBackup') { Copy-Item '$exeBackup' '$exe' -Force }; `
-    if (Test-Path 'C:\Watchdog\version_backup.txt') { `
-        Copy-Item 'C:\Watchdog\version_backup.txt' 'C:\Watchdog\version.txt' -Force }; `
-    Start-ScheduledTask -TaskName '$taskName'`""
+$rollbackScript = @"
+`$task    = '$taskName'
+`$exe     = '$exe'
+`$bak     = '$exeBackup'
+`$ver     = '$verPath'
+`$verBak  = '$verBackup'
+
+try {
+    if (Get-ScheduledTask -TaskName `$task -ErrorAction SilentlyContinue) {
+        Stop-ScheduledTask -TaskName `$task -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    }
+
+    Get-Process -ErrorAction SilentlyContinue | Where-Object { `$_.Path -eq `$exe } | ForEach-Object {
+        Write-Host "Killing process PID=$($_.Id)"
+        Stop-Process -Id `$_.Id -Force
+        Start-Sleep -Seconds 1
+    }
+
+    Write-Host "Checking for EXE backup at: `$bak"
+    if (Test-Path `$bak) {
+        Copy-Item -Force `$bak `$exe
+        Write-Host "Restored EXE"
+    } else {
+        Write-Host "EXE backup not found"
+    }
+
+    Write-Host "Checking for version backup at: `$verBak"
+    if (Test-Path `$verBak) {
+        Copy-Item -Force `$verBak `$ver
+        Write-Host "Restored version.txt"
+        Get-Content `$ver
+    } else {
+        Write-Host "version.txt backup not found"
+    }
+
+    Start-ScheduledTask -TaskName `$task
+    Write-Host "Remote rollback complete."
+} catch {
+    Write-Host "Rollback failed:"
+    Write-Host `$_.Exception.Message
+    exit 1
+}
+"@
+
+$encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($rollbackScript))
+$command = "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand $encoded"
+
+& plink -batch -pw "$targetPass" "$targetUser@$targetIP" $command
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Remote rollback failed."
     exit 1
 }
 
-$endTime = Get-Date
-$duration = $endTime - $startTime
-Write-Host "Remote rollback complete."
-Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)
+$elapsed = (Get-Date) - $start
+Write-Host ("Rollback completed in {0:hh\:mm\:ss}" -f $elapsed)

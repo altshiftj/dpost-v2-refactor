@@ -35,4 +35,6 @@ exe = EXE(
     name="wd-sem_tischrem_blb",
     console=False,
     upx=True,
+    strip=False,
+    optimize=2,
 )

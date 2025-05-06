@@ -14,14 +14,15 @@ Requires-Dist: pywin32-ctypes
 Requires-Dist: PyYAML
 Requires-Dist: flask
 Requires-Dist: waitress
+Provides-Extra: ci
+Requires-Dist: pytest; extra == "ci"
+Requires-Dist: pyfakefs; extra == "ci"
+Provides-Extra: build
+Requires-Dist: pyinstaller; extra == "build"
 Provides-Extra: dev
 Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
-Requires-Dist: pytest; extra == "dev"
-Requires-Dist: pyinstaller; extra == "dev"
-Requires-Dist: pyfakefs; extra == "dev"
-Requires-Dist: ipython; extra == "dev"
 Provides-Extra: sem-tischrem-blb
 
 

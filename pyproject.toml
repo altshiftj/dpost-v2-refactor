@@ -19,17 +19,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = [
-    "black",
-    "mypy",
-    "ruff",
-    "pytest",
-    "pyinstaller",
-    "pyfakefs",
-    "ipython"
-]
-sem_tischrem_blb = []
-
+ci     = ["pytest", "pyfakefs"]
+build  = ["pyinstaller"]
+dev    = ["black", "mypy", "ruff"]
+sem_tischrem_blb = []      
+             
 [project.entry-points."ipat_watchdog.plugins"]
 sem_tischrem_blb = "ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin"
 

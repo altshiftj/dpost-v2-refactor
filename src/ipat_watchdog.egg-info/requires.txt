@@ -9,13 +9,16 @@ PyYAML
 flask
 waitress
 
+[build]
+pyinstaller
+
+[ci]
+pytest
+pyfakefs
+
 [dev]
 black
 mypy
 ruff
-pytest
-pyinstaller
-pyfakefs
-ipython
 
 [sem_tischrem_blb]
