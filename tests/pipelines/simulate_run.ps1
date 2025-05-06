@@ -1,5 +1,5 @@
 # simulate_run.ps1
-# Simulate GitLab CI "run" stage using remote execution via plink
+# Simulate GitLab CI "run" stage using remote execution via plink (no password principal)
 
 . "$PSScriptRoot\env.ps1"
 
@@ -35,8 +35,7 @@ try {
     $remoteScriptLines = @(
         "`$a = New-ScheduledTaskAction -Execute '$exePath';",
         "`$t = New-ScheduledTaskTrigger -AtLogon;",
-        "`$p = New-ScheduledTaskPrincipal -UserId '$targetUser' -LogonType Password -RunLevel Highest;",
-        "Register-ScheduledTask -TaskName '$taskName' -Action `$a -Trigger `$t -Principal `$p -Force;",
+        "Register-ScheduledTask -TaskName '$taskName' -Action `$a -Trigger `$t -Force;",
         "Start-ScheduledTask -TaskName '$taskName';",
         "`n'Task state:';",
         "Get-ScheduledTask -TaskName '$taskName' | Get-ScheduledTaskInfo | Format-List *"
