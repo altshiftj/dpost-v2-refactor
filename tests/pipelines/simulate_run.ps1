@@ -1,61 +1,55 @@
-# simulate_run.ps1
-# Simulate GitLab CI "run" stage using remote execution via plink and register_task.ps1
+<#
+    Simulate GitLab "run" job by remotely registering a scheduled task
+    via plink and the remote register_task.ps1 script
+#>
 
-. "$PSScriptRoot\env.ps1"
+# ── ENV + LOCATION ────────────────────────────────────────────────────
+. "$PSScriptRoot/env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
-try {
-    # --- SETTINGS ---
-    $plinkPath = "C:\Program Files\PuTTY\plink.exe"
+# --- SETTINGS ---------------------------------------------------------
+$ciJobName  = $env:CI_JOB_NAME
+$targetIP   = $env:TARGET_IP
+$targetUser = $env:TARGET_USER
+$targetPass = $env:TARGET_PASS
 
-    # Load environment-driven values
-    $targetIP   = $env:TARGET_IP
-    $targetUser = $env:TARGET_USER
-    $targetPass = $env:TARGET_PASS
-    $ciJobName  = $env:CI_JOB_NAME
+if (-not $ciJobName)  { $ciJobName  = 'run'        }
+if (-not $targetIP)   { $targetIP   = '127.0.0.1'  }
+if (-not $targetUser) { $targetUser = 'testuser'   }
+if (-not $targetPass) { $targetPass = 'password'   }
 
-    # Fallbacks for local testing
-    if (-not $targetIP)   { $targetIP = "127.0.0.1" }
-    if (-not $targetUser) { $targetUser = "testuser" }
-    if (-not $targetPass) { $targetPass = "password" }
-    if (-not $ciJobName)  { $ciJobName = "run" }
+$taskName = "IPAT-Watchdog-$ciJobName"
+$exePath  = "C:\Watchdog\wd-$ciJobName.exe"
 
-    # Define task name and exe path for this job
-    $taskName = "IPAT-Watchdog-$ciJobName"
-    $exePath  = "C:\Watchdog\wd-$ciJobName.exe"
-
-    # --- Ensure plink is available ---
-    if (-not (Test-Path $plinkPath)) {
-        throw "plink.exe not found at: $plinkPath"
-    }
-
-    # --- TIMER START ---
-    $startTime = Get-Date
-    Write-Host "Registering task '$taskName' on $targetIP as $targetUser..."
-
-    # --- Build command to call register_task.ps1 with parameters ---
-    $remoteScript = @(
-        "powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1",
-        "-TaskName `"$taskName`"",
-        "-ExePath `"$exePath`""
-    ) -join " "
-
-    # --- Fire the command over SSH ---
-    & $plinkPath -batch -pw "$targetPass" "$targetUser@$targetIP" $remoteScript
-
-    if ($LASTEXITCODE -ne 0) {
-        throw "Remote task registration failed (exit code $LASTEXITCODE)."
-    }
-
-    # --- TIMER END ---
-    $endTime = Get-Date
-    $duration = $endTime - $startTime
-    Write-Host "`nRemote run task setup complete."
-    Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)
-    Read-Host "Press Enter to exit"
-}
-catch {
-    Write-Host "`nERROR: $($_.Exception.Message)" -ForegroundColor Red
-    Read-Host "Press Enter to exit"
+# ── TOOL CHECK ────────────────────────────────────────────────────────
+if (!(Get-Command plink -ErrorAction SilentlyContinue)) {
+    Write-Error "plink not found in PATH. Add PuTTY to your environment variables."
     exit 1
 }
+
+# ── TIMER START ───────────────────────────────────────────────────────
+$startTime = Get-Date
+Write-Host "Registering task '$taskName' on $targetIP..."
+
+# ── BUILD REMOTE COMMAND ──────────────────────────────────────────────
+$remoteCmd = @(
+    'powershell',
+    '-NoProfile',
+    '-ExecutionPolicy Bypass',
+    '-File', 'C:\Watchdog\register_task.ps1',
+    '-TaskName', "`"$taskName`"",
+    '-ExePath',  "`"$exePath`""
+) -join ' '
+
+# ── EXECUTE ───────────────────────────────────────────────────────────
+& plink -batch -pw "$targetPass" "$targetUser@$targetIP" $remoteCmd
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Remote task registration failed (exit code $LASTEXITCODE)"
+    exit 1
+}
+
+# ── TIMER END ─────────────────────────────────────────────────────────
+$duration = (Get-Date) - $startTime
+Write-Host "`nRemote task registration complete."
+Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $duration)

@@ -18,14 +18,18 @@ if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdent
 $defaultDir = "C:\Watchdog"
 
 if (-not $ExePath) {
-    $ExePath = Get-ChildItem "$defaultDir\wd-*.exe" -File | Select-Object -First 1 | ForEach-Object { $_.FullName }
+    $ExePath = Get-ChildItem "$defaultDir\wd-*.exe" -File |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -First 1 |
+        ForEach-Object { $_.FullName }
+
     if (-not $ExePath) {
         throw "No wd-*.exe found in $defaultDir. Cannot continue."
     }
 }
 
 $ExeDir  = Split-Path $ExePath -Parent
-$ExeName = Split-Path $ExePath -LeafBase
+$ExeName = [System.IO.Path]::GetFileNameWithoutExtension($ExePath)
 
 if (-not $TaskName) {
     $TaskName = "IPAT-Watchdog-$ExeName"
@@ -43,12 +47,16 @@ try {
         Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
         Start-Sleep -Seconds 2
     }
-} catch {}
+} catch {
+    Write-Warning "Could not clean up old scheduled task: $_"
+}
 
-Get-Process | Where-Object { $_.Path -eq $ExePath } | ForEach-Object {
+Get-Process -ErrorAction SilentlyContinue | Where-Object {
+    $_.Path -eq $ExePath
+} | ForEach-Object {
     Write-Host "Killing leftover process PID=$($_.Id)"
     $_ | Stop-Process -Force
-    Start-Sleep -Seconds 1
+    Start-Sleep -Milliseconds 500
 }
 
 # ───────────── Prepare Logging ─────────────
@@ -56,7 +64,8 @@ if (-not (Test-Path $LogDir)) {
     New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
 }
 if (Test-Path $LogPath) {
-    Rename-Item $LogPath "$LogPath.$(Get-Date -f yyyyMMdd-HHmmss)"
+    $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+    Rename-Item $LogPath "$LogPath.$timestamp" -Force
 }
 
 # ───────────── Task Setup ─────────────
@@ -87,8 +96,12 @@ Register-ScheduledTask `
     -Action    $Action `
     -Trigger   $Trigger `
     -Settings  $Settings `
-    -Principal $Principal
+    -Principal $Principal `
+    -Force
 
-Write-Host "`nRegistered task: $TaskName"
+# Optional: Start immediately
+Start-ScheduledTask -TaskName $TaskName
+
+Write-Host "`n✅ Registered task: $TaskName"
 Write-Host " → EXE: $ExePath"
 Write-Host " → Log: $LogPath"
