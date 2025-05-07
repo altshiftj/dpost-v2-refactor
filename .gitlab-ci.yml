@@ -10,12 +10,11 @@ variables:
   PIP_CACHE_DIR: ".cache/pip"
 cache: { paths: [.cache/pip] }
 
-.default_template:
+.default_template: &default_template
   tags: [worktop]
   image: mcr.microsoft.com/powershell:lts-nanoserver-2022
 
-before_script:
-  - *before_script_common
+before_script: &before_script_common
   - pwsh scripts/infra/windows/gen_env.ps1 -DeviceSlug $env:DEVICE_SLUG
   - pip install -e .[dev,$env:DEVICE_SLUG]
   - Copy-Item device.env build/.env
@@ -57,7 +56,9 @@ before_script:
   script: |
     pyinstaller "build/specs/${DEVICE_SLUG}.spec" --clean --noconfirm
   artifacts:
-    paths: [dist/wd_${DEVICE_SLUG}.exe, version.txt]
+    paths: 
+      - "dist/wd_${DEVICE_SLUG}.exe"
+      - version.txt]
     expire_in: 1 week
   rules:
     - changes:
@@ -85,7 +86,9 @@ before_script:
     $signtool = "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\x64\\signtool.exe"
     & "$signtool" sign /f "$env:SIGNING_CERT_PFX" /p "$env:SIGNING_CERT_PASS" `
       /tr http://timestamp.digicert.com /td sha256 /fd sha256 "dist\wd_${DEVICE_SLUG}.exe"
-  artifacts: { paths: [dist/wd_${DEVICE_SLUG}.exe] }
+  artifacts: 
+    - paths:
+      - dist/wd_${DEVICE_SLUG}.exe
 
 .sign_jobs:
   <<: .sign_template
@@ -112,9 +115,6 @@ before_script:
     pscp.exe -P $port -batch -pw "$pass" -hostkey "$fpr" "dist\\$(Split-Path $exe -Leaf)" "$user@$ip:$exe"
     pscp.exe -P $port -batch -pw "$pass" -hostkey "$fpr" "version.txt" "$user@$ip:C:\\Watchdog\\version.txt"
 
-  environment: { name: prod-${DEVICE_SLUG}, url: http://$TARGET_IP:8001/health }
-  resource_group: "deploy-${DEVICE_SLUG}"
-
 .deploy_jobs:
   <<: .deploy_template
   parallel: { matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ] }
@@ -126,16 +126,18 @@ before_script:
   <<: .windows_ssh_job_template
   stage: run
   needs: ["deploy_${DEVICE_SLUG}"]
-  environment: { name: prod-${DEVICE_SLUG}, action: start }
+  environment: 
+    name: prod-${DEVICE_SLUG}, 
+    action: start
   script: |
     . scripts/infra/windows/ci_context.ps1
     Register-WatchdogTask
-  environment: { name: prod-${DEVICE_SLUG}, action: start }
   resource_group: "run-${DEVICE_SLUG}"
 
 .run_jobs:
   <<: .run_template
-  parallel: { matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ] }
+  parallel: 
+    matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ]
 
 # ────────────────────────────────────────────────────────────────
 #  HEALTH
