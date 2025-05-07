@@ -1,7 +1,8 @@
 # ────────────────────────────────────────────────────────────────
 #  GLOBALS
 # ────────────────────────────────────────────────────────────────
-stages: [build, sign, deploy, run, health, rollback]
+stages: [test, build, sign, deploy, run, health, rollback]   # <‑‑ added “test”
+
 
 variables:
   PY_VER:        "3.12"
@@ -20,6 +21,28 @@ before_script:
   - Copy-Item device.env build/.env
 
 # ────────────────────────────────────────────────────────────────
+#  TEST  (pytest)
+# ────────────────────────────────────────────────────────────────
+.test_template:
+  stage: test
+  tags: [worktop]
+  before_script:
+    - *before_script_common
+    # install app in editable mode with the extra “ci” deps (= pytest, pyfakefs, …)
+    - pip install -e .[ci,$env:DEVICE_NAME]
+  script:
+    - pytest -q          # run all tests quietly; drop -q if you prefer full output
+  artifacts:
+    when: always         # keep reports even on failure
+    paths: [ .pytest_cache, tests/__pycache__ ]
+
+.test_jobs:
+  <<: .test_template
+  parallel:
+    matrix:
+      - CI_JOB_NAME: $DEVICE_LIST
+      
+# ────────────────────────────────────────────────────────────────
 #  BUILD
 # ────────────────────────────────────────────────────────────────
 .build_template:
@@ -27,7 +50,7 @@ before_script:
   stage: build
   before_script:
     - *before_script_common
-    - pip install -e .[dev,$env:DEVICE_SLUG]
+    - pip install -e .[build,$env:DEVICE_SLUG]
     - echo "$env:CI_COMMIT_TAG" > version.txt
     - Copy-Item version.txt build/version.txt
     - Copy-Item device.env build/.env
