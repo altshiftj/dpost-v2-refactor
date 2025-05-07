@@ -10,7 +10,7 @@ Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 Write-Host "== Simulating TEST stage =="
 
 # ── SETTINGS ────────────────────────────────
-$venv = ".testvenv"
+$venv = ".test_testvenv"
 $python = ".\$venv\Scripts\python.exe"
 $activate = ".\$venv\Scripts\Activate.ps1"
 

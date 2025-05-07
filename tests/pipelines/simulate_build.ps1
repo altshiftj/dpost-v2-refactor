@@ -14,13 +14,13 @@ if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = "vLocalTest" }
 $startTime = Get-Date
 
 # --- Step 1: Create Virtual Environment ---
-if (!(Test-Path ".buildvenv")) {
-    python -m venv .buildvenv
+if (!(Test-Path ".test_buildvenv")) {
+    python -m venv .test_buildvenv
 }
 
 # --- Step 2: Activate Virtual Environment ---
-. .\.buildvenv\Scripts\Activate.ps1
-$python = ".\.buildvenv\Scripts\python.exe"
+. .\.test_buildvenv\Scripts\Activate.ps1
+$python = ".\.test_buildvenv\Scripts\python.exe"
 
 Write-Host "`nUpgrading pip/setuptools/wheel..."
 & $python -m pip install --upgrade pip setuptools wheel

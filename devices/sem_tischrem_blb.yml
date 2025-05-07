@@ -1,0 +1,5 @@
+device_name: sem_tischrem_blb
+target_ip: 134.169.58.85
+target_port: 22
+target_user: TischREM
+target_pass: ${TARGET_PASS_SEM} # Gitlab CI variable
