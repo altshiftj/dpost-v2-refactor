@@ -6,7 +6,6 @@ stages: [test, build, sign, deploy, run, health, rollback]   # <‑‑ added “
 
 variables:
   PY_VER:        "3.12"
-  DEVICE_LIST:   "sem_tischrem_blb core"
   PIP_CACHE_DIR: ".cache/pip"
 cache: { paths: [.cache/pip] }
 
@@ -22,13 +21,13 @@ before_script: &before_script_common
 # ────────────────────────────────────────────────────────────────
 #  TEST  (pytest)
 # ────────────────────────────────────────────────────────────────
-.test_template:
+.test_template: &test_template
   stage: test
   tags: [worktop]
   before_script:
     - *before_script_common
     # install app in editable mode with the extra “ci” deps (= pytest, pyfakefs, …)
-    - pip install -e .[ci,$env:DEVICE_NAME]
+    - pip install -e .[ci,$env:DEVICE_SLUG]
   script:
     - pytest -q          # run all tests quietly; drop -q if you prefer full output
   artifacts:
@@ -36,15 +35,15 @@ before_script: &before_script_common
     paths: [ .pytest_cache, tests/__pycache__ ]
 
 .test_jobs:
-  <<: .test_template
+  <<: *test_template
   parallel:
     matrix:
-      - CI_JOB_NAME: $DEVICE_LIST
+      - DEVICE_SLUG: "sem_tischrem_blb"
       
 # ────────────────────────────────────────────────────────────────
 #  BUILD
 # ────────────────────────────────────────────────────────────────
-.build_template:
+.build_template: &build_template
   <<: *default_template
   stage: build
   before_script:
@@ -68,15 +67,15 @@ before_script: &before_script_common
       when: always
 
 .build_jobs:
-  <<: .build_template
+  <<: *build_template
   parallel:
     matrix:
-      - DEVICE_SLUG: $DEVICE_LIST
+      - DEVICE_SLUG: "sem_tischrem_blb"
 
 # ────────────────────────────────────────────────────────────────
 #  SIGN
 # ────────────────────────────────────────────────────────────────
-.sign_template:
+.sign_template: &sign_template
   <<: *default_template
   stage: sign
   needs: ["build_${DEVICE_SLUG}"]
@@ -91,14 +90,15 @@ before_script: &before_script_common
       - dist/wd_${DEVICE_SLUG}.exe
 
 .sign_jobs:
-  <<: .sign_template
+  <<: *sign_template
   parallel:
-    matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ]
+    matrix:
+      - DEVICE_SLUG: "sem_tischrem_blb"
 
 # ────────────────────────────────────────────────────────────────
 #  DEPLOY
 # ────────────────────────────────────────────────────────────────
-.deploy_template:
+.deploy_template: &deploy_template
   <<: .windows_ssh_job_template
   stage: deploy
   needs: ["sign_${DEVICE_SLUG}"]
@@ -116,13 +116,15 @@ before_script: &before_script_common
     pscp.exe -P $port -batch -pw "$pass" -hostkey "$fpr" "version.txt" "$user@$ip:C:\\Watchdog\\version.txt"
 
 .deploy_jobs:
-  <<: .deploy_template
-  parallel: { matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ] }
+  <<: *deploy_template
+  parallel: 
+    matrix: 
+      - DEVICE_SLUG: "sem_tischrem_blb"
 
 # ────────────────────────────────────────────────────────────────
 #  RUN
 # ────────────────────────────────────────────────────────────────
-.run_template:
+.run_template: &run_template
   <<: .windows_ssh_job_template
   stage: run
   needs: ["deploy_${DEVICE_SLUG}"]
@@ -135,14 +137,15 @@ before_script: &before_script_common
   resource_group: "run-${DEVICE_SLUG}"
 
 .run_jobs:
-  <<: .run_template
+  <<: *run_template
   parallel: 
-    matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ]
+    matrix:
+      - DEVICE_SLUG: "sem_tischrem_blb"
 
 # ────────────────────────────────────────────────────────────────
 #  HEALTH
 # ────────────────────────────────────────────────────────────────
-.health_template:
+.health_template: &health_template
   <<: *default_template
   stage: health
   needs: ["run_${DEVICE_SLUG}"]
@@ -161,13 +164,15 @@ before_script: &before_script_common
   environment: prod-${DEVICE_SLUG}
 
 .health_jobs:
-  <<: .health_template
-  parallel: { matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ] }
+  <<: *health_template
+  parallel:
+    matrix:
+      - DEVICE_SLUG: "sem_tischrem_blb"
 
 # ────────────────────────────────────────────────────────────────
 #  ROLLBACK
 # ────────────────────────────────────────────────────────────────
-.rollback_template:
+.rollback_template: &rollback_template
   <<: .windows_ssh_job_template
   stage: rollback
   when: on_failure
@@ -178,5 +183,12 @@ before_script: &before_script_common
   resource_group: "rollback-${DEVICE_SLUG}"
 
 .rollback_jobs:
-  <<: .rollback_template
-  parallel: { matrix: [ { DEVICE_SLUG: $DEVICE_LIST } ] }
+  <<: *rollback_template
+  parallel:
+    matrix:
+      - DEVICE_SLUG: "sem_tischrem_blb"
+
+run_tests:
+  <<: *test_template
+  variables:
+    DEVICE_SLUG: "sem_tischrem_blb"
