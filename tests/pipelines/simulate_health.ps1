@@ -1,26 +1,47 @@
 <#
     Simulate GitLab "health" stage by polling a /health endpoint
-    Works with Windows PowerShell 5+ and doesn't rely on env.ps1 for optional config
+    Uses SSH tunnel to reach internal target via port 22
 #>
 
 # ── ENV + LOCATION ────────────────────────────────────────────────────
-. "$PSScriptRoot\env.ps1"  # only loads TARGET_IP and login info
-Set-Location -Path (Resolve-Path "$PSScriptRoot\../..")
+. "$PSScriptRoot\env.ps1"
+Set-Location -Path (Resolve-Path "$PSScriptRoot\..\..")
 
 # ── CONFIG ────────────────────────────────────────────────────────────
-$targetIP    = if ($env:TARGET_IP) { $env:TARGET_IP } else { '127.0.0.1' }
-$healthPort  = 8001
-$healthPath  = '/health'
-$maxAttempts = 30
-$waitSeconds = 2
+$targetIP     = $env:TARGET_IP
+$targetUser   = $env:TARGET_USER
+$targetPass   = $env:TARGET_PASS
+$sshPort      = $env:SSH_PORT
+$sshHostKey   = $env:SSH_HOSTKEY
+$remotePort   = 8001
+$localPort    = $env:TUN_PORT_1
+$healthPath   = "/health"
+$maxAttempts  = 30
+$waitSeconds  = 5
 
-$url = "http://$targetIP`:$healthPort$healthPath"
+if (-not (Get-Command plink.exe -ErrorAction SilentlyContinue)) {
+    Write-Error "plink.exe not found in PATH."
+    exit 1
+}
 
-# ── TIMER ─────────────────────────────────────────────────────────────
+# ── SSH TUNNEL ────────────────────────────────────────────────────────
+Write-Host "Opening SSH tunnel to ${targetIP}:$remotePort -> 127.0.0.1:$localPort..."
+
+$tunnelArgs = @(
+    "-batch", "-N", "-L", "${localPort}:127.0.0.1:$remotePort",
+    "-P", $sshPort, "-pw", $targetPass,
+    "-hostkey", $sshHostKey,
+    "$targetUser@$targetIP"
+)
+
+# Launch tunnel as background process
+$tunnelProc = Start-Process -FilePath plink.exe -ArgumentList $tunnelArgs -NoNewWindow -PassThru
+
+# ── HEALTH LOOP ───────────────────────────────────────────────────────
+$url = "http://127.0.0.1:$localPort$healthPath"
 $startTime = Get-Date
 Write-Host "Waiting for service at $url ..."
 
-# ── FUNCTION ──────────────────────────────────────────────────────────
 function Test-Health {
     param ([string]$uri)
 
@@ -32,12 +53,13 @@ function Test-Health {
     }
 }
 
-# ── HEALTH LOOP ───────────────────────────────────────────────────────
 for ($i = 1; $i -le $maxAttempts; $i++) {
     if (Test-Health $url) {
         $elapsed = (Get-Date) - $startTime
         Write-Host "`nService is healthy after $i attempt(s)."
         Write-Host ("Elapsed time: {0:hh\:mm\:ss}" -f $elapsed)
+
+        Stop-Process -Id $tunnelProc.Id -Force
         exit 0
     }
 
@@ -45,6 +67,7 @@ for ($i = 1; $i -le $maxAttempts; $i++) {
     Start-Sleep -Seconds $waitSeconds
 }
 
-# ── FAILURE ───────────────────────────────────────────────────────────
+# ── CLEANUP + FAILURE ─────────────────────────────────────────────────
 Write-Error "`nService did not become healthy in time: $url"
+Stop-Process -Id $tunnelProc.Id -Force
 exit 1

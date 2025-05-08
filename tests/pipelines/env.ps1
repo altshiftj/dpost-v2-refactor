@@ -1,19 +1,38 @@
-# env.ps1
+# Automatically extract detailed Git metadata
+try {
+    $commitTag = git describe --tags --always
+    $branchName = git rev-parse --abbrev-ref HEAD
+    $commitHash = git rev-parse HEAD
+    $buildTime = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+
+    $env:COMMIT_TAG = $commitTag
+    $env:GIT_BRANCH = $branchName
+    $env:COMMIT_HASH = $commitHash
+    $env:BUILD_TIME = $buildTime
+
+    Write-Host "Using Commit Tag: $commitTag"
+    Write-Host "Branch: $branchName"
+    Write-Host "Commit Hash: $commitHash"
+    Write-Host "Build Time: $buildTime"
+} catch {
+    Write-Warning "Git not found or not a Git repository."
+}
 
 # ------------------------------
 # CI-related Defaults
 # ------------------------------
 $env:CI_JOB_NAME = "sem_tischrem_blb"
-$env:TARGET_IP = "134.169.58.176"
-$env:TARGET_USER = "deploy"
+$env:TARGET_IP   = "134.169.58.85"      # Router's WAN IP
+$env:TARGET_USER = "TischREM"
+$env:SSH_PORT    = 22                   # External SSH port (unchangeable)
 
 # ------------------------------
 # Certificates & Secure Passwords
 # ------------------------------
 $env:SIGNING_CERT_PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
 
-$pfxPassPath = "$env:USERPROFILE\.secure\pfxpass.txt"
-$targetPassPath = "$env:USERPROFILE\.secure\targetpass.txt"
+$pfxPassPath     = "$env:USERPROFILE\.secure\pfxpass.txt"
+$targetPassPath  = "$env:USERPROFILE\.secure\$env:CI_JOB_NAME.txt"
 
 try {
     $securePfxPass = Get-Content $pfxPassPath | ConvertTo-SecureString
@@ -28,9 +47,23 @@ try {
 }
 
 # ------------------------------
+# SSH Tunneling for Local Access
+# ------------------------------
+$env:TUN_PORT_0 = 8000     # Local forward to remote 8000
+$env:TUN_PORT_1 = 8001     # Local forward to remote 8001
+
+# Optional: Add SSH host key fingerprint to prevent MITM prompt
+$env:SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4'
+
+# ------------------------------
+# Paths
+# ------------------------------
+$env:REMOTE_PATH = "C:\Watchdog"
+$env:REMOTE_EXE  = "$env:REMOTE_PATH\$env:CI_JOB_NAME.exe"
+
+# ------------------------------
 # Shared Functions
 # ------------------------------
-
 function Get-PipInstallTarget {
     param (
         [string[]] $Extras

@@ -101,4 +101,18 @@ $Settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew
 
 # Run the task with the current user, elevated
-$Principal = New-Sch
+$Principal = New-ScheduledTaskPrincipal `
+    -UserId $env:USERNAME `
+    -LogonType Interactive `
+    -RunLevel Highest
+
+# Register and start the task
+Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Settings $Settings -Principal $Principal -Force
+Start-ScheduledTask -TaskName $TaskName
+
+# ─────────────────────────────────────────────────────
+# Display output for user reference
+# ─────────────────────────────────────────────────────
+Write-Host "`nRegistered task: $TaskName"
+Write-Host "EXE : $ExePath"
+Write-Host "Log : $LogPath"

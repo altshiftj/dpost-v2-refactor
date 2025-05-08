@@ -8,10 +8,12 @@
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # --- SETTINGS ---------------------------------------------------------
-$ciJobName  = $env:CI_JOB_NAME
-$targetIP   = $env:TARGET_IP
-$targetUser = $env:TARGET_USER
-$targetPass = $env:TARGET_PASS
+$ciJobName   = $env:CI_JOB_NAME
+$targetIP    = $env:TARGET_IP
+$targetUser  = $env:TARGET_USER
+$targetPass  = $env:TARGET_PASS
+$sshPort     = $env:SSH_PORT
+$sshHostKey  = $env:SSH_HOSTKEY
 
 if (-not $ciJobName)  { $ciJobName  = 'run'        }
 if (-not $targetIP)   { $targetIP   = '127.0.0.1'  }
@@ -41,8 +43,16 @@ $remoteCmd = @(
     '-ExePath',  "`"$exePath`""
 ) -join ' '
 
-# ── EXECUTE ───────────────────────────────────────────────────────────
-& plink -batch -pw "$targetPass" "$targetUser@$targetIP" $remoteCmd
+# ── EXECUTE OVER SSH ──────────────────────────────────────────────────
+$plinkArgs = @(
+    '-batch',
+    '-P', $sshPort,
+    '-pw', $targetPass,
+    '-hostkey', $sshHostKey,
+    "$targetUser@$targetIP",
+    $remoteCmd
+)
+& plink.exe @plinkArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Remote task registration failed (exit code $LASTEXITCODE)"

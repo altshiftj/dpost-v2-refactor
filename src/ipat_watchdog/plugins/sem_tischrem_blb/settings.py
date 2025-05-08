@@ -19,9 +19,9 @@ class TischREMSettings(BaseSettings):
     # 📟 Device Identity
     # ──────────────────────────────────────────────────────────────────────────────
     DEVICE_TYPE = "REM"
-    DEVICE_USER_KADI_ID = "test-rem-01-usr"
-    DEVICE_USER_PERSISTENT_ID = 14
-    DEVICE_RECORD_PERSISTENT_ID = 172
+    DEVICE_USER_KADI_ID = "rem-01-usr"
+    DEVICE_USER_PERSISTENT_ID = 22
+    DEVICE_RECORD_PERSISTENT_ID = 190
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📝 Metadata Defaults

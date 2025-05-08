@@ -118,13 +118,12 @@ class RenameDialog(simpledialog.Dialog):
             title = DialogPrompts.RENAME_FILE
 
         super().__init__(parent, title)
-        
-        self.wm_attributes("-topmost", 1)
-        self.lift()                                    # raise to front
-        # optional: push to top‑center of screen
-        self.geometry(f"+{self.winfo_screenwidth() // 2 - 200}+0")
 
     def body(self, master: tk.Frame) -> tk.Widget:
+        self.wm_attributes("-topmost", 1)
+        self.lift()
+        self.geometry(f"+{self.winfo_screenwidth() // 2 - 200}+0")
+        
         tk.Label(
             master, text=DialogPrompts.RENAME_EXAMPLE, font=("Arial", 10, "italic")
         ).pack(pady=(5, 0))

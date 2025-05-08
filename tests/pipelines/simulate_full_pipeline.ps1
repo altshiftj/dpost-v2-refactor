@@ -8,11 +8,12 @@ Write-Host 'Running full pipeline simulation...'
 
 $healthPassed = $false
 
-try {
+    & "$PSScriptRoot\simulate_test.ps1"
     & "$PSScriptRoot\simulate_build.ps1"
     & "$PSScriptRoot\simulate_sign.ps1"
-    & "$PSScriptRoot\simulate_test.ps1"
     & "$PSScriptRoot\simulate_deploy.ps1"
+    
+try {
     & "$PSScriptRoot\simulate_run.ps1"
 
     & "$PSScriptRoot\simulate_health.ps1"

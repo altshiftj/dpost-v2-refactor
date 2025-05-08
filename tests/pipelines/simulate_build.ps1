@@ -6,6 +6,8 @@ Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 # --- SETTINGS ---
 $CI_JOB_NAME   = $env:CI_JOB_NAME
 $CI_COMMIT_TAG = $env:CI_COMMIT_TAG
+if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = $env:COMMIT_TAG }
+if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = "vLocalTest" }
 
 if (-not $CI_JOB_NAME)   { $CI_JOB_NAME = "sem_tischrem_blb" }
 if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = "vLocalTest" }
@@ -38,7 +40,12 @@ Write-Host "`nCreating .env and version files..."
 "DEVICE_NAME=$DEVICE_NAME" | Out-File -Encoding ascii device.env -Force
 Copy-Item -Force device.env build/.env
 
-$CI_COMMIT_TAG | Out-File -Encoding ascii version.txt -Force
+@"
+COMMIT_TAG=$env:COMMIT_TAG
+COMMIT_HASH=$env:COMMIT_HASH
+GIT_BRANCH=$env:GIT_BRANCH
+BUILD_TIME=$env:BUILD_TIME
+"@ | Out-File -Encoding ascii version.txt -Force
 Copy-Item -Force version.txt build/version.txt
 
 # --- Step 6: Build Executable ---
