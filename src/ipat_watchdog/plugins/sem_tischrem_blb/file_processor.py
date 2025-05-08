@@ -16,9 +16,11 @@ logger = setup_logger(__name__)
 class FileProcessorTischREM(FileProcessorABS):
     """
     A concrete processor for PhenomXL SEM data (TIFF images or .elid directories).
+    Implements device-specific logic for handling incoming files/ folders.
     """
 
     def device_specific_preprocessing(self, path: str) -> str:
+        # Rename TIFF files by removing trailing digits from the filename stem
         p = Path(path)
         if p.suffix.lower() in {".tiff", ".tif"}:
             new_stem = self._strip_trailing_digit(p.stem)
@@ -32,9 +34,11 @@ class FileProcessorTischREM(FileProcessorABS):
         return path
 
     def _strip_trailing_digit(self, filename: str) -> str:
+        # Helper function: removes a trailing digit from a string if it exists
         return filename[:-1] if filename and filename[-1].isdigit() else filename
 
     def is_valid_datatype(self, path: str) -> bool:
+        # Check whether the input is a valid SEM data type (TIFF file or ELID directory)
         p = Path(path)
         if p.is_dir():
             return any(child.suffix.lower() == ".elid" for child in p.iterdir() if child.is_file())
@@ -43,6 +47,7 @@ class FileProcessorTischREM(FileProcessorABS):
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
     ) -> bool:
+        # Determine if a file can be appended to an existing record
         return not (
             any(".elid" in key for key in record.files_uploaded.keys())
             or extension == ""
@@ -51,19 +56,24 @@ class FileProcessorTischREM(FileProcessorABS):
     def device_specific_processing(
         self, src_path: str, record_path: str, filename_prefix: str, extension: str
     ):
+        # Core device-specific logic for moving and renaming files
         src = Path(src_path)
         record_p = Path(record_path)
+
         if extension.lower() in {".tif", ".tiff"}:
+            # Handle TIFF image files
             new_file_path = get_unique_filename(record_path, filename_prefix, extension)
             move_item(src, new_file_path)
             return new_file_path, "img"
         else:
+            # Handle ELID directory: flatten it, move its contents, and remove the folder
             self._flatten_elid_directory(src, filename_prefix)
             self._move_remaining_elid_files(src, record_p)
             self._remove_directory(src)
             return record_path, "elid"
 
     def _flatten_elid_directory(self, folder: Path, filename_prefix: str):
+        # Recursively flattens ELID directory structure
         logger.debug(f"Flattening ELID directory: {folder}")
         renamed_files = set()
         target_dir = folder
@@ -76,6 +86,7 @@ class FileProcessorTischREM(FileProcessorABS):
                 counter = 1
                 original_new_fname = new_fname
 
+                # Ensure uniqueness of filenames
                 while new_fname in renamed_files or (target_dir / new_fname).exists():
                     name_only = Path(original_new_fname).stem
                     ext = Path(original_new_fname).suffix
@@ -90,6 +101,7 @@ class FileProcessorTischREM(FileProcessorABS):
                 except OSError as e:
                     logger.error(f"Failed to move '{old_path}' to '{new_path}': {e}")
 
+            # Remove empty subdirectories after processing
             for d in dirs:
                 subdir_path = root_path / d
                 remove_directory_if_empty(subdir_path)
@@ -97,6 +109,7 @@ class FileProcessorTischREM(FileProcessorABS):
         logger.debug("Subdirectories flattened for ELID data.")
 
     def _move_remaining_elid_files(self, src: Path, record_dir: Path):
+        # Move remaining files in the ELID directory to the record directory
         for child in src.iterdir():
             if child.is_file():
                 dest = record_dir / child.name
@@ -107,11 +120,13 @@ class FileProcessorTischREM(FileProcessorABS):
                     logger.error(f"Failed to move ELID file '{child}' to '{dest}': {e}")
 
     def _remove_directory(self, src: Path):
+        # Try to remove directory if it is empty
         remove_directory_if_empty(src)
 
     def _build_new_filename(
         self, fname: str, root_dir: str, filename_prefix: str
     ) -> str:
+        # Build a new filename using directory and file context
         new_fname = fname
         if fname.endswith(".elid") or fname.endswith(".odt"):
             _, ext = parse_filename(fname)
