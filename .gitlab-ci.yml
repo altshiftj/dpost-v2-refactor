@@ -1,7 +1,7 @@
 # ────────────────────────────────────────────────────────────────
 #  GLOBALS
 # ────────────────────────────────────────────────────────────────
-stages: [test, build, sign, deploy, run, health, rollback]   # <‑‑ added “test”
+stages: [test, build, sign, deploy, run, health, rollback]
 
 
 variables:
