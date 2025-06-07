@@ -27,3 +27,6 @@ Data/*
 
 Upload_Ordner/*
 !Upload_Ordner/.gitkeep
+compile*.py
+compile*.ps1
+file_structure*.txt
