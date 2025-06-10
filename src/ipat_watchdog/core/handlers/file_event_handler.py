@@ -11,13 +11,14 @@ from watchdog.events import FileSystemEventHandler, FileSystemEvent, DirCreatedE
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.config.settings_store import SettingsStore
 from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.storage.filesystem_utils import move_to_exception_folder
 
 logger = setup_logger(__name__)
 
 
 class FileEventHandler(FileSystemEventHandler):
     """
-    Debounces single-file events and tracks “building” folders until they stabilise.
+    Debounces single-file events and tracks “building” folders until they stabilize.
 
     Safeguards added:
         • graceful shutdown()  ➜ cancels timers / trackers
@@ -54,7 +55,7 @@ class FileEventHandler(FileSystemEventHandler):
         with self._lock:
             for t in self._timers.values():
                 t.cancel()
-            for tr in self._folder_trackers.values():
+            for tr in list(self._folder_trackers.values()):
                 tr._cleanup()
             self._timers.clear()
             self._folder_trackers.clear()
@@ -95,7 +96,7 @@ class FileEventHandler(FileSystemEventHandler):
 
             def _callback():
                 try:
-                    self._finalise_single_file(path_str)
+                    self._finalize_single_file(path_str)
                 except Exception:
                     logger.exception("Unhandled error finalising file: %s", path_str)
 
@@ -104,7 +105,7 @@ class FileEventHandler(FileSystemEventHandler):
             logger.debug("Started %s-s debounce for file: %s", delay, path.name)
             timer.start()
 
-    def _finalise_single_file(self, path_str: str) -> None:
+    def _finalize_single_file(self, path_str: str) -> None:
         with self._lock:
             self._timers.pop(path_str, None)
 
@@ -177,7 +178,8 @@ class FileEventHandler(FileSystemEventHandler):
 
             # Reject
             if self.idle_seconds >= self._h.settings.FOLDER_STABILITY_TIMEOUT:
-                self._finish_reject("Folder never became valid and was skipped.")
+                self._finish_reject("Unstable or invalid folder contents.\n"
+                                    f"Moved to exceptions folder\n")
                 return
 
             # Continue polling
@@ -186,6 +188,11 @@ class FileEventHandler(FileSystemEventHandler):
         # helpers
         def _finish_reject(self, reason: str) -> None:
             logger.warning("Rejected folder %s — %s", self.folder.name, reason)
+            move_to_exception_folder(
+                str(self.folder),
+                filename_prefix=self.folder.name,
+                extension=""
+            )
             self._h._rejected.put((str(self.folder), reason))
             self._cleanup()
 
@@ -215,8 +222,11 @@ class FileEventHandler(FileSystemEventHandler):
 
     def _reject_now_if_invalid_single_file(self, path: Path) -> bool:
         if path.is_file() and not self._should_accept_file(path):
-            reason = f"Unsupported file extension '{path.suffix}'"
+            reason =    f"Unsupported file extension '{path.suffix}' \n" \
+                        f"File moved to exceptions folder"
+            
             logger.warning("Rejected immediately: %s — %s", path.name, reason)
+            move_to_exception_folder(path)
             self._rejected.put((str(path), reason))
             return True
         return False
