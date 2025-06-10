@@ -22,10 +22,10 @@ dependencies = [
 ci     = ["pytest", "pyfakefs"]
 build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
-sem_tischrem_blb = []      
-             
-[project.entry-points."ipat_watchdog.plugins"]
-sem_tischrem_blb = "ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin"
+sem_tischrem_blb = []
+
+[project.entry-points."ipat_watchdog.device_plugins"]
+sem_tischrem_blb = "ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

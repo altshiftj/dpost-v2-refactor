@@ -1,5 +1,5 @@
 [console_scripts]
 ipat-watchdog = ipat_watchdog.__main__:main
 
-[ipat_watchdog.plugins]
-sem_tischrem_blb = ipat_watchdog.plugins.sem_tischrem_blb.plugin:TischREMPlugin
+[ipat_watchdog.device_plugins]
+sem_tischrem_blb = ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin

@@ -7,7 +7,7 @@ def load_device_plugin(device_name: str) -> DevicePlugin:
     Resolve a plugin published via the 'ipat_watchdog.plugins' entry‑point group.
     `device_name` must match the *key* in pyproject.toml (e.g. 'sem_tischrem_blb').
     """
-    eps = entry_points(group="ipat_watchdog.plugins")
+    eps = entry_points(group="ipat_watchdog.device_plugins")
     try:
         cls = eps[device_name].load()
         return cls()                      # instantiate

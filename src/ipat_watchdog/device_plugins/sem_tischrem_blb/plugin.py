@@ -1,9 +1,9 @@
 # src/ipat_watchdog/plugins/sem_tischrem_blb/plugin.py
 from __future__ import annotations
 
-from ipat_watchdog.plugins.device_plugin import DevicePlugin
-from ipat_watchdog.plugins.sem_tischrem_blb.settings import TischREMSettings
-from ipat_watchdog.plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
+from ipat_watchdog.device_plugins.sem_tischrem_blb.settings import TischREMSettings
+from ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.config.settings_base import BaseSettings
 
