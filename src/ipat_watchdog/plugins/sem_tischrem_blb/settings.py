@@ -13,9 +13,9 @@ class TischREMSettings(BaseSettings):
     ALLOWED_EXTENSIONS = {".tiff", ".tif"}
     EXPEDITED_EXTENSIONS = {".tif", ".tiff"}
     ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
-    FAST_DEBOUNCE_SECONDS = 1  # seconds
-    SLOW_DEBOUNCE_SECONDS = 10.0 # seconds
-    FOLDER_STABILITY_TIMEOUT = 3.0  # seconds
+    FAST_DEBOUNCE_SECONDS = 1.0  # seconds
+    SLOW_DEBOUNCE_SECONDS = 10.0  # seconds
+    FOLDER_STABILITY_TIMEOUT = 15.0  # seconds
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📟 Device Identity
@@ -23,6 +23,7 @@ class TischREMSettings(BaseSettings):
     DEVICE_TYPE = "REM"
     DEVICE_USER_KADI_ID = "rem-01-usr"
     DEVICE_USER_PERSISTENT_ID = 22
+    DEVICE_RECORD_KADI_ID = "rem_01"
     DEVICE_RECORD_PERSISTENT_ID = 190
 
     SESSION_TIMEOUT = 600  # seconds

@@ -159,7 +159,7 @@ def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -
 
 def generate_record_id(filename_prefix: str) -> str:
     s: BaseSettings = SettingsStore.get()
-    return f"{s.DEVICE_TYPE}{s.ID_SEP}{filename_prefix}".lower()
+    return f"{s.DEVICE_RECORD_KADI_ID}{s.ID_SEP}{filename_prefix}".lower()
 
 def generate_file_id(filename_prefix: str) -> str:
     s: BaseSettings = SettingsStore.get()

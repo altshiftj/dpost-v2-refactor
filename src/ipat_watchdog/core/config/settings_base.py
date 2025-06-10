@@ -46,6 +46,7 @@ class BaseSettings:
     # --- Device Metadata ---
     DEVICE_USER_KADI_ID: str = "undefined-device-user"
     DEVICE_USER_PERSISTENT_ID: int = -1
+    DEVICE_RECORD_KADI_ID = "udr_01" # Undefined Device Record ID
     DEVICE_RECORD_PERSISTENT_ID: int = -1
     DEVICE_TYPE: str = "GENERIC"
     RECORD_TAGS: List[str] = ["Generic Tag"]
