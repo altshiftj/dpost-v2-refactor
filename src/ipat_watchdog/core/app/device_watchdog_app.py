@@ -86,9 +86,9 @@ class DeviceWatchdogApp:
         self.ui.set_exception_handler(self.handle_exception)
 
     def _setup_observer(self):
-        handler = self.file_event_handler_cls(self.event_queue)
+        self.handler_instance = self.file_event_handler_cls(self.event_queue)
         observer = self.observer_cls()
-        observer.schedule(handler, path=self.watch_dir, recursive=False)
+        observer.schedule(self.handler_instance, path=self.watch_dir, recursive=False)
         observer.start()
         self.directory_observer = observer
 
@@ -107,8 +107,18 @@ class DeviceWatchdogApp:
                 self.file_processing.process_item(data_path)
 
             self.files_processed += 1
-            FILES_PROCESSED.inc()      # Global Prometheus counte
-
+            FILES_PROCESSED.inc()      # Global Prometheus counter
+        
+        # Show errors for any rejected files/folders
+        if self.handler_instance:
+            rejected = self.handler_instance.get_and_clear_rejected()
+            for path_str, reason in rejected:
+                path_name = Path(path_str).name
+                FILES_FAILED.inc()
+                self.ui.show_error(
+                    "Unsupported Input",
+                    f"The file or folder '{path_name}' was rejected.\n\n{reason}"
+                )
         self._schedule_next_event_check()
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):

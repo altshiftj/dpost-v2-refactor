@@ -31,6 +31,8 @@ def test_initialization(watchdog_app, fake_ui):
     
 
 def test_process_events_with_item(watchdog_app):
+    watchdog_app.initialize()
+
     sample_path = "/tmp/MuS-ipat-sample.tif"
     watchdog_app.event_queue.put(sample_path)
     watchdog_app.file_processing.processed = []

@@ -119,9 +119,13 @@ def _move_to_folder(
     move_item(src, dest)
     logger.log(log_level, log_message.format(src, dest))
 
-def move_to_exception_folder(src: str, filename_prefix: str, extension: str = "") -> None:
+def move_to_exception_folder(src_path: str, filename_prefix: str = None, extension: str = None) -> None:
+    if filename_prefix is None:
+        filename_prefix = Path(src_path).stem
+    if extension is None:
+        extension = Path(src_path).suffix
     _move_to_folder(
-        src=src,
+        src=src_path,
         filename_prefix=filename_prefix,
         extension=extension,
         unique_path_func=get_exception_path,
