@@ -1,26 +1,10 @@
 from __future__ import annotations
 
-"""
-FileEventHandler – v3  (adaptive debounce + fast invalid-content reject)
-=======================================================================
- ▸ Fast accept   : valid folder ≈ 4 s   (2 s idle  + 2 s confirm)
- ▸ Fast reject   : invalid folder ≈ 4 s (2 s idle  + 2 s confirm)
- ▸ Slow debounce : accept after 30 s idle
- ▸ Hard timeout  : reject after 90 s idle
-
-Defaults (override in Settings):
-    FAST_PROBE_IDLE_SECONDS ...... 2
-    FAST_CONFIRM_WINDOW_SECONDS .. 2
-    SLOW_DEBOUNCE_SECONDS ........ 30
-    FOLDER_STABILITY_TIMEOUT ..... 90
-"""
-
 import datetime as dt
-import enum
 import threading
 from pathlib import Path
 from queue import Queue
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Optional, Tuple
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
@@ -32,281 +16,191 @@ from ipat_watchdog.core.storage.filesystem_utils import move_to_exception_folder
 logger = setup_logger(__name__)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
-#  Top-level handler
-# ──────────────────────────────────────────────────────────────────────────────
 class FileEventHandler(FileSystemEventHandler):
-    """Debounces single files and tracks multi-file folders until they’re stable."""
+    """
+    “Version 4” – stability driven by a single periodic snapshot.
+
+    ▸ A new file/folder starts a _PathTracker.
+    ▸ Every POLL_SECONDS the tracker compares a fresh snapshot with the previous one.
+    ▸ If identical → stable → validate & enqueue (or reject).
+    ▸ If different  → reschedule the same timer and keep watching.
+    ▸ Optional MAX_WAIT_SECONDS is a hard cap to avoid tracking pathological inputs
+      that never become stable.
+    """
+
+    # --- sensible defaults (all overridable in Settings) ----------------------
+    POLL_SECONDS = 0.5         # period between successive snapshots
+    MAX_WAIT_SECONDS = 12.0    # hard timeout before forced rejection
 
     def __init__(
         self,
         event_queue: Queue[str],
         *,
         settings: Optional[BaseSettings] = None,
-        max_active_timers: int = 2_048,
-        max_active_trackers: int = 128,
+        max_active_trackers: int = 256,
     ) -> None:
         super().__init__()
-        self.event_queue: Queue[str] = event_queue
+        self.event_queue = event_queue
         self.settings: BaseSettings = settings or SettingsStore.get()
 
-        self._timers: Dict[str, threading.Timer] = {}
-        self._folder_trackers: Dict[str, FileEventHandler._FolderTracker] = {}
+        self._trackers: Dict[str, FileEventHandler._PathTracker] = {}
         self._rejected: Queue[Tuple[str, str]] = Queue()
-
         self._lock = threading.RLock()
-        self._max_active_timers = max_active_timers
         self._max_active_trackers = max_active_trackers
 
-    # ------------------------------------------------------------------ shutdown
-    def shutdown(self) -> None:
-        with self._lock:
-            for t in self._timers.values():
-                t.cancel()
-            for tr in list(self._folder_trackers.values()):
-                tr._cleanup()
-            self._timers.clear()
-            self._folder_trackers.clear()
-        logger.debug("FileEventHandler shutdown: timers & trackers cancelled")
-
-    # -------------------------------------------------------------- file system
-    def on_created(self, event: FileSystemEvent) -> None:  # noqa: N802 (watchdog)
+    # ---------------------------------------------------------------- file-system
+    def on_created(self, event: FileSystemEvent) -> None:  # noqa: N802
         path = Path(event.src_path)
 
-        if self._reject_now_if_invalid_single_file(path):
+        # quick reject for obviously unsupported single files
+        if path.is_file() and not self._is_allowed_file(path):
+            reason = f"Unsupported file extension '{path.suffix}'"
+            self._reject_immediately(path, reason)
             return
 
-        if path.is_dir():
-            self._start_folder_tracker(path)
-        else:
-            self._schedule_file_debounce(path)
-
-    # ───────────────────────────── single-file debounce ────────────────────────
-    def _schedule_file_debounce(self, path: Path) -> None:
+        # start / restart a tracker
         with self._lock:
-            if len(self._timers) >= self._max_active_timers:
-                reason = "Debounce queue full – skipping new file"
-                logger.warning("%s: %s", reason, path.name)
-                self._rejected.put((str(path), reason))
+            pstr = str(path)
+            if len(self._trackers) >= self._max_active_trackers:
+                self._reject_immediately(path, "Tracker limit reached")
                 return
 
-            path_str = str(path)
-            if path_str in self._timers:
-                self._timers[path_str].cancel()
+            if pstr in self._trackers:  # path recreated?
+                self._trackers[pstr].stop()
+            self._trackers[pstr] = self._PathTracker(self, path)
 
-            delay = (
-                getattr(self.settings, "FAST_DEBOUNCE_SECONDS", 1)
-                if self._is_expedited_file(path)
-                else getattr(self.settings, "SLOW_DEBOUNCE_SECONDS", 30)
-            )
-
-            def _callback() -> None:
-                try:
-                    self._finalise_single_file(path_str)
-                except Exception:
-                    logger.exception("Unhandled error finalising file: %s", path_str)
-
-            timer = threading.Timer(delay, _callback)
-            self._timers[path_str] = timer
-            logger.debug("Started %s-s debounce for file: %s", delay, path.name)
-            timer.start()
-
-    def _finalise_single_file(self, path_str: str) -> None:
-        with self._lock:
-            self._timers.pop(path_str, None)
-
-        path = Path(path_str)
-        if self._should_accept_file(path):
-            logger.info("File stable & accepted: %s", path.name)
-            self.event_queue.put(path_str)
-        else:
-            reason = f"Unsupported file extension '{path.suffix}'"
-            logger.warning("Rejected after debounce: %s — %s", path.name, reason)
-            self._rejected.put((path_str, reason))
-            move_to_exception_folder(path)
-
-    # ─────────────────────────── “building” folder tracker ──────────────────────
-    class _ProbeState(enum.Enum):
-        NONE = enum.auto()
-        FAST_VALID = enum.auto()
-        FAST_INVALID = enum.auto()
-
-    class _FolderTracker:
-        """Tracks a single folder until accepted or rejected."""
-
-        def __init__(self, handler: "FileEventHandler", folder: Path, poll: float = 1.0):
-            self._h = handler
-            self.folder = folder
-            self._poll_interval = poll
-
-            self.last_change = dt.datetime.now()
-            self.last_exts: Set[str] = set()
-
-            self._probe_state = FileEventHandler._ProbeState.NONE
-            self._probe_started: Optional[dt.datetime] = None
-
-            self._timer: Optional[threading.Timer] = None
-            self._schedule_next()
-            logger.debug("Folder tracker started: %s", folder.name)
-
-        # ------------------------ helpers to read settings ----------------------
-        def _s(self, name: str, default: int) -> int:
-            return getattr(self._h.settings, name, default)
-
-        @property
-        def _idle_fast(self) -> int:
-            return self._s("FAST_PROBE_IDLE_SECONDS", 2)
-
-        @property
-        def _confirm_fast(self) -> int:
-            return self._s("FAST_CONFIRM_WINDOW_SECONDS", 2)
-
-        @property
-        def _debounce_slow(self) -> int:
-            return self._s("SLOW_DEBOUNCE_SECONDS", 30)
-
-        @property
-        def _timeout(self) -> int:
-            return self._s("FOLDER_STABILITY_TIMEOUT", 90)
-
-        # ------------------------------- polling loop --------------------------
-        @property
-        def idle(self) -> float:
-            return (dt.datetime.now() - self.last_change).total_seconds()
-
-        def _schedule_next(self) -> None:
-            self._timer = threading.Timer(self._poll_interval, self._safe_poll)
-            self._timer.start()
-
-        def _safe_poll(self) -> None:
-            try:
-                self._poll()
-            except Exception:
-                logger.exception("Polling crashed for %s", self.folder)
-                self._cleanup()
-
-        def _poll(self) -> None:
-            # vanished?
-            if not self.folder.exists():
-                self._cleanup()
-                return
-
-            try:
-                exts = {p.suffix.lower() for p in self.folder.iterdir() if p.is_file()}
-            except Exception as exc:
-                self._finish_reject(f"I/O error: {exc}")
-                return
-
-            # content change ⇒ reset timers / probes
-            if exts != self.last_exts:
-                self.last_exts = exts
-                self.last_change = dt.datetime.now()
-                self._probe_state = FileEventHandler._ProbeState.NONE
-                self._probe_started = None
-
-            required = {e.lower() for e in self._h.settings.ALLOWED_FOLDER_CONTENTS}
-            idle = self.idle
-            now = dt.datetime.now()
-
-            # 1) fast-probe: accept or reject in ≈4 s
-            if idle >= self._idle_fast:
-                if required.issubset(exts):          # candidate for fast-accept
-                    self._do_fast(now, accept=True, idle=idle)
-                else:                                # candidate for fast-reject
-                    self._do_fast(now, accept=False, idle=idle)
-
-            # 2) slow-debounce accept (30 s)
-            if required.issubset(exts) and idle >= self._debounce_slow:
-                self._accept(f"slow-debounce (idle {idle:.1f}s)")
-                return
-
-            # 3) hard timeout reject (90 s)
-            if idle >= self._timeout:
-                self._finish_reject(f"timeout (idle {idle:.1f}s)")
-                return
-
-            self._schedule_next()
-
-        # ------------------------------ fast-probe -----------------------------
-        def _do_fast(self, now: dt.datetime, *, accept: bool, idle: float) -> None:
-            desired = (
-                FileEventHandler._ProbeState.FAST_VALID
-                if accept
-                else FileEventHandler._ProbeState.FAST_INVALID
-            )
-
-            if self._probe_state is FileEventHandler._ProbeState.NONE:
-                self._probe_state = desired
-                self._probe_started = now
-                logger.debug(
-                    "%s fast-probe opened (idle %.1fs): %s",
-                    "ACCEPT" if accept else "REJECT",
-                    idle,
-                    self.folder.name,
-                )
-                return
-
-            if self._probe_state is desired:
-                age = (now - (self._probe_started or now)).total_seconds()
-                if age >= self._confirm_fast:
-                    if accept:
-                        self._accept(f"fast accept (idle {idle:.1f}s)")
-                    else:
-                        self._finish_reject(f"fast reject (idle {idle:.1f}s)")
-
-        # ------------------------- outcome helpers ----------------------------
-        def _accept(self, note: str) -> None:
-            logger.info("Folder accepted: %s — %s", self.folder.name, note)
-            self._h.event_queue.put(str(self.folder))
-            self._cleanup()
-
-        def _finish_reject(self, reason: str) -> None:
-            logger.warning("Folder rejected %s — %s", self.folder.name, reason)
-            move_to_exception_folder(str(self.folder), filename_prefix=self.folder.name, extension="")
-            self._h._rejected.put((str(self.folder), reason))
-            self._cleanup()
-
-        def _cleanup(self) -> None:
-            if self._timer:
-                self._timer.cancel()
-            with self._h._lock:
-                self._h._folder_trackers.pop(str(self.folder), None)
-
-    # ───────────────────── tracker factory & validation helpers ──────────────────
-    def _start_folder_tracker(self, folder: Path) -> None:
-        with self._lock:
-            if len(self._folder_trackers) >= self._max_active_trackers:
-                reason = "Folder tracker limit reached – skipping"
-                logger.warning("%s: %s", reason, folder.name)
-                self._rejected.put((str(folder), reason))
-                return
-
-            pstr = str(folder)
-            if pstr in self._folder_trackers:
-                self._folder_trackers[pstr]._cleanup()
-
-            self._folder_trackers[pstr] = self._FolderTracker(self, folder)
-        logger.debug("Started folder tracker for: %s", folder.name)
-
-    # ---------------------------------------------------------------- validation
-    def _reject_now_if_invalid_single_file(self, path: Path) -> bool:
-        if path.is_file() and not self._should_accept_file(path):
-            reason = f"Unsupported file extension '{path.suffix}'"
-            logger.warning("Rejected immediately: %s — %s", path.name, reason)
-            move_to_exception_folder(path)
-            self._rejected.put((str(path), reason))
-            return True
-        return False
-
-    def _should_accept_file(self, path: Path) -> bool:
-        return path.is_file() and path.suffix.lower() in self.settings.ALLOWED_EXTENSIONS
-
-    def _is_expedited_file(self, path: Path) -> bool:
-        return path.is_file() and path.suffix.lower() in self.settings.EXPEDITED_EXTENSIONS
-
-    # ---------------------------------------------------------------- rejected‐log
+    # ---------------------------------------------------------------- rejected-log
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
-        items: list[Tuple[str, str]] = []
+        items = []
         while not self._rejected.empty():
             items.append(self._rejected.get())
         return items
+
+    # ---------------------------------------------------------------- utilities
+    def _is_allowed_file(self, path: Path) -> bool:
+        return path.suffix.lower() in self.settings.ALLOWED_EXTENSIONS
+
+    def _reject_immediately(self, path: Path, reason: str) -> None:
+        logger.warning("Rejected immediately: %s — %s", path.name, reason)
+        move_to_exception_folder(path)
+        self._rejected.put((str(path), reason))
+
+    # ---------------------------------------------------------------- cleanup
+    def shutdown(self) -> None:
+        """Stop all active trackers and clear internal state."""
+        with self._lock:
+            for tracker in list(self._trackers.values()):
+                tracker.stop()
+            self._trackers.clear()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    #  Internal tracker
+    # ──────────────────────────────────────────────────────────────────────────
+    class _PathTracker:
+        def __init__(self, handler: FileEventHandler, path: Path):
+            self._h = handler
+            self.path = path
+            self._poll = self._h.settings.__dict__.get(
+                "POLL_SECONDS", self._h.POLL_SECONDS
+            )
+            self._timeout = self._h.settings.__dict__.get(
+                "MAX_WAIT_SECONDS", self._h.MAX_WAIT_SECONDS
+            )
+            self._start = dt.datetime.now()
+            self._last_metrics = self._snapshot()
+            self._timer: Optional[threading.Timer] = None
+            self._schedule()
+
+            logger.debug("Tracker started for %s", path.name)
+
+        # ------------------------- metric helpers -----------------------------
+        def _snapshot(self):
+            """
+            Build a simple, hashable ‘signature’ for the current state.
+            Files  : (size, mtime)
+            Folders: (file_count, total_size, newest_mtime)
+            """
+            if not self.path.exists():
+                return None
+
+            if self.path.is_file():
+                stat = self.path.stat()
+                return stat.st_size, stat.st_mtime
+
+            file_count = 0
+            total_size = 0
+            newest_mtime = 0.0
+            for p in self.path.rglob("*"):
+                if p.is_file():
+                    s = p.stat()
+                    file_count += 1
+                    total_size += s.st_size
+                    newest_mtime = max(newest_mtime, s.st_mtime)
+            return file_count, total_size, newest_mtime
+
+        # ---------------------------- loop ------------------------------------
+        def _schedule(self):
+            self._timer = threading.Timer(self._poll, self._probe)
+            self._timer.start()
+
+        def _probe(self):
+            try:
+                self._check_stability()
+            except Exception:
+                logger.exception("Tracker crashed for %s", self.path)
+                self.stop()
+
+        def _check_stability(self):
+            if not self.path.exists():
+                self._reject("Path disappeared before becoming stable")
+                return
+
+            if (dt.datetime.now() - self._start).total_seconds() >= self._timeout:
+                self._reject(f"Timeout (> {self._timeout}s)")
+                return
+
+            current = self._snapshot()
+            if current != self._last_metrics:
+                self._last_metrics = current
+                self._schedule()
+                return
+
+            # ---------------- stable! ----------------
+            if self.path.is_file():
+                self._handle_stable_file()
+            else:
+                self._handle_stable_folder()
+
+        # ---------------- outcome helpers ------------------------------------
+        def _handle_stable_file(self):
+            if self._h._is_allowed_file(self.path):
+                logger.info("File stable & accepted: %s", self.path.name)
+                self._h.event_queue.put(str(self.path))
+            else:
+                self._reject(f"Unsupported file extension '{self.path.suffix}'")
+
+            self.stop()
+
+        def _handle_stable_folder(self):
+            exts = {p.suffix.lower() for p in self.path.iterdir() if p.is_file()}
+            required = {e.lower() for e in self._h.settings.ALLOWED_FOLDER_CONTENTS}
+
+            if required.issubset(exts):
+                logger.info("Folder stable & accepted: %s", self.path.name)
+                self._h.event_queue.put(str(self.path))
+            else:
+                self._reject("Missing required content")
+
+            self.stop()
+
+        def _reject(self, reason: str):
+            logger.warning("Folder/File rejected: %s — %s", self.path.name, reason)
+            move_to_exception_folder(self.path)
+            self._h._rejected.put((str(self.path), reason))
+
+        # ---------------- public ---------------------------------------------
+        def stop(self):
+            if self._timer:
+                self._timer.cancel()
+            with self._h._lock:
+                self._h._trackers.pop(str(self.path), None)

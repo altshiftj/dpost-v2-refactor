@@ -26,7 +26,7 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     generate_record_id,
     init_dirs,
 )
-from ipat_watchdog.plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
 from ipat_watchdog.core.ui.ui_messages import InfoMessages, WarningMessages

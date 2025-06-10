@@ -1,6 +1,6 @@
 # src/ipat_watchdog/loader.py
 from importlib.metadata import entry_points
-from ipat_watchdog.plugins.device_plugin import DevicePlugin
+from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
 
 def load_device_plugin(device_name: str) -> DevicePlugin:
     """

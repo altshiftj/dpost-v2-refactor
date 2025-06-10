@@ -1,35 +1,44 @@
-from datetime import datetime, timedelta
+# tests/test_file_event_handler.py
+from pathlib import Path
 from queue import Queue
 from unittest.mock import patch, MagicMock
-import shutil
 import os
 import time
-from pathlib import Path
 
 import pytest
 from watchdog.events import DirCreatedEvent, FileSystemEvent
 
+# --------------------------------------------------------------------------- #
+#  SUT
+# --------------------------------------------------------------------------- #
 from ipat_watchdog.core.handlers.file_event_handler import FileEventHandler
 from ipat_watchdog.core.config.settings_base import BaseSettings
 
-# ───────────────────────────── Test-specific settings ──────────────────────────
-class TestSettings(BaseSettings):
-    FAST_DEBOUNCE_SECONDS = 1
-    SLOW_DEBOUNCE_SECONDS = 2
-    FOLDER_STABILITY_TIMEOUT = 2
 
+# ───────────────────────────── Test-specific settings ────────────────────────
+class TestSettings(BaseSettings):
+    """
+    Minimal settings for unit tests.
+    We keep the names the new handler actually looks at.
+    """
+    # polling / timeout
+    POLL_SECONDS = 0.1        # keep it tiny so we don’t wait in real time
+    MAX_WAIT_SECONDS = 2.0
+
+    # validation rules
     ALLOWED_EXTENSIONS = {".txt", ".tiff"}
-    EXPEDITED_EXTENSIONS = {".tiff"}
     ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
 
+    # where move_to_exception_folder() will place rejected artefacts
     EXCEPTIONS_DIR: str | os.PathLike | None = None
 
 
-# ───────────────────────────────── helpers ─────────────────────────────────────
-def _advance_time(tracker, seconds: int) -> None:
-    tracker.last_change = datetime.now() - timedelta(seconds=seconds)
-
-def wait_for_moved_folder(prefix: str, base_dir: Path, timeout=0.5) -> list[Path]:
+# ─────────────────────────────── helpers ─────────────────────────────────────
+def wait_for_moved(prefix: str, base_dir: Path, timeout: float = 0.5) -> list[Path]:
+    """
+    Utility: wait a short time for the handler to move a rejected path
+    into the exceptions directory and return the moved items.
+    """
     deadline = time.time() + timeout
     while time.time() < deadline:
         moved = list(base_dir.glob(f"{prefix}*"))
@@ -38,9 +47,21 @@ def wait_for_moved_folder(prefix: str, base_dir: Path, timeout=0.5) -> list[Path
         time.sleep(0.05)
     return []
 
-# ─────────────────────────────── fixtures ──────────────────────────────────────
+
+# ─────────────────────────────── fixtures ────────────────────────────────────
+@pytest.fixture
+def event_queue():
+    return Queue()
+
+
 @pytest.fixture
 def handler(event_queue, monkeypatch, tmp_path):
+    """
+    •   Replace `threading.Timer` so the test thread never sleeps.
+    •   Redirect SettingsStore.get() so everything downstream picks up our
+        *in-memory* TestSettings instance.
+    •   Ensure we have an EXCEPTIONS_DIR that we can inspect.
+    """
     class DummyTimer:
         def __init__(self, *a, **kw): pass
         def start(self): pass
@@ -64,107 +85,107 @@ def handler(event_queue, monkeypatch, tmp_path):
     h.shutdown()
 
 
-@pytest.fixture
-def event_queue():
-    return Queue()
+# ───────────────────────────── File-related tests ────────────────────────────
+def test_accept_stable_file(handler, event_queue, tmp_path, monkeypatch):
+    """
+    A supported single file should be queued after the first stability check.
+    """
+    f = tmp_path / "sample.txt"
+    f.write_text("hello")
 
+    # disable the automatic re-schedule so we stay synchronous
+    monkeypatch.setattr(
+        "ipat_watchdog.core.handlers.file_event_handler."
+        "FileEventHandler._PathTracker._schedule",
+        lambda self: None,
+    )
 
-# ───────────────────────────── File-related tests ─────────────────────────────
-def test_on_created_expedited_file(handler, event_queue, tmp_path):
-    f = tmp_path / "image.TIFF"
-    f.touch()
-    event = FileSystemEvent(str(f))
+    handler.on_created(FileSystemEvent(str(f)))
 
-    with patch(
-        "ipat_watchdog.core.handlers.file_event_handler.threading.Timer",
-        new=MagicMock(),
-    ) as mock_timer:
-        handler.on_created(event)
-        delay = mock_timer.call_args[0][0]
-        assert delay == handler.settings.FAST_DEBOUNCE_SECONDS
+    tracker = handler._trackers[str(f)]
+    tracker._check_stability()              # pretend the timer fired
 
-
-def test_on_created_generic_file(handler, event_queue, tmp_path):
-    f = tmp_path / "doc.txt"
-    f.touch()
-    event = FileSystemEvent(str(f))
-
-    with patch(
-        "ipat_watchdog.core.handlers.file_event_handler.threading.Timer",
-        new=MagicMock(),
-    ) as mock_timer:
-        handler.on_created(event)
-        delay = mock_timer.call_args[0][0]
-        assert delay == handler.settings.SLOW_DEBOUNCE_SECONDS
+    assert event_queue.get_nowait() == str(f)
+    assert handler.get_and_clear_rejected() == []
 
 
 def test_invalid_file_moves_to_exceptions(handler, event_queue, tmp_path):
-    bad = tmp_path / "virus.exe"
+    """
+    An unsupported extension is rejected immediately and moved.
+    """
+    bad = tmp_path / "malware.exe"
     bad.touch()
 
     handler.on_created(FileSystemEvent(str(bad)))
 
-    assert not bad.exists()
-
-    moved = wait_for_moved_folder("virus", Path(handler.settings.EXCEPTIONS_DIR))
-    assert any(p.suffix == ".exe" and p.is_file() for p in moved)
+    assert not bad.exists()                 # source vanished ⇒ moved
+    moved = wait_for_moved("malware", Path(handler.settings.EXCEPTIONS_DIR))
+    assert any(p.suffix == ".exe" for p in moved)
 
     rejected = handler.get_and_clear_rejected()
     assert rejected and rejected[0][0] == str(bad)
     assert event_queue.empty()
 
 
-def test_timer_cap_rejects_extra_file(handler, event_queue, tmp_path):
-    handler._max_active_timers = 1
+def test_tracker_cap_rejects_extra_path(handler, event_queue, tmp_path):
+    """
+    With the per-handler tracker limit set to 1, the 2nd path is rejected.
+    """
+    handler._max_active_trackers = 1
 
-    first = tmp_path / "a.txt";   first.touch()
-    second = tmp_path / "b.txt";  second.touch()
+    a = tmp_path / "a.txt";  a.touch()
+    b = tmp_path / "b.txt";  b.touch()
 
-    handler.on_created(FileSystemEvent(str(first)))
-    handler.on_created(FileSystemEvent(str(second)))
+    handler.on_created(FileSystemEvent(str(a)))
+    handler.on_created(FileSystemEvent(str(b)))
 
     rejected = handler.get_and_clear_rejected()
-    assert len(rejected) == 1 and rejected[0][0] == str(second)
-    assert str(first) in handler._timers
+    assert len(rejected) == 1 and rejected[0][0] == str(b)
+    assert str(a) in handler._trackers
     assert event_queue.empty()
 
 
-# ───────────────────────────── Folder-related tests ───────────────────────────
-def test_accept_valid_folder(handler, event_queue, tmp_path):
-    folder = tmp_path / "good_folder"; folder.mkdir()
+# ───────────────────────────── Folder-related tests ──────────────────────────
+def test_accept_valid_folder(handler, event_queue, tmp_path, monkeypatch):
+    """
+    A folder that already contains all required files is accepted on first check.
+    """
+    folder = tmp_path / "good"; folder.mkdir()
     for ext in handler.settings.ALLOWED_FOLDER_CONTENTS:
-        (folder / f"file{ext}").touch()
+        (folder / f"f{ext}").touch()
+
+    monkeypatch.setattr(
+        "ipat_watchdog.core.handlers.file_event_handler."
+        "FileEventHandler._PathTracker._schedule",
+        lambda self: None,
+    )
 
     handler.on_created(DirCreatedEvent(str(folder)))
-
-    tracker = handler._folder_trackers[str(folder)]
-    tracker.last_exts = {e.lower() for e in handler.settings.ALLOWED_FOLDER_CONTENTS}
-    _advance_time(tracker, handler.settings.SLOW_DEBOUNCE_SECONDS + 1)
-    tracker._poll()
+    tracker = handler._trackers[str(folder)]
+    tracker._check_stability()
 
     assert event_queue.get_nowait() == str(folder)
     assert handler.get_and_clear_rejected() == []
 
 
 def test_invalid_folder_moves_to_exceptions(handler, event_queue, tmp_path, monkeypatch):
-    folder = tmp_path / "bad_folder"; folder.mkdir()
-    (folder / "irrelevant.tmp").touch()
+    """
+    A folder missing required content is rejected as soon as it is stable.
+    """
+    folder = tmp_path / "bad"; folder.mkdir()
+    (folder / "junk.tmp").touch()
 
-    # Disable automatic re-polling
     monkeypatch.setattr(
-        "ipat_watchdog.core.handlers.file_event_handler.FileEventHandler._FolderTracker._schedule_next",
+        "ipat_watchdog.core.handlers.file_event_handler."
+        "FileEventHandler._PathTracker._schedule",
         lambda self: None,
     )
 
     handler.on_created(DirCreatedEvent(str(folder)))
-    tracker = handler._folder_trackers[str(folder)]
+    tracker = handler._trackers[str(folder)]
+    tracker._check_stability()
 
-    # Make tracker think nothing changed since we created the .tmp file
-    tracker.last_exts = {".tmp"}
-    _advance_time(tracker, handler.settings.FOLDER_STABILITY_TIMEOUT + 1)
-    tracker._poll()
-
-    moved = wait_for_moved_folder("bad_folder", Path(handler.settings.EXCEPTIONS_DIR))
+    moved = wait_for_moved("bad", Path(handler.settings.EXCEPTIONS_DIR))
     assert any(p.is_dir() for p in moved)
 
     rejected = handler.get_and_clear_rejected()
@@ -172,29 +193,17 @@ def test_invalid_folder_moves_to_exceptions(handler, event_queue, tmp_path, monk
     assert event_queue.empty()
 
 
-
-def test_tracker_cap_rejects_extra_folder(handler, tmp_path):
-    handler._max_active_trackers = 1
-
-    folder1 = tmp_path / "f1"; folder1.mkdir()
-    folder2 = tmp_path / "f2"; folder2.mkdir()
-
-    handler.on_created(DirCreatedEvent(str(folder1)))
-    handler.on_created(DirCreatedEvent(str(folder2)))
-
-    assert str(folder1) in handler._folder_trackers
-    rejected = handler.get_and_clear_rejected()
-    assert len(rejected) == 1 and rejected[0][0] == str(folder2)
-
-
-# ───────────────────────────── Shutdown safety ────────────────────────────────
+# ───────────────────────────── Shutdown safety ───────────────────────────────
 def test_shutdown_cleans_all(handler, tmp_path):
-    folder = tmp_path / "folder"; folder.mkdir()
-    handler.on_created(DirCreatedEvent(str(folder)))
+    """
+    All active trackers should be stopped & removed on shutdown.
+    """
+    folder = tmp_path / "fold"; folder.mkdir()
     file_ = tmp_path / "doc.txt"; file_.touch()
+
+    handler.on_created(DirCreatedEvent(str(folder)))
     handler.on_created(FileSystemEvent(str(file_)))
 
-    assert handler._folder_trackers or handler._timers
+    assert handler._trackers                 # something is being tracked
     handler.shutdown()
-    assert handler._folder_trackers == {}
-    assert handler._timers == {}
+    assert handler._trackers == {}
