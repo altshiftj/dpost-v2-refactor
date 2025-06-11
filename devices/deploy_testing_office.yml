@@ -1,0 +1,6 @@
+device_name: deploy_test
+target_ip: 134.169.58.176
+target_port: 22
+target_user: deploy
+target_pass: ${TARGET_PASS_DTO} # Gitlab CI variable
+fpr: 'SHA256:xUgAlbUoJUxxDPICmiaeZSvGjcwvv4v+rQ9B7axh5TI'

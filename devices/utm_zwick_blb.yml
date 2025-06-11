@@ -1,0 +1,5 @@
+device_name: utm_zwick_blb
+target_ip: 134.169.58.85
+target_port: 22
+target_user: Mess Rechner
+target_pass: ${TARGET_PASS_UTM} # Gitlab CI variable
