@@ -5,7 +5,7 @@
 
 # ── ENV + LOCATION ────────────────────────────────────────────────────
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
 
 # --- SETTINGS ---------------------------------------------------------
 $ciJobName   = $env:CI_JOB_NAME

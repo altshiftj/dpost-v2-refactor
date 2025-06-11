@@ -13,7 +13,7 @@ ENV_FILE  = ROOT / ".env"
 # ---------------------------------------------------------------------------------
 MAIN_SCRIPT = SRC_PATH / "ipat_watchdog" / "__main__.py"
 
-device_plugins = collect_submodules("ipat_watchdog.plugins.sem_tischrem_blb")
+device_plugins = collect_submodules("ipat_watchdog.device_plugins.sem_tischrem_blb")
 
 metadata_datas = copy_metadata("ipat-watchdog")
 

@@ -5,7 +5,7 @@
 
 # ── ENV + LOCATION ────────────────────────────────────────────────────
 . "$PSScriptRoot\00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot\../..")
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
 
 # ── CONFIG ────────────────────────────────────────────────────────────
 $targetIP   = $env:TARGET_IP    ; if (-not $targetIP)   { $targetIP   = '127.0.0.1' }

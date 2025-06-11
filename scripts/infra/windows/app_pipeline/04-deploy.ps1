@@ -1,6 +1,6 @@
 # simulate_deploy.ps1
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
 
 $remotePath   = 'C:\Watchdog'
 $ciJobName    = $env:CI_JOB_NAME

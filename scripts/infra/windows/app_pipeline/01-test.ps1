@@ -5,7 +5,7 @@
     - Runs pytest
 #>
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
 
 Write-Host "== Simulating TEST stage =="
 
