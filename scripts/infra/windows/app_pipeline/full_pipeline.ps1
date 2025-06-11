@@ -16,7 +16,7 @@ $healthPassed = $false
 try {
     & "$PSScriptRoot\05-run.ps1"
 
-    & "$PSScriptRoot\06-health.ps1"
+    & "$PSScriptRoot\06-health_check.ps1"
     if ($LASTEXITCODE -eq 0) {
         $healthPassed = $true
         Write-Host 'Service is healthy.'
