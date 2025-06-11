@@ -4,7 +4,7 @@
     - Installs only test dependencies
     - Runs pytest
 #>
-. "$PSScriptRoot/env.ps1"
+. "$PSScriptRoot/00-env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 Write-Host "== Simulating TEST stage =="

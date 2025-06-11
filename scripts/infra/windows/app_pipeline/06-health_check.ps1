@@ -4,7 +4,7 @@
 #>
 
 # ── ENV + LOCATION ────────────────────────────────────────────────────
-. "$PSScriptRoot\env.ps1"
+. "$PSScriptRoot\00-env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot\..\..")
 
 # ── CONFIG ────────────────────────────────────────────────────────────

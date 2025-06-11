@@ -1,5 +1,5 @@
 # simulate_deploy.ps1
-. "$PSScriptRoot/env.ps1"
+. "$PSScriptRoot/00-env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 $remotePath   = 'C:\Watchdog'

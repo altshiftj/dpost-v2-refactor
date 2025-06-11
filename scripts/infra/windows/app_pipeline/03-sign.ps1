@@ -1,7 +1,7 @@
 # simulate_sign.ps1
 # Locally sign the executable using signtool on the runner
 
-. "$PSScriptRoot/env.ps1"
+. "$PSScriptRoot/00-env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 
 # --- SETTINGS ---

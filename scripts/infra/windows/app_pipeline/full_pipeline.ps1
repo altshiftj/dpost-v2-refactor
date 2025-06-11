@@ -1,6 +1,6 @@
 # simulate_full_pipeline.ps1
 
-. "$PSScriptRoot\env.ps1"
+. "$PSScriptRoot/00_env.ps1"
 Set-Location -Path (Resolve-Path "$PSScriptRoot/../..")
 $ErrorActionPreference = 'Stop'
 
@@ -8,15 +8,15 @@ Write-Host 'Running full pipeline simulation...'
 
 $healthPassed = $false
 
-    & "$PSScriptRoot\simulate_test.ps1"
-    & "$PSScriptRoot\simulate_build.ps1"
-    & "$PSScriptRoot\simulate_sign.ps1"
-    & "$PSScriptRoot\simulate_deploy.ps1"
-    
-try {
-    & "$PSScriptRoot\simulate_run.ps1"
+    & "$PSScriptRoot\01-test.ps1"
+    & "$PSScriptRoot\02-build.ps1"
+    & "$PSScriptRoot\03-sign.ps1"
+    & "$PSScriptRoot\04-deploy.ps1"
 
-    & "$PSScriptRoot\simulate_health.ps1"
+try {
+    & "$PSScriptRoot\05-run.ps1"
+
+    & "$PSScriptRoot\06-health.ps1"
     if ($LASTEXITCODE -eq 0) {
         $healthPassed = $true
         Write-Host 'Service is healthy.'
@@ -27,7 +27,7 @@ try {
 finally {
     if (-not $healthPassed) {
         Write-Host 'Running rollback...'
-        & "$PSScriptRoot\simulate_rollback.ps1"
+        & "$PSScriptRoot\07-rollback.ps1"
         if ($LASTEXITCODE -eq 0) {
             Write-Host 'Rollback completed.'
         } else {

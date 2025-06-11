@@ -52,7 +52,7 @@ try {
 $env:TUN_PORT_0 = 8000     # Local forward to remote 8000
 $env:TUN_PORT_1 = 8001     # Local forward to remote 8001
 
-# Optional: Add SSH host key fingerprint to prevent MITM prompt
+# Optional: Add SSH host key fingerprint to prevent MITM (man in the middle) prompt
 $env:SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4'
 
 # ------------------------------
