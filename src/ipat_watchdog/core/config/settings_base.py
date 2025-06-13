@@ -1,7 +1,8 @@
 from pathlib import Path
 import re
-from typing import Set, List, Pattern
+from typing import Set, List, Pattern, Optional, Tuple
 import os
+
 
 class BaseSettings:
     # --- Directory Paths ---
@@ -31,12 +32,7 @@ class BaseSettings:
 
     # --- File Handling Defaults (to be overridden) ---
     ALLOWED_EXTENSIONS: Set[str] = set()  # e.g., {".csv", ".tif"}
-    EXPEDITED_EXTENSIONS: Set[str] = set()  # e.g., {".tif"}
     ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
-
-    FAST_DEBOUNCE_SECONDS: int = -1  # e.g. .tif files
-    SLOW_DEBOUNCE_SECONDS: int = -2  # e.g. .elid/.odt folders
-    FOLDER_STABILITY_TIMEOUT: int = -2 # for temp folders
 
     # --- Filename Pattern ---
     FILENAME_PATTERN: Pattern[str] = re.compile(
@@ -46,11 +42,18 @@ class BaseSettings:
     # --- Device Metadata ---
     DEVICE_USER_KADI_ID: str = "undefined-device-user"
     DEVICE_USER_PERSISTENT_ID: int = -1
-    DEVICE_RECORD_KADI_ID = "udr_01" # Undefined Device Record ID
+    DEVICE_RECORD_KADI_ID = "udr_01"
     DEVICE_RECORD_PERSISTENT_ID: int = -1
     DEVICE_TYPE: str = "GENERIC"
     RECORD_TAGS: List[str] = ["Generic Tag"]
-
     DEFAULT_RECORD_DESCRIPTION: str = (
         "No description set. Override `DEFAULT_RECORD_DESCRIPTION` in device settings."
     )
+
+    # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = -1
+    MAX_WAIT_SECONDS: float = -1
+    STABLE_CYCLES: int = -1
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None

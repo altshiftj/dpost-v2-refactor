@@ -1,5 +1,5 @@
 from ipat_watchdog.core.config.settings_base import BaseSettings
-
+import re # TODO: configure import to base settings?
 
 class TischREMSettings(BaseSettings):
     """
@@ -7,26 +7,28 @@ class TischREMSettings(BaseSettings):
     Overrides device-specific settings from BaseSettings.
     """
 
+    SESSION_TIMEOUT = 600  # seconds
+
+    POLL_SECONDS = 1.5
+    MAX_WAIT_SECONDS = 30.0
+    STABLE_CYCLES = 3
+    TEMP_FOLDER_REGEX = re.compile(r"\.[A-Za-z0-9]{6}$")
+
     # ──────────────────────────────────────────────────────────────────────────────
     # 📂 File Settings
     # ──────────────────────────────────────────────────────────────────────────────
     ALLOWED_EXTENSIONS = {".tiff", ".tif"}
-    EXPEDITED_EXTENSIONS = {".tif", ".tiff"}
     ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
-    FAST_DEBOUNCE_SECONDS = 1.0  # seconds
-    SLOW_DEBOUNCE_SECONDS = 10.0  # seconds
-    FOLDER_STABILITY_TIMEOUT = 15.0  # seconds
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📟 Device Identity
     # ──────────────────────────────────────────────────────────────────────────────
-    DEVICE_TYPE = "REM"
+    
     DEVICE_USER_KADI_ID = "rem-01-usr"
     DEVICE_USER_PERSISTENT_ID = 22
     DEVICE_RECORD_KADI_ID = "rem_01"
     DEVICE_RECORD_PERSISTENT_ID = 190
-
-    SESSION_TIMEOUT = 600  # seconds
+    DEVICE_TYPE = "REM"
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📝 Metadata Defaults

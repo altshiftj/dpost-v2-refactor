@@ -1,5 +1,6 @@
 # tests/conftest.py
 import pytest
+from pathlib import Path
 
 import dotenv
 dotenv.load_dotenv()
@@ -20,48 +21,46 @@ from tests.helpers.fake_process_manager import FakeFileProcessManager
 
 @pytest.fixture(autouse=True)
 def _reset_settings_store():
-    """Ensure SettingsStore is blank between tests."""
     yield
-    SettingsStore.reset()
+    SettingsStore.reset()           # leaves prod global state untouched
 
 
 @pytest.fixture
 def tmp_settings(tmp_path) -> BaseSettings:
-    """
-    Device‑agnostic settings object that points every directory at tmp_path.
-    """
-    class _TmpSettings(BaseSettings):
-        # Directories
-        WATCH_DIR = tmp_path / "Upload_Ordner"
-        DEST_DIR = tmp_path / "Data"
-        RENAME_DIR = tmp_path / "Data" / "00_To_Rename"
-        EXCEPTIONS_DIR = tmp_path / "Data" / "01_Exceptions"
-        DAILY_RECORDS_JSON = tmp_path / "records.json"
-        LOG_FILE = tmp_path / "watchdog.log"
+    """Return a settings instance whose entire file-tree lives in tmp_path."""
+    root: Path = tmp_path / "sandbox"
 
-        # Session / Sync
-        SESSION_TIMEOUT = 5
-        LOG_SYNC_INTERVAL = 1
+    class TestSettings(BaseSettings):
+        # ─ snapshot-watcher tweaks ─
+        POLL_SECONDS = 0.2
+        STABLE_CYCLES = 1
+        MAX_WAIT_SECONDS = 10.0
 
-        # File rules
-        ALLOWED_EXTENSIONS = {".tif", ".tiff", ".txt"}
-        DEBOUNCE_TIME = 1
+        ALLOWED_EXTENSIONS = {".tif", ".txt"}
+        ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
 
-        # Filename & ID
-        ID_SEP = "-"
-        FILE_SEP = "_"
-        DEVICE_TYPE = "TEST"
-        FILENAME_PATTERN = BaseSettings.FILENAME_PATTERN
+        # ─ filesystem layout ─
+        APP_DIR       = root / "App"
+        WATCH_DIR     = root / "Upload_Ordner"
+        DEST_DIR      = root / "Data"
+        RENAME_DIR    = DEST_DIR / "00_To_Rename"
+        EXCEPTIONS_DIR = DEST_DIR / "01_Exceptions"
+        DAILY_RECORDS_JSON = root / "records.json"
+        LOG_FILE            = root / "watchdog.log"
 
-        # Record metadata
-        DEVICE_USER_KADI_ID = "test-user"
-        DEVICE_USER_PERSISTENT_ID = 1
-        DEVICE_RECORD_PERSISTENT_ID = 999
-        RECORD_TAGS = ["TestTag"]
-        DEFAULT_RECORD_DESCRIPTION = "Test record"
+        # automatically create dirs when instantiated
+        def __post_init__(self):
+            for d in (
+                self.WATCH_DIR,
+                self.DEST_DIR,
+                self.RENAME_DIR,
+                self.EXCEPTIONS_DIR,
+            ):
+                d.mkdir(parents=True, exist_ok=True)
 
-    SettingsStore.set(_TmpSettings())
-    return SettingsStore.get()
+    settings = TestSettings()
+    SettingsStore.set(settings)      # make the instance discoverable
+    return settings
 
 
 @pytest.fixture

@@ -1,5 +1,14 @@
 import pytest
 from unittest.mock import MagicMock
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+
+
+@pytest.fixture
+def patched_watchdog_app(watchdog_app, tmp_settings):
+    # Ensure tmp_settings is injected before app usage
+    SettingsStore.set(tmp_settings)
+    return watchdog_app
 
 
 def _drain_pending_tasks(ui, max_iterations: int = 10):
@@ -12,9 +21,9 @@ def _drain_pending_tasks(ui, max_iterations: int = 10):
             cb()
 
 
-def test_initialization(watchdog_app, fake_ui):
-    watchdog_app.initialize()
-    observer = watchdog_app.directory_observer
+def test_initialization(patched_watchdog_app, fake_ui):
+    patched_watchdog_app.initialize()
+    observer = patched_watchdog_app.directory_observer
 
     interval_ms, callback = fake_ui.scheduled_tasks[0]
     callback()
@@ -25,50 +34,52 @@ def test_initialization(watchdog_app, fake_ui):
     assert fake_ui.close_handler is not None
     assert fake_ui.exception_handler is not None
     assert (
-        watchdog_app.session_manager.end_session_callback.__func__
-        is watchdog_app.end_session.__func__
+        patched_watchdog_app.session_manager.end_session_callback.__func__
+        is patched_watchdog_app.end_session.__func__
     )
-    
-
-def test_process_events_with_item(watchdog_app):
-    watchdog_app.initialize()
-
-    sample_path = "/tmp/MuS-ipat-sample.tif"
-    watchdog_app.event_queue.put(sample_path)
-    watchdog_app.file_processing.processed = []
-
-    watchdog_app.process_events()
-
-    assert sample_path in watchdog_app.file_processing.processed
+    assert not fake_ui.errors
+    assert not fake_ui.warnings
 
 
-def test_on_closing(watchdog_app, fake_ui):
-    watchdog_app.session_manager.session_active = True
-    watchdog_app.session_manager.end_session = MagicMock()
+def test_process_events_with_item(patched_watchdog_app):
+    patched_watchdog_app.initialize()
 
-    observer = watchdog_app.directory_observer
+    sample_path = str(SettingsStore.get().WATCH_DIR / "mus-ipat-sample.tif")
+    patched_watchdog_app.event_queue.put(sample_path)
+    patched_watchdog_app.file_processing.processed = []
 
-    watchdog_app.on_closing()
+    patched_watchdog_app.process_events()
 
-    watchdog_app.session_manager.end_session.assert_called_once()
+    assert sample_path in patched_watchdog_app.file_processing.processed
+
+
+def test_on_closing(patched_watchdog_app, fake_ui):
+    patched_watchdog_app.session_manager.session_active = True
+    patched_watchdog_app.session_manager.end_session = MagicMock()
+
+    observer = patched_watchdog_app.directory_observer
+
+    patched_watchdog_app.on_closing()
+
+    patched_watchdog_app.session_manager.end_session.assert_called_once()
     observer.stop.assert_called_once()
     observer.join.assert_called_once()
     assert fake_ui.destroyed is True
 
 
-def test_run_handles_keyboard_interrupt(watchdog_app, fake_ui):
-    watchdog_app.on_closing = MagicMock()
+def test_run_handles_keyboard_interrupt(patched_watchdog_app, fake_ui):
+    patched_watchdog_app.on_closing = MagicMock()
     fake_ui.run_main_loop = MagicMock(side_effect=KeyboardInterrupt)
 
-    watchdog_app.run()
+    patched_watchdog_app.run()
 
-    watchdog_app.on_closing.assert_called_once()
+    patched_watchdog_app.on_closing.assert_called_once()
 
 
-def test_run_handles_exception(watchdog_app, fake_ui):
-    watchdog_app.handle_exception = MagicMock()
+def test_run_handles_exception(patched_watchdog_app, fake_ui):
+    patched_watchdog_app.handle_exception = MagicMock()
     fake_ui.run_main_loop = MagicMock(side_effect=Exception("boom"))
 
-    watchdog_app.run()
+    patched_watchdog_app.run()
 
-    watchdog_app.handle_exception.assert_called_once()
+    patched_watchdog_app.handle_exception.assert_called_once()
