@@ -106,7 +106,7 @@ before_script: &before_script_common
     name: prod-${DEVICE_SLUG}
     url: http://$TARGET_IP:8001/health
   script: |
-    . scripts/infra/windows/ci_context.ps1
+    . scripts\infra\windows\utils\ci_context.ps1
 
     ssh-keyscan -p $port -H $ip | Out-File -Append "$HOME\.ssh\known_hosts"
     plink.exe -P $port -batch -pw "$pass" -hostkey "$fpr" "$user@$ip" `
@@ -132,7 +132,7 @@ before_script: &before_script_common
     name: prod-${DEVICE_SLUG}, 
     action: start
   script: |
-    . scripts/infra/windows/ci_context.ps1
+    . scripts\infra\windows\utils\ci_context.ps1
     Register-WatchdogTask
   resource_group: "run-${DEVICE_SLUG}"
 
@@ -178,7 +178,7 @@ before_script: &before_script_common
   when: on_failure
   needs: ["run_${DEVICE_SLUG}"]
   script: |
-    . scripts/infra/windows/ci_context.ps1
+    . scripts\infra\windows\utils\ci_context.ps1
     Restore-WatchdogBackup
   resource_group: "rollback-${DEVICE_SLUG}"
 
