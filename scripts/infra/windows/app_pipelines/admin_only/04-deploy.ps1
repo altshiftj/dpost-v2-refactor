@@ -1,6 +1,6 @@
 # simulate_deploy.ps1
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 
 $remotePath   = 'C:\Watchdog'
 $ciJobName    = $env:CI_JOB_NAME
@@ -10,15 +10,10 @@ $targetPass   = $env:TARGET_PASS
 $sshPort      = $env:SSH_PORT
 $sshHostKey   = $env:SSH_HOSTKEY
 
-if (-not $ciJobName)  { Write-Error "CI_JOB_NAME not set.";  exit 1 }
-if (-not $targetIP)   { $targetIP   = '127.0.0.1' }
-if (-not $targetUser) { $targetUser = 'testuser' }
-if (-not $targetPass) { $targetPass = 'password' }
-
 $binaryName      = "wd-${ciJobName}.exe"
 $distBinaryPath  = "dist\$binaryName"
 $exePath         = "$remotePath\$binaryName"
-$filesToDeploy   = @($binaryName, 'version.txt', 'scripts\infra\windows\utils\register_task.ps1')
+$filesToDeploy   = @($binaryName, 'version.txt', 'scripts/infra/windows/register_task.ps1')
 
 if (!(Test-Path $distBinaryPath)) { Write-Error "$distBinaryPath missing."; exit 1 }
 if (!(Test-Path 'version.txt'))   { Write-Error "version.txt missing.";     exit 1 }
@@ -53,7 +48,7 @@ if ($targetIP -eq '127.0.0.1') {
 
     Copy-Item $distBinaryPath                           (Join-Path $remotePath $binaryName)     -Force
     Copy-Item version.txt                               (Join-Path $remotePath 'version.txt')   -Force
-    Copy-Item 'scripts\infra\windows\utils\register_task.ps1' (Join-Path $remotePath 'register_task.ps1') -Force
+    Copy-Item 'scripts/infra/windows/register_task.ps1' (Join-Path $remotePath 'register_task.ps1') -Force
 
     $elapsed = (Get-Date) - $start
     Write-Host "Local deploy done in $($elapsed.ToString('hh\:mm\:ss'))"
@@ -110,7 +105,7 @@ if ($LASTEXITCODE) { Write-Error 'Remote prep failed.'; exit 1 }
 $scpMap = @{
     $distBinaryPath                          = "$remotePath/$binaryName"
     'version.txt'                            = "$remotePath/version.txt"
-    'scripts/infra/windows/utils/register_task.ps1' = "$remotePath/register_task.ps1"
+    'scripts/infra/windows/register_task.ps1'= "$remotePath/register_task.ps1"
 }
 foreach ($pair in $scpMap.GetEnumerator()) {
     $dst = $pair.Value -replace '\\','/'

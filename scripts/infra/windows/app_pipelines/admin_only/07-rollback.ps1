@@ -5,13 +5,13 @@
 
 # ── ENV + LOCATION ────────────────────────────────────────────────────
 . "$PSScriptRoot\00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 
 # ── CONFIG ────────────────────────────────────────────────────────────
-$targetIP   = $env:TARGET_IP    ; if (-not $targetIP)   { $targetIP   = '127.0.0.1' }
-$targetUser = $env:TARGET_USER  ; if (-not $targetUser) { $targetUser = 'testuser' }
-$targetPass = $env:TARGET_PASS  ; if (-not $targetPass) { $targetPass = 'password' }
-$ciJobName  = $env:CI_JOB_NAME  ; if (-not $ciJobName)  { $ciJobName  = 'run' }
+$targetIP   = $env:TARGET_IP
+$targetUser = $env:TARGET_USER
+$targetPass = $env:TARGET_PASS
+$ciJobName  = $env:CI_JOB_NAME
 
 $taskName   = "IPAT-Watchdog-$ciJobName"
 $exe        = "C:\Watchdog\wd-$ciJobName.exe"
