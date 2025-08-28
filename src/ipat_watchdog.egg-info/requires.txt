@@ -21,4 +21,6 @@ black
 mypy
 ruff
 
+[psa_horibalinks_blb]
+
 [sem_tischrem_blb]

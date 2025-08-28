@@ -74,7 +74,7 @@ try {
 # ------------------------------
 # CI-related Defaults
 # ------------------------------
-$env:CI_JOB_NAME = "sem_tischrem_blb"
+$env:CI_JOB_NAME = "psa_horibalinks_blb"
 
 # ------------------------------
 # Router Configuration (Linux Jump Host)
@@ -125,15 +125,16 @@ try {
 # ------------------------------
 # SSH Keys and Host Keys
 # ------------------------------
-# SSH private key files for authentication
-$env:ROUTER_SSH_KEY = "$env:USERPROFILE\.ssh\id_rsa_jamfitz_ppk.ppk"
-$env:TARGET_SSH_KEY = "$env:USERPROFILE\.ssh\id_rsa_jamfitz_ppk.ppk"  # Same key or different one
+# SSH private key files for authentication (PuTTY .ppk, same key you tested manually)
+$env:ROUTER_SSH_KEY = "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk"
+$env:TARGET_SSH_KEY = "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk"  # same .ppk as used in manual test
 
-# SSH Host Keys (from ssh-keyscan)
-$env:ROUTER_SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAIFqvmR5Q0yi8vFlHQmPDmqSfapwMtuAKflpiUA9UpSUY'
-$env:TARGET_SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAIDnde8wPsHN7mxhOmEFyH2UFzAdpyBWCtgJ7hO/O1wWq'
-
-# NOTE: Updated TARGET_SSH_HOSTKEY with actual ed25519 key from ssh-keyscan 192.168.1.2
+# Host keys in formats that plink accepts (prefer SHA256 fingerprints)
+$env:ROUTER_SSH_HOSTKEY = 'SHA256:uj6kBrFxe0qWj9SC3avJ5PTPCstPJ/Cp33v/VtiiWEk'
+$env:TARGET_SSH_HOSTKEY = 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8'
+# (Alternative base64 form if you ever need it:)
+# $env:ROUTER_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIFqvmR5Q0yi8vFlHQmPDmqSfapwMtuAKflpiUA9UpSUY'
+# $env:TARGET_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIDnde8wPsHN7mxhOmEFyH2UFzAdpyBWCtgJ7hO/O1wWq'
 
 # ------------------------------
 # Paths
@@ -146,25 +147,36 @@ $env:REMOTE_EXE  = "$env:REMOTE_PATH\$env:CI_JOB_NAME.exe"
 # ------------------------------
 function Start-TargetTunnel {
     $plinkArgs = @(
-        "-batch", "-N",
-        "-L", "$($env:TARGET_TUNNEL_PORT):$($env:TARGET_IP):$($env:TARGET_PORT)",
-        "-P", $env:ROUTER_PORT,
-        "-i", $env:ROUTER_SSH_KEY,  # Use SSH key instead of password
-        "-hostkey", $env:ROUTER_SSH_HOSTKEY,
-        "$env:ROUTER_USER@$env:ROUTER_IP"
+        "-batch","-N",
+        "-L","$($env:TARGET_TUNNEL_PORT):$($env:TARGET_IP):$($env:TARGET_PORT)",
+        "-P",$env:ROUTER_PORT,
+        "-i",$env:ROUTER_SSH_KEY,          # key for router hop
+        "-hostkey",$env:ROUTER_SSH_HOSTKEY,# router host key (SHA256:... or ssh-ed25519:...)
+        "$($env:ROUTER_USER)@$($env:ROUTER_IP)"
     )
-    Write-Host "Starting SSH tunnel on localhost:$($env:TARGET_TUNNEL_PORT) → $($env:TARGET_IP):$($env:TARGET_PORT)"
-    Start-Process -FilePath plink.exe -ArgumentList $plinkArgs -WindowStyle Hidden
-    Start-Sleep -Seconds 2
+    Write-Host "Starting SSH tunnel localhost:$($env:TARGET_TUNNEL_PORT) -> $($env:TARGET_IP):$($env:TARGET_PORT) via router..."
+    $global:__TunnelProc = Start-Process -FilePath plink.exe -ArgumentList $plinkArgs -PassThru -WindowStyle Hidden
+    Start-Sleep -Seconds 1
+    if ($__TunnelProc.HasExited) {
+        throw "Tunnel process exited early. Check router credentials/host key."
+    }
+    # Wait up to 8s for the local listener to appear
+    $deadline = (Get-Date).AddSeconds(8)
+    do {
+        $listening = Get-NetTCPConnection -LocalAddress 127.0.0.1 -LocalPort $env:TARGET_TUNNEL_PORT -State Listen -EA SilentlyContinue
+        if ($listening) { break }
+        Start-Sleep -Milliseconds 250
+    } while ((Get-Date) -lt $deadline)
+    if (-not $listening) { throw "Local tunnel port $($env:TARGET_TUNNEL_PORT) is not listening." }
 }
 
 function Invoke-TargetCommand {
     param([string]$Command)
     $plinkArgs = @(
-        "-batch", "-P", $env:TARGET_TUNNEL_PORT,
-        "-i", $env:TARGET_SSH_KEY,  # Use SSH key instead of password
-        "-hostkey", $env:TARGET_SSH_HOSTKEY,
-        "$env:TARGET_USER@127.0.0.1", $Command
+        "-batch","-P",$env:TARGET_TUNNEL_PORT,
+        "-i",$env:TARGET_SSH_KEY,          # key for target hop
+        "-hostkey",$env:TARGET_SSH_HOSTKEY,# target host key (SHA256:... or ssh-ed25519:...)
+        "$($env:TARGET_USER)@127.0.0.1",$Command
     )
     & plink.exe @plinkArgs
     return $LASTEXITCODE
@@ -173,10 +185,10 @@ function Invoke-TargetCommand {
 function Copy-FileViaTunnel {
     param([string]$LocalFile, [string]$RemoteFile)
     $scpArgs = @(
-        "-batch", "-P", $env:TARGET_TUNNEL_PORT,
-        "-i", $env:TARGET_SSH_KEY,  # Use SSH key instead of password
-        "-hostkey", $env:TARGET_SSH_HOSTKEY,
-        $LocalFile, "$($env:TARGET_USER)@127.0.0.1`:$RemoteFile"
+        "-batch","-P",$env:TARGET_TUNNEL_PORT,
+        "-i",$env:TARGET_SSH_KEY,
+        "-hostkey",$env:TARGET_SSH_HOSTKEY,
+        $LocalFile,"$($env:TARGET_USER)@127.0.0.1`:$RemoteFile"
     )
     & pscp.exe @scpArgs
     if ($LASTEXITCODE -ne 0) { throw "Failed to copy $LocalFile" }
@@ -191,3 +203,5 @@ Write-Host "  ROUTER_IP='$($env:ROUTER_IP)'"
 Write-Host "  TARGET_IP='$($env:TARGET_IP)'"
 Write-Host "  TARGET_TUNNEL_PORT='$($env:TARGET_TUNNEL_PORT)'"
 Write-Host "  REMOTE_EXE='$($env:REMOTE_EXE)'"
+Write-Host "Using TARGET_SSH_KEY = $env:TARGET_SSH_KEY (exists: $(Test-Path $env:TARGET_SSH_KEY))"
+Write-Host "Using TARGET_SSH_HOSTKEY = $env:TARGET_SSH_HOSTKEY"

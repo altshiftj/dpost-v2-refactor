@@ -60,7 +60,7 @@ class FileProcessorTischREM(FileProcessorABS):
 
     def device_specific_processing(
         self, src_path: str, record_path: str, filename_prefix: str, extension: str
-    ):
+    ) -> tuple[str, str]:
         """
         Parameters
         ----------

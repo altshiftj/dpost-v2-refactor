@@ -1,18 +1,16 @@
 <#
-    Simulate GitLab "test" stage with router-based environment:
+    Simulate GitLab "test" stage:
     - Sets up virtual environment (.testbuildvenv)
     - Installs only test dependencies
     - Runs pytest
-    
-    NOTE: Tests run locally, no router interaction needed
 #>
 . "$PSScriptRoot/00-env.ps1"
 Set-Location -Path $env:PROJECT_ROOT
 
-Write-Host "== Simulating TEST stage (Router-based pipeline) =="
+Write-Host "== Simulating TEST stage =="
 
 # ── SETTINGS ────────────────────────────────
-$venv = ".test_routervenv"
+$venv = ".test_testvenv"
 $python = ".\$venv\Scripts\python.exe"
 $activate = ".\$venv\Scripts\Activate.ps1"
 

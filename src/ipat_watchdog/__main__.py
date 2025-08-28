@@ -20,7 +20,7 @@ load_dotenv()
 logger = setup_logger(__name__)
 
 def main():
-    device_name = os.getenv("DEVICE_NAME", "sem_tischrem_blb")
+    device_name = os.getenv("DEVICE_NAME", "psa_horibalinks_blb")
     plugin = load_device_plugin(device_name)
     SettingsStore.set(plugin.get_settings())
 

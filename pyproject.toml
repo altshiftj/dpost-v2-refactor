@@ -23,9 +23,11 @@ ci     = ["pytest", "pyfakefs"]
 build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
 sem_tischrem_blb = []
+psa_horibalinks_blb = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
 sem_tischrem_blb = "ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin"
+psa_horibalinks_blb = "ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

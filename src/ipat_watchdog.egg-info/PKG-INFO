@@ -24,6 +24,7 @@ Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
 Provides-Extra: sem-tischrem-blb
+Provides-Extra: psa-horibalinks-blb
 
 
 # IPAT Data Watchdog Service
