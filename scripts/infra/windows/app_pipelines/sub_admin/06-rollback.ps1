@@ -1,6 +1,6 @@
 # ── ENV + CONFIG ──────────────────────────────────────────────────────
 . "$PSScriptRoot\00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 
 $targetIP   = $env:TARGET_IP
 $targetUser = $env:TARGET_USER

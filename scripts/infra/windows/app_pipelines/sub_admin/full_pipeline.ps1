@@ -1,7 +1,7 @@
 # simulate_full_pipeline.ps1
 
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 $ErrorActionPreference = 'Stop'
 
 Write-Host 'Running full pipeline simulation...'

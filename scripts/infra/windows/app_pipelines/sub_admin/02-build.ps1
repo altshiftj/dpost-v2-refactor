@@ -1,5 +1,5 @@
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 
 # Simulate GitLab "build" job locally in PowerShell
 

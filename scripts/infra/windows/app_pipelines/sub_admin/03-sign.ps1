@@ -2,7 +2,7 @@
 # Locally sign the executable using signtool on the runner
 
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../..")
+Set-Location -Path $env:PROJECT_ROOT
 
 # --- SETTINGS ---
 $ciJobName  = $env:CI_JOB_NAME

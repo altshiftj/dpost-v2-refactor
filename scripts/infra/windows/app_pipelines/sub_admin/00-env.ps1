@@ -1,3 +1,46 @@
+function Get-ProjectRoot {
+    param([string] $Start = $PSScriptRoot)
+
+    $repoTop = $null
+    try {
+        $gitTop = (git rev-parse --show-toplevel 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $gitTop) {
+            $repoTop = (Resolve-Path -LiteralPath $gitTop).Path
+        }
+    } catch {}
+
+    $dir = Get-Item -LiteralPath $Start
+    while ($dir) {
+        $pp = Join-Path $dir.FullName 'pyproject.toml'
+        if (Test-Path -LiteralPath $pp) { return $dir.FullName }
+
+        if ($repoTop -and ((Resolve-Path -LiteralPath $dir.FullName).Path -ieq $repoTop)) { break }
+        $dir = $dir.Parent
+    }
+
+    if ($repoTop -and (Test-Path -LiteralPath (Join-Path $repoTop 'pyproject.toml'))) {
+        return $repoTop
+    }
+
+    throw "Could not locate project root (no pyproject.toml found)."
+}
+
+# ------------------------------
+# Project Root
+# ------------------------------
+if ($env:PROJECT_ROOT) {
+    $pp = Join-Path $env:PROJECT_ROOT 'pyproject.toml'
+    if (!(Test-Path -LiteralPath $pp)) {
+        Write-Warning "Ignoring preset PROJECT_ROOT '$($env:PROJECT_ROOT)' (no pyproject.toml)."
+        $env:PROJECT_ROOT = $null
+    }
+}
+
+if (-not $env:PROJECT_ROOT) {
+    $env:PROJECT_ROOT = Get-ProjectRoot
+}
+Write-Host "Project Root: $env:PROJECT_ROOT"
+
 # Automatically extract detailed Git metadata
 try {
     $commitTag = git describe --tags --always
