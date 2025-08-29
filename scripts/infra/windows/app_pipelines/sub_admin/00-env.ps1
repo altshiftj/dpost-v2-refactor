@@ -1,3 +1,6 @@
+# TODO: Implement error handling and logging
+# TODO: Move away from passwords towards key-based authentication
+
 function Get-ProjectRoot {
     param([string] $Start = $PSScriptRoot)
 

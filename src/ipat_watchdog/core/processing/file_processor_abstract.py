@@ -16,7 +16,7 @@ class FileProcessorABS(ABC):
         pass
 
     @abstractmethod
-    def is_valid_datatype(self, path: str):
+    def is_valid_datatype(self, path: str) -> tuple[bool, str | None]:
         """
         Checks if the file/folder at the given path is valid for this processor.
         Returns (bool|None) -> (is_valid, data_type).
@@ -34,7 +34,7 @@ class FileProcessorABS(ABC):
         pass
 
     @abstractmethod
-    def device_specific_processing(self, source_path, record_path, file_id, extension):
+    def device_specific_processing(self, source_path, record_path, file_id, extension) -> str:
         """
         Allows subclasses to implement custom moves, renames, or metadata extraction.
         Must return the final path of the processed item.
@@ -53,7 +53,7 @@ class FileProcessorBase(FileProcessorABS):
         """
         return src_path
 
-    def is_valid_datatype(self, path: str):
+    def is_valid_datatype(self, path: str) -> tuple[bool, str | None]:
         """
         Default implementation always returns None (no validation).
         """

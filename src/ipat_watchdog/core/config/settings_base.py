@@ -9,7 +9,7 @@ class BaseSettings:
     APP_DIR: Path = Path("C:\\Watchdog")
     DESKTOP_DIR: Path = Path(os.path.join(os.environ["USERPROFILE"], "Desktop"))
 
-    WATCH_DIR: Path = DESKTOP_DIR / "Upload_Ordner"
+    WATCH_DIR: Path = DESKTOP_DIR / "Upload"
     DEST_DIR: Path = DESKTOP_DIR / "Data"
     RENAME_DIR: Path = DEST_DIR / "00_To_Rename"
     EXCEPTIONS_DIR: Path = DEST_DIR / "01_Exceptions"
