@@ -17,6 +17,7 @@ __pycache__/
 
 # ─── VSCode & Editor Files ────────────────────
 .vscode/
+.VSCodeCounter
 
 # ─── Logs ─────────────────────────────────────
 watchdog.log
