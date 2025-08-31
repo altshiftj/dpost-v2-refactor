@@ -85,6 +85,8 @@ class FileProcessManager:
         """
         # Allow device-specific preprocessing (e.g., folder consolidation)
         src_path = self.file_processor.device_specific_preprocessing(src_path)
+        if src_path is None:
+            return
         filename_prefix, extension = parse_filename(src_path)
 
         # Validate that this is a supported data type for the device
