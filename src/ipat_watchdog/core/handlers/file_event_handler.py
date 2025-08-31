@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import time
 import threading
 import re
 from pathlib import Path
@@ -73,6 +74,10 @@ class FileEventHandler(FileSystemEventHandler):
 
     def _reject_immediately(self, path: Path, reason: str) -> None:
         logger.warning("Rejected immediately: %s — %s", path.name, reason)
+        if path.is_file():
+
+            time.sleep(0.35)  # Wait briefly for file to be released
+
         move_to_exception_folder(path)
         self._rejected.put((str(path), reason))
 
@@ -85,7 +90,7 @@ class FileEventHandler(FileSystemEventHandler):
     class _PathTracker:
         def __init__(self, handler: FileEventHandler, path: Path):
             self._h = handler
-            self._settings = handler.settings  # ← alias for cleaner access
+            self._settings = handler.settings
             self.path = path
             self._start = dt.datetime.now()
             self._last_metrics = self._snapshot()
@@ -184,6 +189,12 @@ class FileEventHandler(FileSystemEventHandler):
                     return
 
             required = {e.lower() for e in self._settings.ALLOWED_FOLDER_CONTENTS}
+
+            # If no allowed folder contents are configured, reject the folder
+            if not required:
+                self._reject("Folders are not accepted for this device")
+                return
+
             exts = {
                 p.suffix.lower()
                 for p in self.path.rglob("*")
