@@ -65,6 +65,7 @@ class FileProcessManager:
         self.session_manager = session_manager
         self.records = RecordManager(sync_manager=sync_manager)
         self.file_processor = file_processor  # Keep for backward compatibility
+        self._processor_cache = {}  # Cache processors by device_id to maintain state
 
         # Sync any pending records from previous sessions on startup
         if not self.records.all_records_uploaded():
@@ -100,6 +101,11 @@ class FileProcessManager:
         
         # Import and get processor for the device
         device_id = device_settings.get_device_id()
+        
+        # Check cache first
+        if device_id in self._processor_cache:
+            return self._processor_cache[device_id]
+        
         try:
             # Dynamic import of device plugin
             plugin_module = __import__(
@@ -110,6 +116,8 @@ class FileProcessManager:
             # For sem_tischrem_blb, the class is TischREMPlugin
             if device_id == 'sem_tischrem_blb':
                 plugin_class = getattr(plugin_module, 'TischREMPlugin')
+            elif device_id == 'utm_zwick_blb':
+                plugin_class = getattr(plugin_module, 'ZwickUTMPlugin')
             else:
                 # Try to find the plugin class by convention
                 plugin_class = None
@@ -117,7 +125,8 @@ class FileProcessManager:
                     attr = getattr(plugin_module, attr_name)
                     if (isinstance(attr, type) and 
                         hasattr(attr, 'get_file_processor') and 
-                        attr_name.endswith('Plugin')):
+                        attr_name.endswith('Plugin') and
+                        not getattr(attr, '__abstractmethods__', None)):  # Exclude abstract classes
                         plugin_class = attr
                         break
                 
@@ -125,7 +134,11 @@ class FileProcessManager:
                     raise ImportError(f"No plugin class found in {device_id}.plugin")
             
             plugin_instance = plugin_class()
-            return plugin_instance.get_file_processor()
+            processor = plugin_instance.get_file_processor()
+            
+            # Cache the processor for this device
+            self._processor_cache[device_id] = processor
+            return processor
         except ImportError as e:
             logger.error(f"Failed to load processor for device {device_id}: {e}")
             raise RuntimeError(f"No processor available for device: {device_id}") from e

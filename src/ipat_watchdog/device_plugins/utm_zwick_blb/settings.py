@@ -1,11 +1,16 @@
 # ipat_watchdog/core/config/zwick_utm_settings.py
 from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
 
-class SettingsZwickUTM(BaseSettings):
+class SettingsZwickUTM(BaseSettings, DeviceSettings):
     """
     Configuration for the Zwick/Roell universal testing machine.
+    Overrides device-specific settings from BaseSettings.
     """
+
+    # Device identity
+    DEVICE_ID = "utm_zwick_blb"
 
     # ─── Runtime / Watchdog ----------------------------------------------------
     SESSION_TIMEOUT       = 4 * 3600             # close session after 4 h idle

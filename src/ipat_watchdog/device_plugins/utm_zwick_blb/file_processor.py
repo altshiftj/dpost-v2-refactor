@@ -75,6 +75,15 @@ class FileProcessorZwickUTM(FileProcessorABS):
     def is_valid_datatype(self, path: str) -> bool:
         return Path(path).suffix.lower() in {".zs2", ".xlsx"}
 
+    def matches_file(self, filepath: str) -> bool:
+        """Check if this device can process the given file based on extension."""
+        return Path(filepath).suffix.lower() in {".zs2", ".xlsx"}
+
+    @classmethod
+    def get_device_id(cls) -> str:
+        """Get unique device identifier."""
+        return "utm_zwick_blb"
+
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
     ) -> bool:
