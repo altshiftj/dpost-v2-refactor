@@ -15,26 +15,47 @@ class HeadlessUI(UserInterface):
 
         self.auto_close_session = False  # Control session ending in tests
         self.task_counter = 0  # Ensure unique task handles
+        
+        # For compatibility with existing tests
+        self.calls = {
+            "show_warning": [], "show_info": [], "show_error": [],
+            "prompt_rename": [], "prompt_append_record": [], "show_rename_dialog": []
+        }
+        self.prompt_rename_return = None
+        self.prompt_append_record_return = None
+        self.show_rename_dialog_return = None
 
     def show_warning(self, title: str, message: str) -> None:
         self.warnings.append((title, message))
+        self.calls["show_warning"].append((title, message))
 
     def show_info(self, title: str, message: str) -> None:
         self.infos.append((title, message))
+        self.calls["show_info"].append((title, message))
 
     def show_error(self, title: str, message: str) -> None:
         self.errors.append((title, message))
+        self.calls["show_error"].append((title, message))
 
     def prompt_rename(self):
+        self.calls["prompt_rename"].append("called")
+        if self.prompt_rename_return is not None:
+            return self.prompt_rename_return
         return {"name": "test", "institute": "ipat", "sample_ID": "sample"}
 
     def show_rename_dialog(self, attempted_filename, analysis):
+        self.calls["show_rename_dialog"].append((attempted_filename, analysis))
+        if self.show_rename_dialog_return is not None:
+            return self.show_rename_dialog_return
         if self.rename_inputs:
             return self.rename_inputs.pop(0)
         return None
 
     def prompt_append_record(self, record_name: str) -> bool:
         self.append_prompts.append(record_name)
+        self.calls["prompt_append_record"].append(record_name)
+        if self.prompt_append_record_return is not None:
+            return self.prompt_append_record_return
         return True
 
     def show_done_dialog(self, on_done_callback):

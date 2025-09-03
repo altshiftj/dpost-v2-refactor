@@ -1,5 +1,5 @@
 class FakeFileProcessManager:
-    def __init__(self, ui, sync_manager, session_manager, file_processor):
+    def __init__(self, ui, sync_manager, session_manager, file_processor=None):
         self.processed = []
         self.records_synced = False
 

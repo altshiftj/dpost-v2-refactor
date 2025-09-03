@@ -42,6 +42,15 @@ def test_end_session_calls_callback(fake_ui, tmp_settings):
 
 
 def test_reset_timer_reschedules(fake_ui, tmp_settings):
+    # Ensure device context is set for settings manager
+    from ipat_watchdog.core.config.settings_store import SettingsStore
+    settings_manager = SettingsStore.get_manager()
+    if hasattr(settings_manager, '_devices'):
+        for device in settings_manager._devices.values():
+            if device.get_device_id() == "test_device":
+                settings_manager.set_current_device(device)
+                break
+
     session_manager = SessionManager(ui=fake_ui)
     session_manager.session_active = True
     session_manager.timer_id = 1

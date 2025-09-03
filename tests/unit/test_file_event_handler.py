@@ -37,8 +37,7 @@ def event_queue():
 def handler(event_queue, monkeypatch, tmp_settings):
     """
     •   Replace `threading.Timer` so the test thread never sleeps.
-    •   Redirect SettingsStore.get() so everything downstream picks up our
-        *in-memory* settings instance.
+    •   Use the unified settings architecture from conftest.py
     •   Ensure we have an EXCEPTIONS_DIR that we can inspect.
     """
     class DummyTimer:
@@ -51,14 +50,21 @@ def handler(event_queue, monkeypatch, tmp_settings):
         DummyTimer,
     )
 
-    tmp_settings.EXCEPTIONS_DIR.mkdir(parents=True, exist_ok=True)
+    # Get settings from the global SettingsStore (set up by conftest.py via tmp_settings)
+    from ipat_watchdog.core.config.settings_store import SettingsStore
+    settings = SettingsStore.get()
+    settings.EXCEPTIONS_DIR.mkdir(parents=True, exist_ok=True)
 
-    h = FileEventHandler(event_queue, settings=tmp_settings)
+    # Ensure device context is set for the settings manager
+    settings_manager = SettingsStore.get_manager()
+    if hasattr(settings_manager, '_devices'):
+        for device in settings_manager._devices.values():
+            if device.get_device_id() == "test_device":
+                settings_manager.set_current_device(device)
+                break
 
-    monkeypatch.setattr(
-        "ipat_watchdog.core.storage.filesystem_utils.SettingsStore.get",
-        lambda: h.settings,
-    )
+    # Create handler without passing settings - it will get them from SettingsStore
+    h = FileEventHandler(event_queue)
 
     yield h
     h.shutdown()
@@ -164,8 +170,9 @@ def test_folder_timeout_moves_to_exceptions(handler, tmp_path, monkeypatch):
     assert handler.get_and_clear_rejected()[0][0] == str(folder)
 
 
-def test_folder_waits_for_sentinel(handler, tmp_path, monkeypatch, tmp_settings):
-    tmp_settings.SENTINEL_NAME = "_DONE"
+def test_folder_waits_for_sentinel(handler, tmp_path, monkeypatch):
+    # Update the handler's settings to include sentinel
+    handler.settings.SENTINEL_NAME = "_DONE"
 
     folder = tmp_path / "job"; folder.mkdir()
     for ext in handler.settings.ALLOWED_FOLDER_CONTENTS:

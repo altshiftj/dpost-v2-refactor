@@ -23,21 +23,28 @@ class BaseSettings:
         EXCEPTIONS_DIR,
     ]
 
-    # --- Session ---
-    SESSION_TIMEOUT: int = -1
+
 
     # --- Naming Conventions ---
     ID_SEP: str = "-"
     FILE_SEP: str = "_"
 
-    # --- File Handling Defaults (to be overridden) ---
-    ALLOWED_EXTENSIONS: Set[str] = set()  # e.g., {".csv", ".tif"}
-    ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
-
     # --- Filename Pattern ---
     FILENAME_PATTERN: Pattern[str] = re.compile(
         r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$"
     )
+
+    # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = -1
+    MAX_WAIT_SECONDS: float = -1
+    STABLE_CYCLES: int = -1
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None
+
+    # --- File Handling Defaults (to be overridden) ---
+    ALLOWED_EXTENSIONS: Set[str] = set()  # e.g., {".csv", ".tif"}
+    ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
 
     # --- Device Metadata ---
     DEVICE_USER_KADI_ID: str = "undefined-device-user"
@@ -49,11 +56,3 @@ class BaseSettings:
     DEFAULT_RECORD_DESCRIPTION: str = (
         "No description set. Override `DEFAULT_RECORD_DESCRIPTION` in device settings."
     )
-
-    # === Snapshot Watcher Settings ===
-    POLL_SECONDS: float = -1
-    MAX_WAIT_SECONDS: float = -1
-    STABLE_CYCLES: int = -1
-    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
-    SENTINEL_NAME: Optional[str] = None

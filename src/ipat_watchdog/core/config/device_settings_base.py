@@ -1,29 +1,42 @@
+from typing import Set, List
 from abc import ABC
-from typing import Set, Pattern
-import re
+from pathlib import Path
 
 class DeviceSettings(ABC):
     """Base class for device-specific configuration."""
-    # Device identity - make DEVICE_ID optional for backward compatibility
-    DEVICE_ID: str = ''
-    DEVICE_TYPE: str = ''
-    DEVICE_USER_KADI_ID: str = ''
+    # --- Device Metadata ---
+    DEVICE_USER_KADI_ID: str = "undefined-device-user"
+    DEVICE_USER_PERSISTENT_ID: int = -1
+    DEVICE_RECORD_KADI_ID = "udr_01"
+    DEVICE_RECORD_PERSISTENT_ID: int = -1
+    DEVICE_TYPE: str = "GENERIC"
+    DEVICE_ID: str = "generic"  # Unique identifier for this device
+    RECORD_TAGS: List[str] = ["Generic Tag"]
+    DEFAULT_RECORD_DESCRIPTION: str = (
+        "No description set. Override `DEFAULT_RECORD_DESCRIPTION` in device settings."
+    )
+
     ALLOWED_EXTENSIONS: Set[str] = set()
-    FILENAME_PATTERN: Pattern[str] = re.compile(r'.*')
+    ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
     SESSION_TIMEOUT: int = 300
     POLL_SECONDS: float = 1.0
 
-    def get_device_id(self) -> str:
-        """Get device ID, falling back to DEVICE_TYPE if DEVICE_ID not set."""
-        return self.DEVICE_ID or getattr(self, 'DEVICE_TYPE', 'unknown')
-
     def matches_file(self, filepath: str) -> bool:
         """Check if this device can process the given file."""
-        # Check extension
-        if not any(filepath.lower().endswith(ext) for ext in self.ALLOWED_EXTENSIONS):
+        path = Path(filepath)
+        
+        # Handle directories
+        if path.is_dir():
+            if self.ALLOWED_FOLDER_CONTENTS:
+                contents = {f.suffix.lower() for f in path.rglob('*') if f.is_file()}
+                return bool(contents.intersection(self.ALLOWED_FOLDER_CONTENTS))
             return False
         
-        # Check filename pattern (without extension)
-        from pathlib import Path
-        filename_without_ext = Path(filepath).stem
-        return bool(self.FILENAME_PATTERN.match(filename_without_ext))
+        # Handle files - check extension
+        return any(filepath.lower().endswith(ext) for ext in self.ALLOWED_EXTENSIONS)
+
+    @classmethod
+    def get_device_id(cls) -> str:
+        """Get unique device identifier."""
+        return cls.DEVICE_ID
+

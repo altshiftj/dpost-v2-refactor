@@ -14,7 +14,7 @@ from ipat_watchdog.metrics import(
  SESSION_EXIT_STATUS
 )
 
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
@@ -39,7 +39,7 @@ class DeviceWatchdogApp:
         self,
         ui: UserInterface,
         sync_manager: ISyncManager,
-        file_processor: FileProcessorBase,
+        settings_manager: SettingsManager,
         observer_cls=Observer,
         file_event_handler_cls=FileEventHandler,
         session_manager_cls=SessionManager,
@@ -49,9 +49,11 @@ class DeviceWatchdogApp:
         logger.info(f"WatchdogApp started at {self.start_time.isoformat()}")
 
         self.files_processed = 0
+        self.settings_manager = settings_manager
 
-        self.settings: BaseSettings = SettingsStore.get()
-        self.watch_dir: Path = self.settings.WATCH_DIR
+        # Get global settings for app-level configuration
+        self.global_settings = settings_manager.get_global_settings()
+        self.watch_dir: Path = self.global_settings.WATCH_DIR
         self.ui = ui
         self.event_queue = queue.Queue()
         self.log_sync_counter = 0
@@ -63,11 +65,11 @@ class DeviceWatchdogApp:
 
         self.sync_manager = sync_manager
 
+        # Create file processing manager without specific processor
         self.file_processing = file_process_manager_cls(
             ui=self.ui,
             sync_manager=self.sync_manager,
             session_manager=self.session_manager,
-            file_processor=file_processor,
         )
 
         self.observer_cls = observer_cls

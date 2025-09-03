@@ -8,7 +8,7 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.observability import start_observability_server
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.loader import load_device_plugin
-from ipat_watchdog.core.config.settings_store import SettingsManager
+from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
 from ipat_watchdog.core.config.global_settings import GlobalSettings
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
@@ -24,13 +24,19 @@ def main():
     # Load all device plugins listed in DEVICE_NAMES
     device_names = os.getenv("DEVICE_NAMES", "sem_tischrem_blb").split(",")
     global_settings = GlobalSettings()
-    settings_manager = SettingsManager(global_settings)
+    
+    # Collect device settings from plugins
+    device_settings_list = []
     plugins = []
     for device_name in device_names:
         plugin = load_device_plugin(device_name.strip())
         device_settings = plugin.get_settings()
-        settings_manager.register_device(device_settings)
+        device_settings_list.append(device_settings)
         plugins.append(plugin)
+    
+    # Initialize new settings manager and store
+    settings_manager = SettingsManager(global_settings, device_settings_list)
+    SettingsStore.set_manager(settings_manager)
 
     init_dirs()
 
@@ -43,14 +49,10 @@ def main():
     ui = TKinterUI()
     sync = KadiSyncManager(ui=ui)
 
-    # For now, use the first plugin's processor for demonstration
-    # Next step: update DeviceWatchdogApp to support multiple processors
-    file_processor = plugins[0].get_file_processor()
-
+    # No longer need to pass a specific file processor - will be selected per file
     app = DeviceWatchdogApp(
         ui=ui,
         sync_manager=sync,
-        file_processor=file_processor,
         settings_manager=settings_manager,
     )
     app.run()

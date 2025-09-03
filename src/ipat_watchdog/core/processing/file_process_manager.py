@@ -9,6 +9,7 @@ from pathlib import Path
 
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.config.settings_store import SettingsStore
 from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
     move_to_exception_folder,
@@ -57,51 +58,129 @@ class FileProcessManager:
         ui: UserInterface,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        file_processor: FileProcessorABS,
+        file_processor: FileProcessorABS = None,  # Made optional for backward compatibility
     ):
         """Initialize the file process manager with required dependencies."""
         self.ui = ui
         self.session_manager = session_manager
         self.records = RecordManager(sync_manager=sync_manager)
-        self.file_processor = file_processor
+        self.file_processor = file_processor  # Keep for backward compatibility
 
         # Sync any pending records from previous sessions on startup
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
 
+    def _get_processor_for_file(self, src_path: str) -> FileProcessorABS:
+        """
+        Get the appropriate file processor for a given file.
+        
+        Args:
+            src_path: Path to the file to process
+            
+        Returns:
+            FileProcessorABS: The appropriate file processor
+            
+        Raises:
+            RuntimeError: If no suitable processor is found
+        """
+        # If we have a legacy single processor, use it
+        if self.file_processor is not None:
+            return self.file_processor
+        
+        # Use settings manager to find appropriate device
+        settings_manager = SettingsStore.get_manager()
+        device_settings = settings_manager.select_device_for_file(src_path)
+        
+        if device_settings is None:
+            raise RuntimeError(f"No device found that can process file: {src_path}")
+        
+        # Set the device context for this thread
+        settings_manager.set_current_device(device_settings)
+        
+        # Import and get processor for the device
+        device_id = device_settings.get_device_id()
+        try:
+            # Dynamic import of device plugin
+            plugin_module = __import__(
+                f'ipat_watchdog.device_plugins.{device_id}.plugin',
+                fromlist=['']
+            )
+            
+            # For sem_tischrem_blb, the class is TischREMPlugin
+            if device_id == 'sem_tischrem_blb':
+                plugin_class = getattr(plugin_module, 'TischREMPlugin')
+            else:
+                # Try to find the plugin class by convention
+                plugin_class = None
+                for attr_name in dir(plugin_module):
+                    attr = getattr(plugin_module, attr_name)
+                    if (isinstance(attr, type) and 
+                        hasattr(attr, 'get_file_processor') and 
+                        attr_name.endswith('Plugin')):
+                        plugin_class = attr
+                        break
+                
+                if plugin_class is None:
+                    raise ImportError(f"No plugin class found in {device_id}.plugin")
+            
+            plugin_instance = plugin_class()
+            return plugin_instance.get_file_processor()
+        except ImportError as e:
+            logger.error(f"Failed to load processor for device {device_id}: {e}")
+            raise RuntimeError(f"No processor available for device: {device_id}") from e
+
     def process_item(self, src_path: str):
         """
         Main entry point for processing a new file or folder.
         
         Orchestrates the complete processing workflow:
-        1. Device-specific preprocessing
-        2. Filename parsing and validation
-        3. Data type validation
-        4. Routing to appropriate handling logic
+        1. Device selection and processor loading
+        2. Device-specific preprocessing
+        3. Filename parsing and validation
+        4. Data type validation
+        5. Routing to appropriate handling logic
         
         Args:
             src_path: Path to the file or folder to process
         """
-        # Extract filename prefix and extension before validation
-        filename_prefix, extension = parse_filename(src_path)
-
-        # Validate that this is a supported data type for the device
-        if not self.file_processor.is_valid_datatype(src_path):
-            self._handle_invalid_datatype(src_path, filename_prefix, extension)
-            FILES_FAILED.inc()
-            return
-        
-        # Allow device-specific preprocessing (e.g., folder consolidation)
-        src_path = self.file_processor.device_specific_preprocessing(src_path)
-        if src_path is None:
-            return
-
         try:
+            # Get the appropriate processor for this file
+            file_processor = self._get_processor_for_file(src_path)
+            logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
+            
+            # Extract filename prefix and extension before validation
+            filename_prefix, extension = parse_filename(src_path)
+
+            # Validate that this is a supported data type for the device
+            if not file_processor.is_valid_datatype(src_path):
+                self._handle_invalid_datatype(src_path, filename_prefix, extension)
+                FILES_FAILED.inc()
+                return
+            
+            # Allow device-specific preprocessing (e.g., folder consolidation)
+            src_path = file_processor.device_specific_preprocessing(src_path)
+            if src_path is None:
+                return
+
             # Route the item based on validation and record state
-            self._route_item(src_path, filename_prefix, extension)
+            self._route_item(src_path, filename_prefix, extension, file_processor)
+            
+        except RuntimeError as e:
+            # Handle cases where no processor is found
+            filename_prefix, extension = parse_filename(src_path)
+            logger.error(f"No processor found for {src_path}: {e}")
+            self._move_to_exception_and_inform(
+                src_path,
+                filename_prefix,
+                extension,
+                severity=WarningMessages.INVALID_DATA_TYPE,
+                message=f"No device available to process this file type: {Path(src_path).name}",
+            )
+            FILES_FAILED.inc()
         except Exception as e:
-            logger.exception(f"Error while routing item: {e}")
+            filename_prefix, extension = parse_filename(src_path)
+            logger.exception(f"Error while processing item: {e}")
             self._move_to_exception_and_inform(
                 src_path,
                 filename_prefix,
@@ -111,6 +190,13 @@ class FileProcessManager:
                     filename=Path(src_path).name, error=str(e)
                 ),
             )
+        finally:
+            # Clear device context for this thread
+            try:
+                settings_manager = SettingsStore.get_manager()
+                settings_manager.set_current_device(None)
+            except Exception:
+                pass  # Ignore cleanup errors
 
     def _move_to_exception_and_inform(
         self, src_path: str, prefix: str, extension: str, severity: str, message: str
@@ -140,7 +226,7 @@ class FileProcessManager:
         )
         logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
 
-    def _route_item(self, src_path: str, filename_prefix: str, extension: str):
+    def _route_item(self, src_path: str, filename_prefix: str, extension: str, file_processor: FileProcessorABS):
         """
         Route files to appropriate handling based on naming validation and record state.
         
@@ -154,15 +240,15 @@ class FileProcessManager:
         sanitized_prefix, is_valid_format, record = self._fetch_record_for_prefix(filename_prefix)
         
         # Determine routing state based on validation and record status
-        state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension)
+        state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension, file_processor)
 
         # Route based on determined state
         if state == UNAPPENDABLE:
             self._handle_unappendable_record(src_path, sanitized_prefix, extension)
         elif state == APPEND_SYNCED:
-            self._handle_append_to_synced_record(record, src_path, sanitized_prefix, extension)
+            self._handle_append_to_synced_record(record, src_path, sanitized_prefix, extension, file_processor)
         elif state == VALID_NAME:
-            self.add_item_to_record(record, src_path, sanitized_prefix, extension, notify=False)
+            self.add_item_to_record(record, src_path, sanitized_prefix, extension, file_processor, notify=False)
         else:
             self._rename_flow_controller(src_path, filename_prefix, extension)
 
@@ -182,7 +268,7 @@ class FileProcessManager:
         return sanitized_prefix, is_valid_format, record
 
     def _determine_routing_state(
-        self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str
+        self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str, file_processor: FileProcessorABS
     ) -> str:
         """
         Determine how to route the file based on validation and record state.
@@ -193,7 +279,7 @@ class FileProcessManager:
         3. If record exists or name is valid -> VALID_NAME (standard processing)
         4. Otherwise -> INVALID_NAME (requires rename flow)
         """
-        if record and not self.file_processor.is_appendable(record, filename_prefix, extension):
+        if record and not file_processor.is_appendable(record, filename_prefix, extension):
             return UNAPPENDABLE
         if record and record.is_in_db and record.all_files_uploaded():
             return APPEND_SYNCED
@@ -216,7 +302,7 @@ class FileProcessManager:
             ),
         )
 
-    def _handle_append_to_synced_record(self, record, src_path, filename_prefix, extension):
+    def _handle_append_to_synced_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS):
         """
         Handle files being added to records that have already been synced to database.
         
@@ -224,7 +310,7 @@ class FileProcessManager:
         """
         if self.ui.prompt_append_record(filename_prefix):
             # User confirmed - add the file to the existing record
-            self.add_item_to_record(record, src_path, filename_prefix, extension)
+            self.add_item_to_record(record, src_path, filename_prefix, extension, file_processor)
         else:
             # User declined - force rename flow
             self._rename_flow_controller(
@@ -259,7 +345,13 @@ class FileProcessManager:
 
         if new_prefix is not None:
             # User provided valid new name - retry processing with new name
-            self._route_item(src_path, new_prefix, extension)
+            try:
+                file_processor = self._get_processor_for_file(src_path)
+                self._route_item(src_path, new_prefix, extension, file_processor)
+            except RuntimeError as e:
+                logger.error(f"Failed to get processor for retry: {e}")
+                move_to_rename_folder(src_path, filename_prefix, extension)
+                self.ui.show_error("Processing Error", f"Unable to process file: {e}")
             return
 
         # User cancelled rename - move to rename folder for manual handling
@@ -306,7 +398,7 @@ class FileProcessManager:
                 attempted = f"{user_input.get('name', '')}-{user_input.get('institute', '')}-{user_input.get('sample_ID', '')}"
                 last_analysis = analysis
 
-    def add_item_to_record(self, record, src_path, filename_prefix, extension, notify=True):
+    def add_item_to_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS = None, notify=True):
         """
         Add a validated file/folder to a record and organize it properly.
         
@@ -321,16 +413,22 @@ class FileProcessManager:
             src_path: Source path of file/folder to process
             filename_prefix: Validated filename prefix
             extension: File extension
+            file_processor: File processor to use (falls back to self.file_processor if None)
             notify: Whether to show success notification to user
         """
         try:
+            # Use provided processor or fall back to instance processor
+            processor = file_processor or self.file_processor
+            if processor is None:
+                raise RuntimeError("No file processor available")
+            
             # Ensure we have a record to work with
             record = self._get_or_create_record(record, filename_prefix)
 
             # Determine target paths and perform device-specific processing
             record_path = get_record_path(filename_prefix)
             file_id = generate_file_id(filename_prefix)
-            final_path, datatype = self.file_processor.device_specific_processing(
+            final_path, datatype = processor.device_specific_processing(
                 src_path, record_path, file_id, extension
             )
 

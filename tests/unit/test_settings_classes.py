@@ -8,16 +8,29 @@ class DummyDeviceSettings(DeviceSettings):
     DEVICE_USER_KADI_ID = 'user123'
     ALLOWED_EXTENSIONS = {'.tiff', '.bmp'}
     FILENAME_PATTERN = re.compile(r'.*REM.*')
+    
+    def matches_file(self, filepath: str) -> bool:
+        """Check if this device can process the given file - both pattern and extension."""
+        from pathlib import Path
+        path = Path(filepath)
+        
+        # Check if extension is allowed
+        has_allowed_ext = any(filepath.lower().endswith(ext) for ext in self.ALLOWED_EXTENSIONS)
+        
+        # Check if filename matches pattern  
+        matches_pattern = bool(self.FILENAME_PATTERN.search(path.name))
+        
+        return has_allowed_ext and matches_pattern
 
 
 def test_global_settings_instantiation():
     gs = GlobalSettings()
     assert hasattr(gs, 'WATCH_DIR')
     assert hasattr(gs, 'DEST_DIR')
-    assert hasattr(gs, 'DEBOUNCE_TIME')
-    assert hasattr(gs, 'LOG_FILE')
-    assert hasattr(gs, 'KADI_SERVER')
-    assert hasattr(gs, 'KADI_TOKEN')
+    assert hasattr(gs, 'SESSION_TIMEOUT')
+    assert hasattr(gs, 'ID_SEP')
+    assert hasattr(gs, 'FILENAME_PATTERN')
+    assert hasattr(gs, 'POLL_SECONDS')
 
 
 def test_device_settings_matches_file():

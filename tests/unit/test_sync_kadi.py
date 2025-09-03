@@ -110,6 +110,16 @@ def sync_mgr(fake_ui, tmp_settings, monkeypatch):
     # Monkey-patch KadiManager inside the module under test
     import ipat_watchdog.core.sync.sync_kadi as _mod
     monkeypatch.setattr(_mod, "KadiManager", DummyKadiManager)
+    
+    # Ensure device context is set for settings manager
+    from ipat_watchdog.core.config.settings_store import SettingsStore
+    settings_manager = SettingsStore.get_manager()
+    if hasattr(settings_manager, '_devices'):
+        for device in settings_manager._devices.values():
+            if device.get_device_id() == "test_device":
+                settings_manager.set_current_device(device)
+                break
+    
     return KadiSyncManager(ui=fake_ui)
 
 

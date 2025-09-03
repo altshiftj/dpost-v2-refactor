@@ -1,13 +1,16 @@
 import pytest
 from unittest.mock import MagicMock
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
+from ipat_watchdog.core.config.global_settings import GlobalSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 
 @pytest.fixture
 def patched_watchdog_app(watchdog_app, tmp_settings):
-    # Ensure tmp_settings is injected before app usage
-    SettingsStore.set(tmp_settings)
+    # Create a settings manager with the tmp_settings as device settings
+    global_settings = GlobalSettings()
+    settings_manager = SettingsManager(global_settings, [tmp_settings])
+    SettingsStore.set_manager(settings_manager)
     return watchdog_app
 
 
@@ -44,7 +47,8 @@ def test_initialization(patched_watchdog_app, fake_ui):
 def test_process_events_with_item(patched_watchdog_app):
     patched_watchdog_app.initialize()
 
-    sample_path = str(SettingsStore.get().WATCH_DIR / "mus-ipat-sample.tif")
+    settings = SettingsStore()
+    sample_path = str(settings.WATCH_DIR / "mus-ipat-sample.tif")
     patched_watchdog_app.event_queue.put(sample_path)
     patched_watchdog_app.file_processing.processed = []
 

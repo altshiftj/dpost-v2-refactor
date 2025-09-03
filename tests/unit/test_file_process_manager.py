@@ -8,28 +8,58 @@ from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorA
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import generate_record_id
 
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+from ipat_watchdog.core.config.global_settings import GlobalSettings
+
+# --- Import helper classes ---
+from tests.helpers.fake_ui import HeadlessUI
+from tests.helpers.fake_session import FakeSessionManager
+from tests.helpers.fake_sync import DummySyncManager
+from tests.helpers.fake_processor import DummyProcessor
 
 @pytest.fixture(autouse=True)
-def init_settings():
+def init_settings(tmp_path):
     """
-    Initialize a dummy global settings object so that SettingsStore.get() won't fail.
+    Initialize a device settings object with all required attributes.
     """
-    class DummySettings(BaseSettings):
-        WATCH_DIR = Path('.')
-        DEST_DIR = Path('.')
-        RENAME_DIR = Path('./rename')
-        EXCEPTIONS_DIR = Path('./exceptions')
-        DAILY_RECORDS_JSON = Path('records.json')
-        LOG_FILE = Path('log.log')
+    root = tmp_path / "test_root"
+    
+    class TestDeviceSettings(DeviceSettings):
+        # Basic paths
+        WATCH_DIR = root / "watch"
+        DEST_DIR = root / "dest"
+        RENAME_DIR = root / "rename"
+        EXCEPTIONS_DIR = root / "exceptions"
+        DAILY_RECORDS_JSON = root / "records.json"
+        LOG_FILE = root / "log.log"
+        
+        # Device-specific attributes
         ID_SEP = '-'
         DEVICE_TYPE = 'TEST'
+        DEVICE_RECORD_KADI_ID = 'test_01'  # Add this required attribute
         FILENAME_PATTERN = BaseSettings.FILENAME_PATTERN
-        ALLOWED_EXTENSIONS = {'.txt'}
+        ALLOWED_EXTENSIONS = {'.txt', '.tif'}
         DEBOUNCE_TIME = 0
         SESSION_TIMEOUT = 1
-    SettingsStore.set(DummySettings())
+        
+        @classmethod
+        def get_device_id(cls) -> str:
+            return "test_device"
+            
+        def matches_file(self, filepath: str) -> bool:
+            return Path(filepath).suffix.lower() in {'.txt', '.tif'}
+    
+    # Set up settings manager with global and device settings
+    global_settings = GlobalSettings()
+    device_settings = TestDeviceSettings()
+    settings_manager = SettingsManager(global_settings, [device_settings])
+    SettingsStore.set_manager(settings_manager)
+    
+    # Set device context for these tests so functions like generate_record_id work
+    settings_manager.set_current_device(device_settings)
+    
     yield
     SettingsStore.reset()
 
@@ -43,85 +73,6 @@ def prevent_filesystem_writes(monkeypatch):
     yield
 
 # --- Dummy classes to simulate dependencies ---
-class DummyFileProcessor(FileProcessorABS):
-    def __init__(self, valid_datatype=True, appendable=True):
-        self.valid_datatype = valid_datatype
-        self.appendable = appendable
-
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        return src_path
-
-    def is_valid_datatype(self, path: str) -> bool:
-        return self.valid_datatype
-
-    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
-        return self.appendable
-
-    def device_specific_processing(self, src_path, record_path, file_id, extension):
-        final_path = str(Path(record_path) / f"{file_id}{extension}")
-        return final_path, "dummy_datatype"
-
-class DummyUI:
-    def __init__(self):
-        self.calls = {
-            "show_warning": [], "show_info": [], "show_error": [],
-            "prompt_rename": [], "prompt_append_record": [], "show_rename_dialog": []
-        }
-        self.prompt_rename_return = None
-        self.prompt_append_record_return = None
-        self.show_rename_dialog_return = None
-
-    def show_warning(self, title, message):
-        self.calls["show_warning"].append((title, message))
-
-    def show_info(self, title, message):
-        self.calls["show_info"].append((title, message))
-
-    def show_error(self, title, message):
-        self.calls["show_error"].append((title, message))
-
-    def prompt_rename(self):
-        self.calls["prompt_rename"].append("called")
-        return self.prompt_rename_return
-
-    def show_rename_dialog(self, attempted, analysis):
-        self.calls["show_rename_dialog"].append((attempted, analysis))
-        return self.show_rename_dialog_return
-
-    def prompt_append_record(self, record_name):
-        self.calls["prompt_append_record"].append(record_name)
-        return self.prompt_append_record_return
-
-    def schedule_task(self, interval_ms, callback):
-        callback()
-        return 1
-
-    def cancel_task(self, handle):
-        pass
-
-    def set_close_handler(self, callback):
-        self.close_handler = callback
-
-    def set_exception_handler(self, callback):
-        self.exception_handler = callback
-
-    def get_root(self):
-        root = tk.Tk()
-        root.withdraw()
-        return root
-
-class DummySessionManager:
-    def __init__(self):
-        self.session_active = False
-        self.start_session_called = False
-        self.reset_timer_called = False
-
-    def start_session(self):
-        self.start_session_called = True
-        self.session_active = True
-
-    def reset_timer(self):
-        self.reset_timer_called = True
 
 class DummyRecordManager:
     def __init__(self):
@@ -145,16 +96,14 @@ class DummyRecordManager:
     def sync_records_to_database(self):
         self.synced = True
 
-class DummySyncManager:
-    pass
-
 # --- Fixture for FileProcessManager instance ---
 @pytest.fixture
 def fpm():
-    ui = DummyUI()
-    session_manager = DummySessionManager()
-    sync_manager = DummySyncManager()
-    file_processor = DummyFileProcessor(valid_datatype=True, appendable=True)
+    ui = HeadlessUI()
+    session_manager = FakeSessionManager()
+    sync_manager = DummySyncManager(ui=ui)
+    # For test simplicity, we'll pass a file processor for backward compatibility
+    file_processor = DummyProcessor(valid_datatype=True, appendable=True)
     manager = FileProcessManager(
         ui=ui,
         sync_manager=sync_manager,
@@ -176,10 +125,10 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
         def sync_records_to_database(self):
             self.synced = True
 
-    ui = DummyUI()
-    session_manager = DummySessionManager()
-    sync_manager = DummySyncManager()
-    file_processor = DummyFileProcessor()
+    ui = HeadlessUI()
+    session_manager = FakeSessionManager()
+    sync_manager = DummySyncManager(ui=ui)
+    file_processor = DummyProcessor()
 
     import ipat_watchdog.core.processing.file_process_manager as mod
     monkeypatch.setattr(
@@ -247,7 +196,7 @@ def test_append_to_synced_record_confirm(fpm, monkeypatch):
     monkeypatch.setattr(fpm, "add_item_to_record", fake_add_item)
 
     fpm._handle_append_to_synced_record(
-        record, "/fake/path/ABC-DEF-sample.txt", prefix, ".txt"
+        record, "/fake/path/ABC-DEF-sample.txt", prefix, ".txt", fpm.file_processor
     )
     assert fpm.ui.calls["prompt_append_record"][0] == prefix
     assert add_called
@@ -273,14 +222,14 @@ def test_append_to_synced_record_decline(fpm, monkeypatch):
     monkeypatch.setattr(fpm, "_interactive_rename_loop", fake_loop)
 
     routed = None
-    def fake_route(src, pfx, ext):
+    def fake_route(src, pfx, ext, file_processor):
         nonlocal routed
         routed = pfx
 
     monkeypatch.setattr(fpm, "_route_item", fake_route)
 
     fpm._handle_append_to_synced_record(
-        record, "/fake/path/ABC-DEF-sample.txt", prefix, ".txt"
+        record, "/fake/path/ABC-DEF-sample.txt", prefix, ".txt", fpm.file_processor
     )
     assert rename_loop_called
     assert routed == "abc-def-sample-renamed"
@@ -296,7 +245,7 @@ def test_append_to_unsynced_record_no_prompt(fpm):
     fpm.ui.prompt_append_record_return = None
     fpm.file_processor.appendable = True
 
-    fpm._route_item("/fake/path/user-inst-sample.txt", prefix, ".txt")
+    fpm._route_item("/fake/path/user-inst-sample.txt", prefix, ".txt", fpm.file_processor)
     assert len(fpm.ui.calls["prompt_append_record"]) == 0
     assert len(record.files_uploaded) == 1
 
@@ -316,7 +265,7 @@ def test_handle_unappendable_record_flow(fpm, monkeypatch):
 
     monkeypatch.setattr(fpm, "_handle_unappendable_record", fake_handle_unappendable)
 
-    fpm._route_item("/fake/path/XYZ-TEST-sample01.txt", prefix, ".txt")
+    fpm._route_item("/fake/path/XYZ-TEST-sample01.txt", prefix, ".txt", fpm.file_processor)
     assert handle_called
 
 
@@ -416,6 +365,15 @@ def test_process_item_elid_directory(fpm, monkeypatch):
 
     test_path = "/fake/path/usr-inst-elid_folder"
     fpm.process_item(test_path)
+
+    # Ensure device context is set for generate_record_id call
+    from ipat_watchdog.core.config.settings_store import SettingsStore
+    settings_manager = SettingsStore.get_manager()
+    # Find the test device settings and set it as current
+    for device in settings_manager._devices.values():
+        if device.get_device_id() == "test_device":
+            settings_manager.set_current_device(device)
+            break
 
     expected_id = generate_record_id("usr-inst-elid_folder")
     assert expected_id in fpm.records.records
