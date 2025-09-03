@@ -81,19 +81,19 @@ def test_accept_stable_file(handler, event_queue, tmp_path, monkeypatch):
     assert handler.get_and_clear_rejected() == []
 
 
-def test_invalid_file_moves_to_exceptions(handler, event_queue, tmp_path):
-    bad = tmp_path / "malware.exe"
-    bad.touch()
+def test_file_with_any_extension_gets_tracked(handler, event_queue, tmp_path, monkeypatch):
+    """Test that files with any extension now get tracked instead of immediately rejected."""
+    exe_file = tmp_path / "malware.exe"
+    exe_file.touch()
 
-    handler.on_created(FileSystemEvent(str(bad)))
+    monkeypatch.setattr(PATH_TRACKER_SCHEDULE, lambda self: None)
 
-    assert not bad.exists()
-    moved = wait_for_moved("malware", Path(handler.settings.EXCEPTIONS_DIR))
-    assert any(p.suffix == ".exe" for p in moved)
-
-    rejected = handler.get_and_clear_rejected()
-    assert rejected and rejected[0][0] == str(bad)
-    assert event_queue.empty()
+    handler.on_created(FileSystemEvent(str(exe_file)))
+    
+    # File should be tracked (not immediately rejected)
+    assert str(exe_file) in handler._trackers
+    assert exe_file.exists()  # File should still exist
+    assert handler.get_and_clear_rejected() == []  # No immediate rejection
 
 
 def test_tracker_cap_rejects_extra_path(handler, event_queue, tmp_path):

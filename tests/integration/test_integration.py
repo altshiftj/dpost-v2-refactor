@@ -77,23 +77,28 @@ def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings)
     bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"
     bad.write_bytes(b"nope")
 
+    # Process the file through the event system
+    # First wait for the file to be detected and tracked
     deadline = time.time() + 3
+    processed = False
     while time.time() < deadline:
+        real_processing_app.process_events()
         if any(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.jpg")):
+            processed = True
             break
         time.sleep(0.1)
-    else:
+    
+    if not processed:
         pytest.fail("File was never moved to exceptions folder")
-
-    real_processing_app.process_events()
 
     matches = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.jpg"))
     assert len(matches) == 1 and matches[0].exists()
 
+    # Check that the error message indicates unsupported data type
     assert any(
-        title == "Unsupported Input" and "Unsupported file extension" in msg
-        for title, msg in real_processing_app.ui.errors
-    ), f"UI errors were: {real_processing_app.ui.errors}"
+        "Warning" in title and "not a recognized data type" in msg
+        for title, msg in real_processing_app.ui.warnings
+    ), f"UI warnings were: {real_processing_app.ui.warnings}"
 
 
 # ───────────────────────── invalid prefix → rename ───────────────────────────
