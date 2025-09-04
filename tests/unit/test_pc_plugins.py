@@ -1,7 +1,7 @@
 import pytest
 from ipat_watchdog.loader import load_pc_plugin
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.core.config.global_settings import PCSettings
+from ipat_watchdog.core.config.pc_settings import PCSettings
 
 def test_load_default_pc_plugin():
     """Test loading the default PC plugin."""

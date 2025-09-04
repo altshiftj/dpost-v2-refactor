@@ -4,3 +4,7 @@ ipat-watchdog = ipat_watchdog.__main__:main
 [ipat_watchdog.device_plugins]
 psa_horibalinks_blb = ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin
 sem_tischrem_blb = ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin
+
+[ipat_watchdog.pc_plugins]
+default_pc_blb = ipat_watchdog.pc_plugins.default_pc_blb.plugin:DefaultPCPlugin
+lab_workstation_blb = ipat_watchdog.pc_plugins.lab_workstation_blb.plugin:LabWorkstationPlugin

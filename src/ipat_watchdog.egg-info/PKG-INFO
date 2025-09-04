@@ -25,3 +25,5 @@ Requires-Dist: mypy; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
 Provides-Extra: sem-tischrem-blb
 Provides-Extra: psa-horibalinks-blb
+Provides-Extra: default-pc-blb
+Provides-Extra: lab-workstation-blb

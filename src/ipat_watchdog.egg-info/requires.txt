@@ -16,10 +16,14 @@ pyinstaller
 pytest
 pyfakefs
 
+[default_pc_blb]
+
 [dev]
 black
 mypy
 ruff
+
+[lab_workstation_blb]
 
 [psa_horibalinks_blb]
 

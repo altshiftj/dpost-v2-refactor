@@ -1,6 +1,6 @@
 import threading
 from typing import Optional, Dict, List
-from .global_settings import PCSettings
+from .pc_settings import PCSettings
 from .device_settings_base import DeviceSettings
 from .composite_settings import CompositeSettings
 
@@ -8,16 +8,15 @@ from .composite_settings import CompositeSettings
 class SettingsManager:
     """Manages device selection and settings composition per processing context."""
     
-    def __init__(self, global_settings: PCSettings, available_devices: List[DeviceSettings] = None, pc_settings: PCSettings = None):
+    def __init__(self, available_devices: List[DeviceSettings] = None, pc_settings: PCSettings = None):
         """
         Initialize settings manager.
         
         Args:
-            global_settings: Application-wide settings (fallback)
             available_devices: List of device settings to register
-            pc_settings: PC-specific settings from plugin (overrides global_settings if provided)
+            pc_settings: PC-specific settings from plugin (overrides default PCSettings if provided)
         """
-        self._global = pc_settings if pc_settings is not None else global_settings
+        self._global = pc_settings if pc_settings is not None else PCSettings()
         self._devices = {}
         self._local = threading.local()
         
@@ -86,13 +85,13 @@ class SettingsStore:
         """
         if hasattr(settings, '__dict__'):
             # If it's a settings object, wrap it in a SettingsManager
-            from .global_settings import PCSettings
-            global_settings = PCSettings()
+            from .pc_settings import PCSettings
+            pc_settings = PCSettings()
             # Copy attributes from the legacy settings object
             for attr, value in settings.__dict__.items():
-                if hasattr(global_settings, attr):
-                    setattr(global_settings, attr, value)
-            cls._manager = SettingsManager(global_settings)
+                if hasattr(pc_settings, attr):
+                    setattr(pc_settings, attr, value)
+            cls._manager = SettingsManager(pc_settings=pc_settings)
         else:
             # Direct assignment for tests or simple cases
             cls._manager = settings

@@ -11,7 +11,7 @@ from ipat_watchdog.core.storage.filesystem_utils import generate_record_id
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.global_settings import PCSettings
+from ipat_watchdog.core.config.pc_settings import PCSettings
 
 # --- Import helper classes ---
 from tests.helpers.fake_ui import HeadlessUI

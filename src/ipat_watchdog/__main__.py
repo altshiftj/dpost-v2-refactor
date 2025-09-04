@@ -9,7 +9,6 @@ from ipat_watchdog.observability import start_observability_server
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.loader import load_device_plugin, load_pc_plugin
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
-from ipat_watchdog.core.config.global_settings import PCSettings
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
@@ -28,7 +27,6 @@ def main():
     
     # Load all device plugins listed in DEVICE_NAMES
     device_names = os.getenv("DEVICE_NAMES", "sem_tischrem_blb").split(",")
-    global_settings = PCSettings()
     
     # Collect device settings from plugins
     device_settings_list = []
@@ -39,8 +37,11 @@ def main():
         device_settings_list.append(device_settings)
         plugins.append(plugin)
     
-    # Initialize new settings manager and store with PC settings override
-    settings_manager = SettingsManager(global_settings, device_settings_list, pc_settings)
+    # Initialize settings manager with new constructor signature
+    settings_manager = SettingsManager(
+        available_devices=device_settings_list,
+        pc_settings=pc_settings
+    )
     SettingsStore.set_manager(settings_manager)
 
     init_dirs()
@@ -65,7 +66,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        logger.exception("Unhandled exception occurred")
+    except Exception as e:
+        logger.exception(f"Application failed to start: {e}")
         sys.exit(1)
 

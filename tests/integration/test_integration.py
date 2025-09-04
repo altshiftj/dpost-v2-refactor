@@ -35,7 +35,7 @@ def real_processing_app(tmp_settings):
 
     # Set up SettingsManager with TischREM device for realistic integration testing
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-    from ipat_watchdog.core.config.global_settings import PCSettings
+    from ipat_watchdog.core.config.pc_settings import PCSettings
     from ipat_watchdog.device_plugins.sem_tischrem_blb.settings import TischREMSettings
 
     # Override both global and device settings to use test paths for proper isolation

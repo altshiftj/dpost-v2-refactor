@@ -8,7 +8,7 @@ dotenv.load_dotenv()
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.global_settings import PCSettings
+from ipat_watchdog.core.config.pc_settings import PCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 from tests.helpers.fake_ui import HeadlessUI

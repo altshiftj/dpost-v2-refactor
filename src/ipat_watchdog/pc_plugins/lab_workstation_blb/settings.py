@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 from typing import List, Pattern, Optional, Tuple
 import os
-from ipat_watchdog.core.config.global_settings import PCSettings
+from ipat_watchdog.core.config.pc_settings import PCSettings
 
 class LabWorkstationSettings(PCSettings):
     """Lab workstation specific settings with optimized configuration for active lab work."""

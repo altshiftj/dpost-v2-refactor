@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.global_settings import PCSettings
+from ipat_watchdog.core.config.pc_settings import PCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 

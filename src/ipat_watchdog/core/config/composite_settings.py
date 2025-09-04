@@ -2,7 +2,7 @@
 Composite settings that combine global and device-specific settings.
 """
 from typing import Any
-from .global_settings import PCSettings
+from .pc_settings import PCSettings
 from .device_settings_base import DeviceSettings
 
 
