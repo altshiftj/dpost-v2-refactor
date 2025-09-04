@@ -46,28 +46,60 @@ def get_record_path(filename_prefix: str) -> str:
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
 
+import threading
+from collections import defaultdict
+
+# Global locks for filename generation per directory
+_filename_locks = defaultdict(threading.Lock)
+
 def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
+    """
+    Generate a unique filename in the specified directory.
+    Thread-safe implementation using directory-specific locks.
+    
+    Args:
+        directory: Target directory path
+        filename_prefix: Base filename without extension
+        extension: File extension including dot
+        
+    Returns:
+        str: Full path to a unique filename
+    """
     s: BaseSettings = SettingsStore.get()
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
-    counter = 1
-    for existing in dir_path.iterdir():
-        if existing.is_file() and existing.suffix == extension:
-            existing_prefix = existing.stem
-            prefix_no_counter = existing_prefix.rsplit(s.ID_SEP, 1)[0]
-            if prefix_no_counter in filename_prefix:
+    
+    # Use a lock specific to this directory to prevent race conditions
+    with _filename_locks[str(dir_path)]:
+        # Find the highest existing counter
+        counter = 1
+        for existing in dir_path.iterdir():
+            if existing.is_file() and existing.suffix == extension:
+                existing_prefix = existing.stem
+                prefix_no_counter = existing_prefix.rsplit(s.ID_SEP, 1)[0]
+                if prefix_no_counter == filename_prefix:
+                    try:
+                        suffix_num = int(existing_prefix.rsplit(s.ID_SEP, 1)[1])
+                        if suffix_num >= counter:
+                            counter = suffix_num + 1
+                    except (ValueError, IndexError):
+                        continue
+        
+        # Find next available filename by checking if each candidate exists
+        while True:
+            candidate_name = f"{filename_prefix}{s.ID_SEP}{counter:02d}{extension}"
+            candidate_path = dir_path / candidate_name
+            if not candidate_path.exists():
+                # Create a placeholder file immediately to reserve this name
+                # This prevents other threads from selecting the same name
                 try:
-                    suffix_num = int(existing_prefix.rsplit(s.ID_SEP, 1)[1])
-                    if suffix_num >= counter:
-                        counter = suffix_num + 1
-                except (ValueError, IndexError):
+                    candidate_path.touch(exist_ok=False)  # Fail if file already exists
+                    return str(candidate_path)
+                except FileExistsError:
+                    # Another thread created this file between our check and creation
+                    counter += 1
                     continue
-    while True:
-        candidate_name = f"{filename_prefix}{s.ID_SEP}{counter:02d}{extension}"
-        candidate_path = dir_path / candidate_name
-        if not candidate_path.exists():
-            return str(candidate_path)
-        counter += 1
+            counter += 1
 
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
     s: BaseSettings = SettingsStore.get()
@@ -96,11 +128,19 @@ def remove_directory_if_empty(path: Path) -> None:
 def move_item(src: str, dest: str) -> None:
     src_path = Path(src)
     dest_path = Path(dest)
+    
+    # If destination exists as a placeholder file (empty), remove it first
+    if dest_path.exists() and dest_path.stat().st_size == 0:
+        dest_path.unlink()
+    
     try:
         src_path.rename(dest_path)
     except OSError as e:
         logger.warning("Path.rename() failed for '%s' to '%s': %s. Attempting shutil.move.", src, dest, e)
         try:
+            # Remove placeholder if it exists
+            if dest_path.exists() and dest_path.stat().st_size == 0:
+                dest_path.unlink()
             shutil.move(src, dest)
         except Exception as e_move:
             logger.error("Failed to move '%s' to '%s' using shutil.move: %s.", src, dest, e_move)

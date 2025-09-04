@@ -52,7 +52,6 @@ def tmp_settings(tmp_path) -> DeviceSettings:
         MAX_WAIT_SECONDS = 10.0
 
         ALLOWED_EXTENSIONS = {".tif", ".txt"}
-        ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
         
         # ─ Additional required attributes ─
         ID_SEP = '-'

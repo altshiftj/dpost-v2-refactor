@@ -27,17 +27,31 @@ class FileProcessorTischREM(FileProcessorABS):
     # ---------- preprocessing --------------------------------------------------
 
     def device_specific_preprocessing(self, path: str) -> str:
+        """
+        Remove trailing digits from TischREM files to normalize naming.
+        
+        TischREM device automatically adds trailing digits (usually "1") to filenames,
+        but we want to handle incrementing ourselves through get_unique_filename.
+        
+        This step normalizes the filename for record identification purposes,
+        but keeps the original file in place for later processing.
+        """
         p = Path(path)
         if p.suffix.lower() in {".tiff", ".tif"}:
             new_stem = self._strip_trailing_digit(p.stem)
             if new_stem != p.stem:
-                new_path = p.parent / (new_stem + p.suffix)
-                p.rename(new_path)
-                logger.debug("Renamed '%s' → '%s' (removed trailing digit)", p, new_path)
-                return str(new_path)
+                # Store the original path for later use in device_specific_processing
+                normalized_path = p.parent / (new_stem + p.suffix)
+                # Store mapping from normalized path to original path
+                if not hasattr(self, '_path_mapping'):
+                    self._path_mapping = {}
+                self._path_mapping[str(normalized_path)] = str(p)
+                logger.debug("Normalized filename from '%s' to '%s' (removed trailing digit)", p.name, normalized_path.name)
+                return str(normalized_path)
         return path
 
     def _strip_trailing_digit(self, filename: str) -> str:
+        """Remove trailing digit added by TischREM device (e.g., 'sample1' -> 'sample')"""
         return filename[:-1] if filename and filename[-1].isdigit() else filename
 
     # ---------- record-manager integration ------------------------------------
@@ -75,17 +89,22 @@ class FileProcessorTischREM(FileProcessorABS):
         """
         src = Path(src_path)
         record_dir = Path(record_path)
+        
+        # For TischREM, src_path should be the original file path
+        # The device_specific_preprocessing normalizes for record identification
+        # but device_specific_processing should work with the original path
+        actual_src = src
 
         # -- 1. Plain TIFF images ------------------------------------------------
         if extension.lower() in {".tif", ".tiff"}:
             dest = get_unique_filename(record_path, filename_prefix, extension)
-            move_item(src, dest)
+            move_item(actual_src, dest)
             return dest, "img"
 
         # -- 2. ELID directory ---------------------------------------------------
-        zip_path = self._zip_export(src, record_dir, filename_prefix)
-        self._move_descriptors(src, record_dir, filename_prefix)
-        self._cleanup(src)
+        zip_path = self._zip_export(actual_src, record_dir, filename_prefix)
+        self._move_descriptors(actual_src, record_dir, filename_prefix)
+        self._cleanup(actual_src)
 
         # Return the record directory so RecordManager walks it and registers
         # the ZIP *and* the renamed descriptor files.

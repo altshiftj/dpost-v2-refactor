@@ -44,7 +44,6 @@ class BaseSettings:
 
     # --- File Handling Defaults (to be overridden) ---
     ALLOWED_EXTENSIONS: Set[str] = set()  # e.g., {".csv", ".tif"}
-    ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
 
     # --- Device Metadata ---
     DEVICE_USER_KADI_ID: str = "undefined-device-user"

@@ -34,7 +34,6 @@ class SettingsZwickUTM(BaseSettings, DeviceSettings):
     # ─── Metadata defaults -----------------------------------------------------
     RECORD_TAGS = [
         "Mechanical Test",
-        "Tensile",
     ]
 
     DEFAULT_RECORD_DESCRIPTION = r"""

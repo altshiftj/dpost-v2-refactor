@@ -6,6 +6,7 @@ through final placement in organized record structures. It coordinates between t
 UI, session management, record management, and device-specific file processors.
 """
 from pathlib import Path
+import threading
 
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
@@ -66,6 +67,7 @@ class FileProcessManager:
         self.records = RecordManager(sync_manager=sync_manager)
         self.file_processor = file_processor  # Keep for backward compatibility
         self._processor_cache = {}  # Cache processors by device_id to maintain state
+        self._processing_lock = threading.Lock()  # Sequential processing lock
 
         # Sync any pending records from previous sessions on startup
         if not self.records.all_records_uploaded():
@@ -157,59 +159,64 @@ class FileProcessManager:
         Args:
             src_path: Path to the file or folder to process
         """
-        try:
-            # Get the appropriate processor for this file
-            file_processor = self._get_processor_for_file(src_path)
-            logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
-            
-            # Extract filename prefix and extension before validation
-            filename_prefix, extension = parse_filename(src_path)
-
-            # Validate that this is a supported data type for the device
-            if not file_processor.is_valid_datatype(src_path):
-                self._handle_invalid_datatype(src_path, filename_prefix, extension)
-                FILES_FAILED.inc()
-                return
-            
-            # Allow device-specific preprocessing (e.g., folder consolidation)
-            src_path = file_processor.device_specific_preprocessing(src_path)
-            if src_path is None:
-                return
-
-            # Route the item based on validation and record state
-            self._route_item(src_path, filename_prefix, extension, file_processor)
-            
-        except RuntimeError as e:
-            # Handle cases where no processor is found
-            filename_prefix, extension = parse_filename(src_path)
-            logger.error(f"No processor found for {src_path}: {e}")
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity=WarningMessages.INVALID_DATA_TYPE,
-                message=f"No device available to process this file type: {Path(src_path).name}",
-            )
-            FILES_FAILED.inc()
-        except Exception as e:
-            filename_prefix, extension = parse_filename(src_path)
-            logger.exception(f"Error while processing item: {e}")
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity=ErrorMessages.PROCESSING_ERROR,
-                message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
-                    filename=Path(src_path).name, error=str(e)
-                ),
-            )
-        finally:
-            # Clear device context for this thread
+        with self._processing_lock:
             try:
-                settings_manager = SettingsStore.get_manager()
-                settings_manager.set_current_device(None)
-            except Exception:
-                pass  # Ignore cleanup errors
+                # Get the appropriate processor for this file
+                file_processor = self._get_processor_for_file(src_path)
+                logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
+                
+                # Extract filename prefix and extension before validation
+                filename_prefix, extension = parse_filename(src_path)
+
+                # Validate that this is a supported data type for the device
+                if not file_processor.is_valid_datatype(src_path):
+                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
+                    FILES_FAILED.inc()
+                    return
+                
+                # Allow device-specific preprocessing (e.g., folder consolidation)
+                preprocessed_src_path = file_processor.device_specific_preprocessing(src_path)
+                if preprocessed_src_path is None:
+                    return
+
+                # Extract filename prefix and extension AFTER preprocessing to handle normalization
+                final_filename_prefix, final_extension = parse_filename(preprocessed_src_path)
+
+                # Route the item based on validation and record state
+                # Pass original src_path for device processing, but use preprocessed filename for record ID
+                self._route_item(src_path, final_filename_prefix, final_extension, file_processor)
+                
+            except RuntimeError as e:
+                # Handle cases where no processor is found
+                filename_prefix, extension = parse_filename(src_path)
+                logger.error(f"No processor found for {src_path}: {e}")
+                self._move_to_exception_and_inform(
+                    src_path,
+                    filename_prefix,
+                    extension,
+                    severity=WarningMessages.INVALID_DATA_TYPE,
+                    message=f"No device available to process this file type: {Path(src_path).name}",
+                )
+                FILES_FAILED.inc()
+            except Exception as e:
+                filename_prefix, extension = parse_filename(src_path)
+                logger.exception(f"Error while processing item: {e}")
+                self._move_to_exception_and_inform(
+                    src_path,
+                    filename_prefix,
+                    extension,
+                    severity=ErrorMessages.PROCESSING_ERROR,
+                    message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
+                        filename=Path(src_path).name, error=str(e)
+                    ),
+                )
+            finally:
+                # Clear device context for this thread
+                try:
+                    settings_manager = SettingsStore.get_manager()
+                    settings_manager.set_current_device(None)
+                except Exception:
+                    pass  # Ignore cleanup errors
 
     def _move_to_exception_and_inform(
         self, src_path: str, prefix: str, extension: str, severity: str, message: str

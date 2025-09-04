@@ -1,6 +1,7 @@
 import sys
 from datetime import datetime
 import queue
+import threading
 from pathlib import Path
 from watchdog.observers import Observer
 
@@ -50,6 +51,7 @@ class DeviceWatchdogApp:
 
         self.files_processed = 0
         self.settings_manager = settings_manager
+        self._processing_lock = threading.Lock()  # Ensure sequential file processing
 
         # Get global settings for app-level configuration
         self.global_settings = settings_manager.get_global_settings()
@@ -105,11 +107,14 @@ class DeviceWatchdogApp:
             except queue.Empty:
                 break
             logger.debug(f"Dequeued file for processing: {data_path}")
-            with FILE_PROCESS_TIME.time():
-                self.file_processing.process_item(data_path)
+            
+            # Use lock to ensure only one file is processed at a time
+            with self._processing_lock:
+                with FILE_PROCESS_TIME.time():
+                    self.file_processing.process_item(data_path)
 
-            self.files_processed += 1
-            FILES_PROCESSED.inc()      # Global Prometheus counter
+                self.files_processed += 1
+                FILES_PROCESSED.inc()      # Global Prometheus counter
         
         # Show errors for any rejected files/folders
         if self.handler_instance:

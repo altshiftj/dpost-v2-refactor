@@ -118,10 +118,12 @@ def test_tracker_cap_rejects_extra_path(handler, event_queue, tmp_path):
 
 
 # ───────────────────────────── Folder-related tests ──────────────────────────
-def test_accept_valid_folder(handler, event_queue, tmp_path, monkeypatch):
+def test_accept_stable_folder(handler, event_queue, tmp_path, monkeypatch):
+    """Test that any stable folder is accepted - content validation is now device-specific."""
     folder = tmp_path / "good"; folder.mkdir()
-    for ext in handler.settings.ALLOWED_FOLDER_CONTENTS:
-        (folder / f"f{ext}").touch()
+    # Add any file - validation is now handled by device processors
+    (folder / "sample.tif").touch()
+    (folder / "notes.odt").touch()
 
     monkeypatch.setattr(PATH_TRACKER_SCHEDULE, lambda self: None)
 
@@ -134,9 +136,10 @@ def test_accept_valid_folder(handler, event_queue, tmp_path, monkeypatch):
     assert handler.get_and_clear_rejected() == []
 
 
-def test_stable_but_invalid_folder_rejected(handler, tmp_path, monkeypatch):
-    folder = tmp_path / "bad"; folder.mkdir()
-    (folder / "ok.odt").touch()
+def test_stable_folder_accepted_regardless_of_contents(handler, event_queue, tmp_path, monkeypatch):
+    """Test that stable folders are accepted regardless of contents - validation moved to device processors."""
+    folder = tmp_path / "any_folder"; folder.mkdir()
+    (folder / "any_file.odt").touch()  # Any file type - validation is now device-specific
 
     monkeypatch.setattr(PATH_TRACKER_SCHEDULE, lambda self: None)
 
@@ -145,12 +148,10 @@ def test_stable_but_invalid_folder_rejected(handler, tmp_path, monkeypatch):
 
     for _ in range(handler.settings.STABLE_CYCLES):
         tracker._check_stability()
-
-    moved = wait_for_moved("bad", Path(handler.settings.EXCEPTIONS_DIR))
-    assert any(p.is_dir() and p.name.startswith("bad") for p in moved)
-
-    rejected = handler.get_and_clear_rejected()
-    assert rejected and rejected[0][0] == str(folder)
+    
+    # Folder should be accepted and passed to event queue
+    assert event_queue.get_nowait() == str(folder)
+    assert handler.get_and_clear_rejected() == []
 
 
 def test_folder_timeout_moves_to_exceptions(handler, tmp_path, monkeypatch):

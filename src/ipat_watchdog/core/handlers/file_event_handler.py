@@ -178,23 +178,7 @@ class FileEventHandler(FileSystemEventHandler):
                     self._schedule()
                     return
 
-            required = {e.lower() for e in self._settings.ALLOWED_FOLDER_CONTENTS}
-
-            # If no allowed folder contents are configured, reject the folder
-            if not required:
-                self._reject("Folders are not accepted for this device")
-                return
-
-            exts = {
-                p.suffix.lower()
-                for p in self.path.rglob("*")
-                if p.is_file()
-            }
-
-            if not required.issubset(exts):
-                self._reject("Missing required folder contents")
-                return
-
+            # Folder is stable - let device-specific processors handle validation
             logger.info("Folder stable & accepted: %s", self.path.name)
             self._h.event_queue.put(str(self.path))
             self.stop()
