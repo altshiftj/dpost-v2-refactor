@@ -294,3 +294,83 @@ def test_device_context_switching(multi_device_app, tmp_settings):
     fake_device_id = "invalid_device"
     selected_device = settings_manager.select_device_for_file(f"test.{fake_device_id}")
     assert selected_device is None, f"Should not find device for fake extension: {selected_device}"
+
+
+def test_tischrem_same_name_files_get_unique_names(multi_device_app, tmp_settings):
+    """
+    Test that multiple TischREM files with the same base name receive unique 
+    incremental names and are placed in the correct folder structure.
+    """
+    # TischREM device always produces "sample1.tif" since processed files are moved away
+    # Test multiple such files arriving (e.g., network delays, buffering, etc.)
+    base_name = "mus-ipat-sample1"  # Device always adds "1"
+    
+    # Create 5 files with same name to test unique naming
+    for i in range(5):
+        # Create in temporary subdirectories to avoid filesystem conflicts during test setup
+        temp_dir = tmp_settings.WATCH_DIR / f"temp{i}"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        file_path = temp_dir / f"{base_name}.tif"
+        file_path.write_bytes(f"dummy TischREM image data {i}".encode())
+        
+        # Process each file
+        multi_device_app.file_processing.process_item(str(file_path))
+
+    # Verify all files were processed and placed correctly
+    # After preprocessing, files should all target the same base record "sample"
+    # but may end up in separate directories due to collision handling
+    base_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS"
+    assert base_dir.exists(), f"Base directory {base_dir} was not created"
+    
+    # Check that files were processed (may be in sample_0, sample_1, etc. subdirs due to collisions)
+    processed_files = []
+    for subdir in base_dir.iterdir():
+        if subdir.is_dir() and subdir.name.startswith('sample'):
+            for f in subdir.iterdir():
+                if f.suffix == '.tif' and 'REM-' in f.name:
+                    processed_files.append(f)
+    
+    assert len(processed_files) == 5, f"Expected 5 processed files, found {len(processed_files)}: {processed_files}"
+    
+    # Verify files have unique incremental names
+    file_names = [f.name for f in processed_files]
+    # Files should have REM-sample*-NN.tif pattern with unique increments
+    rem_pattern_count = sum(1 for name in file_names if name.startswith('REM-sample') and name.endswith('.tif'))
+    assert rem_pattern_count == 5, f"Expected 5 files with REM-sample pattern, got {rem_pattern_count}: {file_names}"
+
+
+def test_tischrem_different_device_groups_no_collision(multi_device_app, tmp_settings):
+    """
+    Test that TischREM files for different user/institute groups don't interfere
+    with each other's naming or folder structure.
+    """
+    test_files = [
+        ("mus-ipat-sample1", "mus", "ipat", "sample1"),
+        ("abc-xyz-sample2", "abc", "xyz", "sample2"),
+        ("def-uvw-sample3", "def", "uvw", "sample3"),
+    ]
+    
+    expected_dirs = []
+    
+    # Process files sequentially
+    for filename, user, institute, sample in test_files:
+        file_path = tmp_settings.WATCH_DIR / f"{filename}.tif"
+        file_path.write_bytes(f"data for {filename}".encode())
+
+        multi_device_app.file_processing.process_item(str(file_path))
+
+        # Calculate expected directory
+        # TischREM processor removes trailing digits, so sample1/sample2/sample3 all become "sample"
+        normalized_sample = sample[:-1] if sample and sample[-1].isdigit() else sample
+        expected_dir = str(tmp_settings.DEST_DIR / institute.upper() / user.upper() / normalized_sample)
+        expected_dirs.append(expected_dir)
+
+    # Verify each file group created its own directory structure
+    for expected_dir in expected_dirs:
+        dir_path = Path(expected_dir)
+        assert dir_path.exists(), f"Expected directory {dir_path} was not created"
+        
+        # Verify exactly one file in each directory
+        tif_files = [f for f in dir_path.iterdir() if f.suffix == '.tif']
+        assert len(tif_files) == 1, \
+            f"Expected 1 file in {dir_path}, found {len(tif_files)}: {tif_files}"

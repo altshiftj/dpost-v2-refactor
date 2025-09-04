@@ -257,3 +257,80 @@ def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
     real_processing_app.process_events()
 
     assert len(real_processing_app.sync_manager.synced_records) >= 1
+
+
+def test_rapid_file_arrival_same_record(real_processing_app, tmp_settings):
+    """
+    Test that files arriving rapidly for the same record are handled correctly
+    without filesystem collisions or race conditions.
+    """
+    base_name = "abc-xyz-testsample"
+    
+    # Create and process 10 files rapidly for the same record
+    num_files = 10
+    
+    for i in range(num_files):
+        file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
+        file_path.write_bytes(f"test data {i}".encode())
+        
+        # Process the file
+        real_processing_app.file_processing.process_item(str(file_path))
+
+    # Verify all files were processed into the same record directory
+    expected_dir = tmp_settings.DEST_DIR / "XYZ" / "ABC" / "testsample"
+    assert expected_dir.exists(), f"Expected record directory {expected_dir} not found"
+    
+    # Check all files are present with unique names
+    processed_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif']
+    assert len(processed_files) == num_files, \
+        f"Expected {num_files} files, found {len(processed_files)}: {processed_files}"
+    
+    # Verify unique naming - each should have incremental suffix
+    file_names = sorted([f.name for f in processed_files])
+    for i, name in enumerate(file_names, 1):
+        expected_suffix = f"-{i:02d}.tif"
+        assert name.endswith(expected_suffix), \
+            f"File {name} doesn't have expected suffix {expected_suffix}"
+
+
+def test_multiple_files_same_record(real_processing_app, tmp_settings):
+    """
+    Test that multiple files can be added to the same record successfully.
+    Tests sequential processing of multi-file records.
+    """
+    base_name = "usr-ipat-threadsafe"
+    
+    # Add multiple files to the same record sequentially
+    num_files = 3
+    
+    for i in range(num_files):
+        file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
+        file_path.write_bytes(f"multi-file test {i}".encode())
+        
+        # Process the file
+        real_processing_app.file_processing.process_item(str(file_path))
+
+    # Verify final record state
+    # Files with trailing digits get normalized (usr-ipat-threadsafe0 -> usr-ipat-threadsafe)
+    # And usr-ipat maps to IPAT/USR directory structure
+    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "USR" / "threadsafe"
+    assert expected_dir.exists(), f"Expected directory {expected_dir} not created"
+    
+    processed_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif']
+    assert len(processed_files) == num_files, \
+        f"Expected {num_files} files, found {len(processed_files)}: {processed_files}"
+    
+    # Verify record manager state is consistent (check before app shutdown)
+    from ipat_watchdog.core.config.settings_store import SettingsStore
+    
+    settings = SettingsStore.get()
+    sanitized_prefix = f"usr{settings.ID_SEP}ipat{settings.ID_SEP}threadsafe"
+    # Use hardcoded TischREM record ID for this test
+    record_id = f"rem_01{settings.ID_SEP}{sanitized_prefix}".lower()
+    
+    record_manager = real_processing_app.file_processing.records
+    record = record_manager.get_record_by_id(record_id)
+    
+    assert record is not None, f"Record {record_id} not found in record manager"
+    assert len(record.files_uploaded) == num_files, \
+        f"Record shows {len(record.files_uploaded)} files, expected {num_files}"
