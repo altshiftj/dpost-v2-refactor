@@ -27,18 +27,26 @@ src/ipat_watchdog/
 
 ### Environment Configuration
 
-Set the `PC_NAME` environment variable in your `.env` file to specify which PC plugin to load:
+Set the `PC_NAME` environment variable in your `.env` file to specify which PC plugin to load. The associated device plugins are automatically determined by the PC-device mapping:
 
 ```bash
 # In .env file
-PC_NAME=default_pc_blb    # Use default PC settings
-PC_NAME=lab_workstation_blb    # Use lab workstation settings
+PC_NAME=default_pc_blb         # Loads: sem_phenomxl2
+PC_NAME=lab_workstation_blb    # Loads: sem_phenomxl2, psa_horibalinks_blb
+PC_NAME=office_desktop_blb     # Loads: utm_zwick_blb
+PC_NAME=server_backend_blb     # Loads: sem_phenomxl2, psa_horibalinks_blb, utm_zwick_blb
 ```
 
-The `.env` file contains all environment configuration in one place:
-- `PC_NAME`: Which PC plugin to use
-- `DEVICE_NAMES`: Which device plugins to load (comma-separated)
-- `DEVICE_NAME`: Legacy single device name for build scripts
+## PC-Device Mapping
+
+The PC-device mapping is defined in [`src/ipat_watchdog/pc_device_mapping.py`](src/ipat_watchdog/pc_device_mapping.py ) and automatically associates each PC type with its compatible devices:
+
+- **default_pc_blb**: Basic PC with SEM TischREM only
+- **lab_workstation_blb**: Lab environment with SEM TischREM and PSA HoribaLinks
+- **office_desktop_blb**: Office PC with UTM Zwick testing machine
+- **server_backend_blb**: Server environment with all devices
+
+Simply set `PC_NAME` in your `.env` file - the appropriate devices will be loaded automatically.
 
 ### Build Integration
 

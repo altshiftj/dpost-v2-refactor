@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
 
@@ -19,7 +19,7 @@ def _init_test_settings(tmp_settings):
 
 @pytest.fixture
 def processor():
-    return FileProcessorTischREM()
+    return FileProcessorSEMPhenomXL2()
 
 
 @pytest.fixture
@@ -116,10 +116,10 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
     unique_file = record_dir / "prefix-01.tif"
 
     with patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.get_unique_filename",
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.get_unique_filename",
         return_value=str(unique_file),
     ) as mock_unique, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.move_item"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
     ) as mock_move:
 
         result, dtype = processor.device_specific_processing(
@@ -154,11 +154,11 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
     record_dir.mkdir()
 
     with patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.shutil.make_archive"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.make_archive"
     ) as mock_archive, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.move_item"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
     ) as mock_move, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.shutil.rmtree"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.rmtree"
     ) as mock_rmtree:
 
         mock_archive.return_value = str(record_dir / "prefix.zip")

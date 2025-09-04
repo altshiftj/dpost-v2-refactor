@@ -1,4 +1,4 @@
-# src/ipat_watchdog/plugins/sem_tischrem_blb/plugin.py
+# src/ipat_watchdog/plugins/sem_phenomxl2/plugin.py
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

@@ -42,7 +42,7 @@ IPAT Data Watchdog is an automated data management system for scientific instrum
 ### Step 1: Installation
 
 1. **Download the installer** for your specific device:
-   - **SEM TischREM**: `wd-sem_tischrem_blb.exe`
+   - **SEM TischREM**: `wd-sem_phenomxl2.exe`
    - **PSA HoribaLinks**: `wd-psa_horibalinks_blb.exe`
    - **UTM Zwick**: `wd-utm_zwick_blb.exe`
 
@@ -164,7 +164,7 @@ The system uses a `.env` file for configuration. Common settings:
 
 ```bash
 # Device Selection
-DEVICE_NAME=sem_tischrem_blb
+DEVICE_NAME=sem_phenomxl2
 
 # Directory Paths (usually auto-configured)
 WATCH_DIR=C:\Users\YourName\Desktop\Upload_Ordner

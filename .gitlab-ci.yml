@@ -38,7 +38,7 @@ before_script: &before_script_common
   <<: *test_template
   parallel:
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
       
 # ────────────────────────────────────────────────────────────────
 #  BUILD
@@ -70,7 +70,7 @@ before_script: &before_script_common
   <<: *build_template
   parallel:
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 # ────────────────────────────────────────────────────────────────
 #  SIGN
@@ -93,7 +93,7 @@ before_script: &before_script_common
   <<: *sign_template
   parallel:
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 # ────────────────────────────────────────────────────────────────
 #  DEPLOY
@@ -119,7 +119,7 @@ before_script: &before_script_common
   <<: *deploy_template
   parallel: 
     matrix: 
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 # ────────────────────────────────────────────────────────────────
 #  RUN
@@ -140,7 +140,7 @@ before_script: &before_script_common
   <<: *run_template
   parallel: 
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 # ────────────────────────────────────────────────────────────────
 #  HEALTH
@@ -167,7 +167,7 @@ before_script: &before_script_common
   <<: *health_template
   parallel:
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 # ────────────────────────────────────────────────────────────────
 #  ROLLBACK
@@ -186,9 +186,9 @@ before_script: &before_script_common
   <<: *rollback_template
   parallel:
     matrix:
-      - DEVICE_SLUG: "sem_tischrem_blb"
+      - DEVICE_SLUG: "sem_phenomxl2"
 
 run_tests:
   <<: *test_template
   variables:
-    DEVICE_SLUG: "sem_tischrem_blb"
+    DEVICE_SLUG: "sem_phenomxl2"

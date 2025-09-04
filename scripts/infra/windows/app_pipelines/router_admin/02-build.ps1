@@ -9,7 +9,7 @@ $CI_COMMIT_TAG = $env:CI_COMMIT_TAG
 if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = $env:COMMIT_TAG }
 if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = "vLocalTest" }
 
-if (-not $CI_JOB_NAME)   { $CI_JOB_NAME = "sem_tischrem_blb" }
+if (-not $CI_JOB_NAME)   { $CI_JOB_NAME = "sem_phenomxl2" }
 if (-not $CI_COMMIT_TAG) { $CI_COMMIT_TAG = "vLocalTest" }
 
 # --- TIMER START ---

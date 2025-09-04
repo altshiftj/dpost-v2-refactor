@@ -28,7 +28,7 @@ def multi_device_app(tmp_settings):
     # Set up SettingsManager with both TischREM and UTM devices
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
     from ipat_watchdog.core.config.pc_settings import PCSettings
-    from ipat_watchdog.device_plugins.sem_tischrem_blb.settings import TischREMSettings
+    from ipat_watchdog.device_plugins.sem_phenomxl2.settings import SEMPhenomXL2Settings
     from ipat_watchdog.device_plugins.utm_zwick_blb.settings import SettingsZwickUTM
 
     # Override global and device settings to use test paths
@@ -45,7 +45,7 @@ def multi_device_app(tmp_settings):
             self.MAX_WAIT_SECONDS = 30.0
             self.POLL_SECONDS = 1.0
 
-    class IntegrationTischREMSettings(TischREMSettings):
+    class IntegrationTischREMSettings(SEMPhenomXL2Settings):
         def __init__(self):
             super().__init__()
             # Override paths to use test paths, keep device-specific settings
@@ -272,7 +272,7 @@ def test_device_context_switching(multi_device_app, tmp_settings):
     tischrem_device = None
     utm_device = None
     for device in settings_manager.get_all_devices():
-        if device.get_device_id() == "sem_tischrem_blb":
+        if device.get_device_id() == "sem_phenomxl2":
             tischrem_device = device
         elif device.get_device_id() == "utm_zwick_blb":
             utm_device = device

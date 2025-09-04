@@ -115,8 +115,8 @@ class FileProcessManager:
                 fromlist=['']
             )
             
-            # For sem_tischrem_blb, the class is TischREMPlugin
-            if device_id == 'sem_tischrem_blb':
+            # For sem_phenomxl2, the class is TischREMPlugin
+            if device_id == 'sem_phenomxl2':
                 plugin_class = getattr(plugin_module, 'TischREMPlugin')
             elif device_id == 'utm_zwick_blb':
                 plugin_class = getattr(plugin_module, 'ZwickUTMPlugin')

@@ -50,7 +50,7 @@ src/ipat_watchdog/
 │       └── dialogs.py             # Custom dialog implementations
 └── device_plugins/                # Device-specific implementations
     ├── device_plugin.py           # Plugin interface
-    ├── sem_tischrem_blb/          # SEM TischREM device plugin
+    ├── sem_phenomxl2/          # SEM TischREM device plugin
     ├── psa_horibalinks_blb/       # PSA HoribaLinks device plugin
     └── utm_zwick_blb/             # UTM Zwick device plugin
 ```
@@ -76,7 +76,7 @@ The plugin system uses Python entry points for automatic discovery:
 ```python
 # In pyproject.toml
 [project.entry-points."ipat_watchdog.device_plugins"]
-sem_tischrem_blb = "ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin"
+sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:TischREMPlugin"
 ```
 
 Each plugin must implement the `DevicePlugin` interface:
@@ -418,13 +418,13 @@ python -m ipat_watchdog
 
 ```bash
 # Install specific device plugin
-pip install ipat-watchdog[sem_tischrem_blb]
+pip install ipat-watchdog[sem_phenomxl2]
 
 # Create Windows service (using PyInstaller)
-pyinstaller --onefile --name wd-sem_tischrem_blb src/ipat_watchdog/__main__.py
+pyinstaller --onefile --name wd-sem_phenomxl2 src/ipat_watchdog/__main__.py
 
 # Install as Windows service
-nssm install IPATWatchdog "C:\path\to\wd-sem_tischrem_blb.exe"
+nssm install IPATWatchdog "C:\path\to\wd-sem_phenomxl2.exe"
 nssm set IPATWatchdog Start SERVICE_AUTO_START
 nssm start IPATWatchdog
 ```
@@ -436,7 +436,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 COPY . .
-RUN pip install .[sem_tischrem_blb]
+RUN pip install .[sem_phenomxl2]
 
 EXPOSE 8000 8001
 CMD ["python", "-m", "ipat_watchdog"]

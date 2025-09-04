@@ -13,7 +13,7 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     generate_record_id,
     init_dirs,
 )
-from ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
 from ipat_watchdog.core.ui.ui_messages import InfoMessages
@@ -36,7 +36,7 @@ def real_processing_app(tmp_settings):
     # Set up SettingsManager with TischREM device for realistic integration testing
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
     from ipat_watchdog.core.config.pc_settings import PCSettings
-    from ipat_watchdog.device_plugins.sem_tischrem_blb.settings import TischREMSettings
+    from ipat_watchdog.device_plugins.sem_phenomxl2.settings import SEMPhenomXL2Settings
 
     # Override both global and device settings to use test paths for proper isolation
     class IntegrationGlobalSettings(PCSettings):
@@ -50,7 +50,7 @@ def real_processing_app(tmp_settings):
             self.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
             self.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
 
-    class IntegrationTischREMSettings(TischREMSettings):
+    class IntegrationTischREMSettings(SEMPhenomXL2Settings):
         def __init__(self):
             super().__init__()
             # Override only the paths to use test paths, keep all device-specific settings
@@ -69,7 +69,7 @@ def real_processing_app(tmp_settings):
     SettingsStore.set_manager(settings_manager)
     
     # Set device context to TischREM for proper timeout and other device settings
-    settings_manager.set_current_device("sem_tischrem_blb")
+    settings_manager.set_current_device("sem_phenomxl2")
 
     # Now create directories using the proper settings
     init_dirs()  # create WATCH_DIR / DEST_DIR / … inside tmp dir

@@ -4,6 +4,7 @@ src/ipat_watchdog/__main__.py
 src/ipat_watchdog/loader.py
 src/ipat_watchdog/metrics.py
 src/ipat_watchdog/observability.py
+src/ipat_watchdog/pc_device_mapping.py
 src/ipat_watchdog.egg-info/PKG-INFO
 src/ipat_watchdog.egg-info/SOURCES.txt
 src/ipat_watchdog.egg-info/dependency_links.txt

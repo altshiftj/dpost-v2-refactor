@@ -98,7 +98,7 @@ try {
 # ------------------------------
 # CI-related Defaults
 # ------------------------------
-$env:CI_JOB_NAME = "sem_tischrem_blb"
+$env:CI_JOB_NAME = "sem_phenomxl2"
 $env:TARGET_IP   = "134.169.58.85"   # Router's WAN IP
 $env:TARGET_USER = "TischREM"
 $env:SSH_PORT    = 22                # External SSH port

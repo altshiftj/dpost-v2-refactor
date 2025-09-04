@@ -7,7 +7,7 @@ from prometheus_client import start_http_server
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.observability import start_observability_server
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.loader import load_device_plugin, load_pc_plugin
+from ipat_watchdog.loader import load_device_plugin, load_pc_plugin, get_devices_for_pc
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
@@ -20,22 +20,22 @@ load_dotenv()
 logger = setup_logger(__name__)
 
 def main():
-    # Load PC plugin for PC-specific settings
-    pc_name = os.getenv("PC_NAME", "default_pc_blb")
-    pc_plugin = load_pc_plugin(pc_name.strip())
-    pc_settings = pc_plugin.get_settings()
+    # Get PC name and lookup device list from pyproject.toml
+    pc_name = os.getenv("PC_NAME", "default_pc_blb").strip()
+    device_names = get_devices_for_pc(pc_name)
     
-    # Load all device plugins listed in DEVICE_NAMES
-    device_names = os.getenv("DEVICE_NAMES", "sem_tischrem_blb").split(",")
+    logger.info(f"Loading PC plugin: {pc_name} with devices: {device_names}")
+    
+    # Load PC plugin for PC-specific settings
+    pc_plugin = load_pc_plugin(pc_name)
+    pc_settings = pc_plugin.get_settings()
     
     # Collect device settings from plugins
     device_settings_list = []
-    plugins = []
     for device_name in device_names:
         plugin = load_device_plugin(device_name.strip())
         device_settings = plugin.get_settings()
         device_settings_list.append(device_settings)
-        plugins.append(plugin)
     
     # Initialize settings manager with new constructor signature
     settings_manager = SettingsManager(

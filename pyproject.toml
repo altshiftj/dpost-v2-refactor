@@ -22,13 +22,16 @@ dependencies = [
 ci     = ["pytest", "pyfakefs"]
 build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
-sem_tischrem_blb = []
+sem_phenomxl2 = []
 psa_horibalinks_blb = []
+utm_zwick_blb = []
 default_pc_blb = []
 lab_workstation_blb = []
+office_desktop_blb = []
+server_backend_blb = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
-sem_tischrem_blb = "ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin"
+sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:TischREMPlugin"
 psa_horibalinks_blb = "ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin"
 
 [project.entry-points."ipat_watchdog.pc_plugins"]
