@@ -46,16 +46,11 @@ def get_record_path(filename_prefix: str) -> str:
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
 
-import threading
-from collections import defaultdict
-
-# Global locks for filename generation per directory
-_filename_locks = defaultdict(threading.Lock)
 
 def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
     """
     Generate a unique filename in the specified directory.
-    Thread-safe implementation using directory-specific locks.
+    Sequential processing ensures no race conditions.
     
     Args:
         directory: Target directory path
@@ -69,37 +64,24 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
     
-    # Use a lock specific to this directory to prevent race conditions
-    with _filename_locks[str(dir_path)]:
-        # Find the highest existing counter
-        counter = 1
-        for existing in dir_path.iterdir():
-            if existing.is_file() and existing.suffix == extension:
-                existing_prefix = existing.stem
-                prefix_no_counter = existing_prefix.rsplit(s.ID_SEP, 1)[0]
-                if prefix_no_counter == filename_prefix:
-                    try:
-                        suffix_num = int(existing_prefix.rsplit(s.ID_SEP, 1)[1])
-                        if suffix_num >= counter:
-                            counter = suffix_num + 1
-                    except (ValueError, IndexError):
-                        continue
-        
-        # Find next available filename by checking if each candidate exists
-        while True:
-            candidate_name = f"{filename_prefix}{s.ID_SEP}{counter:02d}{extension}"
-            candidate_path = dir_path / candidate_name
-            if not candidate_path.exists():
-                # Create a placeholder file immediately to reserve this name
-                # This prevents other threads from selecting the same name
+    # Find the highest existing counter
+    counter = 1
+    for existing in dir_path.iterdir():
+        if existing.is_file() and existing.suffix == extension:
+            existing_prefix = existing.stem
+            prefix_no_counter = existing_prefix.rsplit(s.ID_SEP, 1)[0]
+            if prefix_no_counter == filename_prefix:
                 try:
-                    candidate_path.touch(exist_ok=False)  # Fail if file already exists
-                    return str(candidate_path)
-                except FileExistsError:
-                    # Another thread created this file between our check and creation
-                    counter += 1
+                    suffix_num = int(existing_prefix.rsplit(s.ID_SEP, 1)[1])
+                    if suffix_num >= counter:
+                        counter = suffix_num + 1
+                except (ValueError, IndexError):
                     continue
-            counter += 1
+    
+    # Generate the next available filename
+    candidate_name = f"{filename_prefix}{s.ID_SEP}{counter:02d}{extension}"
+    candidate_path = dir_path / candidate_name
+    return str(candidate_path)
 
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
     s: BaseSettings = SettingsStore.get()
