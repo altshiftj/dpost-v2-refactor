@@ -82,12 +82,6 @@ def real_processing_app(tmp_settings):
         file_process_manager_cls=FileProcessManager,
     )
 
-    # Override the file_event_handler_cls to use TischREM settings explicitly
-    original_handler_cls = app.file_event_handler_cls
-    def create_handler_with_tischrem_settings(event_queue):
-        return original_handler_cls(event_queue, settings=tischrem_settings)
-    app.file_event_handler_cls = create_handler_with_tischrem_settings
-
     app.initialize()          # starts observer thread immediately
     yield app
     app.on_closing()          # always stop observer & clean up
