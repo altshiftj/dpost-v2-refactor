@@ -6,8 +6,7 @@ from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import ErrorMessages
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.logging.logger import setup_logger
 
 from kadi_apy import KadiManager
@@ -33,12 +32,17 @@ class KadiSyncManager(ISyncManager):
     Handles synchronization of LocalRecord objects to a remote database using KadiManager.
     """
 
-    def __init__(self, ui: UserInterface, settings_manager: SettingsManager = None, settings: Optional[BaseSettings] = None):
+    def __init__(self, ui: UserInterface, settings_manager: SettingsManager):
+        """
+        Initialize KadiSyncManager with required settings manager.
+        
+        Args:
+            ui: User interface for displaying messages
+            settings_manager: Settings manager for composite settings access
+        """
         self.db_manager = KadiManager()
         self.ui = ui
         self.settings_manager = settings_manager
-        # For backward compatibility, allow direct settings or fall back to SettingsStore
-        self.s = settings or (settings_manager.get_composite_settings() if settings_manager else SettingsStore.get())
 
     def sync_record_to_database(self, local_record: LocalRecord) -> bool:
         try:
@@ -65,15 +69,12 @@ class KadiSyncManager(ISyncManager):
             raise e
 
     def _get_current_settings(self):
-        """Get current settings with device context if available."""
-        if self.settings_manager:
-            # Get composite settings that include current device context
-            return self.settings_manager.get_composite_settings()
-        return self.s
+        """Get current composite settings from settings manager."""
+        return self.settings_manager.get_composite_settings()
 
     def _prepare_resources(self, db_manager: KadiManager, local_record: LocalRecord, settings=None) -> SyncResources:
-        # Use provided settings or fall back to instance settings
-        s = settings or self.s
+        # Use provided settings or get from settings manager
+        s = settings or self.settings_manager.get_composite_settings()
         
         db_user = self._get_db_user_from_local_record(db_manager, local_record, s)
         user_group = self._get_or_create_db_user_rawdata_group(db_manager, local_record, db_user, s)
