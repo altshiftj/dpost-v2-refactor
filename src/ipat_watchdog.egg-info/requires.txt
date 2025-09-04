@@ -27,8 +27,6 @@ ruff
 
 [office_desktop_blb]
 
-[pc_plugins]
-
 [psa_horibalinks_blb]
 
 [sem_phenomxl2]

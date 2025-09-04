@@ -53,7 +53,9 @@ def main():
     logger.info("Observability server started on port 8001")
 
     ui = TKinterUI()
-    sync = KadiSyncManager(ui=ui)
+    
+    # Pass the settings manager to sync manager so it can get composite settings
+    sync = KadiSyncManager(ui=ui, settings_manager=settings_manager)
 
     # No longer need to pass a specific file processor - will be selected per file
     app = DeviceWatchdogApp(

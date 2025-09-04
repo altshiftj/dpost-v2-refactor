@@ -76,7 +76,7 @@ The plugin system uses Python entry points for automatic discovery:
 ```python
 # In pyproject.toml
 [project.entry-points."ipat_watchdog.device_plugins"]
-sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:TischREMPlugin"
+sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
 ```
 
 Each plugin must implement the `DevicePlugin` interface:

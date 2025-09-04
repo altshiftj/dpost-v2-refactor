@@ -120,20 +120,20 @@ def sync_mgr(fake_ui, tmp_settings, monkeypatch):
                 settings_manager.set_current_device(device)
                 break
     
-    return KadiSyncManager(ui=fake_ui)
+    return KadiSyncManager(ui=fake_ui, settings_manager=settings_manager)
 
 
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.user.return_value = DummyKadiUser("abc-ipat")
-    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
+    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record, sync_mgr.s)
     assert user.id == "abc-ipat"
 
 
 def test_get_db_user_from_local_record_user_not_found(sync_mgr, fake_ui, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.user.side_effect = Exception("User not found")
-    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
+    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record, sync_mgr.s)
     assert user is None
     # HeadlessUI records errors in .errors
     assert fake_ui.errors
@@ -143,7 +143,7 @@ def test_get_or_create_db_user_group_existing(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.group.return_value = DummyKadiGroup("existing_group")
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user, sync_mgr.s)
     assert group.id == "existing_group"
 
 
@@ -156,7 +156,7 @@ def test_get_or_create_db_user_group_create(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.group.side_effect = side_effect
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user, sync_mgr.s)
     assert group.id == "created_group"
 
 
@@ -188,6 +188,7 @@ def test_initialize_new_db_record(sync_mgr, local_record):
         device_user,
         user_group,
         device_group,
+        sync_mgr.s,
     )
 
     dummy_record.set_attribute.assert_any_call("title", local_record.sample_name)

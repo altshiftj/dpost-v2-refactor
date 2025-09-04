@@ -92,7 +92,7 @@ def tmp_settings(tmp_path) -> DeviceSettings:
                 d.mkdir(parents=True, exist_ok=True)
 
     settings = TestSettings()
-    SettingsStore.set_manager(SettingsManager(PCSettings(), [settings]))  # use new API
+    SettingsStore.set_manager(SettingsManager(available_devices=[settings], pc_settings=PCSettings()))  # use new API
     return settings
 
 

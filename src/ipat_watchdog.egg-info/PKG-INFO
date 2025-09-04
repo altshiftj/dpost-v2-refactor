@@ -23,8 +23,7 @@ Provides-Extra: dev
 Requires-Dist: black; extra == "dev"
 Requires-Dist: mypy; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
-Provides-Extra: pc-plugins
-Provides-Extra: sem-tischrem-blb
+Provides-Extra: sem-phenomxl2
 Provides-Extra: psa-horibalinks-blb
 Provides-Extra: utm-zwick-blb
 Provides-Extra: default-pc-blb
