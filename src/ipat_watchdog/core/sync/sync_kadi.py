@@ -26,7 +26,6 @@ class SyncResources:
     device_group: KadiGroup
     db_record: KadiRecord
 
-
 class KadiSyncManager(ISyncManager):
     """
     Handles synchronization of LocalRecord objects to a remote database using KadiManager.

@@ -531,6 +531,7 @@ class FileProcessManager:
             settings_manager.set_current_device(device_settings)
             try:
                 self.records.sync.sync_record_to_database(record)
+                self.records.save_records()
             except Exception as e:
                 logger.error(f"Failed to sync record {record.identifier}: {e}")
             finally:

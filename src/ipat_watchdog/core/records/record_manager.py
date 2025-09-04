@@ -247,10 +247,13 @@ class RecordManager:
         # Delegate actual sync logic to the sync manager
         files_remaining = self.sync.sync_record_to_database(record)
 
+        # Save the updated record state immediately after sync (before potential deletion)
+        self.save_records()
+        logger.debug(f"Persisted updated state for record '{record.identifier}' after sync.")
+
         if not files_remaining:
             # All files uploaded successfully - clean up local storage
             logger.info(f"No files left for record '{record.identifier}', removing from local store.")
             del self.persist_records_dict[record.identifier]
-
-        # Persist the updated state (either with updated record or after removal)
-        self.save_records()
+            # Save again after removal
+            self.save_records()
