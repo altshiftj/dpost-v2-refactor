@@ -11,7 +11,7 @@ from ipat_watchdog.core.storage.filesystem_utils import generate_record_id
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.global_settings import GlobalSettings
+from ipat_watchdog.core.config.global_settings import PCSettings
 
 # --- Import helper classes ---
 from tests.helpers.fake_ui import HeadlessUI
@@ -52,7 +52,7 @@ def init_settings(tmp_path):
             return Path(filepath).suffix.lower() in {'.txt', '.tif'}
     
     # Set up settings manager with global and device settings
-    global_settings = GlobalSettings()
+    global_settings = PCSettings()
     device_settings = TestDeviceSettings()
     settings_manager = SettingsManager(global_settings, [device_settings])
     SettingsStore.set_manager(settings_manager)

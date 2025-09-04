@@ -2,7 +2,7 @@
 Composite settings that combine global and device-specific settings.
 """
 from typing import Any
-from .global_settings import GlobalSettings
+from .global_settings import PCSettings
 from .device_settings_base import DeviceSettings
 
 
@@ -15,7 +15,7 @@ class CompositeSettings:
     while maintaining global application settings.
     """
     
-    def __init__(self, global_settings: GlobalSettings, device_settings: DeviceSettings):
+    def __init__(self, global_settings: PCSettings, device_settings: DeviceSettings):
         """
         Initialize composite settings.
         
@@ -50,7 +50,7 @@ class CompositeSettings:
         # Not found in either
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
     
-    def get_global_settings(self) -> GlobalSettings:
+    def get_global_settings(self) -> PCSettings:
         """Get the underlying global settings object."""
         return self._global
     

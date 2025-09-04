@@ -8,7 +8,7 @@ dotenv.load_dotenv()
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
 from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.global_settings import GlobalSettings
+from ipat_watchdog.core.config.global_settings import PCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 from tests.helpers.fake_ui import HeadlessUI
@@ -24,7 +24,7 @@ from tests.helpers.fake_process_manager import FakeFileProcessManager
 @pytest.fixture
 def fake_settings_manager(tmp_settings):
     """Create a fake settings manager for tests."""
-    global_settings = GlobalSettings()
+    global_settings = PCSettings()
     # Copy any attributes from tmp_settings to global_settings
     for attr_name in dir(tmp_settings):
         if not attr_name.startswith('_') and hasattr(global_settings, attr_name):
@@ -92,7 +92,7 @@ def tmp_settings(tmp_path) -> DeviceSettings:
                 d.mkdir(parents=True, exist_ok=True)
 
     settings = TestSettings()
-    SettingsStore.set_manager(SettingsManager(GlobalSettings(), [settings]))  # use new API
+    SettingsStore.set_manager(SettingsManager(PCSettings(), [settings]))  # use new API
     return settings
 
 

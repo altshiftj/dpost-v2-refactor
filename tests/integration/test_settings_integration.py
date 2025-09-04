@@ -2,7 +2,7 @@
 import pytest
 from pathlib import Path
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
-from ipat_watchdog.core.config.global_settings import GlobalSettings
+from ipat_watchdog.core.config.global_settings import PCSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
 
@@ -28,7 +28,7 @@ def test_new_settings_system_integration():
     SettingsStore.reset()
     
     # Create global settings
-    global_settings = GlobalSettings()
+    global_settings = PCSettings()
     global_settings.WATCH_DIR = Path("./test_watch")
     global_settings.SESSION_TIMEOUT = 300
     

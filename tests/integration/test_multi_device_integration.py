@@ -27,12 +27,12 @@ def multi_device_app(tmp_settings):
 
     # Set up SettingsManager with both TischREM and UTM devices
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-    from ipat_watchdog.core.config.global_settings import GlobalSettings
+    from ipat_watchdog.core.config.global_settings import PCSettings
     from ipat_watchdog.device_plugins.sem_tischrem_blb.settings import TischREMSettings
     from ipat_watchdog.device_plugins.utm_zwick_blb.settings import SettingsZwickUTM
 
     # Override global and device settings to use test paths
-    class IntegrationGlobalSettings(GlobalSettings):
+    class IntegrationGlobalSettings(PCSettings):
         def __init__(self):
             super().__init__()
             self.APP_DIR = tmp_settings.APP_DIR

@@ -7,9 +7,9 @@ from prometheus_client import start_http_server
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.observability import start_observability_server
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.loader import load_device_plugin
+from ipat_watchdog.loader import load_device_plugin, load_pc_plugin
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
-from ipat_watchdog.core.config.global_settings import GlobalSettings
+from ipat_watchdog.core.config.global_settings import PCSettings
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
@@ -21,9 +21,14 @@ load_dotenv()
 logger = setup_logger(__name__)
 
 def main():
+    # Load PC plugin for PC-specific settings
+    pc_name = os.getenv("PC_NAME", "default_pc_blb")
+    pc_plugin = load_pc_plugin(pc_name.strip())
+    pc_settings = pc_plugin.get_settings()
+    
     # Load all device plugins listed in DEVICE_NAMES
     device_names = os.getenv("DEVICE_NAMES", "sem_tischrem_blb").split(",")
-    global_settings = GlobalSettings()
+    global_settings = PCSettings()
     
     # Collect device settings from plugins
     device_settings_list = []
@@ -34,8 +39,8 @@ def main():
         device_settings_list.append(device_settings)
         plugins.append(plugin)
     
-    # Initialize new settings manager and store
-    settings_manager = SettingsManager(global_settings, device_settings_list)
+    # Initialize new settings manager and store with PC settings override
+    settings_manager = SettingsManager(global_settings, device_settings_list, pc_settings)
     SettingsStore.set_manager(settings_manager)
 
     init_dirs()
