@@ -2,8 +2,8 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
+from ipat_watchdog.core.config.pc_settings import PCSettings
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
@@ -15,9 +15,13 @@ def init_settings(tmp_path):
     Ensures that the SettingsStore is initialized before each test.
     Required for LocalRecord to parse identifier correctly.
     """
-    class TempSettings(BaseSettings):
-        ID_SEP = "-"
-    SettingsStore.set(TempSettings())
+    pc_settings = PCSettings()
+    pc_settings.ID_SEP = "-"
+    settings_manager = SettingsManager(
+        available_devices=[],
+        pc_settings=pc_settings
+    )
+    SettingsStore.set_manager(settings_manager)
     yield
     SettingsStore.reset()
 

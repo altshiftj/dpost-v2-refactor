@@ -1,12 +1,11 @@
 # ipat_watchdog/core/config/zwick_utm_settings.py
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
 
-class SettingsZwickUTM(BaseSettings, DeviceSettings):
+class SettingsZwickUTM(DeviceSettings):
     """
     Configuration for the Zwick/Roell universal testing machine.
-    Overrides device-specific settings from BaseSettings.
+    Overrides device-specific settings from DeviceSettings.
     """
 
     # Device identity

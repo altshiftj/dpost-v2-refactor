@@ -16,7 +16,6 @@ from ipat_watchdog.metrics import(
 )
 
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.settings_base import BaseSettings
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import ErrorMessages

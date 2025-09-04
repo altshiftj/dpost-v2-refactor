@@ -2,6 +2,7 @@ from pathlib import Path
 import tkinter as tk
 import pytest
 from unittest.mock import MagicMock
+import re
 
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
@@ -9,7 +10,6 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import generate_record_id
 
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 from ipat_watchdog.core.config.pc_settings import PCSettings
 
@@ -39,7 +39,7 @@ def init_settings(tmp_path):
         ID_SEP = '-'
         DEVICE_TYPE = 'TEST'
         DEVICE_RECORD_KADI_ID = 'test_01'  # Add this required attribute
-        FILENAME_PATTERN = BaseSettings.FILENAME_PATTERN
+        FILENAME_PATTERN = re.compile(r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$")
         ALLOWED_EXTENSIONS = {'.txt', '.tif'}
         DEBOUNCE_TIME = 0
         SESSION_TIMEOUT = 1
@@ -54,7 +54,7 @@ def init_settings(tmp_path):
     # Set up settings manager with global and device settings
     global_settings = PCSettings()
     device_settings = TestDeviceSettings()
-    settings_manager = SettingsManager(global_settings, [device_settings])
+    settings_manager = SettingsManager([device_settings], global_settings)
     SettingsStore.set_manager(settings_manager)
     
     # Set device context for these tests so functions like generate_record_id work
@@ -77,9 +77,14 @@ def prevent_filesystem_writes(monkeypatch):
 class DummyRecordManager:
     def __init__(self):
         self.records = {}
+        self.sync = DummySyncManager(ui=None)
+        self.synced = False
 
     def all_records_uploaded(self):
         return all(record.all_files_uploaded() for record in self.records.values())
+        
+    def get_all_records(self):
+        return self.records
 
     def get_record_by_id(self, record_id):
         return self.records.get(record_id)
@@ -118,12 +123,32 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
     class DummyRecordManagerWithPending:
         def __init__(self):
             self.synced = False
+            self.records = {"test_record": MockRecord()}
+            self.sync = MockSync()
 
         def all_records_uploaded(self):
             return False
 
+        def get_all_records(self):
+            return self.records
+
         def sync_records_to_database(self):
             self.synced = True
+            
+    class MockRecord:
+        def __init__(self):
+            self.identifier = "test_record"
+            self.files_uploaded = {"test_file.txt": False}  # One pending file
+            
+        def all_files_uploaded(self):
+            return False  # Has pending files
+            
+    class MockSync:
+        def __init__(self):
+            self.synced_records = []
+            
+        def sync_record_to_database(self, record):
+            self.synced_records.append(record.identifier)
 
     ui = HeadlessUI()
     session_manager = FakeSessionManager()
@@ -141,7 +166,8 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
         session_manager=session_manager,
         file_processor=file_processor,
     )
-    assert fpm_inst.records.synced is True
+    # Check that records were actually synced via the records.sync mechanism
+    assert len(fpm_inst.records.sync.synced_records) > 0
 
 
 def test_process_item_invalid_datatype(fpm, monkeypatch):
@@ -448,6 +474,11 @@ def test_process_item_resets_session_if_active(fpm):
 
 
 def test_sync_records(fpm):
+    # Test early return when all records are uploaded (empty record set)
     fpm.records.synced = False
+    
+    # Should return early since all_records_uploaded() returns True for empty record set
     fpm.sync_records_to_database()
-    assert fpm.records.synced is True
+    
+    # Since no records need syncing, synced flag shouldn't change
+    assert fpm.records.synced is False

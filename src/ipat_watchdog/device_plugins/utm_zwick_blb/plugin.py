@@ -5,7 +5,7 @@ from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
 from ipat_watchdog.device_plugins.utm_zwick_blb.settings import SettingsZwickUTM
 from ipat_watchdog.device_plugins.utm_zwick_blb.file_processor import FileProcessorZwickUTM
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
 class ZwickUTMPlugin(DevicePlugin):
     """Registers the Zwick UTM device with the Watchdog app."""
@@ -16,7 +16,7 @@ class ZwickUTMPlugin(DevicePlugin):
 
     # ---- DevicePlugin contract ---------------------------------------------
 
-    def get_settings(self) -> BaseSettings:
+    def get_settings(self) -> DeviceSettings:
         return self._settings
 
     def get_file_processor(self) -> FileProcessorABS:

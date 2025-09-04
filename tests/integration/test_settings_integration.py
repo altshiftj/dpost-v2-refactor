@@ -37,7 +37,10 @@ def test_new_settings_system_integration():
     device_b = TestDeviceB()
     
     # Create settings manager
-    settings_manager = SettingsManager(global_settings, [device_a, device_b])
+    settings_manager = SettingsManager(
+        available_devices=[device_a, device_b],
+        pc_settings=global_settings
+    )
     SettingsStore.set_manager(settings_manager)
     
     # Test 1: Without device context, should get global settings

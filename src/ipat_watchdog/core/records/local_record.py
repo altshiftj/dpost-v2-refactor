@@ -3,7 +3,6 @@ from dataclasses import dataclass, field, asdict
 from typing import Dict
 
 from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -30,7 +29,7 @@ class LocalRecord:
         """
         Extracts additional sync info from the identifier using the device's configured ID separator.
         """
-        settings: BaseSettings = SettingsStore.get()
+        settings = SettingsStore.get()
         sep = settings.ID_SEP
 
         parts = self.identifier.split(sep)

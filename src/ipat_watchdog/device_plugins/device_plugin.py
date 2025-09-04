@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
 class DevicePlugin(ABC):
     @abstractmethod
-    def get_settings(self) -> BaseSettings:
+    def get_settings(self) -> DeviceSettings:
         pass
 
     @abstractmethod

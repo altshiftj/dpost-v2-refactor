@@ -33,8 +33,8 @@ class TestSettingsManager:
         self.device_a = TestDeviceA()
         self.device_b = TestDeviceB()
         self.manager = SettingsManager(
-            self.global_settings, 
-            [self.device_a, self.device_b]
+            available_devices=[self.device_a, self.device_b],
+            pc_settings=self.global_settings
         )
 
     def test_device_registration(self):
@@ -115,7 +115,10 @@ class TestSettingsStore:
         
         self.global_settings = PCSettings()
         self.device_a = TestDeviceA()
-        self.manager = SettingsManager(self.global_settings, [self.device_a])
+        self.manager = SettingsManager(
+            available_devices=[self.device_a],
+            pc_settings=self.global_settings
+        )
 
     def teardown_method(self):
         """Clean up after each test."""

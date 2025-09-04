@@ -1,11 +1,10 @@
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re # TODO: configure import to base settings?
 
-class SEMPhenomXL2Settings(BaseSettings, DeviceSettings):
+class SEMPhenomXL2Settings(DeviceSettings):
     """
     Configuration for the Phenom XL TischREM device.
-    Overrides device-specific settings from BaseSettings.
+    Overrides device-specific settings from DeviceSettings.
     """
     # Device identity
     DEVICE_ID = "sem_phenomxl2"

@@ -10,7 +10,6 @@ from typing import Dict, Optional, Tuple
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.settings_store import SettingsStore
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.storage.filesystem_utils import move_to_exception_folder
@@ -32,12 +31,12 @@ class FileEventHandler(FileSystemEventHandler):
         self,
         event_queue: Queue[str],
         *,
-        settings: Optional[BaseSettings] = None,
+        settings = None,
         max_active_trackers: int = 256,
     ) -> None:
         super().__init__()
         self.event_queue = event_queue
-        self.settings: BaseSettings = settings or SettingsStore.get()
+        self.settings = settings or SettingsStore.get()
         self._trackers: Dict[str, FileEventHandler._PathTracker] = {}
         self._rejected: Queue[Tuple[str, str]] = Queue()
         self._lock = threading.RLock()

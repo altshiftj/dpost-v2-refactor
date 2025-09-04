@@ -6,7 +6,6 @@ import dotenv
 dotenv.load_dotenv()
 
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 from ipat_watchdog.core.config.pc_settings import PCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
@@ -30,7 +29,10 @@ def fake_settings_manager(tmp_settings):
         if not attr_name.startswith('_') and hasattr(global_settings, attr_name):
             setattr(global_settings, attr_name, getattr(tmp_settings, attr_name))
     
-    settings_manager = SettingsManager(global_settings)
+    settings_manager = SettingsManager(
+        available_devices=[],
+        pc_settings=global_settings
+    )
     SettingsStore.set_manager(settings_manager)
     return settings_manager
 

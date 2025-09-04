@@ -1,5 +1,4 @@
 from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
@@ -22,7 +21,7 @@ class SessionManager:
         self.end_session_callback = end_session_callback
         self.session_active = False
         self.timer_id = None
-        self.settings: BaseSettings = SettingsStore.get()
+        self.settings = SettingsStore.get()
 
     @property
     def is_active(self) -> bool:

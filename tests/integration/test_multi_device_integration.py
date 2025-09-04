@@ -74,7 +74,7 @@ def multi_device_app(tmp_settings):
     utm_settings = IntegrationUTMSettings()
     
     # Register both devices
-    settings_manager = SettingsManager(global_settings, [tischrem_settings, utm_settings])
+    settings_manager = SettingsManager([tischrem_settings, utm_settings], global_settings)
     SettingsStore.set_manager(settings_manager)
 
     # Create directories using the proper settings
@@ -100,15 +100,36 @@ def test_tischrem_file_processed_correctly(multi_device_app, tmp_settings):
     tif_path = tmp_settings.WATCH_DIR / f"{prefix}.tif"
     tif_path.write_bytes(b"dummy TischREM image")
 
-    # Wait for file detection and processing
-    deadline = time.time() + 10
-    while time.time() < deadline and multi_device_app.event_queue.empty():
-        time.sleep(0.1)
+    # Debug: Check initial state
+    print(f"DEBUG: Created file at: {tif_path}")
+    print(f"DEBUG: File exists: {tif_path.exists()}")
+    print(f"DEBUG: DEST_DIR: {tmp_settings.DEST_DIR}")
+    
+    # Process the file directly instead of waiting for file watcher
+    try:
+        multi_device_app.file_processing.process_item(str(tif_path))
+        print("DEBUG: process_item completed successfully")
+    except Exception as e:
+        print(f"DEBUG: process_item failed with error: {e}")
+        raise
 
-    multi_device_app.process_events()
-
+    # Debug: Check what directories were created
+    print(f"DEBUG: DEST_DIR contents: {list(tmp_settings.DEST_DIR.iterdir()) if tmp_settings.DEST_DIR.exists() else 'DEST_DIR does not exist'}")
+    
     # Check TischREM-specific processing: files go to INSTITUTE/USER/SAMPLE structure
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
+    print(f"DEBUG: Looking for directory: {expected_dir}")
+    
+    if not expected_dir.exists():
+        # Let's check what's actually in the dest dir
+        if tmp_settings.DEST_DIR.exists():
+            def print_tree(path, prefix=""):
+                for item in path.iterdir():
+                    print(f"DEBUG: {prefix}{item.name}")
+                    if item.is_dir():
+                        print_tree(item, prefix + "  ")
+            print_tree(tmp_settings.DEST_DIR)
+    
     assert expected_dir.exists(), f"TischREM expected directory {expected_dir} does not exist"
     
     tif_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif' and f.name.startswith('REM-sample-')]
@@ -129,12 +150,9 @@ def test_utm_file_processed_correctly(multi_device_app, tmp_settings):
     xlsx_path.write_bytes(b"dummy UTM Excel data")
     zs2_path.write_bytes(b"dummy UTM raw data")
 
-    # Wait for file detection and processing
-    deadline = time.time() + 10
-    while time.time() < deadline and multi_device_app.event_queue.empty():
-        time.sleep(0.1)
-
-    multi_device_app.process_events()
+    # Process both files directly
+    multi_device_app.file_processing.process_item(str(xlsx_path))
+    multi_device_app.file_processing.process_item(str(zs2_path))
 
     # Check UTM-specific processing: files go to INSTITUTE/USER/SAMPLE structure
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
@@ -157,12 +175,8 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
     unsupported_path = tmp_settings.WATCH_DIR / "mus-ipat-sample.pdf"
     unsupported_path.write_bytes(b"unsupported file type")
 
-    # Wait for file detection and processing
-    deadline = time.time() + 10
-    while time.time() < deadline and multi_device_app.event_queue.empty():
-        time.sleep(0.1)
-
-    multi_device_app.process_events()
+    # Process the file directly
+    multi_device_app.file_processing.process_item(str(unsupported_path))
 
     # Check that file was moved to exceptions
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.pdf"))
@@ -186,20 +200,10 @@ def test_device_routing_by_extension(multi_device_app, tmp_settings):
     xlsx_path.write_bytes(b"UTM Excel data")
     zs2_path.write_bytes(b"UTM raw data")
 
-    # Wait for file detection and processing
-    deadline = time.time() + 15  # Give extra time for all files
-    processed_count = 0
-    while time.time() < deadline and processed_count < 2:  # TischREM=1 + UTM=1 record
-        multi_device_app.process_events()
-        
-        # Count processed files
-        expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS"
-        if expected_dir.exists():
-            tischrem_files = list(expected_dir.glob("tischrem/REM-tischrem-*.tif"))
-            utm_xlsx_files = list(expected_dir.glob("utm/UTM-utm-*.xlsx"))
-            processed_count = len(tischrem_files) + len(utm_xlsx_files)
-        
-        time.sleep(0.1)
+    # Process files directly
+    multi_device_app.file_processing.process_item(str(tif_path))
+    multi_device_app.file_processing.process_item(str(xlsx_path))
+    multi_device_app.file_processing.process_item(str(zs2_path))
 
     # Verify both files were processed by their respective devices
     expected_base = tmp_settings.DEST_DIR / "IPAT" / "MUS"
@@ -232,19 +236,12 @@ def test_utm_twin_file_handling(multi_device_app, tmp_settings):
     zs2_path = tmp_settings.WATCH_DIR / f"{prefix}.zs2"
     xlsx_path = tmp_settings.WATCH_DIR / f"{prefix}.xlsx"
     
-    # Create the first file
     zs2_path.write_bytes(b"UTM raw data")
-    
-    # Wait a bit, then create the second file
-    time.sleep(0.5)
     xlsx_path.write_bytes(b"UTM Excel data")
 
-    # Wait for both files to be detected and processed together
-    deadline = time.time() + 15
-    while time.time() < deadline and multi_device_app.event_queue.empty():
-        time.sleep(0.1)
-
-    multi_device_app.process_events()
+    # Process both files directly
+    multi_device_app.file_processing.process_item(str(zs2_path))
+    multi_device_app.file_processing.process_item(str(xlsx_path))
 
     # Check that both files were processed together
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"

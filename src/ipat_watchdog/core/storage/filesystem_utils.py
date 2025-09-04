@@ -7,7 +7,6 @@ import re
 from typing import Callable, Optional
 
 from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.ui.ui_messages import ValidationMessages
@@ -28,7 +27,7 @@ def parse_filename(src_path: str) -> tuple[str, str]:
 # -------------------------------
 
 def init_dirs(directories: Optional[list[str]] = None) -> None:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     if directories is None:
         directories = [
             s.WATCH_DIR,
@@ -40,7 +39,7 @@ def init_dirs(directories: Optional[list[str]] = None) -> None:
         Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 def get_record_path(filename_prefix: str) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     user_ID, institute, sample_ID = filename_prefix.split(s.ID_SEP)
     record_path = Path(s.DEST_DIR) / institute.upper() / user_ID.upper() / sample_ID
     record_path.mkdir(parents=True, exist_ok=True)
@@ -60,7 +59,7 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     Returns:
         str: Full path to a unique filename
     """
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
     
@@ -84,13 +83,13 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     return str(candidate_path)
 
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     base_dir = base_dir or s.RENAME_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
 def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     base_dir = base_dir or s.EXCEPTIONS_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
@@ -180,11 +179,11 @@ def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -
 # -------------------------------
 
 def generate_record_id(filename_prefix: str) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     return f"{s.DEVICE_RECORD_KADI_ID}{s.ID_SEP}{filename_prefix}".lower()
 
 def generate_file_id(filename_prefix: str) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     user_id, institute, sample_id = filename_prefix.split(s.ID_SEP)
     return f"{s.DEVICE_TYPE}{s.ID_SEP}{sample_id}"
 
@@ -193,7 +192,7 @@ def generate_file_id(filename_prefix: str) -> str:
 # -------------------------------
 
 def load_persisted_records() -> dict[str, LocalRecord]:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     json_path = Path(s.DAILY_RECORDS_JSON)
     if not json_path.exists():
         return {}
@@ -210,7 +209,7 @@ def load_persisted_records() -> dict[str, LocalRecord]:
         return {}
 
 def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     json_path = Path(s.DAILY_RECORDS_JSON)
     try:
         serialized = json.dumps(
@@ -227,14 +226,14 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
 # -------------------------------
 
 def is_valid_prefix(raw_prefix: str) -> bool:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     if not s.FILENAME_PATTERN.match(raw_prefix):
         logger.debug(f"Prefix '{raw_prefix}' failed regex match.")
         return False
     return raw_prefix.count(s.ID_SEP) >= 2
 
 def sanitize_prefix(raw_prefix: str) -> str:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     parts = raw_prefix.strip().split(s.ID_SEP)
     if len(parts) < 3:
         return raw_prefix
@@ -249,7 +248,7 @@ def sanitize_and_validate(raw_prefix: str) -> tuple[str, bool]:
     return sanitize_prefix(raw_prefix), True
 
 def explain_filename_violation(filename: str) -> dict:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     result = {
         "valid": True,
         "reasons": [],
@@ -297,7 +296,7 @@ def explain_filename_violation(filename: str) -> dict:
     return result
 
 def analyze_user_input(dialog_result: dict | None) -> dict:
-    s: BaseSettings = SettingsStore.get()
+    s = SettingsStore.get()
     output = {
         "valid": True,
         "sanitized": None,

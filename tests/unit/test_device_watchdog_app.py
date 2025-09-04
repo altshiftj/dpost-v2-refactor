@@ -9,7 +9,10 @@ from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 def patched_watchdog_app(watchdog_app, tmp_settings):
     # Create a settings manager with the tmp_settings as device settings
     global_settings = PCSettings()
-    settings_manager = SettingsManager(global_settings, [tmp_settings])
+    settings_manager = SettingsManager(
+        available_devices=[tmp_settings],
+        pc_settings=global_settings
+    )
     SettingsStore.set_manager(settings_manager)
     return watchdog_app
 

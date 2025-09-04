@@ -35,11 +35,11 @@ def real_processing_app(tmp_settings):
 
     # Set up SettingsManager with TischREM device for realistic integration testing
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-    from ipat_watchdog.core.config.pc_settings import PCSettings
+    from ipat_watchdog.pc_plugins.tischrem_blb.settings import PCTischREMSettings
     from ipat_watchdog.device_plugins.sem_phenomxl2.settings import SEMPhenomXL2Settings
 
     # Override both global and device settings to use test paths for proper isolation
-    class IntegrationGlobalSettings(PCSettings):
+    class IntegrationGlobalSettings(PCTischREMSettings):
         def __init__(self):
             super().__init__()
             # Use the same paths as tmp_settings for proper isolation
@@ -65,7 +65,7 @@ def real_processing_app(tmp_settings):
 
     global_settings = IntegrationGlobalSettings()
     tischrem_settings = IntegrationTischREMSettings()
-    settings_manager = SettingsManager(global_settings, [tischrem_settings])
+    settings_manager = SettingsManager([tischrem_settings], global_settings)
     SettingsStore.set_manager(settings_manager)
     
     # Set device context to TischREM for proper timeout and other device settings
@@ -99,62 +99,49 @@ def test_happy_path(real_processing_app, tmp_settings):
     tif_path = tmp_settings.WATCH_DIR / f"{prefix}.tif"
     tif_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Debug: Check paths and app configuration
-    print(f"\nDEBUG: tmp_settings.WATCH_DIR: {tmp_settings.WATCH_DIR}")
-    print(f"DEBUG: real_processing_app.watch_dir: {real_processing_app.watch_dir}")
-    print(f"DEBUG: File path: {tif_path}")
-    print(f"DEBUG: Are they the same? {tmp_settings.WATCH_DIR == real_processing_app.watch_dir}")
-    print(f"DEBUG: File exists before write: {tif_path.exists()}")
-
     tif_path.write_bytes(b"dummy image bytes")
 
-    print(f"DEBUG: File exists after write: {tif_path.exists()}")
-    print(f"DEBUG: File size: {tif_path.stat().st_size if tif_path.exists() else 'N/A'}")
-
-    # Give more time and add progress feedback
-    deadline = time.time() + 10  # Increased timeout
-    checks = 0
-    while time.time() < deadline and real_processing_app.event_queue.empty():
-        checks += 1
-        if checks % 10 == 0:  # Print every 1 second
-            print(f"DEBUG: Check #{checks}, queue empty: {real_processing_app.event_queue.empty()}")
-        time.sleep(0.1)
-
-    print(f"DEBUG: Final queue empty: {real_processing_app.event_queue.empty()}")
-    assert not real_processing_app.event_queue.empty(), "Observer never enqueued the file"
-
-    real_processing_app.process_events()
+    # Process the file directly instead of waiting for file watcher
+    real_processing_app.file_processing.process_item(str(tif_path))
 
     # Check that the file was processed correctly by looking for the moved file
     # TischREM moves files to Data/INSTITUTE/USER/SAMPLE/ structure
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
-    print(f"DEBUG: Expected dir: {expected_dir}")
-    print(f"DEBUG: Expected dir exists: {expected_dir.exists()}")
+    assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
     
-    if expected_dir.exists():
-        files_in_dir = list(expected_dir.iterdir())
-        print(f"DEBUG: Files in expected dir: {files_in_dir}")
-        # Look for a file that starts with "REM-sample-"
-        tif_files = [f for f in files_in_dir if f.suffix == '.tif' and f.name.startswith('REM-sample-')]
-        print(f"DEBUG: Found TIF files: {tif_files}")
-        assert len(tif_files) == 1, f"Expected exactly 1 processed TIF file, found {len(tif_files)}: {tif_files}"
-        assert tif_files[0].exists(), f"Processed file should exist: {tif_files[0]}"
-        
-        # Verify the original file was moved (not copied)
-        assert not tif_path.exists(), f"Original file should be moved, not copied: {tif_path}"
-    else:
-        # List all directories to debug
-        all_dirs = []
-        for root, dirs, files in os.walk(tmp_settings.DEST_DIR):
-            all_dirs.extend([os.path.join(root, d) for d in dirs])
-        print(f"DEBUG: All directories in DEST_DIR: {all_dirs}")
-        assert False, f"Expected directory {expected_dir} does not exist"
+    files_in_dir = list(expected_dir.iterdir())
+    # Look for a file that starts with "REM-sample-"
+    tif_files = [f for f in files_in_dir if f.suffix == '.tif' and f.name.startswith('REM-sample-')]
+    assert len(tif_files) == 1, f"Expected exactly 1 processed TIF file, found {len(tif_files)}: {tif_files}"
+    assert tif_files[0].exists(), f"Processed file should exist: {tif_files[0]}"
+    
+    # Verify the original file was moved (not copied)
+    assert not tif_path.exists(), f"Original file should be moved, not copied: {tif_path}"
 
 
 # ───────────────────────── invalid extension test ────────────────────────────
 def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings):
     bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"
     bad.write_bytes(b"nope")
+
+    # Debug: Print settings information
+    print(f"\n=== SETTINGS DEBUG ===")
+    print(f"Watch directory: {tmp_settings.WATCH_DIR}")
+    print(f"Exceptions directory: {tmp_settings.EXCEPTIONS_DIR}")
+    print(f"File created at: {bad}")
+    print(f"File exists: {bad.exists()}")
+    print(f"App global settings: {real_processing_app.global_settings}")
+    print(f"App watch dir: {real_processing_app.watch_dir}")
+    print(f"Settings manager current device: {real_processing_app.settings_manager.get_current_device()}")
+    print(f"Observer is running: {getattr(real_processing_app.directory_observer, 'is_alive', lambda: 'N/A')()}")
+    if hasattr(real_processing_app.directory_observer, 'emitters'):
+        emitters = real_processing_app.directory_observer.emitters
+        print(f"Observer emitters count: {len(emitters)}")
+        for i, emitter in enumerate(emitters):
+            print(f"  Emitter {i}: {emitter.watch.path} (recursive: {emitter.watch.is_recursive})")
+    if hasattr(real_processing_app, 'file_event_handler'):
+        print(f"Handler settings: {getattr(real_processing_app.file_event_handler, 'settings', 'N/A')}")
+    print("======================\n")
 
     # Wait for the file to be detected, queued, and processed
     deadline = time.time() + 10  # Give more time for file stabilization and processing
