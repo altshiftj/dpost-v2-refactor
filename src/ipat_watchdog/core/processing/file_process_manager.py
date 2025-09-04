@@ -69,7 +69,7 @@ class FileProcessManager:
         self._processor_cache = {}  # Cache processors by device_id to maintain state
         self._processing_lock = threading.Lock()  # Sequential processing lock
 
-        # Sync any pending records from previous sessions on startup
+        # Sync pending records upon startup
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
@@ -511,5 +511,36 @@ class FileProcessManager:
         return record if record else self.records.create_record(filename_prefix)
 
     def sync_records_to_database(self):
-        """Trigger synchronization of all pending records to external database."""
-        self.records.sync_records_to_database()
+        """Synchronize all pending records to database with proper device context."""
+        if self.records.all_records_uploaded():
+            logger.debug("All records already uploaded, skipping sync.")
+            return
+            
+        logger.debug("Syncing records to database with device context.")
+        settings_manager = SettingsStore.get_manager()
+        
+        for record in self.records.get_all_records().values():
+            if record.all_files_uploaded():
+                continue
+                
+            device_settings = self._get_device_for_record(record)
+            if not device_settings:
+                logger.warning(f"No device found for record {record.identifier}, skipping")
+                continue
+                
+            settings_manager.set_current_device(device_settings)
+            try:
+                self.records.sync.sync_record_to_database(record)
+            except Exception as e:
+                logger.error(f"Failed to sync record {record.identifier}: {e}")
+            finally:
+                settings_manager.set_current_device(None)
+
+    def _get_device_for_record(self, record):
+        """Get compatible device for record based on file paths."""
+        settings_manager = SettingsStore.get_manager()
+        
+        for file_path in record.files_uploaded.keys():
+            return settings_manager.select_device_for_file(file_path)
+        
+        return None
