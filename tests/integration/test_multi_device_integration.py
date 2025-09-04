@@ -374,3 +374,69 @@ def test_tischrem_different_device_groups_no_collision(multi_device_app, tmp_set
         tif_files = [f for f in dir_path.iterdir() if f.suffix == '.tif']
         assert len(tif_files) == 1, \
             f"Expected 1 file in {dir_path}, found {len(tif_files)}: {tif_files}"
+
+
+def test_multiple_device_files_processed_to_correct_destinations(multi_device_app, tmp_settings):
+    """
+    Test that files from different devices (TischREM and UTM) arriving in mixed order
+    are correctly routed to their appropriate device processors and destination folders.
+    """
+    # Create files for both device types with mixed naming patterns
+    tischrem_file1 = tmp_settings.WATCH_DIR / "mus-ipat-sample1.tif"
+    tischrem_file2 = tmp_settings.WATCH_DIR / "abc-xyz-test2.tif"
+    
+    # UTM requires paired files (.xlsx + .zs2)
+    utm_xlsx = tmp_settings.WATCH_DIR / "def-uvw-utmtest.xlsx"
+    utm_zs2 = tmp_settings.WATCH_DIR / "def-uvw-utmtest.zs2"
+    
+    # Create file contents
+    tischrem_file1.write_bytes(b"TischREM image data 1")
+    tischrem_file2.write_bytes(b"TischREM image data 2") 
+    utm_xlsx.write_bytes(b"UTM Excel data")
+    utm_zs2.write_bytes(b"UTM raw measurement data")
+    
+    # Process files in mixed order to test device routing
+    multi_device_app.file_processing.process_item(str(tischrem_file1))
+    multi_device_app.file_processing.process_item(str(utm_xlsx))  # Only one UTM file first
+    multi_device_app.file_processing.process_item(str(tischrem_file2))
+    multi_device_app.file_processing.process_item(str(utm_zs2))   # Complete UTM pair
+    
+    # Verify TischREM files went to correct locations
+    tischrem_dir1 = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
+    tischrem_dir2 = tmp_settings.DEST_DIR / "XYZ" / "ABC" / "test"
+    
+    assert tischrem_dir1.exists(), f"TischREM directory 1 {tischrem_dir1} not created"
+    assert tischrem_dir2.exists(), f"TischREM directory 2 {tischrem_dir2} not created"
+    
+    # Check TischREM files exist and have correct naming pattern
+    tischrem_files1 = [f for f in tischrem_dir1.iterdir() if f.suffix == '.tif' and 'REM-sample' in f.name]
+    tischrem_files2 = [f for f in tischrem_dir2.iterdir() if f.suffix == '.tif' and 'REM-test' in f.name]
+    
+    assert len(tischrem_files1) == 1, f"Expected 1 TischREM file in dir1, got {len(tischrem_files1)}: {tischrem_files1}"
+    assert len(tischrem_files2) == 1, f"Expected 1 TischREM file in dir2, got {len(tischrem_files2)}: {tischrem_files2}"
+    
+    # Verify UTM files went to correct location (UVW/DEF structure)
+    utm_dir = tmp_settings.DEST_DIR / "UVW" / "DEF" / "utmtest"
+    assert utm_dir.exists(), f"UTM directory {utm_dir} not created"
+    
+    # Check UTM files exist and have correct processing (Excel + ZIP of raw data)
+    utm_xlsx_files = [f for f in utm_dir.iterdir() if f.suffix == '.xlsx']
+    utm_zip_files = [f for f in utm_dir.iterdir() if f.name.endswith('.zs2.zip')]
+    
+    assert len(utm_xlsx_files) == 1, f"Expected 1 UTM Excel file, got {len(utm_xlsx_files)}: {utm_xlsx_files}"
+    assert len(utm_zip_files) == 1, f"Expected 1 UTM ZIP file, got {len(utm_zip_files)}: {utm_zip_files}"
+    
+    # Verify all original files were processed (moved/consumed)
+    assert not tischrem_file1.exists(), "TischREM file 1 should be moved"
+    assert not tischrem_file2.exists(), "TischREM file 2 should be moved" 
+    assert not utm_xlsx.exists(), "UTM Excel file should be moved"
+    assert not utm_zs2.exists(), "UTM raw file should be processed"
+    
+    # Verify device-specific naming patterns
+    tischrem_file1_processed = tischrem_files1[0]
+    tischrem_file2_processed = tischrem_files2[0]
+    utm_xlsx_processed = utm_xlsx_files[0]
+    
+    assert tischrem_file1_processed.name.startswith('REM-sample-'), f"TischREM file 1 has wrong naming: {tischrem_file1_processed.name}"
+    assert tischrem_file2_processed.name.startswith('REM-test-'), f"TischREM file 2 has wrong naming: {tischrem_file2_processed.name}"
+    assert utm_xlsx_processed.name.startswith('UTM-utmtest-'), f"UTM file has wrong naming: {utm_xlsx_processed.name}"
