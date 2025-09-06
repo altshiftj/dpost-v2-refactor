@@ -1,18 +1,17 @@
-# src/ipat_watchdog/plugins/sem_phenomxl2/plugin.py
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-from ipat_watchdog.device_plugins.utm_zwick_blb.settings import SettingsZwickUTM
-from ipat_watchdog.device_plugins.utm_zwick_blb.file_processor import FileProcessorZwickUTM
+from ipat_watchdog.device_plugins.psa_horiba.settings import PSAHoribaSettings
+from ipat_watchdog.device_plugins.psa_horiba.file_processor import FileProcessorPSAHoriba
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
-class ZwickUTMPlugin(DevicePlugin):
-    """Registers the Zwick UTM device with the Watchdog app."""
+class PSAHoribaPlugin(DevicePlugin):
+    """Registers the Horiba Partica LA-960 device with the Watchdog app."""
 
     def __init__(self) -> None:
-        self._settings = SettingsZwickUTM()
-        self._processor = FileProcessorZwickUTM()
+        self._settings = PSAHoribaSettings()
+        self._processor = FileProcessorPSAHoriba()
 
     # ---- DevicePlugin contract ---------------------------------------------
 

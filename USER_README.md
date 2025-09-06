@@ -44,7 +44,7 @@ IPAT Data Watchdog is an automated data management system for scientific instrum
 1. **Download the installer** for your specific device:
    - **SEM TischREM**: `wd-sem_phenomxl2.exe`
    - **PSA HoribaLinks**: `wd-psa_horibalinks_blb.exe`
-   - **UTM Zwick**: `wd-utm_zwick_blb.exe`
+   - **UTM Zwick**: `wd-utm_zwick.exe`
 
 2. **Run the installer** as Administrator
 3. **Follow the installation wizard** (typically installs to `C:\Watchdog\`)

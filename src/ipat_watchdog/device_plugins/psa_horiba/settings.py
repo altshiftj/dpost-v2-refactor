@@ -1,14 +1,14 @@
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re # TODO: configure import to base settings?
 
-class HoribaLinksSettings(DeviceSettings):
+class PSAHoribaSettings(DeviceSettings):
     """
     Configuration for the Horiba Partica LA-960 device.
     Overrides device-specific settings from DeviceSettings.
     """
 
     # Device identity
-    DEVICE_ID = "psa_horibalinks_blb"
+    DEVICE_ID = "psa_horiba"
 
     SESSION_TIMEOUT = 600  # seconds
 

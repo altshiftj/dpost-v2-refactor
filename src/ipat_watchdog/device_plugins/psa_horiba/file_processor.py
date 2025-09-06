@@ -13,7 +13,7 @@ from ipat_watchdog.core.logging.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-class FileProcessorHoribaLinks(FileProcessorABS):
+class FileProcessorPSAHoriba(FileProcessorABS):
     """
     Processor for Horiba Partica LA-960 data.
     """

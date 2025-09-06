@@ -25,7 +25,7 @@ Requires-Dist: mypy; extra == "dev"
 Requires-Dist: ruff; extra == "dev"
 Provides-Extra: sem-phenomxl2
 Provides-Extra: psa-horibalinks-blb
-Provides-Extra: utm-zwick-blb
+Provides-Extra: utm-zwick
 Provides-Extra: default-pc-blb
 Provides-Extra: lab-workstation-blb
 Provides-Extra: office-desktop-blb

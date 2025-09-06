@@ -1,4 +1,4 @@
-# build/specs/utm_zwick_blb.spec
+# build/specs/utm_zwick.spec
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_submodules, copy_metadata
 import sys
@@ -13,7 +13,7 @@ ENV_FILE  = ROOT / ".env"
 # ---------------------------------------------------------------------------------
 MAIN_SCRIPT = SRC_PATH / "ipat_watchdog" / "__main__.py"
 
-device_plugins = collect_submodules("ipat_watchdog.device_plugins.utm_zwick_blb")
+device_plugins = collect_submodules("ipat_watchdog.device_plugins.utm_zwick")
 
 metadata_datas = copy_metadata("ipat-watchdog")
 
@@ -32,7 +32,7 @@ pyz = PYZ(a.pure)
 
 exe = EXE(
     pyz, a.scripts, a.binaries, a.datas, [],
-    name="wd-utm_zwick_blb",
+    name="wd-utm_zwick",
     console=False,
     upx=True,
     strip=False,

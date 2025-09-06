@@ -29,7 +29,7 @@ def multi_device_app(tmp_settings):
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
     from ipat_watchdog.core.config.pc_settings import PCSettings
     from ipat_watchdog.device_plugins.sem_phenomxl2.settings import SEMPhenomXL2Settings
-    from ipat_watchdog.device_plugins.utm_zwick_blb.settings import SettingsZwickUTM
+    from ipat_watchdog.device_plugins.utm_zwick.settings import SettingsZwickUTM
 
     # Override global and device settings to use test paths
     class IntegrationGlobalSettings(PCSettings):
@@ -271,7 +271,7 @@ def test_device_context_switching(multi_device_app, tmp_settings):
     for device in settings_manager.get_all_devices():
         if device.get_device_id() == "sem_phenomxl2":
             tischrem_device = device
-        elif device.get_device_id() == "utm_zwick_blb":
+        elif device.get_device_id() == "utm_zwick":
             utm_device = device
     
     assert tischrem_device is not None, "TischREM device should be available"

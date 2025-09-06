@@ -9,7 +9,7 @@ class SettingsZwickUTM(DeviceSettings):
     """
 
     # Device identity
-    DEVICE_ID = "utm_zwick_blb"
+    DEVICE_ID = "utm_zwick"
 
     # ─── Runtime / Watchdog ----------------------------------------------------
     SESSION_TIMEOUT       = 4 * 3600             # close session after 4 h idle

@@ -4,9 +4,11 @@
 PC_DEVICE_MAP = {
     "default_pc_blb": ["sem_phenomxl2"],
     "tischrem_blb": ["sem_phenomxl2"],
-    "lab_workstation_blb": ["sem_phenomxl2", "psa_horibalinks_blb"],
-    "office_desktop_blb": ["utm_zwick_blb"],
-    "server_backend_blb": ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick_blb"]
+    "zwick_blb": ["utm_zwick"],
+    "horiba_blb": ["psa_horiba"],
+    "lab_workstation_blb": ["sem_phenomxl2", "psa_horiba"],
+    "office_desktop_blb": ["utm_zwick"],
+    "server_backend_blb": ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick"]
 }
 
 def get_devices_for_pc(pc_name: str) -> list[str]:

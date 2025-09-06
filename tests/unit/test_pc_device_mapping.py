@@ -6,8 +6,8 @@ def test_pc_device_mapping():
     # Test known mappings
     assert get_devices_for_pc("default_pc_blb") == ["sem_phenomxl2"]
     assert get_devices_for_pc("lab_workstation_blb") == ["sem_phenomxl2", "psa_horibalinks_blb"]
-    assert get_devices_for_pc("office_desktop_blb") == ["utm_zwick_blb"]
-    assert get_devices_for_pc("server_backend_blb") == ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick_blb"]
+    assert get_devices_for_pc("office_desktop_blb") == ["utm_zwick"]
+    assert get_devices_for_pc("server_backend_blb") == ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick"]
     
     # Test unknown PC - should fallback to default
     assert get_devices_for_pc("unknown_pc") == ["sem_phenomxl2"]

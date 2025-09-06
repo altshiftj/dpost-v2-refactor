@@ -24,7 +24,7 @@ build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
 sem_phenomxl2 = []
 psa_horibalinks_blb = []
-utm_zwick_blb = []
+utm_zwick = []
 default_pc_blb = []
 lab_workstation_blb = []
 office_desktop_blb = []
@@ -32,12 +32,14 @@ server_backend_blb = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
 sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
-psa_horibalinks_blb = "ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin"
+psa_horiba = "ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin"
+utm_zwick = "ipat_watchdog.device_plugins.utm_zwick.plugin:UTMZwickPlugin"
 
 [project.entry-points."ipat_watchdog.pc_plugins"]
 default_pc_blb = "ipat_watchdog.pc_plugins.default_pc_blb.plugin:DefaultPCPlugin"
-lab_workstation_blb = "ipat_watchdog.pc_plugins.lab_workstation_blb.plugin:LabWorkstationPlugin"
 tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
+zwick_blb = "ipat_watchdog.pc_plugins.zwick_blb.plugin:PCZwickPlugin"
+horiba_blb = "ipat_watchdog.pc_plugins.horiba_blb.plugin:PCHoribaPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

@@ -33,4 +33,4 @@ ruff
 
 [server_backend_blb]
 
-[utm_zwick_blb]
+[utm_zwick]

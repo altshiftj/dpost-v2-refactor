@@ -52,7 +52,7 @@ src/ipat_watchdog/
     ├── device_plugin.py           # Plugin interface
     ├── sem_phenomxl2/          # SEM TischREM device plugin
     ├── psa_horibalinks_blb/       # PSA HoribaLinks device plugin
-    └── utm_zwick_blb/             # UTM Zwick device plugin
+    └── utm_zwick/             # UTM Zwick device plugin
 ```
 
 ## 🔧 Key Components

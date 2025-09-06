@@ -33,8 +33,8 @@ Set the `PC_NAME` environment variable in your `.env` file to specify which PC p
 # In .env file
 PC_NAME=default_pc_blb         # Loads: sem_phenomxl2
 PC_NAME=lab_workstation_blb    # Loads: sem_phenomxl2, psa_horibalinks_blb
-PC_NAME=office_desktop_blb     # Loads: utm_zwick_blb
-PC_NAME=server_backend_blb     # Loads: sem_phenomxl2, psa_horibalinks_blb, utm_zwick_blb
+PC_NAME=office_desktop_blb     # Loads: utm_zwick
+PC_NAME=server_backend_blb     # Loads: sem_phenomxl2, psa_horibalinks_blb, utm_zwick
 ```
 
 ## PC-Device Mapping

@@ -82,7 +82,7 @@ class FileProcessorZwickUTM(FileProcessorABS):
     @classmethod
     def get_device_id(cls) -> str:
         """Get unique device identifier."""
-        return "utm_zwick_blb"
+        return "utm_zwick"
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
