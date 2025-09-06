@@ -23,14 +23,10 @@ black
 mypy
 ruff
 
-[lab_workstation_blb]
-
-[office_desktop_blb]
+[dsv_horiba]
 
 [psa_horibalinks_blb]
 
 [sem_phenomxl2]
-
-[server_backend_blb]
 
 [utm_zwick]

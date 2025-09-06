@@ -128,12 +128,9 @@ class RecordManager:
 
     def save_records(self):
         """
-        Persists all records to disk for crash recovery and state preservation.
-        
-        Called after any record modification to ensure data is not lost.
-        Uses filesystem utilities to handle the actual serialization.
+        Persists all processed records to a dictionary ledger for crash recovery and state preservation.
         """
-        logger.debug(f"Saving {len(self.persist_records_dict)} records to disk.")
+        logger.debug(f"Persisting {len(self.persist_records_dict)} records.")
         save_persisted_records(self.persist_records_dict)
 
     def get_all_records(self) -> Dict[str, LocalRecord]:

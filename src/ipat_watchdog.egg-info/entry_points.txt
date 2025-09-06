@@ -2,6 +2,7 @@
 ipat-watchdog = ipat_watchdog.__main__:main
 
 [ipat_watchdog.device_plugins]
+dsv_horiba = ipat_watchdog.device_plugins.dsv_horiba.plugin:DSVHoribaPlugin
 psa_horiba = ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin
 sem_phenomxl2 = ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin
 utm_zwick = ipat_watchdog.device_plugins.utm_zwick.plugin:UTMZwickPlugin

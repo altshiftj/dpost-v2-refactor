@@ -5,7 +5,7 @@ PC_DEVICE_MAP = {
     "default_pc_blb": ["sem_phenomxl2"],
     "tischrem_blb": ["sem_phenomxl2"],
     "zwick_blb": ["utm_zwick"],
-    "horiba_blb": ["psa_horiba"],
+    "horiba_blb": ["psa_horiba", "dsv_horiba"],
     "lab_workstation_blb": ["sem_phenomxl2", "psa_horiba"],
     "office_desktop_blb": ["utm_zwick"],
     "server_backend_blb": ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick"]

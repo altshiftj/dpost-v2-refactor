@@ -13,10 +13,6 @@ class SettingsZwickUTM(DeviceSettings):
 
     # ─── Runtime / Watchdog ----------------------------------------------------
     SESSION_TIMEOUT       = 4 * 3600             # close session after 4 h idle
-    POLL_SECONDS          = 1.0
-    MAX_WAIT_SECONDS      = 30.0
-    STABLE_CYCLES         = 3
-    TEMP_FOLDER_REGEX     = re.compile(r"\.~tmp$")   # rarely used by testXpert
 
     # ─── File handling ---------------------------------------------------------
     ALLOWED_EXTENSIONS        = {".zs2", ".xlsx"}

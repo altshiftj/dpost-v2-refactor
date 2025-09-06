@@ -12,11 +12,6 @@ class PSAHoribaSettings(DeviceSettings):
 
     SESSION_TIMEOUT = 600  # seconds
 
-    POLL_SECONDS = 1.5
-    MAX_WAIT_SECONDS = 30.0
-    STABLE_CYCLES = 3
-    TEMP_FOLDER_REGEX = re.compile(r"\.[A-Za-z0-9]{6}$")
-
     # ──────────────────────────────────────────────────────────────────────────────
     # 📂 File Settings
     # ──────────────────────────────────────────────────────────────────────────────
