@@ -17,8 +17,8 @@ class HoribaLinksSettings(BaseSettings):
     # ──────────────────────────────────────────────────────────────────────────────
     # 📂 File Settings
     # ──────────────────────────────────────────────────────────────────────────────
-    ALLOWED_EXTENSIONS = {".csv", ".ngb"}
-    ALLOWED_FOLDER_CONTENTS = {".csv", ".ngb"}
+    ALLOWED_EXTENSIONS = {".txt", ".ngb"}
+    ALLOWED_FOLDER_CONTENTS = {".txt", ".ngb"}
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📟 Device Identity
