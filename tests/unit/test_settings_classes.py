@@ -4,7 +4,7 @@ import re
 
 class DummyDeviceSettings(DeviceSettings):
     DEVICE_ID = 'dev1'
-    DEVICE_TYPE = 'SEM'
+    DEVICE_ABBR = 'SEM'
     DEVICE_USER_KADI_ID = 'user123'
     ALLOWED_EXTENSIONS = {'.tiff', '.bmp'}
     FILENAME_PATTERN = re.compile(r'.*REM.*')

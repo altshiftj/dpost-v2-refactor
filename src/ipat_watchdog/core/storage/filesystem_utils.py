@@ -38,9 +38,11 @@ def init_dirs(directories: Optional[list[str]] = None) -> None:
     for dir_path in directories:
         Path(dir_path).mkdir(parents=True, exist_ok=True)
 
-def get_record_path(filename_prefix: str) -> str:
+def get_record_path(filename_prefix: str, device_abbr: str = None) -> str:
     s = SettingsStore.get()
     user_ID, institute, sample_ID = filename_prefix.split(s.ID_SEP)
+    if device_abbr:
+        sample_ID = f"{device_abbr}-{sample_ID}"
     record_path = Path(s.DEST_DIR) / institute.upper() / user_ID.upper() / sample_ID
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
@@ -185,7 +187,7 @@ def generate_record_id(filename_prefix: str) -> str:
 def generate_file_id(filename_prefix: str) -> str:
     s = SettingsStore.get()
     user_id, institute, sample_id = filename_prefix.split(s.ID_SEP)
-    return f"{s.DEVICE_TYPE}{s.ID_SEP}{sample_id}"
+    return f"{s.DEVICE_ABBR}{s.ID_SEP}{sample_id}"
 
 # -------------------------------
 # RECORD PERSISTENCE

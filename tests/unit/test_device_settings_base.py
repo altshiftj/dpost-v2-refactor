@@ -9,7 +9,7 @@ from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 class TestDeviceSettings(DeviceSettings):
     """Test implementation of DeviceSettings."""
     DEVICE_ID = "test_device"
-    DEVICE_TYPE = "TEST"
+    DEVICE_ABBR = "TEST"
     ALLOWED_EXTENSIONS = {".tiff", ".txt"}
     ALLOWED_FOLDER_CONTENTS = {".elid", ".odt"}
 

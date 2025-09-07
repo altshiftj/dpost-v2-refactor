@@ -37,7 +37,7 @@ def init_settings(tmp_path):
         
         # Device-specific attributes
         ID_SEP = '-'
-        DEVICE_TYPE = 'TEST'
+        DEVICE_ABBR = 'TEST'
         DEVICE_RECORD_KADI_ID = 'test_01'  # Add this required attribute
         FILENAME_PATTERN = re.compile(r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$")
         ALLOWED_EXTENSIONS = {'.txt', '.tif'}

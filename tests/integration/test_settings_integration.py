@@ -9,7 +9,7 @@ from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 class TestDeviceA(DeviceSettings):
     """Test device A."""
     DEVICE_ID = "test_device_a"
-    DEVICE_TYPE = "TYPE_A"
+    DEVICE_ABBR = "TYPE_A"
     ALLOWED_EXTENSIONS = {".tiff", ".tif"}
     SESSION_TIMEOUT = 120
 
@@ -17,7 +17,7 @@ class TestDeviceA(DeviceSettings):
 class TestDeviceB(DeviceSettings):
     """Test device B."""
     DEVICE_ID = "test_device_b"
-    DEVICE_TYPE = "TYPE_B"
+    DEVICE_ABBR = "TYPE_B"
     ALLOWED_EXTENSIONS = {".txt", ".csv"}
     SESSION_TIMEOUT = 180
 

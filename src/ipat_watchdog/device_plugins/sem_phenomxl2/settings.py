@@ -23,7 +23,7 @@ class SEMPhenomXL2Settings(DeviceSettings):
     DEVICE_USER_PERSISTENT_ID = 22
     DEVICE_RECORD_KADI_ID = "rem_01"
     DEVICE_RECORD_PERSISTENT_ID = 190
-    DEVICE_TYPE = "REM"
+    DEVICE_ABBR = "REM"
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📝 Metadata Defaults

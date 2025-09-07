@@ -11,7 +11,7 @@ from ipat_watchdog.core.config.pc_settings import PCSettings
 class TestDeviceA(DeviceSettings):
     """Mock device A for testing."""
     DEVICE_ID = "device_a"
-    DEVICE_TYPE = "TYPE_A"
+    DEVICE_ABBR = "TYPE_A"
     ALLOWED_EXTENSIONS = {".tiff", ".tif"}
     SESSION_TIMEOUT = 120
 
@@ -19,7 +19,7 @@ class TestDeviceA(DeviceSettings):
 class TestDeviceB(DeviceSettings):
     """Mock device B for testing.""" 
     DEVICE_ID = "device_b"
-    DEVICE_TYPE = "TYPE_B"
+    DEVICE_ABBR = "TYPE_B"
     ALLOWED_EXTENSIONS = {".txt", ".csv"}
     SESSION_TIMEOUT = 180
 

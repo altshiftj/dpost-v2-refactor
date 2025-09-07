@@ -22,7 +22,7 @@ class SettingsDSVHoriba(DeviceSettings):
     DEVICE_USER_PERSISTENT_ID = 31
     DEVICE_RECORD_KADI_ID     = "dsv_01"
     DEVICE_RECORD_PERSISTENT_ID = 562
-    DEVICE_TYPE               = "DSV"
+    DEVICE_ABBR               = "DSV"
 
     # ─── Metadata defaults -----------------------------------------------------
     RECORD_TAGS = [

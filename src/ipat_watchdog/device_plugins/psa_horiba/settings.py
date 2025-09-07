@@ -26,7 +26,7 @@ class PSAHoribaSettings(DeviceSettings):
     DEVICE_USER_PERSISTENT_ID = 34
     DEVICE_RECORD_KADI_ID = "psa_01"
     DEVICE_RECORD_PERSISTENT_ID = 613
-    DEVICE_TYPE = "PSA"
+    DEVICE_ABBR = "PSA"
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📝 Metadata Defaults

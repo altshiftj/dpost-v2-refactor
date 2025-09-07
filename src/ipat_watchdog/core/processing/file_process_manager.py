@@ -445,8 +445,12 @@ class FileProcessManager:
             # Ensure we have a record to work with
             record = self._get_or_create_record(record, filename_prefix)
 
+            # Determine device abbreviation for sorting
+            settings_manager = SettingsStore.get_manager()
+            device_settings = settings_manager.get_current_device()
+            device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
             # Determine target paths and perform device-specific processing
-            record_path = get_record_path(filename_prefix)
+            record_path = get_record_path(filename_prefix, device_abbr)
             file_id = generate_file_id(filename_prefix)
             final_path, datatype = processor.device_specific_processing(
                 src_path, record_path, file_id, extension

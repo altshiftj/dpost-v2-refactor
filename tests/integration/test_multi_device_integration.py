@@ -280,12 +280,12 @@ def test_device_context_switching(multi_device_app, tmp_settings):
     # Test switching to TischREM
     settings_manager.set_current_device(tischrem_device)
     current_settings = SettingsStore.get()
-    assert current_settings.DEVICE_TYPE == "REM", "Should be using TischREM settings"
+    assert current_settings.DEVICE_ABBR == "REM", "Should be using TischREM settings"
     
     # Test switching to UTM
     settings_manager.set_current_device(utm_device)
     current_settings = SettingsStore.get()
-    assert current_settings.DEVICE_TYPE == "UTM", "Should be using UTM settings"
+    assert current_settings.DEVICE_ABBR == "UTM", "Should be using UTM settings"
     
     # Test invalid device lookup (device not found in manager)
     fake_device_id = "invalid_device"

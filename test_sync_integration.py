@@ -19,7 +19,7 @@ from tests.helpers.fake_ui import HeadlessUI
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
 class TestDeviceSettings(DeviceSettings):
-    DEVICE_TYPE = "TEST_DEVICE"
+    DEVICE_ABBR = "TEST_DEVICE"
     ID_SEP = "-"
     
     # Database settings that would normally be device-specific
@@ -51,7 +51,7 @@ def test_sync_settings_integration():
     # Create device settings  
     device_settings = TestDeviceSettings()
     print(f"Device Settings - Device ID: {device_settings.get_device_id()}")
-    print(f"Device Settings - DEVICE_TYPE: {device_settings.DEVICE_TYPE}")
+    print(f"Device Settings - DEVICE_ABBR: {device_settings.DEVICE_ABBR}")
     print(f"Device Settings - DEVICE_USER_KADI_ID: {device_settings.DEVICE_USER_KADI_ID}")
     
     # Create settings manager with both
@@ -70,7 +70,7 @@ def test_sync_settings_integration():
     print(f"\n--- Sync Manager Settings ---")
     print(f"Sync Manager can access ID_SEP: {sync_manager.s.ID_SEP}")
     print(f"Sync Manager can access DEVICE_USER_KADI_ID: {sync_manager.s.DEVICE_USER_KADI_ID}")
-    print(f"Sync Manager can access DEVICE_TYPE: {sync_manager.s.DEVICE_TYPE}")
+    print(f"Sync Manager can access DEVICE_ABBR: {sync_manager.s.DEVICE_ABBR}")
     print(f"Sync Manager can access device ID: {sync_manager.s.get_device_id()}")
     print(f"Sync Manager can access WATCH_DIR: {sync_manager.s.WATCH_DIR}")
     

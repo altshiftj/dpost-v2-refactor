@@ -9,7 +9,7 @@ class DeviceSettings(ABC):
     DEVICE_USER_PERSISTENT_ID: int = -1
     DEVICE_RECORD_KADI_ID = "udr_01"
     DEVICE_RECORD_PERSISTENT_ID: int = -1
-    DEVICE_TYPE: str = "GENERIC"
+    DEVICE_ABBR: str = "GENERIC"
     DEVICE_ID: str = "generic"  # Unique identifier for this device
     RECORD_TAGS: List[str] = ["Generic Tag"]
     DEFAULT_RECORD_DESCRIPTION: str = (

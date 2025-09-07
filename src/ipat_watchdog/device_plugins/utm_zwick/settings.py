@@ -24,7 +24,7 @@ class SettingsZwickUTM(DeviceSettings):
     DEVICE_USER_PERSISTENT_ID = 30
     DEVICE_RECORD_KADI_ID     = "utm_01"
     DEVICE_RECORD_PERSISTENT_ID = 561
-    DEVICE_TYPE               = "UTM"
+    DEVICE_ABBR               = "UTM"
 
     # ─── Metadata defaults -----------------------------------------------------
     RECORD_TAGS = [

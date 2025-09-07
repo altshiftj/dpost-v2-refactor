@@ -57,7 +57,7 @@ def tmp_settings(tmp_path) -> DeviceSettings:
         
         # ─ Additional required attributes ─
         ID_SEP = '-'
-        DEVICE_TYPE = 'TEST'
+        DEVICE_ABBR = 'TEST'
         DEVICE_RECORD_KADI_ID = 'test_01'
         SENTINEL_NAME = None  # Can be overridden by individual tests
         SESSION_TIMEOUT = 300

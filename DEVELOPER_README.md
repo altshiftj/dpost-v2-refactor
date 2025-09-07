@@ -228,7 +228,7 @@ import re
 
 class MyDeviceSettings(BaseSettings):
     # Override base settings
-    DEVICE_TYPE = "MY_DEVICE"
+    DEVICE_ABBR = "MY_DEVICE"
     ALLOWED_EXTENSIONS = {".dat", ".csv", ".log"}
     
     # Device-specific settings

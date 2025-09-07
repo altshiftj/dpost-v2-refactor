@@ -31,4 +31,5 @@ Upload_Ordner/*
 compile*.py
 compile*.ps1
 file_structure*.txt
-src\ipat_watchdog.egg-info
+/src/ipat_watchdog.egg-info
+/build/
