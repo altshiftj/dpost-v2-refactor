@@ -23,7 +23,7 @@ def load_device_plugin(device_name: str) -> DevicePlugin:
 def load_pc_plugin(pc_name: str) -> PCPlugin:
     """
     Resolve a PC plugin published via the 'ipat_watchdog.pc_plugins' entry‑point group.
-    `pc_name` must match the *key* in pyproject.toml (e.g. 'default_pc_blb').
+    `pc_name` must match the *key* in pyproject.toml (e.g. 'tischrem_blb').
     """
     eps = entry_points(group="ipat_watchdog.pc_plugins")
     try:
@@ -39,8 +39,8 @@ def load_pc_plugin(pc_name: str) -> PCPlugin:
 
 def get_devices_for_pc(pc_name: str) -> list[str]:
     """
-    Get the list of device names for a given PC name from the PC-device mapping.
+    Get the list of device names for a given PC name from the PC plugin settings.
     Returns a list of device plugin names that should be loaded for this PC.
     """
-    from ipat_watchdog.pc_device_mapping import get_devices_for_pc as _get_devices
-    return _get_devices(pc_name)
+    pc_plugin = load_pc_plugin(pc_name)
+    return pc_plugin.get_settings().get_active_device_plugins()

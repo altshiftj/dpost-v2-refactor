@@ -1,6 +1,12 @@
 # PC Plugin System
 
-This document describes the PC plugin architecture for customizing application behavior based on the target PC environment.
+This document describes thEach PC plugin defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
+
+- **tischrem_blb**: TischREM lab environment with SEM TischREM  
+- **zwick_blb**: Zwick testing environment with UTM Zwick machine
+- **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
+
+Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.gin architecture for customizing application behavior based on the target PC environment.
 
 ## Overview
 
@@ -13,11 +19,15 @@ src/ipat_watchdog/
 ├── pc_plugins/
 │   ├── __init__.py
 │   ├── pc_plugin.py              # Base PCPlugin interface
-│   ├── default_pc_blb/           # Default PC configuration
+│   ├── tischrem_blb/             # TischREM lab configuration
 │   │   ├── __init__.py
 │   │   ├── plugin.py
 │   │   └── settings.py
-│   └── lab_workstation_blb/      # Lab workstation configuration
+│   ├── zwick_blb/                # Zwick testing configuration
+│   │   ├── __init__.py
+│   │   ├── plugin.py
+│   │   └── settings.py
+│   └── horiba_blb/               # Horiba lab configuration
 │       ├── __init__.py
 │       ├── plugin.py
 │       └── settings.py
@@ -27,26 +37,24 @@ src/ipat_watchdog/
 
 ### Environment Configuration
 
-Set the `PC_NAME` environment variable in your `.env` file to specify which PC plugin to load. The associated device plugins are automatically determined by the PC-device mapping:
+Set the `PC_NAME` environment variable to specify which PC plugin to load. The associated device plugins are automatically determined by the PC plugin's settings:
 
 ```bash
-# In .env file
-PC_NAME=default_pc_blb         # Loads: sem_phenomxl2
-PC_NAME=lab_workstation_blb    # Loads: sem_phenomxl2, psa_horibalinks_blb
-PC_NAME=office_desktop_blb     # Loads: utm_zwick
-PC_NAME=server_backend_blb     # Loads: sem_phenomxl2, psa_horibalinks_blb, utm_zwick
+# In .env file or CI environment
+PC_NAME=tischrem_blb       # Loads: sem_phenomxl2
+PC_NAME=zwick_blb          # Loads: utm_zwick
+PC_NAME=horiba_blb         # Loads: psa_horiba, dsv_horiba
 ```
 
 ## PC-Device Mapping
 
-The PC-device mapping is defined in [`src/ipat_watchdog/pc_device_mapping.py`](src/ipat_watchdog/pc_device_mapping.py ) and automatically associates each PC type with its compatible devices:
+Each PC plugin defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
 
-- **default_pc_blb**: Basic PC with SEM TischREM only
-- **lab_workstation_blb**: Lab environment with SEM TischREM and PSA HoribaLinks
-- **office_desktop_blb**: Office PC with UTM Zwick testing machine
-- **server_backend_blb**: Server environment with all devices
+- **tischrem_blb**: TischREM lab environment with SEM TischREM  
+- **zwick_blb**: Zwick testing environment with UTM Zwick machine
+- **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
 
-Simply set `PC_NAME` in your `.env` file - the appropriate devices will be loaded automatically.
+Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.
 
 ### Build Integration
 
@@ -54,7 +62,9 @@ PC plugins are loaded automatically during application startup:
 
 ```python
 # In __main__.py
-pc_name = os.getenv("PC_NAME", "default_pc_blb")
+pc_name = os.getenv("PC_NAME")
+if not pc_name:
+    pc_name = "tischrem_blb"  # Development fallback
 pc_plugin = load_pc_plugin(pc_name.strip())
 pc_settings = pc_plugin.get_settings()
 ```
@@ -73,6 +83,10 @@ Example:
 class MyPCSettings(PCSettings):
     WATCH_DIR = Path("C:\\MyCustomPath\\Upload")
     POLL_SECONDS = 1.0
+    
+    def get_active_device_plugins(self) -> list[str]:
+        """Return list of device plugins for this PC."""
+        return ["my_device"]
 
 # plugin.py
 class MyPCPlugin(PCPlugin):
@@ -85,11 +99,13 @@ class MyPCPlugin(PCPlugin):
 
 ## Available PC Plugins
 
-- **default_pc_blb**: Standard configuration using base PCSettings
-- **lab_workstation_blb**: Lab environment with faster polling and custom paths
+- **tischrem_blb**: TischREM lab workstation configuration
+- **zwick_blb**: Zwick testing machine configuration  
+- **horiba_blb**: Horiba lab configuration with PSA and DSV devices
+- **test_pc**: Test configuration for development
 
 ## Build System Integration
 
 PC plugins integrate with the existing build system by specifying the PC_NAME in your build environment, similar to how DEVICE_NAME works for device plugins.
 
-The SettingsManager will use PC plugin settings as the global settings, overriding the default PCSettings.
+The SettingsManager will use PC plugin settings as the global settings, combining them with device-specific settings through the CompositeSettings system.

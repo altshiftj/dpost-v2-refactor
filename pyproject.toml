@@ -26,7 +26,6 @@ sem_phenomxl2 = []
 psa_horibalinks_blb = []
 utm_zwick = []
 dsv_horiba = []
-default_pc_blb = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
 sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
@@ -36,7 +35,6 @@ dsv_horiba = "ipat_watchdog.device_plugins.dsv_horiba.plugin:DSVHoribaPlugin"
 test_device = "ipat_watchdog.device_plugins.test_device.plugin:TestDevicePlugin"
 
 [project.entry-points."ipat_watchdog.pc_plugins"]
-default_pc_blb = "ipat_watchdog.pc_plugins.default_pc_blb.plugin:DefaultPCPlugin"
 tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
 zwick_blb = "ipat_watchdog.pc_plugins.zwick_blb.plugin:PCZwickPlugin"
 horiba_blb = "ipat_watchdog.pc_plugins.horiba_blb.plugin:PCHoribaPlugin"

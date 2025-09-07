@@ -32,7 +32,7 @@ $PC_NAME = $CI_JOB_NAME
 Write-Host "`nUsing PC_NAME: $PC_NAME"
 
 # --- Step 4: Get devices for this PC and install dependencies ---
-$devices = & $python -c "from ipat_watchdog.pc_device_mapping import get_devices_for_pc; print(','.join(get_devices_for_pc('$PC_NAME')))"
+$devices = & $python -c "from ipat_watchdog.loader import get_devices_for_pc; print(','.join(get_devices_for_pc('$PC_NAME')))"
 $deviceExtras = $devices -split ',' | ForEach-Object { $_.Trim() }
 $allExtras = @('build') + $deviceExtras + @($PC_NAME)
 

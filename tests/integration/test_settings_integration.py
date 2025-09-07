@@ -27,8 +27,9 @@ def test_new_settings_system_integration():
     # Reset any existing settings
     SettingsStore.reset()
     
-    # Create global settings
-    global_settings = PCSettings()
+    # Create global settings using test PC
+    from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
+    global_settings = TestPCSettings()
     global_settings.WATCH_DIR = Path("./test_watch")
     global_settings.SESSION_TIMEOUT = 300
     

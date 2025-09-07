@@ -121,7 +121,7 @@ function Get-PCConfigurations {
             TargetIP = "127.0.0.1"
             TargetUser = $env:USERNAME
             SSHPort = "22"
-            PCName = "default_pc_blb"
+            PCName = "tischrem_blb"
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -292,6 +292,7 @@ function Initialize-PipelineEnvironment {
     
     # Set environment variables from configuration
     $env:CI_JOB_NAME = $accessConfig.CustomProperties.PCName
+    $env:PC_NAME = $env:CI_JOB_NAME  # Set for the application to use
     $env:TARGET_IP = $accessConfig.TargetIP
     $env:TARGET_USER = $accessConfig.TargetUser
     $env:SSH_PORT = $accessConfig.SSHPort

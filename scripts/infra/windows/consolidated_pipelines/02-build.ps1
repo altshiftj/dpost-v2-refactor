@@ -40,6 +40,7 @@ try {
     
     # Get devices for this PC and install dependencies
     $PC_NAME = $CI_JOB_NAME
+    $env:PC_NAME = $PC_NAME  # Set for the application to use
     Write-Host "Getting devices for PC: $PC_NAME"
     
     $devices = Get-DevicesForPC -PCName $PC_NAME -ProjectRoot $env:PROJECT_ROOT

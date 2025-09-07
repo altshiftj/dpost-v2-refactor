@@ -1,14 +1,14 @@
 import pytest
 from unittest.mock import MagicMock
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 
 @pytest.fixture
 def patched_watchdog_app(watchdog_app, tmp_settings):
     # Create a settings manager with the tmp_settings as device settings
-    global_settings = PCSettings()
+    global_settings = TestPCSettings()
     settings_manager = SettingsManager(
         available_devices=[tmp_settings],
         pc_settings=global_settings

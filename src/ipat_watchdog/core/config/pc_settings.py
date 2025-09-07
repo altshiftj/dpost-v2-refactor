@@ -1,6 +1,6 @@
 from pathlib import Path
 import re
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Set, List, Pattern, Optional, Tuple
 import os
 
@@ -42,3 +42,8 @@ class PCSettings(ABC):
     TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
     TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
     SENTINEL_NAME: Optional[str] = None
+
+    @abstractmethod
+    def get_active_device_plugins(self) -> list[str]:
+        """Return list of active device plugins for this PC."""
+        pass

@@ -1,4 +1,4 @@
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
 
@@ -24,7 +24,7 @@ class DummyDeviceSettings(DeviceSettings):
 
 
 def test_global_settings_instantiation():
-    gs = PCSettings()
+    gs = TestPCSettings()
     assert hasattr(gs, 'WATCH_DIR')
     assert hasattr(gs, 'DEST_DIR')
     assert hasattr(gs, 'SESSION_TIMEOUT')

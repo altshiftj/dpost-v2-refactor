@@ -1,28 +1,25 @@
 import pytest
-from ipat_watchdog.pc_device_mapping import get_devices_for_pc, PC_DEVICE_MAP
+from ipat_watchdog.loader import get_devices_for_pc
 
 def test_pc_device_mapping():
-    """Test the PC-device mapping functionality."""
-    # Test actual mappings
+    """Test the PC-device mapping functionality through PC settings."""
+    # Test actual mappings via PC settings
     assert get_devices_for_pc("test_pc") == ["test_device"]
     assert get_devices_for_pc("tischrem_blb") == ["sem_phenomxl2"]
     assert get_devices_for_pc("zwick_blb") == ["utm_zwick"]
     assert get_devices_for_pc("horiba_blb") == ["psa_horiba", "dsv_horiba"]
-    
-    # Test unknown PC - should fallback to default
-    assert get_devices_for_pc("unknown_pc") == ["sem_phenomxl2"]
 
-def test_loader_integration():
-    """Test that the loader function works correctly."""
-    from ipat_watchdog.loader import get_devices_for_pc as loader_get_devices
-    
-    # Should return same results as direct mapping
-    assert loader_get_devices("test_pc") == ["test_device"]
-    assert loader_get_devices("tischrem_blb") == ["sem_phenomxl2"]
+def test_pc_plugin_not_found():
+    """Test error handling for non-existent PC plugin."""
+    with pytest.raises(RuntimeError, match="No PC plugin named 'unknown_pc'"):
+        get_devices_for_pc("unknown_pc")
 
 def test_mapping_completeness():
-    """Test that all PCs have at least one device."""
-    for pc_name, devices in PC_DEVICE_MAP.items():
+    """Test that all PC plugins have device mappings."""
+    pc_names = ["test_pc", "tischrem_blb", "zwick_blb", "horiba_blb"]
+    
+    for pc_name in pc_names:
+        devices = get_devices_for_pc(pc_name)
         assert isinstance(devices, list)
         assert len(devices) > 0
         assert all(isinstance(device, str) for device in devices)

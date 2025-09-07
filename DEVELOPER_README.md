@@ -50,23 +50,44 @@ src/ipat_watchdog/
 │       └── dialogs.py             # Custom dialog implementations
 └── device_plugins/                # Device-specific implementations
     ├── device_plugin.py           # Plugin interface
-    ├── sem_phenomxl2/          # SEM TischREM device plugin
-    ├── psa_horibalinks_blb/       # PSA HoribaLinks device plugin
-    └── utm_zwick/             # UTM Zwick device plugin
+    ├── sem_phenomxl2/             # SEM TischREM device plugin
+    ├── psa_horiba/                # PSA Horiba device plugin
+    ├── dsv_horiba/                # DSV Horiba device plugin
+    └── utm_zwick/                 # UTM Zwick device plugin
+└── pc_plugins/                    # PC-specific implementations
+    ├── pc_plugin.py               # PC Plugin interface
+    ├── tischrem_blb/              # TischREM lab configuration
+    ├── zwick_blb/                 # Zwick testing configuration
+    └── horiba_blb/                # Horiba lab configuration
 ```
 
 ## 🔧 Key Components
+
+### Application Startup Flow
+
+The application startup follows this sequence:
+
+1. **Environment Detection**: Reads `PC_NAME` environment variable to determine PC type
+2. **PC Plugin Loading**: Loads the specified PC plugin (defaults to `tischrem_blb` for development)
+3. **Device Discovery**: PC plugin settings determine which device plugins to load
+4. **Settings Assembly**: Creates `SettingsManager` with PC settings and all device configurations
+5. **Service Initialization**: Starts Prometheus metrics and observability servers
+6. **Application Launch**: Initializes the main `DeviceWatchdogApp` with all components
+
+**Environment Variables:**
+- `PC_NAME`: Specifies which PC plugin to load (e.g., `tischrem_blb`, `horiba_blb`)
+- Standard `.env` file variables for database connections, paths, etc.
 
 ### Application Entry Point (`__main__.py`)
 
 The main entry point orchestrates the application startup:
 
 1. **Environment Setup**: Loads `.env` configuration
-2. **Plugin Loading**: Discovers and loads the appropriate device plugin
+2. **Plugin Loading**: Discovers and loads the appropriate PC plugin and associated device plugins
 3. **Service Initialization**: 
    - Prometheus metrics server (port 8000)
    - Observability server with health checks and log viewer (port 8001)
-4. **Application Assembly**: Wires together UI, sync manager, and file processor
+4. **Application Assembly**: Wires together UI, sync manager, settings manager, and device configurations
 5. **Application Startup**: Initializes and runs the main application
 
 ### Device Plugin System (`loader.py` + `device_plugins/`)
@@ -77,6 +98,7 @@ The plugin system uses Python entry points for automatic discovery:
 # In pyproject.toml
 [project.entry-points."ipat_watchdog.device_plugins"]
 sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
+psa_horiba = "ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin"
 ```
 
 Each plugin must implement the `DevicePlugin` interface:
@@ -84,7 +106,7 @@ Each plugin must implement the `DevicePlugin` interface:
 ```python
 class DevicePlugin(ABC):
     @abstractmethod
-    def get_settings(self) -> BaseSettings:
+    def get_settings(self) -> DeviceSettings:
         """Return device-specific configuration"""
         pass
 
@@ -94,12 +116,41 @@ class DevicePlugin(ABC):
         pass
 ```
 
+### PC Plugin System (`loader.py` + `pc_plugins/`)
+
+The PC plugin system complements device plugins by providing PC-specific configuration:
+
+```python
+# In pyproject.toml
+[project.entry-points."ipat_watchdog.pc_plugins"]
+tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
+```
+
+Each PC plugin implements the `PCPlugin` interface:
+
+```python
+class PCPlugin(ABC):
+    @abstractmethod
+    def get_settings(self) -> PCSettings:
+        """Return PC-specific configuration including device mappings"""
+        pass
+```
+
+The PC plugin determines which device plugins to load through its settings:
+
+```python
+class PCTischREMSettings(PCSettings):
+    def get_active_device_plugins(self) -> list[str]:
+        return ["sem_phenomxl2"]
+```
+
 ### Main Application (`DeviceWatchdogApp`)
 
 The central orchestrator coordinates all components:
 
 - **Filesystem Monitoring**: Uses `watchdog` library to monitor directories
 - **Event Processing**: Queues and processes file system events
+- **Device Selection**: Automatically selects appropriate device processor per file
 - **UI Management**: Handles user interactions and error dialogs
 - **Session Control**: Manages processing sessions with configurable timeouts
 - **Metrics Collection**: Tracks performance and error metrics
@@ -114,9 +165,10 @@ The central orchestrator coordinates all components:
 
 Configuration follows a hierarchical pattern:
 
-1. **Base Settings** (`settings_base.py`): Common configuration options
-2. **Device Settings**: Device-specific overrides in plugin directories
-3. **Environment Variables**: Runtime configuration via `.env` files
+1. **PC Settings** (`pc_settings.py`): Global application configuration from PC plugins
+2. **Device Settings**: Device-specific overrides in plugin directories  
+3. **Composite Settings**: Runtime combination of PC and device settings per file
+4. **Environment Variables**: Runtime configuration via `.env` files
 
 **Key Configuration Areas:**
 - Directory paths (watch, destination, exceptions)
@@ -124,6 +176,14 @@ Configuration follows a hierarchical pattern:
 - Session timeouts and processing parameters
 - Database connection settings
 - Device metadata (user IDs, record types, tags)
+- Device plugin mappings per PC type
+
+**Settings Manager:**
+The `SettingsManager` coordinates configuration across the application:
+- Manages PC-specific global settings
+- Registers multiple device configurations
+- Provides device selection per file
+- Creates composite settings for processing context
 
 ### File Processing Pipeline (`core/processing/`)
 
@@ -222,11 +282,11 @@ src/ipat_watchdog/device_plugins/my_device/
 
 ```python
 # settings.py
-from ipat_watchdog.core.config.settings_base import BaseSettings
+from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 from typing import Set
 import re
 
-class MyDeviceSettings(BaseSettings):
+class MyDeviceSettings(DeviceSettings):
     # Override base settings
     DEVICE_ABBR = "MY_DEVICE"
     ALLOWED_EXTENSIONS = {".dat", ".csv", ".log"}
@@ -296,11 +356,67 @@ my_device = "ipat_watchdog.device_plugins.my_device.plugin:MyDevicePlugin"
 my_device = []  # Add any device-specific dependencies
 ```
 
-### 6. Set Environment Variable
+## 🔌 Creating a New PC Plugin
+
+### 1. Create PC Plugin Directory Structure
+
+```
+src/ipat_watchdog/pc_plugins/my_pc_blb/
+├── __init__.py
+├── plugin.py              # Main PC plugin class
+└── settings.py            # PC-specific settings
+```
+
+### 2. Implement PC Settings Class
+
+```python
+# settings.py
+from ipat_watchdog.core.config.pc_settings import PCSettings
+from pathlib import Path
+
+class MyPCSettings(PCSettings):
+    # Override PC-specific paths and settings
+    WATCH_DIR = Path("C:\\MyPC\\Upload")
+    DEST_DIR = Path("C:\\MyPC\\Data")
+    
+    # Custom session timeout
+    SESSION_TIMEOUT = 300  # 5 minutes
+    
+    def get_active_device_plugins(self) -> list[str]:
+        """Define which devices this PC supports."""
+        return ["my_device", "sem_phenomxl2"]
+```
+
+### 3. Implement PC Plugin Class
+
+```python
+# plugin.py
+from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
+from .settings import MyPCSettings
+
+class MyPCPlugin(PCPlugin):
+    def __init__(self):
+        self._settings = MyPCSettings()
+    
+    def get_settings(self):
+        return self._settings
+```
+
+### 4. Register PC Plugin in pyproject.toml
+
+```toml
+[project.entry-points."ipat_watchdog.pc_plugins"]
+my_pc_blb = "ipat_watchdog.pc_plugins.my_pc_blb.plugin:MyPCPlugin"
+
+[project.optional-dependencies]
+my_pc_blb = []  # Add any PC-specific dependencies
+```
+
+### 5. Set Environment Variable
 
 ```bash
-# In .env file
-DEVICE_NAME=my_device
+# In .env file or CI environment
+PC_NAME=my_pc_blb
 ```
 
 ## 🧪 Testing
@@ -410,6 +526,9 @@ pip install -e .[dev]
 cp .env.example .env
 # Edit .env with your settings
 
+# Set PC type for development (optional - defaults to tischrem_blb)
+# PC_NAME=tischrem_blb
+
 # Run application
 python -m ipat_watchdog
 ```
@@ -417,14 +536,17 @@ python -m ipat_watchdog
 ### Production Deployment
 
 ```bash
-# Install specific device plugin
-pip install ipat-watchdog[sem_phenomxl2]
+# Install specific PC plugin configuration
+pip install ipat-watchdog[tischrem_blb]
+
+# Set environment for target PC
+export PC_NAME=tischrem_blb
 
 # Create Windows service (using PyInstaller)
-pyinstaller --onefile --name wd-sem_phenomxl2 src/ipat_watchdog/__main__.py
+pyinstaller --onefile --name wd-tischrem_blb src/ipat_watchdog/__main__.py
 
 # Install as Windows service
-nssm install IPATWatchdog "C:\path\to\wd-sem_phenomxl2.exe"
+nssm install IPATWatchdog "C:\path\to\wd-tischrem_blb.exe"
 nssm set IPATWatchdog Start SERVICE_AUTO_START
 nssm start IPATWatchdog
 ```
@@ -511,8 +633,9 @@ pytest --cov=ipat_watchdog
 
 **Plugin Not Found:**
 - Verify plugin is installed: `pip list | grep ipat-watchdog`
-- Check `DEVICE_NAME` environment variable
+- Check `PC_NAME` environment variable
 - Verify entry point registration in `pyproject.toml`
+- Ensure PC plugin exists and has valid device mappings
 
 **File Processing Errors:**
 - Check file permissions and ownership
@@ -539,9 +662,11 @@ Enable verbose logging:
 ```bash
 # Set in .env
 LOG_LEVEL=DEBUG
+PC_NAME=tischrem_blb
 
 # Or environment variable
 export LOG_LEVEL=DEBUG
+export PC_NAME=tischrem_blb
 python -m ipat_watchdog
 ```
 

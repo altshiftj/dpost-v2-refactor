@@ -12,7 +12,7 @@ class SEMPhenomXL2Settings(DeviceSettings):
     # ──────────────────────────────────────────────────────────────────────────────
     # 📂 File Settings
     # ──────────────────────────────────────────────────────────────────────────────
-    ALLOWED_EXTENSIONS = {".tiff", ".tif"}
+    ALLOWED_EXTENSIONS = {".tiff", ".tif", ".odt", ".elid"}
     ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
 
     # ──────────────────────────────────────────────────────────────────────────────

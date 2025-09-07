@@ -36,7 +36,7 @@ def real_processing_app(tmp_settings):
     # Set up SettingsManager with test device plugin for proper test isolation
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
     from ipat_watchdog.device_plugins.test_device.plugin import TestDevicePlugin
-    from ipat_watchdog.pc_plugins.default_pc_blb.plugin import DefaultPCPlugin
+    from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
 
     # Load the test device plugin
     test_device = TestDevicePlugin()
@@ -59,7 +59,7 @@ def real_processing_app(tmp_settings):
     test_device_settings.DEBOUNCE_TIME = tmp_settings.DEBOUNCE_TIME
     
     # Load PC plugin and override its paths with test paths
-    pc_plugin = DefaultPCPlugin()
+    pc_plugin = TestPCPlugin()
     pc_settings = pc_plugin.get_settings()
     
     # Override PC settings paths to use temporary directory

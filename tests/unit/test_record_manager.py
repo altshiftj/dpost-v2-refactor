@@ -103,7 +103,6 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
             mock_sync.assert_called_once_with(record)
 
 
-
 def test_persist_records_dict_lazy_loads_once(fake_sync, tmp_settings):
     with patch("ipat_watchdog.core.records.record_manager.load_persisted_records",
                return_value={"x": LocalRecord(identifier="x")}) as mock_load:

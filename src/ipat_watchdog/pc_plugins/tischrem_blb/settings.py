@@ -14,3 +14,7 @@ class PCTischREMSettings(PCSettings):
     STABLE_CYCLES: int = 3
     TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
 
+    def get_active_device_plugins(self) -> list[str]:
+        """Return device plugins for TischREM PC."""
+        return ["sem_phenomxl2"]
+

@@ -541,7 +541,7 @@ class FileProcessManager:
             finally:
                 settings_manager.set_current_device(None)
 
-    def _get_device_for_record(self, record):
+    def _get_device_for_record(self, record: LocalRecord):
         """Get compatible device for record based on file paths."""
         settings_manager = SettingsStore.get_manager()
         

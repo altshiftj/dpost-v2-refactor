@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
 
 
 class TestDeviceA(DeviceSettings):
@@ -29,7 +29,7 @@ class TestSettingsManager:
 
     def setup_method(self):
         """Set up test settings."""
-        self.global_settings = PCSettings()
+        self.global_settings = TestPCSettings()
         self.device_a = TestDeviceA()
         self.device_b = TestDeviceB()
         self.manager = SettingsManager(
@@ -113,7 +113,7 @@ class TestSettingsStore:
         # Reset the store for each test
         SettingsStore.reset()
         
-        self.global_settings = PCSettings()
+        self.global_settings = TestPCSettings()
         self.device_a = TestDeviceA()
         self.manager = SettingsManager(
             available_devices=[self.device_a],

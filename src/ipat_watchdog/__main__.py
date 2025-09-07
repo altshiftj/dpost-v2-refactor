@@ -21,7 +21,12 @@ logger = setup_logger(__name__)
 
 def main():
     # Get PC name and lookup device list from pyproject.toml
-    pc_name = os.getenv("CI_JOB_NAME").strip()
+    pc_name = os.getenv("PC_NAME")
+    if not pc_name:
+        # Development fallback - set your desired PC name here
+        pc_name = "tischrem_blb"
+        logger.info(f"PC_NAME not set, using development fallback: {pc_name}")
+    pc_name = pc_name.strip()
     device_names = get_devices_for_pc(pc_name)
     
     logger.info(f"Loading PC plugin: {pc_name} with devices: {device_names}")
