@@ -27,11 +27,12 @@ python -m venv $venv
 Write-Host "Upgrading pip/setuptools/wheel..."
 & $python -m pip install -U pip setuptools wheel
 
-# install minimal test deps
+# Install test dependencies for the target PC
 Write-Host "Installing project with test dependencies..."
 
-$extras = @("ci", $env:CI_JOB_NAME)
-$pipTarget = Get-PipInstallTarget -Extras $extras
+$pcName = $env:CI_JOB_NAME
+$extras = @("ci", $pcName)
+$pipTarget = ".[$($extras -join ',')]"
 Write-Host "pip install target: $pipTarget"
 & $python -m pip install -e $pipTarget
 
