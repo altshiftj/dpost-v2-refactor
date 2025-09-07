@@ -2,7 +2,7 @@
 
 ## 🏗️ Architecture Overview
 
-IPAT Data Watchdog is a modular, plugin-based scientific data ingestion system designed to monitor directories for incoming files from laboratory devices, process them according to device-specific rules, and synchronize the data to external databases. The application follows a clean architecture pattern with clear separation of concerns.
+IPAT Data Watchdog is a modular, plugin-based scientific data ingestion system designed to monitor directories for incoming files from laboratory devices, process them according to device-specific rules, and synchronize the data to external databases. The application attempts to follow a clean architecture pattern with clear separation of concerns.
 
 ### Core Design Principles
 
@@ -544,24 +544,6 @@ export PC_NAME=tischrem_blb
 
 # Create Windows service (using PyInstaller)
 pyinstaller --onefile --name wd-tischrem_blb src/ipat_watchdog/__main__.py
-
-# Install as Windows service
-nssm install IPATWatchdog "C:\path\to\wd-tischrem_blb.exe"
-nssm set IPATWatchdog Start SERVICE_AUTO_START
-nssm start IPATWatchdog
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY . .
-RUN pip install .[sem_phenomxl2]
-
-EXPOSE 8000 8001
-CMD ["python", "-m", "ipat_watchdog"]
 ```
 
 ## 🔍 Common Development Patterns

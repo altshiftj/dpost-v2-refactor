@@ -1,6 +1,6 @@
 # PC Plugin System
 
-This document describes thEach PC plugin defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
+This document describes the PC plugin system, which defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
 
 - **tischrem_blb**: TischREM lab environment with SEM TischREM  
 - **zwick_blb**: Zwick testing environment with UTM Zwick machine
