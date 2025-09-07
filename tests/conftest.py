@@ -22,16 +22,24 @@ from tests.helpers.fake_process_manager import FakeFileProcessManager
 
 @pytest.fixture
 def fake_settings_manager(tmp_settings):
-    """Create a fake settings manager for tests."""
-    global_settings = PCSettings()
-    # Copy any attributes from tmp_settings to global_settings
-    for attr_name in dir(tmp_settings):
-        if not attr_name.startswith('_') and hasattr(global_settings, attr_name):
-            setattr(global_settings, attr_name, getattr(tmp_settings, attr_name))
+    """Create a fake settings manager for tests using test PC plugin."""
+    from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
+    
+    # Get the path overrides from tmp_settings
+    path_overrides = {
+        attr: getattr(tmp_settings, attr) for attr in [
+            'APP_DIR', 'WATCH_DIR', 'DEST_DIR', 'RENAME_DIR', 
+            'EXCEPTIONS_DIR', 'DAILY_RECORDS_JSON', 'LOG_FILE'
+        ] if hasattr(tmp_settings, attr)
+    }
+    
+    # Create test PC plugin with the same path overrides
+    test_pc_plugin = TestPCPlugin(override_paths=path_overrides)
+    pc_settings = test_pc_plugin.get_settings()
     
     settings_manager = SettingsManager(
-        available_devices=[],
-        pc_settings=global_settings
+        available_devices=[tmp_settings],
+        pc_settings=pc_settings
     )
     SettingsStore.set_manager(settings_manager)
     return settings_manager
@@ -45,56 +53,52 @@ def _reset_settings_store():
 @pytest.fixture
 def tmp_settings(tmp_path) -> DeviceSettings:
     """Return a settings instance whose entire file-tree lives in tmp_path."""
+    from ipat_watchdog.device_plugins.test_device.settings import TestDeviceSettings
+    from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
+    from pathlib import Path
+    
     root: Path = tmp_path / "sandbox"
 
-    class TestSettings(DeviceSettings):
-        # ─ snapshot-watcher tweaks ─
-        POLL_SECONDS = 0.2
-        STABLE_CYCLES = 1
-        MAX_WAIT_SECONDS = 10.0
+    # Create path overrides for both device and PC settings
+    path_overrides = {
+        'APP_DIR': root / "App",
+        'WATCH_DIR': root / "Upload",
+        'DEST_DIR': root / "Data", 
+        'RENAME_DIR': root / "Data" / "00_To_Rename",
+        'EXCEPTIONS_DIR': root / "Data" / "01_Exceptions",
+        'DAILY_RECORDS_JSON': root / "records.json",
+        'LOG_FILE': root / "watchdog.log"
+    }
 
-        ALLOWED_EXTENSIONS = {".tif", ".txt"}
-        
-        # ─ Additional required attributes ─
-        ID_SEP = '-'
-        DEVICE_ABBR = 'TEST'
-        DEVICE_RECORD_KADI_ID = 'test_01'
-        SENTINEL_NAME = None  # Can be overridden by individual tests
-        SESSION_TIMEOUT = 300
-        DEBOUNCE_TIME = 0.1
+    # Create test PC plugin with path overrides
+    test_pc_plugin = TestPCPlugin(override_paths=path_overrides)
+    pc_settings = test_pc_plugin.get_settings()
+    
+    # Create a test device settings instance with the same path overrides
+    settings = TestDeviceSettings()
+    
+    # Override paths to use temporary directory
+    for key, value in path_overrides.items():
+        setattr(settings, key, value)  # Force set even if attribute doesn't exist yet
+    
+    # Override for faster testing
+    settings.POLL_SECONDS = 0.2
+    settings.STABLE_CYCLES = 1
+    settings.MAX_WAIT_SECONDS = 10.0
+    settings.SESSION_TIMEOUT = 300
+    settings.DEBOUNCE_TIME = 0.1
+    settings.SENTINEL_NAME = None  # Can be overridden by individual tests
 
-        # ─ filesystem layout ─
-        APP_DIR       = root / "App"
-        WATCH_DIR     = root / "Upload_Ordner"
-        DEST_DIR      = root / "Data"
-        RENAME_DIR    = DEST_DIR / "00_To_Rename"
-        EXCEPTIONS_DIR = DEST_DIR / "01_Exceptions"
-        DAILY_RECORDS_JSON = root / "records.json"
-        LOG_FILE            = root / "watchdog.log"
+    # Automatically create dirs when instantiated
+    for d in (
+        settings.WATCH_DIR,
+        settings.DEST_DIR,
+        settings.RENAME_DIR,
+        settings.EXCEPTIONS_DIR,
+    ):
+        d.mkdir(parents=True, exist_ok=True)
 
-        # DeviceSettings requirements
-        @classmethod
-        def get_device_id(cls) -> str:
-            return "test_device"
-            
-        def matches_file(self, filepath: str) -> bool:
-            """Check if this device can process the given file."""
-            from pathlib import Path
-            path = Path(filepath)
-            return path.suffix.lower() in {'.tif', '.txt'}
-
-        # automatically create dirs when instantiated
-        def __post_init__(self):
-            for d in (
-                self.WATCH_DIR,
-                self.DEST_DIR,
-                self.RENAME_DIR,
-                self.EXCEPTIONS_DIR,
-            ):
-                d.mkdir(parents=True, exist_ok=True)
-
-    settings = TestSettings()
-    SettingsStore.set_manager(SettingsManager(available_devices=[settings], pc_settings=PCSettings()))  # use new API
+    SettingsStore.set_manager(SettingsManager(available_devices=[settings], pc_settings=pc_settings))
     return settings
 
 

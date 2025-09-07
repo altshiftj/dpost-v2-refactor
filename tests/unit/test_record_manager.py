@@ -123,4 +123,5 @@ def test_sync_record_deletes_if_no_files_remain(record_manager):
         record_manager._sync_record(record)
 
     assert "dev-usr-ipat-sample" not in record_manager._persist_records_dict
-    mock_save.assert_called_once()
+    # Should be called twice: once after sync attempt, once after record removal
+    assert mock_save.call_count == 2

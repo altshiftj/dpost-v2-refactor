@@ -26,6 +26,12 @@ def init_settings(tmp_path):
     """
     root = tmp_path / "test_root"
     
+    # Ensure directories exist
+    (root / "watch").mkdir(parents=True, exist_ok=True)
+    (root / "dest").mkdir(parents=True, exist_ok=True)
+    (root / "rename").mkdir(parents=True, exist_ok=True)
+    (root / "exceptions").mkdir(parents=True, exist_ok=True)
+    
     class TestDeviceSettings(DeviceSettings):
         # Basic paths
         WATCH_DIR = root / "watch"
@@ -193,7 +199,7 @@ def test_process_item_valid_new_record(fpm, monkeypatch):
     test_path = "/fake/path/ABC-DEF-sample.txt"
 
     import ipat_watchdog.core.processing.file_process_manager as mod
-    monkeypatch.setattr(mod, "get_record_path", lambda prefix: "dummy_record_path")
+    monkeypatch.setattr(mod, "get_record_path", lambda prefix, device_abbr=None: "dummy_record_path")
 
     expected_id = generate_record_id("abc-def-sample")
     fpm.process_item(test_path)
@@ -306,7 +312,7 @@ def test_auto_rename_when_conflict(fpm, monkeypatch):
     fpm.file_processor.device_specific_processing = mock_device_specific_processing
 
     import ipat_watchdog.core.processing.file_process_manager as mod
-    monkeypatch.setattr(mod, "get_record_path", lambda pfx: "dummy_record_path")
+    monkeypatch.setattr(mod, "get_record_path", lambda pfx, device_abbr=None: "dummy_record_path")
 
     fpm.add_item_to_record(rec, "/fake/path/user-inst-sample.txt", prefix, ".txt")
     uploaded_paths = list(rec.files_uploaded.keys())
@@ -387,7 +393,7 @@ def test_process_item_elid_directory(fpm, monkeypatch):
     fpm.file_processor.device_specific_processing = mock_device_processing
 
     import ipat_watchdog.core.processing.file_process_manager as mod
-    monkeypatch.setattr(mod, "get_record_path", lambda prefix: "dummy_record_elid_path")
+    monkeypatch.setattr(mod, "get_record_path", lambda prefix, device_abbr=None: "dummy_record_elid_path")
 
     test_path = "/fake/path/usr-inst-elid_folder"
     fpm.process_item(test_path)
@@ -416,7 +422,7 @@ def test_add_item_to_record_success_path(fpm, monkeypatch):
     extension = ".txt"
 
     import ipat_watchdog.core.processing.file_process_manager as mod
-    monkeypatch.setattr(mod, "get_record_path", lambda prefix: "record_path")
+    monkeypatch.setattr(mod, "get_record_path", lambda prefix, device_abbr=None: "record_path")
     monkeypatch.setattr(mod, "generate_file_id", lambda prefix: "fileid")
 
     final_result = {"moved": False}

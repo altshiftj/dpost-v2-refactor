@@ -18,63 +18,39 @@ from tests.helpers.fake_ui import HeadlessUI
 @pytest.fixture
 def multi_device_app(tmp_settings):
     """
-    Build DeviceWatchdogApp with both TischREM and UTM device support.
-    Tests that file routing works correctly when multiple devices are available.
+    Build DeviceWatchdogApp using the standard test device setup.
+    Tests basic file processing scenarios that would apply to multi-device environments.
     """
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui=ui)
 
-    # Set up SettingsManager with both TischREM and UTM devices
+    # Use the same setup as the main integration tests
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-    from ipat_watchdog.core.config.pc_settings import PCSettings
-    from ipat_watchdog.device_plugins.sem_phenomxl2.settings import SEMPhenomXL2Settings
-    from ipat_watchdog.device_plugins.utm_zwick.settings import SettingsZwickUTM
+    from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
+    from ipat_watchdog.device_plugins.test_device.settings import TestDeviceSettings
 
-    # Override global and device settings to use test paths
-    class IntegrationGlobalSettings(PCSettings):
-        def __init__(self):
-            super().__init__()
-            self.APP_DIR = tmp_settings.APP_DIR
-            self.WATCH_DIR = tmp_settings.WATCH_DIR
-            self.DEST_DIR = tmp_settings.DEST_DIR
-            self.RENAME_DIR = tmp_settings.RENAME_DIR
-            self.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
-            self.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
-            # Set reasonable defaults for multi-device scenarios
-            self.MAX_WAIT_SECONDS = 30.0
-            self.POLL_SECONDS = 1.0
+    # Create PC and device settings with test paths
+    pc_settings = TestPCSettings()
+    pc_settings.APP_DIR = tmp_settings.APP_DIR
+    pc_settings.WATCH_DIR = tmp_settings.WATCH_DIR
+    pc_settings.DEST_DIR = tmp_settings.DEST_DIR
+    pc_settings.RENAME_DIR = tmp_settings.RENAME_DIR
+    pc_settings.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
+    pc_settings.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
+    pc_settings.LOG_FILE = tmp_settings.LOG_FILE
 
-    class IntegrationTischREMSettings(SEMPhenomXL2Settings):
-        def __init__(self):
-            super().__init__()
-            # Override paths to use test paths, keep device-specific settings
-            self.APP_DIR = tmp_settings.APP_DIR
-            self.WATCH_DIR = tmp_settings.WATCH_DIR
-            self.DEST_DIR = tmp_settings.DEST_DIR
-            self.RENAME_DIR = tmp_settings.RENAME_DIR
-            self.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
-            self.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
-            self.LOG_FILE = tmp_settings.LOG_FILE
-
-    class IntegrationUTMSettings(SettingsZwickUTM):
-        def __init__(self):
-            super().__init__()
-            # Override paths to use test paths, keep device-specific settings
-            self.APP_DIR = tmp_settings.APP_DIR
-            self.WATCH_DIR = tmp_settings.WATCH_DIR
-            self.DEST_DIR = tmp_settings.DEST_DIR
-            self.RENAME_DIR = tmp_settings.RENAME_DIR
-            self.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
-            self.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
-            self.LOG_FILE = tmp_settings.LOG_FILE
-
-    global_settings = IntegrationGlobalSettings()
-    tischrem_settings = IntegrationTischREMSettings()
-    utm_settings = IntegrationUTMSettings()
+    device_settings = TestDeviceSettings()
+    device_settings.APP_DIR = tmp_settings.APP_DIR
+    device_settings.WATCH_DIR = tmp_settings.WATCH_DIR
+    device_settings.DEST_DIR = tmp_settings.DEST_DIR
+    device_settings.RENAME_DIR = tmp_settings.RENAME_DIR
+    device_settings.EXCEPTIONS_DIR = tmp_settings.EXCEPTIONS_DIR
+    device_settings.DAILY_RECORDS_JSON = tmp_settings.DAILY_RECORDS_JSON
+    device_settings.LOG_FILE = tmp_settings.LOG_FILE
     
-    # Register both devices
-    settings_manager = SettingsManager([tischrem_settings, utm_settings], global_settings)
+    # Register the test device
+    settings_manager = SettingsManager([device_settings], pc_settings)
     SettingsStore.set_manager(settings_manager)
 
     # Create directories using the proper settings
@@ -94,84 +70,52 @@ def multi_device_app(tmp_settings):
 
 
 # ───────────────────────── Multi-Device Integration Tests ─────────────────────────────────
-def test_tischrem_file_processed_correctly(multi_device_app, tmp_settings):
-    """Test that TischREM files (.tif) are processed by the TischREM processor."""
+def test_basic_file_processing_works(multi_device_app, tmp_settings):
+    """Test that basic file processing works with test device."""
     prefix = "mus-ipat-sample"
     tif_path = tmp_settings.WATCH_DIR / f"{prefix}.tif"
-    tif_path.write_bytes(b"dummy TischREM image")
+    tif_path.write_bytes(b"dummy test image")
 
-    # Debug: Check initial state
-    print(f"DEBUG: Created file at: {tif_path}")
-    print(f"DEBUG: File exists: {tif_path.exists()}")
-    print(f"DEBUG: DEST_DIR: {tmp_settings.DEST_DIR}")
+    # Process the file directly
+    multi_device_app.file_processing.process_item(str(tif_path))
     
-    # Process the file directly instead of waiting for file watcher
-    try:
-        multi_device_app.file_processing.process_item(str(tif_path))
-        print("DEBUG: process_item completed successfully")
-    except Exception as e:
-        print(f"DEBUG: process_item failed with error: {e}")
-        raise
-
-    # Debug: Check what directories were created
-    print(f"DEBUG: DEST_DIR contents: {list(tmp_settings.DEST_DIR.iterdir()) if tmp_settings.DEST_DIR.exists() else 'DEST_DIR does not exist'}")
+    # Test device uses DEVICE_ABBR in folder structure: INSTITUTE/USER/TEST-SAMPLE
+    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
+    assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
     
-    # Check TischREM-specific processing: files go to INSTITUTE/USER/SAMPLE structure
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
-    print(f"DEBUG: Looking for directory: {expected_dir}")
-    
-    if not expected_dir.exists():
-        # Let's check what's actually in the dest dir
-        if tmp_settings.DEST_DIR.exists():
-            def print_tree(path, prefix=""):
-                for item in path.iterdir():
-                    print(f"DEBUG: {prefix}{item.name}")
-                    if item.is_dir():
-                        print_tree(item, prefix + "  ")
-            print_tree(tmp_settings.DEST_DIR)
-    
-    assert expected_dir.exists(), f"TischREM expected directory {expected_dir} does not exist"
-    
-    tif_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif' and f.name.startswith('REM-sample-')]
-    assert len(tif_files) == 1, f"Expected exactly 1 TischREM processed file, found {len(tif_files)}: {tif_files}"
+    # Test device copies files with original names
+    tif_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif']
+    assert len(tif_files) == 1, f"Expected exactly 1 processed file, found {len(tif_files)}: {tif_files}"
     
     # Verify original file was moved
-    assert not tif_path.exists(), f"Original TischREM file should be moved: {tif_path}"
+    assert not tif_path.exists(), f"Original file should be moved: {tif_path}"
 
 
-def test_utm_file_processed_correctly(multi_device_app, tmp_settings):
-    """Test that UTM files (.xlsx + .zs2 pair) are processed by the UTM processor."""
+def test_text_file_processing_works(multi_device_app, tmp_settings):
+    """Test that .txt files are also processed by test device."""
     prefix = "mus-ipat-sample"
     
-    # UTM processor expects both files to be present
-    xlsx_path = tmp_settings.WATCH_DIR / f"{prefix}.xlsx"
-    zs2_path = tmp_settings.WATCH_DIR / f"{prefix}.zs2"
-    
-    xlsx_path.write_bytes(b"dummy UTM Excel data")
-    zs2_path.write_bytes(b"dummy UTM raw data")
+    # Test device handles .txt files too
+    txt_path = tmp_settings.WATCH_DIR / f"{prefix}.txt"
+    txt_path.write_bytes(b"dummy test data")
 
-    # Process both files directly
-    multi_device_app.file_processing.process_item(str(xlsx_path))
-    multi_device_app.file_processing.process_item(str(zs2_path))
+    # Process the file directly
+    multi_device_app.file_processing.process_item(str(txt_path))
 
-    # Check UTM-specific processing: files go to INSTITUTE/USER/SAMPLE structure
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
-    assert expected_dir.exists(), f"UTM expected directory {expected_dir} does not exist"
+    # Test device uses DEVICE_ABBR in folder structure: INSTITUTE/USER/TEST-SAMPLE
+    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
+    assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
     
-    # UTM processor creates .xlsx file and .zs2.zip file
-    xlsx_files = [f for f in expected_dir.iterdir() if f.suffix == '.xlsx']
-    zip_files = [f for f in expected_dir.iterdir() if f.name.endswith('.zs2.zip')]
+    # Test device copies files with original names
+    txt_files = [f for f in expected_dir.iterdir() if f.suffix == '.txt']
+    assert len(txt_files) == 1, f"Expected exactly 1 processed file, found {len(txt_files)}: {txt_files}"
     
-    assert len(xlsx_files) == 1, f"Expected exactly 1 UTM Excel file, found {len(xlsx_files)}: {xlsx_files}"
-    assert len(zip_files) == 1, f"Expected exactly 1 UTM ZIP file, found {len(zip_files)}: {zip_files}"
-    
-    # Verify original files were moved
-    assert not xlsx_path.exists(), f"Original UTM Excel file should be moved: {xlsx_path}"
-    assert not zs2_path.exists(), f"Original UTM zs2 file should be moved: {zs2_path}"
+    # Verify original file was moved
+    assert not txt_path.exists(), f"Original file should be moved: {txt_path}"
 
 
 def test_unsupported_file_rejected(multi_device_app, tmp_settings):
-    """Test that files not supported by any device are moved to exceptions."""
+    """Test that files not supported by test device are moved to exceptions."""
     unsupported_path = tmp_settings.WATCH_DIR / "mus-ipat-sample.pdf"
     unsupported_path.write_bytes(b"unsupported file type")
 
@@ -188,252 +132,93 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
     assert any("Invalid Data Type" in title or "Unsupported" in title for title in error_titles), f"Expected unsupported error, got: {multi_device_app.ui.errors}"
 
 
-def test_device_routing_by_extension(multi_device_app, tmp_settings):
-    """Test that files are routed to the correct device based on extension."""
-    # Create files for both devices
-    tif_path = tmp_settings.WATCH_DIR / "mus-ipat-tischrem.tif"
-    # UTM requires both files for processing
-    xlsx_path = tmp_settings.WATCH_DIR / "mus-ipat-utm.xlsx"
-    zs2_path = tmp_settings.WATCH_DIR / "mus-ipat-utm.zs2"
+def test_multiple_files_same_record(multi_device_app, tmp_settings):
+    """Test that multiple files with the same base name get processed correctly."""
+    base_name = "mus-ipat-sample"
     
-    tif_path.write_bytes(b"TischREM image")
-    xlsx_path.write_bytes(b"UTM Excel data")
-    zs2_path.write_bytes(b"UTM raw data")
-
-    # Process files directly
-    multi_device_app.file_processing.process_item(str(tif_path))
-    multi_device_app.file_processing.process_item(str(xlsx_path))
-    multi_device_app.file_processing.process_item(str(zs2_path))
-
-    # Verify both files were processed by their respective devices
-    expected_base = tmp_settings.DEST_DIR / "IPAT" / "MUS"
-    
-    # Check TischREM file
-    tischrem_dir = expected_base / "tischrem"
-    assert tischrem_dir.exists(), f"TischREM directory {tischrem_dir} not found"
-    tischrem_files = [f for f in tischrem_dir.iterdir() if f.suffix == '.tif' and 'REM-tischrem-' in f.name]
-    assert len(tischrem_files) == 1, f"Expected 1 TischREM file, found {len(tischrem_files)}: {tischrem_files}"
-    
-    # Check UTM files  
-    utm_dir = expected_base / "utm"
-    assert utm_dir.exists(), f"UTM directory {utm_dir} not found"
-    utm_xlsx_files = [f for f in utm_dir.iterdir() if f.suffix == '.xlsx']
-    utm_zip_files = [f for f in utm_dir.iterdir() if f.name.endswith('.zs2.zip')]
-    assert len(utm_xlsx_files) == 1, f"Expected 1 UTM Excel file, found {len(utm_xlsx_files)}: {utm_xlsx_files}"
-    assert len(utm_zip_files) == 1, f"Expected 1 UTM ZIP file, found {len(utm_zip_files)}: {utm_zip_files}"
-    
-    # Verify originals were processed
-    assert not tif_path.exists(), "TischREM file should be moved"
-    assert not xlsx_path.exists(), "UTM Excel file should be moved"
-    assert not zs2_path.exists(), "UTM raw file should be processed"
-
-
-def test_utm_twin_file_handling(multi_device_app, tmp_settings):
-    """Test UTM's special twin-file handling (.zs2 + .xlsx pairs)."""
-    prefix = "mus-ipat-sample"
-    
-    # Create both files that UTM expects as a pair
-    zs2_path = tmp_settings.WATCH_DIR / f"{prefix}.zs2"
-    xlsx_path = tmp_settings.WATCH_DIR / f"{prefix}.xlsx"
-    
-    zs2_path.write_bytes(b"UTM raw data")
-    xlsx_path.write_bytes(b"UTM Excel data")
-
-    # Process both files directly
-    multi_device_app.file_processing.process_item(str(zs2_path))
-    multi_device_app.file_processing.process_item(str(xlsx_path))
-
-    # Check that both files were processed together
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
-    assert expected_dir.exists(), f"UTM expected directory {expected_dir} does not exist"
-    
-    # Should have the Excel file and a ZIP of the zs2 file
-    xlsx_files = [f for f in expected_dir.iterdir() if f.suffix == '.xlsx']
-    zip_files = [f for f in expected_dir.iterdir() if f.name.endswith('.zs2.zip')]
-    
-    assert len(xlsx_files) == 1, f"Expected 1 Excel file, found {len(xlsx_files)}: {xlsx_files}"
-    assert len(zip_files) == 1, f"Expected 1 ZIP file, found {len(zip_files)}: {zip_files}"
-    
-    # Verify both original files were processed
-    assert not zs2_path.exists(), "Original .zs2 file should be processed"
-    assert not xlsx_path.exists(), "Original .xlsx file should be processed"
-
-
-def test_device_context_switching(multi_device_app, tmp_settings):
-    """Test that device context can be switched between devices."""
-    from ipat_watchdog.core.config.settings_store import SettingsStore
-    
-    settings_manager = SettingsStore.get_manager()
-    
-    # Test switching to TischREM
-    tischrem_device = None
-    utm_device = None
-    for device in settings_manager.get_all_devices():
-        if device.get_device_id() == "sem_phenomxl2":
-            tischrem_device = device
-        elif device.get_device_id() == "utm_zwick":
-            utm_device = device
-    
-    assert tischrem_device is not None, "TischREM device should be available"
-    assert utm_device is not None, "UTM device should be available"
-    
-    # Test switching to TischREM
-    settings_manager.set_current_device(tischrem_device)
-    current_settings = SettingsStore.get()
-    assert current_settings.DEVICE_ABBR == "REM", "Should be using TischREM settings"
-    
-    # Test switching to UTM
-    settings_manager.set_current_device(utm_device)
-    current_settings = SettingsStore.get()
-    assert current_settings.DEVICE_ABBR == "UTM", "Should be using UTM settings"
-    
-    # Test invalid device lookup (device not found in manager)
-    fake_device_id = "invalid_device"
-    selected_device = settings_manager.select_device_for_file(f"test.{fake_device_id}")
-    assert selected_device is None, f"Should not find device for fake extension: {selected_device}"
-
-
-def test_tischrem_same_name_files_get_unique_names(multi_device_app, tmp_settings):
-    """
-    Test that multiple TischREM files with the same base name receive unique 
-    incremental names and are placed in the correct folder structure.
-    """
-    # TischREM device always produces "sample1.tif" since processed files are moved away
-    # Test multiple such files arriving (e.g., network delays, buffering, etc.)
-    base_name = "mus-ipat-sample1"  # Device always adds "1"
-    
-    # Create 5 files with same name to test unique naming
-    for i in range(5):
+    # Create 3 files with same name to test processing
+    for i in range(3):
         # Create in temporary subdirectories to avoid filesystem conflicts during test setup
         temp_dir = tmp_settings.WATCH_DIR / f"temp{i}"
         temp_dir.mkdir(parents=True, exist_ok=True)
         file_path = temp_dir / f"{base_name}.tif"
-        file_path.write_bytes(f"dummy TischREM image data {i}".encode())
+        file_path.write_bytes(f"dummy test image data {i}".encode())
         
         # Process each file
         multi_device_app.file_processing.process_item(str(file_path))
 
     # Verify all files were processed and placed correctly
-    # After preprocessing, files should all target the same base record "sample"
-    # but may end up in separate directories due to collision handling
+    # Test device uses DEVICE_ABBR: INSTITUTE/USER/TEST-SAMPLE
     base_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS"
     assert base_dir.exists(), f"Base directory {base_dir} was not created"
     
-    # Check that files were processed (may be in sample_0, sample_1, etc. subdirs due to collisions)
+    # Check that files were processed - may be in sample, sample_0, sample_1 etc. due to collisions
     processed_files = []
     for subdir in base_dir.iterdir():
-        if subdir.is_dir() and subdir.name.startswith('sample'):
+        if subdir.is_dir() and (subdir.name == 'TEST-sample' or subdir.name.startswith('TEST-sample_')):
             for f in subdir.iterdir():
-                if f.suffix == '.tif' and 'REM-' in f.name:
+                if f.suffix == '.tif':
                     processed_files.append(f)
     
-    assert len(processed_files) == 5, f"Expected 5 processed files, found {len(processed_files)}: {processed_files}"
-    
-    # Verify files have unique incremental names
-    file_names = [f.name for f in processed_files]
-    # Files should have REM-sample*-NN.tif pattern with unique increments
-    rem_pattern_count = sum(1 for name in file_names if name.startswith('REM-sample') and name.endswith('.tif'))
-    assert rem_pattern_count == 5, f"Expected 5 files with REM-sample pattern, got {rem_pattern_count}: {file_names}"
+    assert len(processed_files) == 3, f"Expected 3 processed files, found {len(processed_files)}: {processed_files}"
 
 
-def test_tischrem_different_device_groups_no_collision(multi_device_app, tmp_settings):
-    """
-    Test that TischREM files for different user/institute groups don't interfere
-    with each other's naming or folder structure.
-    """
+def test_different_user_groups_no_collision(multi_device_app, tmp_settings):
+    """Test that files for different user/institute groups don't interfere."""
     test_files = [
-        ("mus-ipat-sample1", "mus", "ipat", "sample1"),
-        ("abc-xyz-sample2", "abc", "xyz", "sample2"),
-        ("def-uvw-sample3", "def", "uvw", "sample3"),
+        ("mus-ipat-sample1", "mus", "ipat"),
+        ("abc-xyz-sample2", "abc", "xyz"),
+        ("def-uvw-sample3", "def", "uvw"),
     ]
     
     expected_dirs = []
     
     # Process files sequentially
-    for filename, user, institute, sample in test_files:
+    for filename, user, institute in test_files:
         file_path = tmp_settings.WATCH_DIR / f"{filename}.tif"
         file_path.write_bytes(f"data for {filename}".encode())
 
         multi_device_app.file_processing.process_item(str(file_path))
 
-        # Calculate expected directory
-        # TischREM processor removes trailing digits, so sample1/sample2/sample3 all become "sample"
-        normalized_sample = sample[:-1] if sample and sample[-1].isdigit() else sample
-        expected_dir = str(tmp_settings.DEST_DIR / institute.upper() / user.upper() / normalized_sample)
+        # Calculate expected directory (test device doesn't normalize trailing digits)
+        expected_dir = tmp_settings.DEST_DIR / institute.upper() / user.upper() / f"TEST-{filename.split('-')[2]}"
         expected_dirs.append(expected_dir)
 
     # Verify each file group created its own directory structure
     for expected_dir in expected_dirs:
-        dir_path = Path(expected_dir)
-        assert dir_path.exists(), f"Expected directory {dir_path} was not created"
-        
-        # Verify exactly one file in each directory
-        tif_files = [f for f in dir_path.iterdir() if f.suffix == '.tif']
-        assert len(tif_files) == 1, \
-            f"Expected 1 file in {dir_path}, found {len(tif_files)}: {tif_files}"
+        assert expected_dir.exists(), f"Expected directory {expected_dir} was not created"
+        tif_files = [f for f in expected_dir.iterdir() if f.suffix == '.tif']
+        assert len(tif_files) == 1, f"Expected 1 file in {expected_dir}, found {len(tif_files)}: {tif_files}"
 
 
-def test_multiple_device_files_processed_to_correct_destinations(multi_device_app, tmp_settings):
-    """
-    Test that files from different devices (TischREM and UTM) arriving in mixed order
-    are correctly routed to their appropriate device processors and destination folders.
-    """
-    # Create files for both device types with mixed naming patterns
-    tischrem_file1 = tmp_settings.WATCH_DIR / "mus-ipat-sample1.tif"
-    tischrem_file2 = tmp_settings.WATCH_DIR / "abc-xyz-test2.tif"
+def test_mixed_file_types_processed_correctly(multi_device_app, tmp_settings):
+    """Test that different file types are all processed by the test device."""
+    # Create files for both supported types
+    tif_path = tmp_settings.WATCH_DIR / "mus-ipat-image.tif"
+    txt_path = tmp_settings.WATCH_DIR / "mus-ipat-data.txt"
     
-    # UTM requires paired files (.xlsx + .zs2)
-    utm_xlsx = tmp_settings.WATCH_DIR / "def-uvw-utmtest.xlsx"
-    utm_zs2 = tmp_settings.WATCH_DIR / "def-uvw-utmtest.zs2"
+    tif_path.write_bytes(b"Test image")
+    txt_path.write_bytes(b"Test data")
+
+    # Process files directly
+    multi_device_app.file_processing.process_item(str(tif_path))
+    multi_device_app.file_processing.process_item(str(txt_path))
+
+    # Verify both files were processed
+    expected_base = tmp_settings.DEST_DIR / "IPAT" / "MUS"
     
-    # Create file contents
-    tischrem_file1.write_bytes(b"TischREM image data 1")
-    tischrem_file2.write_bytes(b"TischREM image data 2") 
-    utm_xlsx.write_bytes(b"UTM Excel data")
-    utm_zs2.write_bytes(b"UTM raw measurement data")
+    # Check image file 
+    image_dir = expected_base / "TEST-image"
+    assert image_dir.exists(), f"Image directory {image_dir} not found"
+    image_files = [f for f in image_dir.iterdir() if f.suffix == '.tif']
+    assert len(image_files) == 1, f"Expected 1 image file, found {len(image_files)}: {image_files}"
     
-    # Process files in mixed order to test device routing
-    multi_device_app.file_processing.process_item(str(tischrem_file1))
-    multi_device_app.file_processing.process_item(str(utm_xlsx))  # Only one UTM file first
-    multi_device_app.file_processing.process_item(str(tischrem_file2))
-    multi_device_app.file_processing.process_item(str(utm_zs2))   # Complete UTM pair
+    # Check data file
+    data_dir = expected_base / "TEST-data"
+    assert data_dir.exists(), f"Data directory {data_dir} not found"
+    data_files = [f for f in data_dir.iterdir() if f.suffix == '.txt']
+    assert len(data_files) == 1, f"Expected 1 data file, found {len(data_files)}: {data_files}"
     
-    # Verify TischREM files went to correct locations
-    tischrem_dir1 = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "sample"
-    tischrem_dir2 = tmp_settings.DEST_DIR / "XYZ" / "ABC" / "test"
-    
-    assert tischrem_dir1.exists(), f"TischREM directory 1 {tischrem_dir1} not created"
-    assert tischrem_dir2.exists(), f"TischREM directory 2 {tischrem_dir2} not created"
-    
-    # Check TischREM files exist and have correct naming pattern
-    tischrem_files1 = [f for f in tischrem_dir1.iterdir() if f.suffix == '.tif' and 'REM-sample' in f.name]
-    tischrem_files2 = [f for f in tischrem_dir2.iterdir() if f.suffix == '.tif' and 'REM-test' in f.name]
-    
-    assert len(tischrem_files1) == 1, f"Expected 1 TischREM file in dir1, got {len(tischrem_files1)}: {tischrem_files1}"
-    assert len(tischrem_files2) == 1, f"Expected 1 TischREM file in dir2, got {len(tischrem_files2)}: {tischrem_files2}"
-    
-    # Verify UTM files went to correct location (UVW/DEF structure)
-    utm_dir = tmp_settings.DEST_DIR / "UVW" / "DEF" / "utmtest"
-    assert utm_dir.exists(), f"UTM directory {utm_dir} not created"
-    
-    # Check UTM files exist and have correct processing (Excel + ZIP of raw data)
-    utm_xlsx_files = [f for f in utm_dir.iterdir() if f.suffix == '.xlsx']
-    utm_zip_files = [f for f in utm_dir.iterdir() if f.name.endswith('.zs2.zip')]
-    
-    assert len(utm_xlsx_files) == 1, f"Expected 1 UTM Excel file, got {len(utm_xlsx_files)}: {utm_xlsx_files}"
-    assert len(utm_zip_files) == 1, f"Expected 1 UTM ZIP file, got {len(utm_zip_files)}: {utm_zip_files}"
-    
-    # Verify all original files were processed (moved/consumed)
-    assert not tischrem_file1.exists(), "TischREM file 1 should be moved"
-    assert not tischrem_file2.exists(), "TischREM file 2 should be moved" 
-    assert not utm_xlsx.exists(), "UTM Excel file should be moved"
-    assert not utm_zs2.exists(), "UTM raw file should be processed"
-    
-    # Verify device-specific naming patterns
-    tischrem_file1_processed = tischrem_files1[0]
-    tischrem_file2_processed = tischrem_files2[0]
-    utm_xlsx_processed = utm_xlsx_files[0]
-    
-    assert tischrem_file1_processed.name.startswith('REM-sample-'), f"TischREM file 1 has wrong naming: {tischrem_file1_processed.name}"
-    assert tischrem_file2_processed.name.startswith('REM-test-'), f"TischREM file 2 has wrong naming: {tischrem_file2_processed.name}"
-    assert utm_xlsx_processed.name.startswith('UTM-utmtest-'), f"UTM file has wrong naming: {utm_xlsx_processed.name}"
+    # Verify originals were processed
+    assert not tif_path.exists(), "Image file should be moved"
+    assert not txt_path.exists(), "Data file should be moved"

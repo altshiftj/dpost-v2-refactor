@@ -3,11 +3,11 @@ from ipat_watchdog.pc_device_mapping import get_devices_for_pc, PC_DEVICE_MAP
 
 def test_pc_device_mapping():
     """Test the PC-device mapping functionality."""
-    # Test known mappings
-    assert get_devices_for_pc("default_pc_blb") == ["sem_phenomxl2"]
-    assert get_devices_for_pc("lab_workstation_blb") == ["sem_phenomxl2", "psa_horibalinks_blb"]
-    assert get_devices_for_pc("office_desktop_blb") == ["utm_zwick"]
-    assert get_devices_for_pc("server_backend_blb") == ["sem_phenomxl2", "psa_horibalinks_blb", "utm_zwick"]
+    # Test actual mappings
+    assert get_devices_for_pc("test_pc") == ["test_device"]
+    assert get_devices_for_pc("tischrem_blb") == ["sem_phenomxl2"]
+    assert get_devices_for_pc("zwick_blb") == ["utm_zwick"]
+    assert get_devices_for_pc("horiba_blb") == ["psa_horiba", "dsv_horiba"]
     
     # Test unknown PC - should fallback to default
     assert get_devices_for_pc("unknown_pc") == ["sem_phenomxl2"]
@@ -17,8 +17,8 @@ def test_loader_integration():
     from ipat_watchdog.loader import get_devices_for_pc as loader_get_devices
     
     # Should return same results as direct mapping
-    assert loader_get_devices("default_pc_blb") == ["sem_phenomxl2"]
-    assert loader_get_devices("lab_workstation_blb") == ["sem_phenomxl2", "psa_horibalinks_blb"]
+    assert loader_get_devices("test_pc") == ["test_device"]
+    assert loader_get_devices("tischrem_blb") == ["sem_phenomxl2"]
 
 def test_mapping_completeness():
     """Test that all PCs have at least one device."""

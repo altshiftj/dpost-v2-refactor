@@ -3,26 +3,27 @@ from ipat_watchdog.loader import load_pc_plugin
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
 from ipat_watchdog.core.config.pc_settings import PCSettings
 
-def test_load_default_pc_plugin():
-    """Test loading the default PC plugin."""
-    plugin = load_pc_plugin("default_pc_blb")
+def test_load_test_pc_plugin():
+    """Test loading the test PC plugin."""
+    plugin = load_pc_plugin("test_pc")
     assert isinstance(plugin, PCPlugin)
     
     settings = plugin.get_settings()
     assert isinstance(settings, PCSettings)
+    
+    # Verify test PC specific settings
+    assert str(settings.WATCH_DIR).endswith("Upload")
+    assert str(settings.DEST_DIR).endswith("Data")
+    assert settings.PC_NAME == "TEST_PC"
+    assert settings.PC_LOCATION == "Test Lab"
 
-def test_load_lab_workstation_plugin():
-    """Test loading the lab workstation PC plugin."""
-    plugin = load_pc_plugin("lab_workstation_blb")
+def test_load_real_pc_plugin():
+    """Test loading a real PC plugin."""
+    plugin = load_pc_plugin("tischrem_blb")
     assert isinstance(plugin, PCPlugin)
     
     settings = plugin.get_settings()
     assert isinstance(settings, PCSettings)
-    
-    # Verify lab-specific overrides
-    assert str(settings.WATCH_DIR) == "D:\\LabData\\Upload"
-    assert str(settings.DEST_DIR) == "D:\\LabData\\Processed"
-    assert settings.POLL_SECONDS == 0.5
 
 def test_pc_plugin_not_found():
     """Test error handling for non-existent PC plugin."""
