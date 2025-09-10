@@ -197,9 +197,9 @@ class RecordManager:
         1. Skip non-IPAT records (institute filter)
         2. Skip already fully uploaded records  
         3. Sync remaining records and track progress
-        4. Remove successfully synced records from local storage
         
-        This is typically triggered by session timeout or manual sync request.
+        Records are synced independently of file processors since all files
+        have already been processed and organized by their respective processors.
         """
         logger.info("Starting synchronization of records to the database.")
         synced_count = 0

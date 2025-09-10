@@ -172,8 +172,8 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
         session_manager=session_manager,
         file_processor=file_processor,
     )
-    # Check that records were actually synced via the records.sync mechanism
-    assert len(fpm_inst.records.sync.synced_records) > 0
+    # Check that records were actually synced via the records.sync_records_to_database mechanism
+    assert fpm_inst.records.synced
 
 
 def test_process_item_invalid_datatype(fpm, monkeypatch):
