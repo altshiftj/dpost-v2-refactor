@@ -4,6 +4,7 @@ import queue
 import threading
 from pathlib import Path
 from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
 from ipat_watchdog.metrics import(
  FILES_PROCESSED,
@@ -16,6 +17,7 @@ from ipat_watchdog.metrics import(
 )
 
 from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
+from ipat_watchdog.core.config.constants import WATCH_DIR
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import ErrorMessages
@@ -29,6 +31,24 @@ from ipat_watchdog.core.logging.logger import setup_logger
 logger = setup_logger(__name__)
 
 
+class BasicFileEventHandler(FileSystemEventHandler):
+    """Simple file detection handler - just queues new files/folders."""
+    
+    def __init__(self, event_queue: queue.Queue):
+        super().__init__()
+        self.event_queue = event_queue
+    
+    def on_created(self, event: FileSystemEvent) -> None:
+        if not event.is_directory:
+            # For files, queue immediately
+            logger.debug(f"File detected: {event.src_path}")
+            self.event_queue.put(event.src_path)
+        else:
+            # For folders, queue immediately - let FileProcessManager handle stability
+            logger.debug(f"Folder detected: {event.src_path}")
+            self.event_queue.put(event.src_path)
+
+
 class DeviceWatchdogApp:
     """
     Coordinates file system monitoring, file processing, UI handling,
@@ -40,8 +60,6 @@ class DeviceWatchdogApp:
         ui: UserInterface,
         sync_manager: ISyncManager,
         settings_manager: SettingsManager,
-        observer_cls=Observer,
-        file_event_handler_cls=FileEventHandler,
         session_manager_cls=SessionManager,
         file_process_manager_cls=FileProcessManager,
     ):
@@ -50,81 +68,73 @@ class DeviceWatchdogApp:
 
         self.files_processed = 0
         self.settings_manager = settings_manager
-        self._processing_lock = threading.Lock()  # Ensure sequential file processing
-
-        # Get global settings for app-level configuration
-        self.global_settings = settings_manager.get_global_settings()
-        self.watch_dir: Path = self.global_settings.WATCH_DIR
         self.ui = ui
-        self.event_queue = queue.Queue()
-        self.log_sync_counter = 0
 
         self.session_manager = session_manager_cls(
             ui=self.ui,
             end_session_callback=self.end_session,
         )
+        self._processing_lock = threading.Lock()
 
-        self.sync_manager = sync_manager
+        # File detection components
+        self.observer = None
+        self.event_handler = None
+        self.event_queue = queue.Queue()
 
-        # Create file processing manager without specific processor
         self.file_processing = file_process_manager_cls(
             ui=self.ui,
-            sync_manager=self.sync_manager,
+            sync_manager=sync_manager,
             session_manager=self.session_manager,
+            settings_manager=self.settings_manager,
         )
-
-        self.observer_cls = observer_cls
-        self.file_event_handler_cls = file_event_handler_cls
-        self.directory_observer = None
-
 
     def initialize(self):
         """Initializes the file observer and UI loop."""
-        self._setup_observer()
+        logger.info(f"Monitoring directory: {WATCH_DIR}")
 
-        logger.info(f"Monitoring directory: {self.watch_dir}")
+        self.event_handler = BasicFileEventHandler(self.event_queue)
+        self.observer = Observer()
+        self.observer.schedule(self.event_handler, path=WATCH_DIR, recursive=False)
+        self.observer.start()
 
         self._schedule_next_event_check()
         self.ui.set_close_handler(self.on_closing)
         self.ui.set_exception_handler(self.handle_exception)
 
-    def _setup_observer(self):
-        self.handler_instance = self.file_event_handler_cls(self.event_queue)
-        observer = self.observer_cls()
-        observer.schedule(self.handler_instance, path=self.watch_dir, recursive=False)
-        observer.start()
-        self.directory_observer = observer
-
     def _schedule_next_event_check(self):
         self.ui.schedule_task(100, self.process_events)
 
     def process_events(self):
-        while not self.event_queue.empty():
+        """Check for processed files and handle rejections."""
+        try:
+            src_path = self.event_queue.get_nowait()
+            logger.debug(f"Processing queued item: {src_path}")
             EVENTS_PROCESSED.inc()
-            try:
-                data_path = self.event_queue.get_nowait()
-            except queue.Empty:
-                break
-            logger.debug(f"Dequeued file for processing: {data_path}")
             
-            # Use lock to ensure only one file is processed at a time
             with self._processing_lock:
                 with FILE_PROCESS_TIME.time():
-                    self.file_processing.process_item(data_path)
-
+                    self.file_processing.process_item(src_path)
+            
                 self.files_processed += 1
-                FILES_PROCESSED.inc()      # Global Prometheus counter
+                FILES_PROCESSED.inc()
+            
+        except queue.Empty:
+            pass
+        except Exception as e:
+            logger.exception(f"Error processing file: {e}")
+            FILES_FAILED.inc()
+
+        # Handle any rejected files from processing
+        rejected = self.file_processing.get_and_clear_rejected()
+        for path_str, reason in rejected:
+            path_name = Path(path_str).name
+            FILES_FAILED.inc()
+            self.ui.show_error(
+                "Unsupported Input",
+                f"The file or folder '{path_name}' was rejected.\n\n{reason}"
+            )
         
-        # Show errors for any rejected files/folders
-        if self.handler_instance:
-            rejected = self.handler_instance.get_and_clear_rejected()
-            for path_str, reason in rejected:
-                path_name = Path(path_str).name
-                FILES_FAILED.inc()
-                self.ui.show_error(
-                    "Unsupported Input",
-                    f"The file or folder '{path_name}' was rejected.\n\n{reason}"
-                )
+        # Schedule next check
         self._schedule_next_event_check()
 
     def handle_exception(self, exc_type, exc_value, exc_traceback):
@@ -161,9 +171,13 @@ class DeviceWatchdogApp:
         if self.session_manager.session_active:
             self.session_manager.end_session()
 
-        if self.directory_observer:
-            self.directory_observer.stop()
-            self.directory_observer.join()
+        # Stop file monitoring
+        if self.observer:
+            self.observer.stop()
+            self.observer.join()
+
+        # Stop any stability trackers in FileProcessManager
+        self.file_processing.shutdown()
 
         self.ui.destroy()
 

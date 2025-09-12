@@ -7,6 +7,7 @@ from ipat_watchdog.core.ui.ui_messages import ErrorMessages
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 from ipat_watchdog.core.config.settings_store import SettingsManager
+from ipat_watchdog.core.config.constants import ID_SEP
 from ipat_watchdog.core.logging.logger import setup_logger
 
 from kadi_apy import KadiManager
@@ -69,17 +70,19 @@ class KadiSyncManager(ISyncManager):
 
     def _get_current_settings(self):
         """Get current composite settings from settings manager."""
-        return self.settings_manager.get_composite_settings()
+        return self.settings_manager.get_current_device()
 
     def _prepare_resources(self, db_manager: KadiManager, local_record: LocalRecord, settings=None) -> SyncResources:
         # Use provided settings or get from settings manager
-        s = settings or self.settings_manager.get_composite_settings()
-        
-        db_user = self._get_db_user_from_local_record(db_manager, local_record, s)
-        user_group = self._get_or_create_db_user_rawdata_group(db_manager, local_record, db_user, s)
-        device_user = db_manager.user(username=s.DEVICE_USER_KADI_ID, identity_type="local")
-        device_group = self._get_or_create_db_device_rawdata_group(db_manager, s)
-        db_record = self._get_or_create_db_record(db_manager, local_record)
+        local_record_id = local_record.identifier
+        device_usr_kadi_id = f"{local_record.device_type}{ID_SEP}usr".replace("_", "-").lower()
+        device_rec_kadi_id = local_record.device_type
+
+        db_user = self._get_db_user_from_local_record(db_manager, local_record)
+        user_group = self._get_or_create_db_user_rawdata_group(db_manager, local_record, db_user)
+        device_user = db_manager.user(username=device_usr_kadi_id, identity_type="local")
+        device_group = self._get_or_create_db_device_rawdata_group(db_manager, device_usr_kadi_id, device_rec_kadi_id)
+        db_record = self._get_or_create_db_record(db_manager, local_record_id)
 
         return SyncResources(
             db_user=db_user,
@@ -104,27 +107,24 @@ class KadiSyncManager(ISyncManager):
             )
         return group
 
-    def _get_or_create_db_user_rawdata_group(self, db_manager: KadiManager, local_record: LocalRecord, db_user: KadiUser, settings) -> KadiGroup:
-        sep = settings.ID_SEP
-        group_id = f"{local_record.user}{sep}{local_record.institute}{sep}rawdata{sep}group"
+    def _get_or_create_db_user_rawdata_group(self, db_manager: KadiManager, local_record: LocalRecord, db_user: KadiUser) -> KadiGroup:
+        group_id = f"{local_record.user}{ID_SEP}{local_record.institute}{ID_SEP}rawdata{ID_SEP}group"
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
         return self._get_or_create_group(db_manager, group_id, title, add_user_info)
 
-    def _get_or_create_db_device_rawdata_group(self, db_manager: KadiManager, settings) -> KadiGroup:
-        sep = settings.ID_SEP
-        device_record_id = settings.DEVICE_RECORD_PERSISTENT_ID
-        db_device_record = db_manager.record(id=device_record_id)
-        group_id = f"{settings.DEVICE_USER_KADI_ID.lower()}{sep}rawdata{sep}group"
+    def _get_or_create_db_device_rawdata_group(self, db_manager: KadiManager, device_usr_kadi_id: str, device_rec_kadi_id: str) -> KadiGroup:
+        db_device_record = db_manager.record(identifier=device_rec_kadi_id)
+        group_id = f"{device_rec_kadi_id.lower()}{ID_SEP}rawdata{ID_SEP}group"
         title = f"{db_device_record.meta['title']}: Raw Data Records"
-        add_user_info = {"user_id": settings.DEVICE_USER_PERSISTENT_ID, "role": "admin"}
+        add_user_info = {"user_id": device_usr_kadi_id, "role": "admin"}
         return self._get_or_create_group(db_manager, group_id, title, add_user_info)
 
-    def _get_or_create_db_record(self, db_manager: KadiManager, local_record: LocalRecord) -> KadiRecord:
-        return db_manager.record(create=True, identifier=local_record.identifier)
+    def _get_or_create_db_record(self, db_manager: KadiManager, local_record_id: str) -> KadiRecord:
+        return db_manager.record(create=True, identifier=local_record_id)
 
-    def _get_db_user_from_local_record(self, db_manager: KadiManager, local_record: LocalRecord, settings) -> Optional[KadiUser]:
-        user_id = f"{local_record.user}{settings.ID_SEP}{local_record.institute}"
+    def _get_db_user_from_local_record(self, db_manager: KadiManager, local_record: LocalRecord) -> Optional[KadiUser]:
+        user_id = f"{local_record.user}{ID_SEP}{local_record.institute}"
         try:
             return db_manager.user(username=user_id, identity_type="local")
         except Exception:
@@ -151,7 +151,7 @@ class KadiSyncManager(ISyncManager):
             for tag in settings.RECORD_TAGS:
                 db_record.add_tag(tag)
             db_record.add_tag(local_record.datatype)
-            db_record.link_record(settings.DEVICE_RECORD_PERSISTENT_ID, "generated by")
+            db_record.link_record(db_device_user.id, "generated by")
             db_record.add_group_role(group_id=db_user_group.id, role_name="member")
             db_record.add_group_role(group_id=db_device_data_group.id, role_name="member")
             db_record.add_user(user_id=db_device_user.id, role_name="admin")

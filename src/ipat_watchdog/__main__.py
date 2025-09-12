@@ -42,7 +42,7 @@ def main():
         device_settings = plugin.get_settings()
         device_settings_list.append(device_settings)
     
-    # Initialize settings manager with new constructor signature
+    # Initialize settings manager
     settings_manager = SettingsManager(
         available_devices=device_settings_list,
         pc_settings=pc_settings
@@ -59,10 +59,8 @@ def main():
 
     ui = TKinterUI()
     
-    # Pass the settings manager to sync manager so it can get composite settings
     sync = KadiSyncManager(ui=ui, settings_manager=settings_manager)
 
-    # No longer need to pass a specific file processor - will be selected per file
     app = DeviceWatchdogApp(
         ui=ui,
         sync_manager=sync,

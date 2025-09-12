@@ -7,10 +7,14 @@ UI, session management, record management, and device-specific file processors.
 """
 from pathlib import Path
 import threading
+import queue
+import datetime as dt
+import time
+from typing import Dict, Optional, Optional, Tuple
 
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
     move_to_exception_folder,
@@ -39,6 +43,133 @@ VALID_NAME = "valid_name"             # File has valid naming convention
 INVALID_NAME = "invalid_name"         # File naming doesn't meet requirements
 
 
+class FileStabilityTracker:
+    """
+    Device-aware file stability tracker.
+    
+    Uses device-specific settings for polling intervals, stability criteria,
+    temp file patterns, and sentinel file requirements.
+    """
+    
+    def __init__(self, 
+                 file_path: Path, 
+                 device_settings, 
+                 completion_callback,
+                 rejection_callback):
+        self.file_path = file_path
+        self.device_settings = device_settings
+        self.completion_callback = completion_callback
+        self.rejection_callback = rejection_callback
+        
+        self._start_time = dt.datetime.now()
+        self._last_metrics = self._snapshot()
+        self._stable_count = 0
+        self._timer = None
+        self._stopped = False
+        
+        logger.debug(f"Stability tracker started for {file_path.name} with device {device_settings.DEVICE_ID}")
+        self._schedule_probe()
+    
+    def _snapshot(self):
+        """Take snapshot of file/folder state for stability comparison."""
+        if not self.file_path.exists():
+            return None
+
+        if self.file_path.is_file():
+            s = self.file_path.stat()
+            return s.st_size, s.st_mtime
+
+        # For folders - count files and total size, excluding temp files
+        file_count = 0
+        total_size = 0
+        newest_mtime = 0.0
+        
+        for p in self.file_path.rglob("*"):
+            if p.is_file() and not p.name.endswith(self.device_settings.TEMP_PATTERNS):
+                try:
+                    s = p.stat()
+                    file_count += 1
+                    total_size += s.st_size
+                    newest_mtime = max(newest_mtime, s.st_mtime)
+                except FileNotFoundError:
+                    continue
+        
+        return file_count, total_size, newest_mtime
+    
+    def _schedule_probe(self):
+        """Schedule next stability check."""
+        if self._stopped:
+            return
+        self._timer = threading.Timer(self.device_settings.POLL_SECONDS, self._probe)
+        self._timer.start()
+    
+    def _probe(self):
+        """Check file stability and handle completion or continuation."""
+        try:
+            if self._stopped:
+                return
+                
+            if not self.file_path.exists():
+                self._reject("Path disappeared before becoming stable")
+                return
+
+            # Check for timeout
+            elapsed = (dt.datetime.now() - self._start_time).total_seconds()
+            if elapsed >= self.device_settings.MAX_WAIT_SECONDS:
+                self._reject(f"Timeout (> {self.device_settings.MAX_WAIT_SECONDS}s)")
+                return
+
+            # Compare current state with last snapshot
+            current = self._snapshot()
+            if current != self._last_metrics:
+                # Still changing - reset stability counter
+                self._last_metrics = current
+                self._stable_count = 0
+                self._schedule_probe()
+                return
+
+            # Increment stability counter
+            self._stable_count += 1
+            if self._stable_count < self.device_settings.STABLE_CYCLES:
+                # Not stable enough yet
+                self._schedule_probe()
+                return
+
+            # Check sentinel file requirement for folders
+            if self.file_path.is_dir() and self.device_settings.SENTINEL_NAME:
+                sentinel = self.file_path / self.device_settings.SENTINEL_NAME
+                if not sentinel.exists():
+                    logger.debug(f"Waiting for sentinel {sentinel.name} in {self.file_path.name}")
+                    self._schedule_probe()
+                    return
+
+            # File/folder is stable - notify completion
+            logger.info(f"{'Folder' if self.file_path.is_dir() else 'File'} stable & ready: {self.file_path.name}")
+            self.completion_callback(str(self.file_path))
+            
+        except Exception as e:
+            logger.exception(f"Stability tracker error for {self.file_path}: {e}")
+            self._reject(f"Tracking error: {e}")
+    
+    def _reject(self, reason: str):
+        """Handle rejection of unstable or problematic files."""
+        if not self.file_path.exists():
+            logger.debug(f"Path vanished during rejection: {self.file_path.name}")
+            self.stop()
+            return
+
+        logger.warning(f"File/Folder rejected: {self.file_path.name} — {reason}")
+        move_to_exception_folder(self.file_path)
+        self.rejection_callback(str(self.file_path), reason)
+        self.stop()
+    
+    def stop(self):
+        """Stop the stability tracker."""
+        self._stopped = True
+        if self._timer:
+            self._timer.cancel()
+            self._timer = None
+
 class FileProcessManager:
     """
     Central coordinator for file processing workflow.
@@ -59,20 +190,126 @@ class FileProcessManager:
         ui: UserInterface,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        file_processor: FileProcessorABS = None,  # Made optional for backward compatibility
+        settings_manager: SettingsManager,
     ):
         """Initialize the file process manager with required dependencies."""
         self.ui = ui
         self.session_manager = session_manager
+        self.settings_manager = settings_manager
         self.records = RecordManager(sync_manager=sync_manager)
-        self.file_processor = file_processor  # Keep for backward compatibility
         self._processor_cache = {}  # Cache processors by device_id to maintain state
         self._processing_lock = threading.Lock()  # Sequential processing lock
+
+        # Stability tracking
+        self._stability_trackers: Dict[str, FileStabilityTracker] = {}
+        self._trackers_lock = threading.RLock()
+        self._rejected_queue = queue.Queue()
 
         # Sync pending records upon startup
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup.")
             self.sync_records_to_database()
+
+    def process_item(self, src_path: str):
+        """
+        Main entry point for processing a new file or folder.
+        Starts device-aware stability tracking, then processes when stable.
+        """
+        path = Path(src_path)
+        
+        # Determine device settings for this file
+        device_settings = self.settings_manager.select_device_for_file(src_path)
+        
+        if device_settings is None:
+            self._reject_immediately(path, "No device found that can process this file type")
+            return
+
+        # Check temp folder patterns immediately
+        if path.is_dir() and device_settings.TEMP_FOLDER_REGEX.search(path.name):
+            logger.debug(f"Ignoring temp folder: {path.name}")
+            return
+        
+        # Start stability tracking with device-specific settings
+        with self._trackers_lock:
+            path_str = str(path)
+            if path_str in self._stability_trackers:
+                self._stability_trackers[path_str].stop()
+            
+            tracker = FileStabilityTracker(
+                file_path=path,
+                device_settings=device_settings,
+                completion_callback=self._handle_stable_file,
+                rejection_callback=self._handle_rejected_file
+            )
+            self._stability_trackers[path_str] = tracker
+
+    def _handle_stable_file(self, src_path: str):
+        """Handle a file that has become stable - process it fully."""
+        with self._trackers_lock:
+            self._stability_trackers.pop(src_path, None)
+        
+        with self._processing_lock:
+            try:
+                device_settings = self.settings_manager.select_device_for_file(src_path)
+                self.settings_manager.set_current_device(device_settings)
+                
+                file_processor = self._get_processor_for_file(src_path)
+                logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
+                
+                filename_prefix, extension = parse_filename(src_path)
+
+                if not file_processor.is_valid_datatype(src_path):
+                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
+                    FILES_FAILED.inc()
+                    return
+                
+                preprocessed_src_path = file_processor.device_specific_preprocessing(src_path)
+                if preprocessed_src_path is None:
+                    return
+
+                final_filename_prefix, final_extension = parse_filename(preprocessed_src_path)
+                self._route_item(src_path, final_filename_prefix, final_extension, file_processor)
+                
+            except Exception as e:
+                logger.exception(f"Error processing stable file {src_path}: {e}")
+                filename_prefix, extension = parse_filename(src_path)
+                self._move_to_exception_and_inform(
+                    src_path, filename_prefix, extension,
+                    severity=ErrorMessages.PROCESSING_ERROR,
+                    message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
+                        filename=Path(src_path).name, error=str(e)
+                    ),
+                )
+            finally:
+                try:
+                    self.settings_manager.set_current_device(None)
+                except Exception:
+                    pass
+
+    def _handle_rejected_file(self, src_path: str, reason: str):
+        """Handle a file that was rejected during stability tracking."""
+        with self._trackers_lock:
+            self._stability_trackers.pop(src_path, None)
+        
+        self._rejected_queue.put((src_path, reason))
+
+    def _reject_immediately(self, path: Path, reason: str):
+        """Immediately reject a file without stability tracking."""
+        logger.warning(f"Rejected immediately: {path.name} — {reason}")
+        if path.is_file():
+            time.sleep(0.35)
+        move_to_exception_folder(path)
+        self._rejected_queue.put((str(path), reason))
+
+    def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
+        """Get and clear rejected files list."""
+        rejected = []
+        while not self._rejected_queue.empty():
+            try:
+                rejected.append(self._rejected_queue.get_nowait())
+            except queue.Empty:
+                break
+        return rejected
 
     def _get_processor_for_file(self, src_path: str) -> FileProcessorABS:
         """
@@ -87,20 +324,14 @@ class FileProcessManager:
         Raises:
             RuntimeError: If no suitable processor is found
         """
-        # If we have a legacy single processor, use it
-        if self.file_processor is not None:
-            return self.file_processor
-        
-        # Use settings manager to find appropriate device
-        settings_manager = SettingsStore.get_manager()
-        device_settings = settings_manager.select_device_for_file(src_path)
+        device_settings = self.settings_manager.select_device_for_file(src_path)
         
         if device_settings is None:
             raise RuntimeError(f"No device found that can process file: {src_path}")
         
         # Set the device context for this thread
-        settings_manager.set_current_device(device_settings)
-        
+        self.settings_manager.set_current_device(device_settings)
+
         # Import and get processor for the device
         device_id = device_settings.get_device_id()
         
@@ -115,25 +346,18 @@ class FileProcessManager:
                 fromlist=['']
             )
             
-            # For sem_phenomxl2, the class is SEMPhenomXL2Plugin
-            if device_id == 'sem_phenomxl2':
-                plugin_class = getattr(plugin_module, 'SEMPhenomXL2Plugin')
-            elif device_id == 'utm_zwick':
-                plugin_class = getattr(plugin_module, 'UTMZwickPlugin')
-            else:
-                # Try to find the plugin class by convention
-                plugin_class = None
-                for attr_name in dir(plugin_module):
-                    attr = getattr(plugin_module, attr_name)
-                    if (isinstance(attr, type) and 
-                        hasattr(attr, 'get_file_processor') and 
-                        attr_name.endswith('Plugin') and
-                        not getattr(attr, '__abstractmethods__', None)):  # Exclude abstract classes
-                        plugin_class = attr
-                        break
-                
-                if plugin_class is None:
-                    raise ImportError(f"No plugin class found in {device_id}.plugin")
+            plugin_class = None
+            for attr_name in dir(plugin_module):
+                attr = getattr(plugin_module, attr_name)
+                if (isinstance(attr, type) and 
+                    hasattr(attr, 'get_file_processor') and 
+                    attr_name.endswith('Plugin') and
+                    not getattr(attr, '__abstractmethods__', None)):  # Exclude abstract classes
+                    plugin_class = attr
+                    break
+            
+            if plugin_class is None:
+                raise ImportError(f"No plugin class found in {device_id}.plugin")
             
             plugin_instance = plugin_class()
             processor = plugin_instance.get_file_processor()
@@ -141,6 +365,7 @@ class FileProcessManager:
             # Cache the processor for this device
             self._processor_cache[device_id] = processor
             return processor
+        
         except ImportError as e:
             logger.error(f"Failed to load processor for device {device_id}: {e}")
             raise RuntimeError(f"No processor available for device: {device_id}") from e
@@ -213,8 +438,7 @@ class FileProcessManager:
             finally:
                 # Clear device context for this thread
                 try:
-                    settings_manager = SettingsStore.get_manager()
-                    settings_manager.set_current_device(None)
+                    self.settings_manager.set_current_device(None)
                 except Exception:
                     pass  # Ignore cleanup errors
 
@@ -446,8 +670,7 @@ class FileProcessManager:
             record = self._get_or_create_record(record, filename_prefix)
 
             # Determine device abbreviation for sorting
-            settings_manager = SettingsStore.get_manager()
-            device_settings = settings_manager.get_current_device()
+            device_settings = self.settings_manager.get_current_device()
             device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
             # Determine target paths and perform device-specific processing
             record_path = get_record_path(filename_prefix, device_abbr)
@@ -522,5 +745,12 @@ class FileProcessManager:
             
         logger.debug("Syncing records to database.")
         self.records.sync_records_to_database()
+
+    def shutdown(self):
+        """Stop all stability trackers."""
+        with self._trackers_lock:
+            for tracker in list(self._stability_trackers.values()):
+                tracker.stop()
+            self._stability_trackers.clear()
 
 

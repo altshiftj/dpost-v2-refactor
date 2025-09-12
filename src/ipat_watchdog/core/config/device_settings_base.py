@@ -1,4 +1,5 @@
-from typing import Set, List
+from typing import Set, List, Tuple, Pattern, Optional
+import re
 from abc import ABC
 from pathlib import Path
 
@@ -19,7 +20,14 @@ class DeviceSettings(ABC):
     ALLOWED_EXTENSIONS: Set[str] = set()
     ALLOWED_FOLDER_CONTENTS: Set[str] = set()  # e.g., {".odt", ".elid"}
     SESSION_TIMEOUT: int = 300
-    POLL_SECONDS: float = 1.0
+
+    # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = -1
+    MAX_WAIT_SECONDS: float = -1
+    STABLE_CYCLES: int = -1
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None
 
     def matches_file(self, filepath: str) -> bool:
         """Check if this device can process the given file."""
