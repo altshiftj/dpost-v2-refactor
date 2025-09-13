@@ -70,7 +70,7 @@ class FileProcessManager:
         ui: UserInterface,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-    settings_manager: SettingsManager | None = None,
+        settings_manager: SettingsManager | None = None,
         file_processor: FileProcessorABS | None = None,
     ):
         """Initialize the file process manager with required dependencies."""
@@ -81,12 +81,12 @@ class FileProcessManager:
             from ipat_watchdog.core.config.settings_store import SettingsStore
             settings_manager = SettingsStore.get_manager()
         self.settings_manager = settings_manager
-        # Optional injection for testing/back-compat
+        # Optional injection for testing
         self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
         self._processor_factory = FileProcessorFactory()  # Cache processors by device_id
 
-    # Single-threaded stability tracking — synchronous inline mode (no tracker storage needed)
+        # Single-threaded stability tracking — synchronous inline mode (no tracker storage needed)
         self._rejected_queue = queue.Queue()
 
         # Sync pending records upon startup
