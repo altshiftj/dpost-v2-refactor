@@ -1,7 +1,17 @@
+"""
+Filesystem and naming utilities used by the processing pipeline.
+
+This module centralizes filename parsing/validation, path computation for
+records/exceptions/rename destinations, file moves with fallbacks, and simple
+ID generation helpers. It also persists lightweight record state to JSON for
+day-level continuity.
+
+Keep functions small and predictable; prefer returning strings/paths and let
+callers handle higher-level orchestration.
+"""
 from pathlib import Path
 import shutil
 import logging
-from ipat_watchdog.core.logging.logger import setup_logger
 import json
 import re
 from typing import Callable, Optional
@@ -27,6 +37,14 @@ logger = setup_logger(__name__)
 # -------------------------------
 
 def parse_filename(src_path: str) -> tuple[str, str]:
+    """Return filename stem and suffix for a path-like string.
+
+    Args:
+        src_path: File or directory path (string accepted).
+
+    Returns:
+        (stem, suffix) where suffix includes the leading dot (e.g. ".tiff").
+    """
     p = Path(src_path)
     return p.stem, p.suffix
 
@@ -36,11 +54,21 @@ def parse_filename(src_path: str) -> tuple[str, str]:
 # -------------------------------
 
 def init_dirs(directories: Optional[list[str]] = None) -> None:
+    """Ensure required directory structure exists.
+
+    Note: The optional `directories` argument is currently ignored; this
+    function initializes the standard DIRECTORY_LIST defined in constants.
+    """
 
     for dir_path in DIRECTORY_LIST:
         Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 def get_record_path(filename_prefix: str, device_abbr: str = None) -> str:
+    """Compute (and create) the destination record folder for a prefix.
+
+    If `device_abbr` is provided, it is prepended to the sample ID segment
+    (e.g. "SEM-sample001"). The directory will be created if missing.
+    """
     user_ID, institute, sample_ID = filename_prefix.split(ID_SEP)
     if device_abbr:
         sample_ID = f"{device_abbr}-{sample_ID}"
@@ -86,16 +114,19 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     return str(candidate_path)
 
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
+    """Return a unique path under the rename folder for the given name."""
     base_dir = base_dir or RENAME_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
 def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
+    """Return a unique path under the exceptions folder for the given name."""
     base_dir = base_dir or EXCEPTIONS_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
 def remove_directory_if_empty(path: Path) -> None:
+    """Attempt to remove a directory; log if not empty or removal fails."""
     try:
         path.rmdir()
         logger.debug(f"Removed empty directory: '{path}'.")
@@ -108,6 +139,11 @@ def remove_directory_if_empty(path: Path) -> None:
 # -------------------------------
 
 def move_item(src: str, dest: str) -> None:
+    """Move a file or directory to `dest`, retrying with shutil if needed.
+
+    Handles pre-existing empty placeholder files at destination by removing
+    them first. Logs warnings on rename fallback and errors on failure.
+    """
     src_path = Path(src)
     dest_path = Path(dest)
     
@@ -136,12 +172,14 @@ def _move_to_folder(
     log_message: str,
     log_level: int = logging.INFO,
 ) -> None:
+    """Generic move helper using a path factory and structured logging."""
     full_name = f"{filename_prefix}{extension}"
     dest = unique_path_func(full_name)
     move_item(src, dest)
     logger.log(log_level, log_message.format(src, dest))
 
 def move_to_exception_folder(src_path: str, filename_prefix: str = None, extension: str = None) -> None:
+    """Move an item to the exceptions folder (unique path)."""
     if filename_prefix is None:
         filename_prefix = Path(src_path).stem
     if extension is None:
@@ -156,6 +194,7 @@ def move_to_exception_folder(src_path: str, filename_prefix: str = None, extensi
     )
 
 def move_to_rename_folder(src: str, filename_prefix: str, extension: str = "") -> None:
+    """Move an item to the rename folder (unique path)."""
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
@@ -166,6 +205,7 @@ def move_to_rename_folder(src: str, filename_prefix: str, extension: str = "") -
     )
 
 def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -> None:
+    """Move an item to the computed record folder (unique filename)."""
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
@@ -179,10 +219,46 @@ def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -
 # ID GENERATION
 # -------------------------------
 
-def generate_record_id(filename_prefix: str, dev_kadi_record_id: str) -> str:
+def generate_record_id(filename_prefix: str, dev_kadi_record_id: Optional[str] = None) -> str:
+    """
+    Generate a record ID using the device KADI record prefix and the filename prefix.
+
+    If dev_kadi_record_id is not provided, this will attempt to fetch the current
+    device from SettingsStore.get_manager().get_current_device() and use its
+    DEVICE_RECORD_KADI_ID. This allows callers to omit the device argument when a
+    device context is already established for the current thread.
+    """
+    if dev_kadi_record_id is None:
+        try:
+            manager = SettingsStore.get_manager()
+            device = manager.get_current_device()
+        except Exception:
+            device = None
+        if device is None or not getattr(device, "DEVICE_RECORD_KADI_ID", None):
+            raise ValueError(
+                "Device context is not set; provide dev_kadi_record_id explicitly or set current device."
+            )
+        dev_kadi_record_id = device.DEVICE_RECORD_KADI_ID
     return f"{dev_kadi_record_id}{ID_SEP}{filename_prefix}".lower()
 
-def generate_file_id(filename_prefix: str, device_abbr: str) -> str:
+def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) -> str:
+    """
+    Generate a file ID combining device abbreviation and sample id from the prefix.
+
+    If device_abbr is not provided, attempts to read it from the current device
+    in SettingsStore. Callers are encouraged to pass it explicitly when available.
+    """
+    if device_abbr is None:
+        try:
+            manager = SettingsStore.get_manager()
+            device = manager.get_current_device()
+        except Exception:
+            device = None
+        if device is None or not getattr(device, "DEVICE_ABBR", None):
+            raise ValueError(
+                "Device context is not set; provide device_abbr explicitly or set current device."
+            )
+        device_abbr = device.DEVICE_ABBR
     user_id, institute, sample_id = filename_prefix.split(ID_SEP)
     return f"{device_abbr}{ID_SEP}{sample_id}"
 
@@ -191,6 +267,10 @@ def generate_file_id(filename_prefix: str, device_abbr: str) -> str:
 # -------------------------------
 
 def load_persisted_records() -> dict[str, LocalRecord]:
+    """Load persisted daily records from JSON into LocalRecord instances.
+
+    Returns an empty dict on first run or on read/parse failures (logged).
+    """
     json_path = Path(DAILY_RECORDS_JSON)
     if not json_path.exists():
         return {}
@@ -207,6 +287,7 @@ def load_persisted_records() -> dict[str, LocalRecord]:
         return {}
 
 def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
+    """Serialize LocalRecord mapping to JSON for day-level persistence."""
     json_path = Path(DAILY_RECORDS_JSON)
     try:
         serialized = json.dumps(
@@ -223,12 +304,14 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
 # -------------------------------
 
 def is_valid_prefix(raw_prefix: str) -> bool:
+    """Quick validation check for a filename prefix against regex and segments."""
     if not FILENAME_PATTERN.match(raw_prefix):
         logger.debug(f"Prefix '{raw_prefix}' failed regex match.")
         return False
     return raw_prefix.count(ID_SEP) >= 2
 
 def sanitize_prefix(raw_prefix: str) -> str:
+    """Normalize a raw prefix to lowercase and underscore-separated sample id."""
     s = SettingsStore.get()
     parts = raw_prefix.strip().split(ID_SEP)
     if len(parts) < 3:
@@ -239,11 +322,16 @@ def sanitize_prefix(raw_prefix: str) -> str:
     return f"{user_id.lower()}{ID_SEP}{institute.lower()}{ID_SEP}{sample_id}"
 
 def sanitize_and_validate(raw_prefix: str) -> tuple[str, bool]:
+    """Return (sanitized_prefix, is_valid) for a raw filename prefix."""
     if not is_valid_prefix(raw_prefix):
         return raw_prefix, False
     return sanitize_prefix(raw_prefix), True
 
 def explain_filename_violation(filename: str) -> dict:
+    """Analyze a filename string and return reasons/highlights when invalid.
+
+    The returned dict contains: { valid: bool, reasons: list[str], highlight_spans: list[tuple[int,int]] }.
+    """
     s = SettingsStore.get()
     result = {
         "valid": True,
@@ -292,6 +380,11 @@ def explain_filename_violation(filename: str) -> dict:
     return result
 
 def analyze_user_input(dialog_result: dict | None) -> dict:
+    """Validate and sanitize rename dialog input structure.
+
+    Returns a dict with keys: valid, sanitized (str|None), reasons, highlight_spans.
+    When invalid or cancelled, reasons/highlights are populated for UI display.
+    """
     output = {
         "valid": True,
         "sanitized": None,

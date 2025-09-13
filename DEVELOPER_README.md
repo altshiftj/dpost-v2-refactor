@@ -271,6 +271,115 @@ Comprehensive monitoring and debugging capabilities:
 ### 1. Create Plugin Directory Structure
 
 ```
+
+#### New Orchestration and Helpers (modularized)
+
+To keep `FileProcessManager` focused on orchestration, the workflow is split into small modules:
+
+- `stability_tracker.py` — low-level, device-aware stability probing for files/folders
+- `stability_service.py` — manages trackers and a small rejection queue
+- `processor_factory.py` — dynamic plugin loader/cache for device file processors
+- `routing.py` — determines handling state (valid/invalid/unappendable/append-to-synced)
+- `rename_flow.py` — interactive rename dialog and retry routing on success
+- `record_flow.py` — prompts for unappendable and append-to-synced record cases
+- `record_utils.py` — create/update records and manage session touch
+- `error_handling.py` — move-to-exception and invalid datatype helpers
+- `notifications.py` — user success notifications
+- `device_context.py` — context manager to set/clear current device for scoped operations
+
+The orchestrator, `file_process_manager.py`, wires these modules together in a clear sequence:
+
+1. Select device + start stability tracking
+2. When stable: enter `DeviceContext`, validate datatype via processor
+3. Device pre-processing and filename parsing
+4. Use `routing.py` to compute state and branch to `record_flow` or normal add
+5. Use `record_utils.py` to update records and `notifications.py` for UI
+6. On errors, use `error_handling.py` to move items to the exceptions area
+
+This layout improves readability, testability, and reuse across future orchestrators.
+
+#### Diagram: Processing Pipeline
+
+A sequence diagram visualizing the flow is available as PlantUML:
+
+- `docs/architecture/processing_pipeline.puml`
+
+Render it with your preferred PlantUML tool or VS Code extension. Example (optional):
+
+```bash
+# Using VS Code: install "PlantUML" extension and open the .puml to preview
+# Or via CLI (requires Java + PlantUML jar available on PATH)
+plantuml docs/architecture/processing_pipeline.puml
+```
+
+The diagram shows key participants (FileProcessManager, StabilityService, plugin FileProcessor, routing and record flows) and their interactions for valid/invalid naming and append-to-synced scenarios.
+
+Rendered PNG (generate locally if missing):
+
+![Processing Pipeline](docs/architecture/processing_pipeline.png)
+
+Tip: On Windows you can render the PNG via the helper script:
+
+```powershell
+# From repo root
+./scripts/docs/render_processing_pipeline.ps1
+```
+
+Inline (GitHub-rendered) Mermaid version for quick viewing:
+
+```mermaid
+sequenceDiagram
+    participant FS as Filesystem
+    participant FPM as FileProcessManager
+    participant Settings as SettingsManager
+    participant Stability as StabilityService
+    participant Tracker as FileStabilityTracker
+    participant Ctx as DeviceContext
+    participant Factory as FileProcessorFactory
+    participant Proc as FileProcessor
+    participant Routing as routing.py
+    participant RFlow as record_flow.py
+    participant Rename as rename_flow.py
+    participant RUtils as record_utils.py
+    participant Notify as notifications.py
+    participant Err as error_handling.py
+
+    FS->>FPM: process_item(src_path)
+    FPM->>Settings: select_device_for_file
+    alt device found
+        FPM->>Stability: start_tracking(...)
+        Stability->>Tracker: probe until stable
+        Tracker-->>FPM: completion_callback
+        FPM->>Ctx: enter (set current device)
+        FPM->>Factory: get_for_device
+        Factory-->>FPM: Proc
+        FPM->>Proc: is_valid_datatype?
+        alt invalid
+            FPM->>Err: handle_invalid_datatype
+        else valid
+            FPM->>Routing: fetch_record_for_prefix
+            Routing-->>FPM: (sanitized, is_valid, record?)
+            FPM->>Routing: determine_routing_state
+            Routing-->>FPM: state
+            alt UNAPPENDABLE
+                FPM->>RFlow: handle_unappendable_record
+                RFlow->>Rename: rename_flow_controller
+            else APPEND_SYNCED
+                FPM->>RFlow: handle_append_to_synced_record
+            else INVALID_NAME
+                FPM->>Rename: rename_flow_controller
+            else VALID_NAME
+                FPM->>RUtils: get/create/apply_defaults
+                FPM->>Proc: device_specific_processing
+                FPM->>RUtils: update_record/manage_session
+                FPM->>Notify: notify_success
+            end
+        end
+        FPM->>Ctx: exit (clear device)
+    else no device
+        FPM->>Stability: reject_immediately
+    end
+```
 src/ipat_watchdog/device_plugins/my_device/
 ├── __init__.py
 ├── plugin.py              # Main plugin class

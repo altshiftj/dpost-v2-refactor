@@ -1,0 +1,65 @@
+@startuml ProcessingPipeline
+title IPAT Data Watchdog – Processing Pipeline (Sequence)
+
+actor FS as "Filesystem Event"
+participant FPM as "FileProcessManager"
+participant Settings as "SettingsManager"
+participant Stability as "StabilityService"
+participant Tracker as "FileStabilityTracker"
+participant Ctx as "DeviceContext"
+participant Factory as "FileProcessorFactory"
+participant Proc as "FileProcessor (plugin)"
+participant Routing as "routing.py"
+participant RFlow as "record_flow.py"
+participant Rename as "rename_flow.py"
+participant RUtils as "record_utils.py"
+participant Notify as "notifications.py"
+participant Err as "error_handling.py"
+
+FS -> FPM : process_item(src_path)
+FPM -> Settings : select_device_for_file(src_path)
+alt device found
+  FPM -> Stability : start_tracking(path, device_settings, callbacks)
+  Stability -> Tracker : create & schedule probes
+  ... wait until stable ...
+  Tracker --> FPM : completion_callback(path)
+  FPM -> Ctx : enter() set current device
+  activate Ctx
+  FPM -> Factory : get_for_device(device_id)
+  Factory --> FPM : Proc
+  FPM -> Proc : is_valid_datatype(src_path)?
+  alt invalid datatype
+    FPM -> Err : handle_invalid_datatype(src_path, prefix, ext)
+  else valid datatype
+    FPM -> Routing : fetch_record_for_prefix(records, prefix)
+    Routing --> FPM : (sanitized_prefix, is_valid, record?)
+    FPM -> Routing : determine_routing_state(record, is_valid, prefix, ext, Proc)
+    Routing --> FPM : state
+    alt UNAPPENDABLE
+      FPM -> RFlow : handle_unappendable_record(...)
+      RFlow -> Rename : rename_flow_controller(...)
+    else APPEND_SYNCED
+      FPM -> RFlow : handle_append_to_synced_record(...)
+    else INVALID_NAME
+      FPM -> Rename : rename_flow_controller(...)
+    else VALID_NAME
+      FPM -> RUtils : get_or_create_record / apply_device_defaults
+      FPM -> Proc : device_specific_processing(...)
+      FPM -> RUtils : update_record / manage_session
+      FPM -> Notify : notify_success(src_path, final_path)
+    end
+  end
+  FPM -> Ctx : exit() clear current device
+  deactivate Ctx
+else no device for file
+  FPM -> Stability : reject_immediately(path, reason)
+end
+
+note right of FPM
+Other helpers used implicitly:
+ - filesystem_utils: parse/move/get paths
+ - ui_messages: prompts/messages
+ - record_manager: persistence API
+end note
+
+@enduml

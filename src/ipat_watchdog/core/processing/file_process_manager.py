@@ -1,174 +1,58 @@
-"""
-File Process Manager - Core file processing orchestrator for IPAT Data Watchdog.
-
-This module handles the complete lifecycle of incoming files, from initial validation
-through final placement in organized record structures. It coordinates between the
-UI, session management, record management, and device-specific file processors.
-"""
+"""File processing orchestrator: routes stable files into records via device plugins."""
 from pathlib import Path
 import threading
 import queue
 import datetime as dt
 import time
-from typing import Dict, Optional, Optional, Tuple
+from typing import Dict, Tuple
 
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
+from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
 from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
     move_to_exception_folder,
-    move_to_rename_folder,
     get_record_path,
-    generate_record_id,
     generate_file_id,
-    sanitize_and_validate,
-    explain_filename_violation,
-    analyze_user_input,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.processing.routing import (
+    UNAPPENDABLE,
+    APPEND_SYNCED,
+    VALID_NAME,
+    INVALID_NAME,
+    fetch_record_for_prefix,
+    determine_routing_state,
+)
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.records.record_manager import RecordManager
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
+from ipat_watchdog.core.processing.rename_flow import rename_flow_controller
+from ipat_watchdog.core.processing.record_utils import (
+    get_or_create_record,
+    apply_device_defaults,
+    update_record,
+    manage_session,
+)
+from ipat_watchdog.core.processing.notifications import notify_success
+from ipat_watchdog.core.processing.error_handling import (
+    move_to_exception_and_inform as _move_to_exception_and_inform,
+    handle_invalid_datatype as _handle_invalid_datatype,
+)
+from ipat_watchdog.core.processing.device_context import DeviceContext
+from ipat_watchdog.core.processing.record_flow import (
+    handle_unappendable_record as _handle_unappendable_record_flow,
+    handle_append_to_synced_record as _handle_append_to_synced_record_flow,
+)
 
 logger = setup_logger(__name__)
 
-# File processing routing states - determines how files are handled based on validation
-UNAPPENDABLE = "unappendable_record"  # File cannot be added to existing record
-APPEND_SYNCED = "append_to_synced"    # File being added to already-synced record
-VALID_NAME = "valid_name"             # File has valid naming convention
-INVALID_NAME = "invalid_name"         # File naming doesn't meet requirements
-
-
-class FileStabilityTracker:
-    """
-    Device-aware file stability tracker.
-    
-    Uses device-specific settings for polling intervals, stability criteria,
-    temp file patterns, and sentinel file requirements.
-    """
-    
-    def __init__(self, 
-                 file_path: Path, 
-                 device_settings, 
-                 completion_callback,
-                 rejection_callback):
-        self.file_path = file_path
-        self.device_settings = device_settings
-        self.completion_callback = completion_callback
-        self.rejection_callback = rejection_callback
-        
-        self._start_time = dt.datetime.now()
-        self._last_metrics = self._snapshot()
-        self._stable_count = 0
-        self._timer = None
-        self._stopped = False
-        
-        logger.debug(f"Stability tracker started for {file_path.name} with device {device_settings.DEVICE_ID}")
-        self._schedule_probe()
-    
-    def _snapshot(self):
-        """Take snapshot of file/folder state for stability comparison."""
-        if not self.file_path.exists():
-            return None
-
-        if self.file_path.is_file():
-            s = self.file_path.stat()
-            return s.st_size, s.st_mtime
-
-        # For folders - count files and total size, excluding temp files
-        file_count = 0
-        total_size = 0
-        newest_mtime = 0.0
-        
-        for p in self.file_path.rglob("*"):
-            if p.is_file() and not p.name.endswith(self.device_settings.TEMP_PATTERNS):
-                try:
-                    s = p.stat()
-                    file_count += 1
-                    total_size += s.st_size
-                    newest_mtime = max(newest_mtime, s.st_mtime)
-                except FileNotFoundError:
-                    continue
-        
-        return file_count, total_size, newest_mtime
-    
-    def _schedule_probe(self):
-        """Schedule next stability check."""
-        if self._stopped:
-            return
-        self._timer = threading.Timer(self.device_settings.POLL_SECONDS, self._probe)
-        self._timer.start()
-    
-    def _probe(self):
-        """Check file stability and handle completion or continuation."""
-        try:
-            if self._stopped:
-                return
-                
-            if not self.file_path.exists():
-                self._reject("Path disappeared before becoming stable")
-                return
-
-            # Check for timeout
-            elapsed = (dt.datetime.now() - self._start_time).total_seconds()
-            if elapsed >= self.device_settings.MAX_WAIT_SECONDS:
-                self._reject(f"Timeout (> {self.device_settings.MAX_WAIT_SECONDS}s)")
-                return
-
-            # Compare current state with last snapshot
-            current = self._snapshot()
-            if current != self._last_metrics:
-                # Still changing - reset stability counter
-                self._last_metrics = current
-                self._stable_count = 0
-                self._schedule_probe()
-                return
-
-            # Increment stability counter
-            self._stable_count += 1
-            if self._stable_count < self.device_settings.STABLE_CYCLES:
-                # Not stable enough yet
-                self._schedule_probe()
-                return
-
-            # Check sentinel file requirement for folders
-            if self.file_path.is_dir() and self.device_settings.SENTINEL_NAME:
-                sentinel = self.file_path / self.device_settings.SENTINEL_NAME
-                if not sentinel.exists():
-                    logger.debug(f"Waiting for sentinel {sentinel.name} in {self.file_path.name}")
-                    self._schedule_probe()
-                    return
-
-            # File/folder is stable - notify completion
-            logger.info(f"{'Folder' if self.file_path.is_dir() else 'File'} stable & ready: {self.file_path.name}")
-            self.completion_callback(str(self.file_path))
-            
-        except Exception as e:
-            logger.exception(f"Stability tracker error for {self.file_path}: {e}")
-            self._reject(f"Tracking error: {e}")
-    
-    def _reject(self, reason: str):
-        """Handle rejection of unstable or problematic files."""
-        if not self.file_path.exists():
-            logger.debug(f"Path vanished during rejection: {self.file_path.name}")
-            self.stop()
-            return
-
-        logger.warning(f"File/Folder rejected: {self.file_path.name} — {reason}")
-        move_to_exception_folder(self.file_path)
-        self.rejection_callback(str(self.file_path), reason)
-        self.stop()
-    
-    def stop(self):
-        """Stop the stability tracker."""
-        self._stopped = True
-        if self._timer:
-            self._timer.cancel()
-            self._timer = None
+# File processing routing states are provided by routing module
 
 class FileProcessManager:
     """
@@ -190,20 +74,26 @@ class FileProcessManager:
         ui: UserInterface,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        settings_manager: SettingsManager,
+    settings_manager: SettingsManager | None = None,
+        file_processor: FileProcessorABS | None = None,
     ):
         """Initialize the file process manager with required dependencies."""
         self.ui = ui
         self.session_manager = session_manager
+        if settings_manager is None:
+            # Fallback to global settings manager (used in tests)
+            from ipat_watchdog.core.config.settings_store import SettingsStore
+            settings_manager = SettingsStore.get_manager()
         self.settings_manager = settings_manager
+        # Optional injection for testing/back-compat
+        self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
-        self._processor_cache = {}  # Cache processors by device_id to maintain state
+        self._processor_factory = FileProcessorFactory()  # Cache processors by device_id
         self._processing_lock = threading.Lock()  # Sequential processing lock
 
-        # Stability tracking
-        self._stability_trackers: Dict[str, FileStabilityTracker] = {}
-        self._trackers_lock = threading.RLock()
-        self._rejected_queue = queue.Queue()
+        # Stability tracking is managed by StabilityService
+        from ipat_watchdog.core.processing.stability_service import StabilityService
+        self._stability = StabilityService()
 
         # Sync pending records upon startup
         if not self.records.all_records_uploaded():
@@ -216,100 +106,74 @@ class FileProcessManager:
         Starts device-aware stability tracking, then processes when stable.
         """
         path = Path(src_path)
-        
-        # Determine device settings for this file
         device_settings = self.settings_manager.select_device_for_file(src_path)
-        
         if device_settings is None:
-            self._reject_immediately(path, "No device found that can process this file type")
+            self._stability.reject_immediately(path, "No device found that can process this file type")
             return
-
-        # Check temp folder patterns immediately
-        if path.is_dir() and device_settings.TEMP_FOLDER_REGEX.search(path.name):
-            logger.debug(f"Ignoring temp folder: {path.name}")
-            return
-        
-        # Start stability tracking with device-specific settings
-        with self._trackers_lock:
-            path_str = str(path)
-            if path_str in self._stability_trackers:
-                self._stability_trackers[path_str].stop()
-            
-            tracker = FileStabilityTracker(
-                file_path=path,
-                device_settings=device_settings,
-                completion_callback=self._handle_stable_file,
-                rejection_callback=self._handle_rejected_file
-            )
-            self._stability_trackers[path_str] = tracker
+        self._stability.start_tracking(
+            path,
+            device_settings,
+            self._handle_stable_file,
+            self._handle_rejected_file,
+        )
 
     def _handle_stable_file(self, src_path: str):
         """Handle a file that has become stable - process it fully."""
-        with self._trackers_lock:
-            self._stability_trackers.pop(src_path, None)
-        
         with self._processing_lock:
             try:
-                device_settings = self.settings_manager.select_device_for_file(src_path)
-                self.settings_manager.set_current_device(device_settings)
-                
-                file_processor = self._get_processor_for_file(src_path)
-                logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
-                
-                filename_prefix, extension = parse_filename(src_path)
+                # Set device context for this processing
+                with DeviceContext.from_file(self.settings_manager, src_path):
+                    file_processor = self._get_processor_for_file(src_path)
+                    logger.debug(
+                        f"Selected processor for {src_path}: {type(file_processor).__name__}"
+                    )
 
-                if not file_processor.is_valid_datatype(src_path):
-                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
-                    FILES_FAILED.inc()
-                    return
-                
-                preprocessed_src_path = file_processor.device_specific_preprocessing(src_path)
-                if preprocessed_src_path is None:
-                    return
+                    filename_prefix, extension = parse_filename(src_path)
 
-                final_filename_prefix, final_extension = parse_filename(preprocessed_src_path)
-                self._route_item(src_path, final_filename_prefix, final_extension, file_processor)
-                
+                    if not file_processor.is_valid_datatype(src_path):
+                        self._handle_invalid_datatype(src_path, filename_prefix, extension)
+                        FILES_FAILED.inc()
+                        return
+
+                    preprocessed_src_path = file_processor.device_specific_preprocessing(
+                        src_path
+                    )
+                    if preprocessed_src_path is None:
+                        return
+
+                    final_filename_prefix, final_extension = parse_filename(
+                        preprocessed_src_path
+                    )
+                    self._route_item(
+                        src_path, final_filename_prefix, final_extension, file_processor
+                    )
+
             except Exception as e:
                 logger.exception(f"Error processing stable file {src_path}: {e}")
                 filename_prefix, extension = parse_filename(src_path)
                 self._move_to_exception_and_inform(
-                    src_path, filename_prefix, extension,
+                    src_path,
+                    filename_prefix,
+                    extension,
                     severity=ErrorMessages.PROCESSING_ERROR,
                     message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
                         filename=Path(src_path).name, error=str(e)
                     ),
                 )
-            finally:
-                try:
-                    self.settings_manager.set_current_device(None)
-                except Exception:
-                    pass
 
     def _handle_rejected_file(self, src_path: str, reason: str):
         """Handle a file that was rejected during stability tracking."""
-        with self._trackers_lock:
-            self._stability_trackers.pop(src_path, None)
-        
-        self._rejected_queue.put((src_path, reason))
+        # Already removed by service callback; enqueue for external retrieval as well
+        # (Service also enqueues; this keeps compatibility if needed.)
+        pass
 
     def _reject_immediately(self, path: Path, reason: str):
-        """Immediately reject a file without stability tracking."""
-        logger.warning(f"Rejected immediately: {path.name} — {reason}")
-        if path.is_file():
-            time.sleep(0.35)
-        move_to_exception_folder(path)
-        self._rejected_queue.put((str(path), reason))
+        """Deprecated: use StabilityService.reject_immediately."""
+        self._stability.reject_immediately(path, reason)
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         """Get and clear rejected files list."""
-        rejected = []
-        while not self._rejected_queue.empty():
-            try:
-                rejected.append(self._rejected_queue.get_nowait())
-            except queue.Empty:
-                break
-        return rejected
+        return self._stability.get_and_clear_rejected()
 
     def _get_processor_for_file(self, src_path: str) -> FileProcessorABS:
         """
@@ -324,6 +188,10 @@ class FileProcessManager:
         Raises:
             RuntimeError: If no suitable processor is found
         """
+        # Prefer injected processor when available (backward-compat/testing)
+        if getattr(self, "file_processor", None) is not None:
+            return self.file_processor
+
         device_settings = self.settings_manager.select_device_for_file(src_path)
         
         if device_settings is None:
@@ -332,142 +200,26 @@ class FileProcessManager:
         # Set the device context for this thread
         self.settings_manager.set_current_device(device_settings)
 
-        # Import and get processor for the device
+        # Import and get processor for the device via factory
         device_id = device_settings.get_device_id()
-        
-        # Check cache first
-        if device_id in self._processor_cache:
-            return self._processor_cache[device_id]
-        
         try:
-            # Dynamic import of device plugin
-            plugin_module = __import__(
-                f'ipat_watchdog.device_plugins.{device_id}.plugin',
-                fromlist=['']
-            )
-            
-            plugin_class = None
-            for attr_name in dir(plugin_module):
-                attr = getattr(plugin_module, attr_name)
-                if (isinstance(attr, type) and 
-                    hasattr(attr, 'get_file_processor') and 
-                    attr_name.endswith('Plugin') and
-                    not getattr(attr, '__abstractmethods__', None)):  # Exclude abstract classes
-                    plugin_class = attr
-                    break
-            
-            if plugin_class is None:
-                raise ImportError(f"No plugin class found in {device_id}.plugin")
-            
-            plugin_instance = plugin_class()
-            processor = plugin_instance.get_file_processor()
-            
-            # Cache the processor for this device
-            self._processor_cache[device_id] = processor
-            return processor
-        
+            return self._processor_factory.get_for_device(device_id)
         except ImportError as e:
             logger.error(f"Failed to load processor for device {device_id}: {e}")
             raise RuntimeError(f"No processor available for device: {device_id}") from e
 
-    def process_item(self, src_path: str):
-        """
-        Main entry point for processing a new file or folder.
-        
-        Orchestrates the complete processing workflow:
-        1. Device selection and processor loading
-        2. Device-specific preprocessing
-        3. Filename parsing and validation
-        4. Data type validation
-        5. Routing to appropriate handling logic
-        
-        Args:
-            src_path: Path to the file or folder to process
-        """
-        with self._processing_lock:
-            try:
-                # Get the appropriate processor for this file
-                file_processor = self._get_processor_for_file(src_path)
-                logger.debug(f"Selected processor for {src_path}: {type(file_processor).__name__}")
-                
-                # Extract filename prefix and extension before validation
-                filename_prefix, extension = parse_filename(src_path)
-
-                # Validate that this is a supported data type for the device
-                if not file_processor.is_valid_datatype(src_path):
-                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
-                    FILES_FAILED.inc()
-                    return
-                
-                # Allow device-specific preprocessing (e.g., folder consolidation)
-                preprocessed_src_path = file_processor.device_specific_preprocessing(src_path)
-                if preprocessed_src_path is None:
-                    return
-
-                # Extract filename prefix and extension AFTER preprocessing to handle normalization
-                final_filename_prefix, final_extension = parse_filename(preprocessed_src_path)
-
-                # Route the item based on validation and record state
-                # Pass original src_path for device processing, but use preprocessed filename for record ID
-                self._route_item(src_path, final_filename_prefix, final_extension, file_processor)
-                
-            except RuntimeError as e:
-                # Handle cases where no processor is found
-                filename_prefix, extension = parse_filename(src_path)
-                logger.error(f"No processor found for {src_path}: {e}")
-                self._move_to_exception_and_inform(
-                    src_path,
-                    filename_prefix,
-                    extension,
-                    severity=WarningMessages.INVALID_DATA_TYPE,
-                    message=f"No device available to process this file type: {Path(src_path).name}",
-                )
-                FILES_FAILED.inc()
-            except Exception as e:
-                filename_prefix, extension = parse_filename(src_path)
-                logger.exception(f"Error while processing item: {e}")
-                self._move_to_exception_and_inform(
-                    src_path,
-                    filename_prefix,
-                    extension,
-                    severity=ErrorMessages.PROCESSING_ERROR,
-                    message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
-                        filename=Path(src_path).name, error=str(e)
-                    ),
-                )
-            finally:
-                # Clear device context for this thread
-                try:
-                    self.settings_manager.set_current_device(None)
-                except Exception:
-                    pass  # Ignore cleanup errors
+    
 
     def _move_to_exception_and_inform(
         self, src_path: str, prefix: str, extension: str, severity: str, message: str
     ):
-        """
-        Move problematic files to exception folder and notify user.
-        
-        Used when files cannot be processed due to validation errors,
-        processing failures, or other issues requiring manual intervention.
-        """
-        move_to_exception_folder(src_path, prefix, extension)
-        if severity.lower() == "warning":
-            self.ui.show_warning(severity, message)
-        else:
-            self.ui.show_error(severity, message)
-
-        logger.debug(f"Moved item '{src_path}' to exception folder with severity '{severity}'.")
+        _move_to_exception_and_inform(self.ui, src_path, prefix, extension, severity, message)
+        logger.debug(
+            f"Moved item '{src_path}' to exception folder with severity '{severity}'."
+        )
 
     def _handle_invalid_datatype(self, src_path: str, filename_prefix: str, extension: str):
-        """Handle files that don't match the device's supported data types."""
-        self._move_to_exception_and_inform(
-            src_path,
-            filename_prefix,
-            extension,
-            severity="Warning",
-            message=WarningMessages.INVALID_DATA_TYPE_DETAILS,
-        )
+        _handle_invalid_datatype(self.ui, src_path, filename_prefix, extension)
         logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
 
     def _route_item(self, src_path: str, filename_prefix: str, extension: str, file_processor: FileProcessorABS):
@@ -481,166 +233,60 @@ class FileProcessManager:
         - Invalid name handling (rename flow)
         """
         # Get sanitized filename and check if record exists
-        sanitized_prefix, is_valid_format, record = self._fetch_record_for_prefix(filename_prefix)
+        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(self.records, filename_prefix)
         
         # Determine routing state based on validation and record status
-        state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension, file_processor)
+        state = determine_routing_state(record, is_valid_format, filename_prefix, extension, file_processor)
 
         # Route based on determined state
         if state == UNAPPENDABLE:
-            self._handle_unappendable_record(src_path, sanitized_prefix, extension)
+            _handle_unappendable_record_flow(
+                self.ui,
+                self._rename_flow_controller,
+                src_path,
+                sanitized_prefix,
+                extension,
+            )
         elif state == APPEND_SYNCED:
-            self._handle_append_to_synced_record(record, src_path, sanitized_prefix, extension, file_processor)
+            _handle_append_to_synced_record_flow(
+                self.ui,
+                self.add_item_to_record,
+                self._rename_flow_controller,
+                record,
+                src_path,
+                sanitized_prefix,
+                extension,
+                file_processor,
+            )
         elif state == VALID_NAME:
             self.add_item_to_record(record, src_path, sanitized_prefix, extension, file_processor, notify=False)
         else:
-            self._rename_flow_controller(src_path, filename_prefix, extension)
-
-    def _fetch_record_for_prefix(self, filename_prefix: str) -> tuple[str, bool, LocalRecord]:
-        """
-        Retrieve or validate record information for a filename prefix.
-        
-        Returns:
-            tuple: (sanitized_prefix, is_valid_format, existing_record)
-                - sanitized_prefix: Cleaned version of the filename prefix
-                - is_valid_format: Whether the prefix follows naming conventions
-                - existing_record: LocalRecord if one exists, None otherwise
-        """
-        sanitized_prefix, is_valid_format = sanitize_and_validate(filename_prefix)
-        record_id = generate_record_id(sanitized_prefix)
-        record = self.records.get_record_by_id(record_id)
-        return sanitized_prefix, is_valid_format, record
-
-    def _determine_routing_state(
-        self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str, file_processor: FileProcessorABS
-    ) -> str:
-        """
-        Determine how to route the file based on validation and record state.
-        
-        Logic:
-        1. If record exists but file can't be appended -> UNAPPENDABLE
-        2. If record exists and is fully synced -> APPEND_SYNCED (needs user confirmation)
-        3. If record exists or name is valid -> VALID_NAME (standard processing)
-        4. Otherwise -> INVALID_NAME (requires rename flow)
-        """
-        if record and not file_processor.is_appendable(record, filename_prefix, extension):
-            return UNAPPENDABLE
-        if record and record.is_in_db and record.all_files_uploaded():
-            return APPEND_SYNCED
-        if record or is_valid_format:
-            return VALID_NAME
-        return INVALID_NAME
-
-    def _handle_unappendable_record(self, src_path: str, filename_prefix: str, extension: str):
-        """Handle files that cannot be appended to their target record."""
-        self.ui.show_warning(
-            WarningMessages.INVALID_RECORD, WarningMessages.INVALID_RECORD_DETAILS
-        )
-        # Force rename flow with context about why the file can't be appended
-        self._rename_flow_controller(
-            src_path,
-            filename_prefix,
-            extension,
-            contextual_reason=DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
-                record_id=filename_prefix
-            ),
-        )
-
-    def _handle_append_to_synced_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS):
-        """
-        Handle files being added to records that have already been synced to database.
-        
-        Requires user confirmation since this will modify an already-uploaded record.
-        """
-        if self.ui.prompt_append_record(filename_prefix):
-            # User confirmed - add the file to the existing record
-            self.add_item_to_record(record, src_path, filename_prefix, extension, file_processor)
-        else:
-            # User declined - force rename flow
-            self._rename_flow_controller(
+            rename_flow_controller(
+                self.ui,
+                self._get_processor_for_file,
+                self._route_item,
                 src_path,
                 filename_prefix,
                 extension,
-                contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(
-                    record_id=filename_prefix
-                ),
             )
 
-    def _rename_flow_controller(
-        self,
-        src_path: str,
-        filename_prefix: str,
-        extension: str,
-        contextual_reason: str = None,
-    ):
-        """
-        Manage the interactive rename flow for files with naming issues.
-        
-        Guides user through correcting filename to meet naming conventions.
-        If user cancels or rename fails, moves file to rename folder for manual handling.
-        
-        Args:
-            contextual_reason: Additional context about why rename is needed
-        """
-        # Start interactive rename loop with user
-        new_prefix = self._interactive_rename_loop(
-            filename_prefix, last_attempt=None, contextual_reason=contextual_reason
+    # Backwards-compatible shim for tests or external callers that may still patch this method
+    def _rename_flow_controller(self, src_path: str, filename_prefix: str, extension: str, contextual_reason: str = None):
+        rename_flow_controller(
+            self.ui,
+            self._get_processor_for_file,
+            self._route_item,
+            src_path,
+            filename_prefix,
+            extension,
+            contextual_reason=contextual_reason,
         )
 
-        if new_prefix is not None:
-            # User provided valid new name - retry processing with new name
-            try:
-                file_processor = self._get_processor_for_file(src_path)
-                self._route_item(src_path, new_prefix, extension, file_processor)
-            except RuntimeError as e:
-                logger.error(f"Failed to get processor for retry: {e}")
-                move_to_rename_folder(src_path, filename_prefix, extension)
-                self.ui.show_error("Processing Error", f"Unable to process file: {e}")
-            return
+    # Routing helpers moved to routing module
 
-        # User cancelled rename - move to rename folder for manual handling
-        move_to_rename_folder(src_path, filename_prefix, extension)
-        self.ui.show_info(
-            InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME
-        )
+    # Append/unappend flows extracted to record_flow module
 
-    def _interactive_rename_loop(
-        self,
-        filename_prefix: str,
-        last_attempt: str = None,
-        contextual_reason: str = None,
-    ) -> str | None:
-        """
-        Interactive loop for getting valid filename from user.
-        
-        Continues until user provides valid name or cancels.
-        Provides feedback on validation failures to guide user.
-        
-        Returns:
-            str: Valid sanitized filename prefix, or None if user cancelled
-        """
-        # Start with original filename or user's last attempt
-        attempted = last_attempt if last_attempt else filename_prefix
-        last_analysis = explain_filename_violation(attempted)
-
-        # Add contextual reason to help user understand why rename is needed
-        if contextual_reason:
-            last_analysis["reasons"].insert(0, contextual_reason)
-
-        while True:
-            # Show rename dialog with current attempt and validation feedback
-            user_input = self.ui.show_rename_dialog(attempted, last_analysis)
-            if user_input is None:
-                return None  # User cancelled
-
-            # Validate user's input
-            analysis = analyze_user_input(user_input)
-            if analysis["valid"]:
-                return analysis["sanitized"]  # Valid input - return sanitized version
-            else:
-                # Invalid input - reconstruct attempted name and continue loop
-                attempted = f"{user_input.get('name', '')}-{user_input.get('institute', '')}-{user_input.get('sample_ID', '')}"
-                last_analysis = analysis
+    # Rename flow is delegated to rename_flow module
 
     def add_item_to_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS = None, notify=True):
         """
@@ -666,20 +312,16 @@ class FileProcessManager:
                 raise RuntimeError("No file processor available")
             
             # Ensure we have a record to work with
-            record = self._get_or_create_record(record, filename_prefix)
+            record = get_or_create_record(self.records, record, filename_prefix)
 
             # Determine device abbreviation for sorting
             device_settings = self.settings_manager.get_current_device()
             device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
-            if device_settings:
-                if not record.default_description:
-                    record.default_description = getattr(device_settings, "DEFAULT_RECORD_DESCRIPTION", None)
-                if not record.default_tags:
-                    record.default_tags = list(getattr(device_settings, "RECORD_TAGS", []))
+            apply_device_defaults(record, device_settings)
             
             # Determine target paths and perform device-specific processing
             record_path = get_record_path(filename_prefix, device_abbr)
-            file_id = generate_file_id(filename_prefix)
+            file_id = generate_file_id(filename_prefix, device_abbr)
             final_path, datatype = processor.device_specific_processing(
                 src_path, record_path, file_id, extension
             )
@@ -689,15 +331,15 @@ class FileProcessManager:
 
             # Notify user of successful processing if requested
             if notify:
-                self._notify_success(src_path, final_path)
+                notify_success(self.ui, src_path, final_path)
 
             logger.debug(
                 f"{'Folder' if Path(src_path).is_dir() else 'File'} '{src_path}' moved/renamed to '{final_path}'."
             )
 
             # Update record tracking and manage session
-            self._update_record(final_path, record)
-            self._manage_session()
+            update_record(self.records, final_path, record)
+            manage_session(self.session_manager)
 
         except Exception as e:
             # Handle processing failures gracefully
@@ -710,37 +352,7 @@ class FileProcessManager:
                 message="Failed to rename.",
             )
 
-    def _notify_success(self, src_path: str, final_path: str):
-        """Show success notification to user about processed item."""
-        item_type = "Folder" if Path(src_path).is_dir() else "File"
-        self.ui.show_info(
-            InfoMessages.SUCCESS,
-            InfoMessages.ITEM_RENAMED.format(
-                item_type=item_type, filename=Path(final_path).name
-            ),
-        )
-
-    def _update_record(self, final_path: str, record: LocalRecord):
-        """Update record tracking with newly processed item."""
-        self.records.add_item_to_record(final_path, record)
-
-    def _manage_session(self):
-        """
-        Manage session lifecycle based on file processing activity.
-        
-        Starts new session if none active, or resets timer if session ongoing.
-        Sessions group related files and trigger database sync on timeout.
-        """
-        if not self.session_manager.session_active:
-            self.session_manager.start_session()
-            logger.debug("Started a new session.")
-        else:
-            self.session_manager.reset_timer()
-            logger.debug("Session is active. Timer reset.")
-
-    def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
-        """Get existing record or create new one if none exists."""
-        return record if record else self.records.create_record(filename_prefix)
+    # record/session helper methods moved to record_utils module
 
     def sync_records_to_database(self):
         """Synchronize all pending records to database."""
@@ -753,9 +365,6 @@ class FileProcessManager:
 
     def shutdown(self):
         """Stop all stability trackers."""
-        with self._trackers_lock:
-            for tracker in list(self._stability_trackers.values()):
-                tracker.stop()
-            self._stability_trackers.clear()
+        self._stability.shutdown()
 
 
