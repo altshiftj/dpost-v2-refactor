@@ -17,15 +17,7 @@ import re
 from typing import Callable, Optional
 
 from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.constants import (
- DIRECTORY_LIST, 
- ID_SEP, 
- DEST_DIR, 
- FILENAME_PATTERN, 
- EXCEPTIONS_DIR, 
- RENAME_DIR, 
- DAILY_RECORDS_JSON
-)
+from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.ui.ui_messages import ValidationMessages
@@ -60,7 +52,18 @@ def init_dirs(directories: Optional[list[str]] = None) -> None:
     function initializes the standard DIRECTORY_LIST defined in constants.
     """
 
-    for dir_path in DIRECTORY_LIST:
+    try:
+        s = SettingsStore.get()
+        dirs = getattr(s, "DIRECTORY_LIST", None)
+    except Exception:
+        dirs = None
+
+    if directories:
+        dirs = directories
+    if dirs is None:
+        dirs = _CONST.DIRECTORY_LIST
+
+    for dir_path in dirs:
         Path(dir_path).mkdir(parents=True, exist_ok=True)
 
 def get_record_path(filename_prefix: str, device_abbr: str = None) -> str:
@@ -69,10 +72,13 @@ def get_record_path(filename_prefix: str, device_abbr: str = None) -> str:
     If `device_abbr` is provided, it is prepended to the sample ID segment
     (e.g. "SEM-sample001"). The directory will be created if missing.
     """
-    user_ID, institute, sample_ID = filename_prefix.split(ID_SEP)
+    s = SettingsStore.get()
+    sep = getattr(s, "ID_SEP", _CONST.ID_SEP)
+    user_ID, institute, sample_ID = filename_prefix.split(sep)
     if device_abbr:
         sample_ID = f"{device_abbr}-{sample_ID}"
-    record_path = Path(DEST_DIR) / institute.upper() / user_ID.upper() / sample_ID
+    dest_dir = getattr(s, "DEST_DIR", _CONST.DEST_DIR)
+    record_path = Path(dest_dir) / institute.upper() / user_ID.upper() / sample_ID
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
 
@@ -95,33 +101,42 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     dir_path.mkdir(parents=True, exist_ok=True)
     
     # Find the highest existing counter
+    sep = getattr(s, "ID_SEP", _CONST.ID_SEP)
     counter = 1
     for existing in dir_path.iterdir():
         if existing.is_file() and existing.suffix == extension:
             existing_prefix = existing.stem
-            prefix_no_counter = existing_prefix.rsplit(ID_SEP, 1)[0]
+            prefix_no_counter = existing_prefix.rsplit(sep, 1)[0]
             if prefix_no_counter == filename_prefix:
                 try:
-                    suffix_num = int(existing_prefix.rsplit(ID_SEP, 1)[1])
+                    suffix_num = int(existing_prefix.rsplit(sep, 1)[1])
                     if suffix_num >= counter:
                         counter = suffix_num + 1
                 except (ValueError, IndexError):
                     continue
     
     # Generate the next available filename
-    candidate_name = f"{filename_prefix}{ID_SEP}{counter:02d}{extension}"
+    candidate_name = f"{filename_prefix}{sep}{counter:02d}{extension}"
     candidate_path = dir_path / candidate_name
     return str(candidate_path)
 
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
     """Return a unique path under the rename folder for the given name."""
-    base_dir = base_dir or RENAME_DIR
+    if base_dir is None:
+        try:
+            base_dir = SettingsStore.get().RENAME_DIR
+        except Exception:
+            base_dir = _CONST.RENAME_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
 def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
     """Return a unique path under the exceptions folder for the given name."""
-    base_dir = base_dir or EXCEPTIONS_DIR
+    if base_dir is None:
+        try:
+            base_dir = SettingsStore.get().EXCEPTIONS_DIR
+        except Exception:
+            base_dir = _CONST.EXCEPTIONS_DIR
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(base_dir, filename_prefix, extension)
 
@@ -239,7 +254,8 @@ def generate_record_id(filename_prefix: str, dev_kadi_record_id: Optional[str] =
                 "Device context is not set; provide dev_kadi_record_id explicitly or set current device."
             )
         dev_kadi_record_id = device.DEVICE_RECORD_KADI_ID
-    return f"{dev_kadi_record_id}{ID_SEP}{filename_prefix}".lower()
+    sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
+    return f"{dev_kadi_record_id}{sep}{filename_prefix}".lower()
 
 def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) -> str:
     """
@@ -259,8 +275,9 @@ def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) ->
                 "Device context is not set; provide device_abbr explicitly or set current device."
             )
         device_abbr = device.DEVICE_ABBR
-    user_id, institute, sample_id = filename_prefix.split(ID_SEP)
-    return f"{device_abbr}{ID_SEP}{sample_id}"
+    sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
+    user_id, institute, sample_id = filename_prefix.split(sep)
+    return f"{device_abbr}{sep}{sample_id}"
 
 # -------------------------------
 # RECORD PERSISTENCE
@@ -271,7 +288,10 @@ def load_persisted_records() -> dict[str, LocalRecord]:
 
     Returns an empty dict on first run or on read/parse failures (logged).
     """
-    json_path = Path(DAILY_RECORDS_JSON)
+    try:
+        json_path = Path(SettingsStore.get().DAILY_RECORDS_JSON)
+    except Exception:
+        json_path = Path(_CONST.DAILY_RECORDS_JSON)
     if not json_path.exists():
         return {}
     try:
@@ -288,7 +308,10 @@ def load_persisted_records() -> dict[str, LocalRecord]:
 
 def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
     """Serialize LocalRecord mapping to JSON for day-level persistence."""
-    json_path = Path(DAILY_RECORDS_JSON)
+    try:
+        json_path = Path(SettingsStore.get().DAILY_RECORDS_JSON)
+    except Exception:
+        json_path = Path(_CONST.DAILY_RECORDS_JSON)
     try:
         serialized = json.dumps(
             {key: record.to_dict() for key, record in daily_records_dict.items()},
@@ -305,21 +328,27 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
 
 def is_valid_prefix(raw_prefix: str) -> bool:
     """Quick validation check for a filename prefix against regex and segments."""
-    if not FILENAME_PATTERN.match(raw_prefix):
+    try:
+        pattern = SettingsStore.get().FILENAME_PATTERN
+    except Exception:
+        pattern = _CONST.FILENAME_PATTERN
+    if not pattern.match(raw_prefix):
         logger.debug(f"Prefix '{raw_prefix}' failed regex match.")
         return False
-    return raw_prefix.count(ID_SEP) >= 2
+    sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
+    return raw_prefix.count(sep) >= 2
 
 def sanitize_prefix(raw_prefix: str) -> str:
     """Normalize a raw prefix to lowercase and underscore-separated sample id."""
     s = SettingsStore.get()
-    parts = raw_prefix.strip().split(ID_SEP)
+    sep = getattr(s, "ID_SEP", _CONST.ID_SEP)
+    parts = raw_prefix.strip().split(sep)
     if len(parts) < 3:
         return raw_prefix
     user_id = parts[0].strip()
     institute = parts[1].strip()
-    sample_id = ID_SEP.join(part.strip() for part in parts[2:]).replace(" ", "_")
-    return f"{user_id.lower()}{ID_SEP}{institute.lower()}{ID_SEP}{sample_id}"
+    sample_id = sep.join(part.strip() for part in parts[2:]).replace(" ", "_")
+    return f"{user_id.lower()}{sep}{institute.lower()}{sep}{sample_id}"
 
 def sanitize_and_validate(raw_prefix: str) -> tuple[str, bool]:
     """Return (sanitized_prefix, is_valid) for a raw filename prefix."""
@@ -339,14 +368,17 @@ def explain_filename_violation(filename: str) -> dict:
         "highlight_spans": [],
     }
 
-    if not FILENAME_PATTERN.match(filename):
+    pattern = getattr(s, "FILENAME_PATTERN", _CONST.FILENAME_PATTERN)
+    if not pattern.match(filename):
         result["valid"] = False
-        segments = filename.split(ID_SEP)
+        sep = getattr(s, "ID_SEP", _CONST.ID_SEP)
+        segments = filename.split(sep)
 
         if len(segments) != 3:
             result["reasons"].append(ValidationMessages.MISSING_SEPARATOR)
+            sep = getattr(s, "ID_SEP", _CONST.ID_SEP)
             for i, char in enumerate(filename):
-                if char == ID_SEP:
+                if char == sep:
                     result["highlight_spans"].append((i, i + 1))
         else:
             user, institute, sample = segments
@@ -401,7 +433,8 @@ def analyze_user_input(dialog_result: dict | None) -> dict:
     institute = dialog_result.get("institute", "").strip()
     sample_id = dialog_result.get("sample_ID", "").strip()
 
-    raw_prefix = f"{user_id}{ID_SEP}{institute}{ID_SEP}{sample_id}"
+    sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
+    raw_prefix = f"{user_id}{sep}{institute}{sep}{sample_id}"
     sanitized, is_valid = sanitize_and_validate(raw_prefix)
 
     if is_valid:

@@ -1,6 +1,7 @@
 # ipat_watchdog/device_plugins/test_device/settings.py
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
+from typing import Set, List, Tuple, Pattern, Optional
 
 class TestDeviceSettings(DeviceSettings):
     """
@@ -17,6 +18,14 @@ class TestDeviceSettings(DeviceSettings):
     ALLOWED_EXTENSIONS = {".tif", ".txt"}
     ALLOWED_FOLDER_CONTENTS = set()
 
+   # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = .25
+    MAX_WAIT_SECONDS: float = 3
+    STABLE_CYCLES: int = 2
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None
+    
     # ──────────────────────────────────────────────────────────────────────────────
     # 📟 Device Identity
     # ──────────────────────────────────────────────────────────────────────────────

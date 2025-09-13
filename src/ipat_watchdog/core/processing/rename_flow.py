@@ -14,6 +14,12 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     explain_filename_violation,
     analyze_user_input,
 )
+from time import sleep
+try:
+    from tkinter import TclError  # type: ignore
+except Exception:  # pragma: no cover
+    class TclError(Exception):
+        pass
 
 
 def interactive_rename_loop(
@@ -32,7 +38,12 @@ def interactive_rename_loop(
         last_analysis["reasons"].insert(0, contextual_reason)
 
     while True:
-        user_input = ui.show_rename_dialog(attempted, last_analysis)
+        try:
+            user_input = ui.show_rename_dialog(attempted, last_analysis)
+        except TclError:
+            # Dialog race (e.g., closed before visible) — small backoff and retry
+            sleep(0.05)
+            continue
         if user_input is None:
             return None
         analysis = analyze_user_input(user_input)

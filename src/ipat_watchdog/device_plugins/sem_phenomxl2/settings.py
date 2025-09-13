@@ -1,5 +1,6 @@
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-import re # TODO: configure import to base settings?
+import re
+from typing import Set, List, Tuple, Pattern, Optional
 
 class SEMPhenomXL2Settings(DeviceSettings):
     """
@@ -14,6 +15,15 @@ class SEMPhenomXL2Settings(DeviceSettings):
     # ──────────────────────────────────────────────────────────────────────────────
     ALLOWED_EXTENSIONS = {".tiff", ".tif"}
     ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
+
+   # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = 1.5
+    MAX_WAIT_SECONDS: float = 30
+    STABLE_CYCLES: int = 3
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None
+
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📟 Device Identity

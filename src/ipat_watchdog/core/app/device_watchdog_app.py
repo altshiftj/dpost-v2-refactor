@@ -16,14 +16,12 @@ from ipat_watchdog.metrics import(
  SESSION_EXIT_STATUS
 )
 
-from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
+from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.config.constants import WATCH_DIR
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import ErrorMessages
-from ipat_watchdog.core.handlers.file_event_handler import FileEventHandler
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorBase
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 from ipat_watchdog.core.logging.logger import setup_logger

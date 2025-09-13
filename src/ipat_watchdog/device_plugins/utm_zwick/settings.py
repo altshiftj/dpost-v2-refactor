@@ -1,4 +1,5 @@
-# ipat_watchdog/core/config/zwick_utm_settings.py
+from typing import Set, List, Tuple, Pattern, Optional
+
 from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
 
@@ -18,6 +19,15 @@ class SettingsZwickUTM(DeviceSettings):
     ALLOWED_EXTENSIONS        = {".zs2", ".xlsx"}
     ALLOWED_FOLDER_CONTENTS   = set()             # device writes plain files
     SENTINEL_NAME             = None              # rely on stable-cycles logic
+
+   # === Snapshot Watcher Settings ===
+    POLL_SECONDS: float = 0.5
+    MAX_WAIT_SECONDS: float = 30
+    STABLE_CYCLES: int = 2
+    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
+    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+    SENTINEL_NAME: Optional[str] = None
+
 
     # ─── Device identity -------------------------------------------------------
     DEVICE_USER_KADI_ID       = "utm-01-usr"

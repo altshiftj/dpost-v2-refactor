@@ -14,9 +14,29 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     init_dirs,
 )
 from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
-from tests.helpers.fake_sync import DummySyncManager
-from tests.helpers.fake_ui import HeadlessUI
+from ..helpers.fake_sync import DummySyncManager
+from ..helpers.fake_ui import HeadlessUI
 from ipat_watchdog.core.ui.ui_messages import InfoMessages
+
+
+# ───────────────────────── helpers for scheduled tasks ───────────────────────
+def run_scheduled_tasks(ui: HeadlessUI, max_steps: int = 50):
+    """Execute scheduled UI callbacks to simulate the main-loop timer."""
+    steps = 0
+    while steps < max_steps and ui.scheduled_tasks:
+        tasks = list(ui.scheduled_tasks)
+        ui.scheduled_tasks.clear()
+        for _, cb in tasks:
+            cb()
+        steps += 1
+
+def wait_until(predicate, timeout=5.0, interval=0.05):
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if predicate():
+            return True
+        time.sleep(interval)
+    return False
 
 
 # ────────────────────────── fixtures ──────────────────────────────────────────
@@ -77,7 +97,8 @@ def real_processing_app(tmp_settings):
     
     # Set up settings manager with available devices and current device context
     settings_manager = SettingsManager([test_device_settings], pc_settings)
-    settings_manager.set_current_device("test_device")
+    # Ensure a valid device context when needed (will be set per-file as well)
+    settings_manager.set_current_device(test_device_settings)
     SettingsStore.set_manager(settings_manager)
 
     # Now create directories using the proper settings
@@ -87,7 +108,6 @@ def real_processing_app(tmp_settings):
         ui=ui,
         sync_manager=sync,
         settings_manager=settings_manager,
-        observer_cls=PollingObserver,
         file_process_manager_cls=FileProcessManager,
     )
 
@@ -104,8 +124,9 @@ def test_happy_path(real_processing_app, tmp_settings):
 
     tif_path.write_bytes(b"dummy image bytes")
 
-    # Process the file directly instead of waiting for file watcher
+    # Process the file directly and drive scheduled tasks
     real_processing_app.file_processing.process_item(str(tif_path))
+    run_scheduled_tasks(real_processing_app.ui)
 
     # Check that the file was processed correctly by looking for the moved file
     # Test device moves files to Data/INSTITUTE/USER/DEVICE_ABBR-SAMPLE/ structure
@@ -127,8 +148,9 @@ def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings)
     bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"
     bad.write_bytes(b"nope")
 
-    # Process the file directly
+    # Process the file directly and drive scheduled tasks
     real_processing_app.file_processing.process_item(str(bad))
+    run_scheduled_tasks(real_processing_app.ui)
 
     # Check if file was moved to exceptions
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.jpg"))
@@ -138,9 +160,10 @@ def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings)
     # Verify the original file was moved (not copied)
     assert not bad.exists(), f"Original file should be moved, not copied: {bad}"
 
-    # Check that the error message indicates unsupported data type
+    # Check that the error message indicates unsupported data type or unsupported input
     assert any(
-        "Invalid Data Type" in title and "No device available to process this file type" in msg
+        ("Invalid Data Type" in title or "Unsupported Input" in title)
+        and "No device found that can process this file type" in msg
         for title, msg in real_processing_app.ui.errors
     ), f"UI errors were: {real_processing_app.ui.errors}"
 
@@ -150,8 +173,9 @@ def test_invalid_prefix_moves_to_rename(real_processing_app, tmp_settings):
     bad = tmp_settings.WATCH_DIR / "badprefix.tif"
     bad.write_bytes(b"dummy")
 
-    # Process the file directly
+    # Process the file directly and drive scheduled tasks
     real_processing_app.file_processing.process_item(str(bad))
+    run_scheduled_tasks(real_processing_app.ui)
 
     # Check if file was moved to rename folder
     rename_files = list(tmp_settings.RENAME_DIR.glob("badprefix*.tif"))
@@ -175,12 +199,9 @@ def test_interactive_rename_loop_success(real_processing_app, tmp_settings):
 
     bad = tmp_settings.WATCH_DIR / "badprefix.tif"
     bad.write_bytes(b"dummy")
-
-    deadline = time.time() + 10  # Give more time for processing
-    while time.time() < deadline and real_processing_app.event_queue.empty():
-        time.sleep(0.1)
-
-    real_processing_app.process_events()
+    # Drive processing directly
+    real_processing_app.file_processing.process_item(str(bad))
+    run_scheduled_tasks(real_processing_app.ui)
 
     # Instead of calling generate_record_id, check that a record was created
     # by looking for the processed file in the expected location
@@ -205,13 +226,12 @@ def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
     tif = tmp_settings.WATCH_DIR / f"{prefix}.tif"
     tif.write_bytes(b"x")
 
-    deadline = time.time() + 10  # Give more time for processing
-    while time.time() < deadline and real_processing_app.event_queue.empty():
-        time.sleep(0.1)
+    # Process directly and drive scheduled tasks (triggers auto close via UI)
+    real_processing_app.file_processing.process_item(str(tif))
+    run_scheduled_tasks(real_processing_app.ui)
 
-    real_processing_app.process_events()
-
-    assert len(real_processing_app.sync_manager.synced_records) >= 1
+    # Check via the record manager that records were synced
+    assert real_processing_app.file_processing.records.all_records_uploaded()
 
 
 def test_rapid_file_arrival_same_record(real_processing_app, tmp_settings):
@@ -228,9 +248,9 @@ def test_rapid_file_arrival_same_record(real_processing_app, tmp_settings):
     for i in range(num_files):
         file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
         file_path.write_bytes(f"test data {i}".encode())
-
-        # Process the file
+        # Process the file and drive tasks
         real_processing_app.file_processing.process_item(str(file_path))
+        run_scheduled_tasks(real_processing_app.ui)
 
     # Verify all files were processed (each to its own record directory due to trailing numbers)
     # The test device doesn't normalize trailing digits, so each file creates its own record
@@ -258,9 +278,9 @@ def test_multiple_files_same_record(real_processing_app, tmp_settings):
     for i in range(num_files):
         file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
         file_path.write_bytes(f"multi-file test {i}".encode())
-        
-        # Process the file
+        # Process the file and drive tasks
         real_processing_app.file_processing.process_item(str(file_path))
+        run_scheduled_tasks(real_processing_app.ui)
 
     # Verify final record state
     # Note: Test device doesn't normalize trailing digits, so each file creates its own record

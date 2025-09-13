@@ -1,9 +1,10 @@
 """
 Device-aware file/folder stability tracking utilities.
 
-This module provides a reusable FileStabilityTracker that can be used by
-components that need to wait until files or directories are fully written
-before proceeding.
+Synchronous (inline) FileStabilityTracker that waits until files or
+directories are fully written before proceeding. Designed to run in a
+single-threaded environment where only one file is processed at a time,
+so it does not rely on UI scheduling callbacks.
 
 Kept intentionally independent from FileProcessManager so it can be reused
 by watchers or other orchestrators in the future.
@@ -11,9 +12,9 @@ by watchers or other orchestrators in the future.
 from __future__ import annotations
 
 from pathlib import Path
-import threading
 import datetime as dt
-from typing import Callable, Any
+import time
+from typing import Callable, Any, Optional
 
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.storage.filesystem_utils import move_to_exception_folder
@@ -23,7 +24,7 @@ logger = setup_logger(__name__)
 
 class FileStabilityTracker:
     """
-    Device-aware file stability tracker.
+    Device-aware file stability tracker (synchronous/inline).
 
     Uses device-specific settings for polling intervals, stability criteria,
     temp file patterns, and sentinel file requirements.
@@ -48,13 +49,14 @@ class FileStabilityTracker:
         self._start_time = dt.datetime.now()
         self._last_metrics = self._snapshot()
         self._stable_count = 0
-        self._timer: threading.Timer | None = None
         self._stopped = False
+        self._completed = False
 
         logger.debug(
             f"Stability tracker started for {file_path.name} with device {getattr(device_settings, 'DEVICE_ID', 'unknown')}"
         )
-        self._schedule_probe()
+        # Run synchronously until completion/rejection/stop
+        self._run_inline()
 
     def _snapshot(self):
         """Take snapshot of file/folder state for stability comparison."""
@@ -82,64 +84,83 @@ class FileStabilityTracker:
 
         return file_count, total_size, newest_mtime
 
-    def _schedule_probe(self) -> None:
-        """Schedule next stability check."""
-        if self._stopped:
-            return
-        self._timer = threading.Timer(self.device_settings.POLL_SECONDS, self._probe)
-        self._timer.start()
+    def _evaluate(self) -> tuple[str, Optional[str]]:
+        """
+        Evaluate the current stability state once.
 
-    def _probe(self) -> None:
-        """Check file stability and handle completion or continuation."""
+        Returns a tuple (state, reason) where state is one of:
+        - 'continue': not yet stable, keep checking
+        - 'complete': stable and ready
+        - 'reject': cannot proceed (reason provided)
+        """
+        if not self.file_path.exists():
+            return "reject", "Path disappeared before becoming stable"
+
+        # Check for timeout
+        elapsed = (dt.datetime.now() - self._start_time).total_seconds()
+        if elapsed >= self.device_settings.MAX_WAIT_SECONDS:
+            return "reject", f"Timeout (> {self.device_settings.MAX_WAIT_SECONDS}s)"
+
+        # Compare current state with last snapshot
+        current = self._snapshot()
+        if current != self._last_metrics:
+            # Still changing - reset stability counter
+            self._last_metrics = current
+            self._stable_count = 0
+            return "continue", None
+
+        # Increment stability counter
+        self._stable_count += 1
+        if self._stable_count < self.device_settings.STABLE_CYCLES:
+            # Not stable enough yet
+            return "continue", None
+
+        # Check sentinel file requirement for folders
+        if self.file_path.is_dir() and getattr(self.device_settings, "SENTINEL_NAME", None):
+            sentinel = self.file_path / self.device_settings.SENTINEL_NAME
+            if not sentinel.exists():
+                logger.debug(
+                    f"Waiting for sentinel {sentinel.name} in {self.file_path.name}"
+                )
+                return "continue", None
+
+        # File/folder is stable
+        return "complete", None
+
+    def _run_inline(self) -> None:
+        """Run synchronous stability probing loop (no UI scheduling)."""
         try:
-            if self._stopped:
-                return
+            poll_seconds = max(float(getattr(self.device_settings, "POLL_SECONDS", 1.0)), 0.0)
+        except Exception:
+            poll_seconds = 1.0
 
-            if not self.file_path.exists():
-                self._reject("Path disappeared before becoming stable")
-                return
+        try:
+            while not self._stopped and not self._completed:
+                try:
+                    state, reason = self._evaluate()
+                except Exception as e:
+                    logger.exception(f"Stability tracker error for {self.file_path}: {e}")
+                    self._reject(f"Tracking error: {e}")
+                    break
 
-            # Check for timeout
-            elapsed = (dt.datetime.now() - self._start_time).total_seconds()
-            if elapsed >= self.device_settings.MAX_WAIT_SECONDS:
-                self._reject(f"Timeout (> {self.device_settings.MAX_WAIT_SECONDS}s)")
-                return
+                if state == "reject":
+                    self._reject(reason or "Rejected")
+                    break
 
-            # Compare current state with last snapshot
-            current = self._snapshot()
-            if current != self._last_metrics:
-                # Still changing - reset stability counter
-                self._last_metrics = current
-                self._stable_count = 0
-                self._schedule_probe()
-                return
-
-            # Increment stability counter
-            self._stable_count += 1
-            if self._stable_count < self.device_settings.STABLE_CYCLES:
-                # Not stable enough yet
-                self._schedule_probe()
-                return
-
-            # Check sentinel file requirement for folders
-            if self.file_path.is_dir() and getattr(self.device_settings, "SENTINEL_NAME", None):
-                sentinel = self.file_path / self.device_settings.SENTINEL_NAME
-                if not sentinel.exists():
-                    logger.debug(
-                        f"Waiting for sentinel {sentinel.name} in {self.file_path.name}"
+                if state == "complete":
+                    logger.info(
+                        f"{'Folder' if self.file_path.is_dir() else 'File'} stable & ready: {self.file_path.name}"
                     )
-                    self._schedule_probe()
-                    return
+                    self._completed = True
+                    self.completion_callback(str(self.file_path))
+                    break
 
-            # File/folder is stable - notify completion
-            logger.info(
-                f"{'Folder' if self.file_path.is_dir() else 'File'} stable & ready: {self.file_path.name}"
-            )
-            self.completion_callback(str(self.file_path))
-
-        except Exception as e:
-            logger.exception(f"Stability tracker error for {self.file_path}: {e}")
-            self._reject(f"Tracking error: {e}")
+                # continue
+                if poll_seconds > 0:
+                    time.sleep(poll_seconds)
+        finally:
+            # Nothing to cancel in inline mode
+            pass
 
     def _reject(self, reason: str) -> None:
         """Handle rejection of unstable or problematic files."""
@@ -156,6 +177,4 @@ class FileStabilityTracker:
     def stop(self) -> None:
         """Stop the stability tracker."""
         self._stopped = True
-        if self._timer:
-            self._timer.cancel()
-            self._timer = None
+        # No scheduler handle to cancel in synchronous mode

@@ -142,21 +142,11 @@ def watchdog_app(
     tmp_settings,
     fake_ui,
     fake_sync,
-    dummy_processor,
-    fake_observer,
-    fake_handler,
-    fake_session_manager,
-    fake_file_process_manager,
     fake_settings_manager
 ):
     app = DeviceWatchdogApp(
         ui=fake_ui,
         sync_manager=fake_sync,
         settings_manager=fake_settings_manager,
-        observer_cls=lambda: fake_observer,
-        file_event_handler_cls=fake_handler,
-        session_manager_cls=fake_session_manager,
-        file_process_manager_cls=fake_file_process_manager,
     )
-    app.directory_observer = fake_observer  # for assertions
     return app

@@ -8,6 +8,7 @@ UI elements to guide user interactions.
 import tkinter as tk
 from tkinter import messagebox
 from typing import Dict, Optional, Callable, Any
+import threading
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.dialogs import RenameDialog
@@ -36,6 +37,9 @@ class TKinterUI(UserInterface):
         self.dialog_parent = tk.Toplevel(self.root)
         self.dialog_parent.withdraw()
         self.dialog_parent.attributes("-topmost", True)
+
+        # Record the UI thread id for marshaling work onto Tk thread
+        self._ui_thread_id = threading.get_ident()
 
         # Dictionary to track active dialogs by type
         self._active_dialogs = {}
@@ -72,8 +76,11 @@ class TKinterUI(UserInterface):
     def show_rename_dialog(
         self, attempted_filename: str, analysis: dict
     ) -> Optional[dict]:
-        dialog = RenameDialog(self.get_root(), attempted_filename, analysis)
-        return dialog.result
+        """Open the rename dialog on the Tk thread and return the user input dict or None."""
+        def _open():
+            dialog = RenameDialog(self.get_root(), attempted_filename, analysis)
+            return dialog.result
+        return self.run_on_ui_sync(_open)
 
     def prompt_append_record(self, record_name: str) -> bool:
         """
@@ -176,6 +183,40 @@ class TKinterUI(UserInterface):
         Enter the Tkinter main event loop.
         """
         self.root.mainloop()
+
+    # -------------------------------------------------------------------------
+    # UI Thread helpers
+    # -------------------------------------------------------------------------
+
+    def is_ui_thread(self) -> bool:
+        """Return True if current code is running on the Tk thread."""
+        return threading.get_ident() == self._ui_thread_id
+
+    def run_on_ui(self, fn: Callable[..., Any], *args, **kwargs) -> None:
+        """Schedule fn to run on the Tk thread asynchronously."""
+        self.get_root().after(0, lambda: fn(*args, **kwargs))
+
+    def run_on_ui_sync(self, fn: Callable[..., Any], *args, **kwargs):
+        """Run fn on the Tk thread synchronously and return its result."""
+        if self.is_ui_thread():
+            return fn(*args, **kwargs)
+
+        done = threading.Event()
+        out: dict[str, Any] = {"value": None, "exc": None}
+
+        def runner():
+            try:
+                out["value"] = fn(*args, **kwargs)
+            except Exception as e:  # noqa: BLE001 keep broad to bubble up
+                out["exc"] = e
+            finally:
+                done.set()
+
+        self.get_root().after(0, runner)
+        done.wait()
+        if out["exc"] is not None:
+            raise out["exc"]
+        return out["value"]
 
     # -------------------------------------------------------------------------
     # Internal Helpers

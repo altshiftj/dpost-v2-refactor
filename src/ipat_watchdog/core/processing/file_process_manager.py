@@ -1,10 +1,7 @@
 """File processing orchestrator: routes stable files into records via device plugins."""
 from pathlib import Path
-import threading
 import queue
-import datetime as dt
-import time
-from typing import Dict, Tuple
+from typing import Tuple
 
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
@@ -13,11 +10,10 @@ from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
 from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
-    move_to_exception_folder,
     get_record_path,
     generate_file_id,
+    move_to_exception_folder,
 )
-from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.processing.routing import (
     UNAPPENDABLE,
     APPEND_SYNCED,
@@ -89,11 +85,9 @@ class FileProcessManager:
         self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
         self._processor_factory = FileProcessorFactory()  # Cache processors by device_id
-        self._processing_lock = threading.Lock()  # Sequential processing lock
 
-        # Stability tracking is managed by StabilityService
-        from ipat_watchdog.core.processing.stability_service import StabilityService
-        self._stability = StabilityService()
+    # Single-threaded stability tracking — synchronous inline mode (no tracker storage needed)
+        self._rejected_queue = queue.Queue()
 
         # Sync pending records upon startup
         if not self.records.all_records_uploaded():
@@ -108,58 +102,72 @@ class FileProcessManager:
         path = Path(src_path)
         device_settings = self.settings_manager.select_device_for_file(src_path)
         if device_settings is None:
-            self._stability.reject_immediately(path, "No device found that can process this file type")
+            self._reject_immediately(path, "No device found that can process this file type")
             return
-        self._stability.start_tracking(
-            path,
-            device_settings,
-            self._handle_stable_file,
-            self._handle_rejected_file,
+        # Ignore temp folders immediately
+        if path.is_dir() and device_settings.TEMP_FOLDER_REGEX.search(path.name):
+            logger.debug(f"Ignoring temp folder: {path.name}")
+            return
+
+        # Define callbacks that proceed after stability tracking
+        def on_complete(p: str):
+            self._handle_stable_file(p)
+
+        def on_reject(p: str, reason: str):
+            # Collect for DeviceWatchdogApp to surface to user
+            self._rejected_queue.put((p, reason))
+            self._handle_rejected_file(p, reason)
+
+        tracker = FileStabilityTracker(
+            file_path=path,
+            device_settings=device_settings,
+            completion_callback=on_complete,
+            rejection_callback=on_reject,
         )
+        # Synchronous tracker completes inline; nothing to store
 
     def _handle_stable_file(self, src_path: str):
         """Handle a file that has become stable - process it fully."""
-        with self._processing_lock:
-            try:
-                # Set device context for this processing
-                with DeviceContext.from_file(self.settings_manager, src_path):
-                    file_processor = self._get_processor_for_file(src_path)
-                    logger.debug(
-                        f"Selected processor for {src_path}: {type(file_processor).__name__}"
-                    )
-
-                    filename_prefix, extension = parse_filename(src_path)
-
-                    if not file_processor.is_valid_datatype(src_path):
-                        self._handle_invalid_datatype(src_path, filename_prefix, extension)
-                        FILES_FAILED.inc()
-                        return
-
-                    preprocessed_src_path = file_processor.device_specific_preprocessing(
-                        src_path
-                    )
-                    if preprocessed_src_path is None:
-                        return
-
-                    final_filename_prefix, final_extension = parse_filename(
-                        preprocessed_src_path
-                    )
-                    self._route_item(
-                        src_path, final_filename_prefix, final_extension, file_processor
-                    )
-
-            except Exception as e:
-                logger.exception(f"Error processing stable file {src_path}: {e}")
-                filename_prefix, extension = parse_filename(src_path)
-                self._move_to_exception_and_inform(
-                    src_path,
-                    filename_prefix,
-                    extension,
-                    severity=ErrorMessages.PROCESSING_ERROR,
-                    message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
-                        filename=Path(src_path).name, error=str(e)
-                    ),
+        try:
+            # Set device context for this processing
+            with DeviceContext.from_file(self.settings_manager, src_path):
+                file_processor = self._get_processor_for_file(src_path)
+                logger.debug(
+                    f"Selected processor for {src_path}: {type(file_processor).__name__}"
                 )
+
+                filename_prefix, extension = parse_filename(src_path)
+
+                if not file_processor.is_valid_datatype(src_path):
+                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
+                    FILES_FAILED.inc()
+                    return
+
+                preprocessed_src_path = file_processor.device_specific_preprocessing(
+                    src_path
+                )
+                if preprocessed_src_path is None:
+                    return
+
+                final_filename_prefix, final_extension = parse_filename(
+                    preprocessed_src_path
+                )
+                self._route_item(
+                    src_path, final_filename_prefix, final_extension, file_processor
+                )
+
+        except Exception as e:
+            logger.exception(f"Error processing stable file {src_path}: {e}")
+            filename_prefix, extension = parse_filename(src_path)
+            self._move_to_exception_and_inform(
+                src_path,
+                filename_prefix,
+                extension,
+                severity=ErrorMessages.PROCESSING_ERROR,
+                message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
+                    filename=Path(src_path).name, error=str(e)
+                ),
+            )
 
     def _handle_rejected_file(self, src_path: str, reason: str):
         """Handle a file that was rejected during stability tracking."""
@@ -168,12 +176,22 @@ class FileProcessManager:
         pass
 
     def _reject_immediately(self, path: Path, reason: str):
-        """Deprecated: use StabilityService.reject_immediately."""
-        self._stability.reject_immediately(path, reason)
+        """Reject a file/folder without tracking and move it to exceptions."""
+        logger.warning(f"Rejected immediately: {path.name} — {reason}")
+        try:
+            move_to_exception_folder(path)
+        finally:
+            self._rejected_queue.put((str(path), reason))
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         """Get and clear rejected files list."""
-        return self._stability.get_and_clear_rejected()
+        items: list[Tuple[str, str]] = []
+        while not self._rejected_queue.empty():
+            try:
+                items.append(self._rejected_queue.get_nowait())
+            except queue.Empty:
+                break
+        return items
 
     def _get_processor_for_file(self, src_path: str) -> FileProcessorABS:
         """
@@ -364,7 +382,7 @@ class FileProcessManager:
         self.records.sync_records_to_database()
 
     def shutdown(self):
-        """Stop all stability trackers."""
-        self._stability.shutdown()
+        """Shutdown hook (no-op for synchronous tracking)."""
+        return
 
 
