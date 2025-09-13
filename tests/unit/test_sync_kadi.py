@@ -180,8 +180,6 @@ def test_initialize_new_db_record(sync_mgr, local_record):
     device_user = DummyKadiUser("device_user")
     user_group = DummyKadiGroup("user_group")
     device_group = DummyKadiGroup("device_group")
-    settings = sync_mgr.settings_manager.get_composite_settings()
-
     sync_mgr._initialize_new_db_record(
         local_record,
         dummy_record,
@@ -189,12 +187,11 @@ def test_initialize_new_db_record(sync_mgr, local_record):
         device_user,
         user_group,
         device_group,
-        settings,
     )
 
     dummy_record.set_attribute.assert_any_call("title", local_record.sample_name)
     dummy_record.set_attribute.assert_any_call(
-        "description", settings.DEFAULT_RECORD_DESCRIPTION
+        "description", None
     )
     dummy_record.set_attribute.assert_any_call("type", "rawdata")
     dummy_record.link_record.assert_called_with(
