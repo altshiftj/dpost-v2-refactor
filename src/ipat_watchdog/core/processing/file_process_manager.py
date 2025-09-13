@@ -661,8 +661,7 @@ class FileProcessManager:
             notify: Whether to show success notification to user
         """
         try:
-            # Use provided processor or fall back to instance processor
-            processor = file_processor or self.file_processor
+            processor = file_processor
             if processor is None:
                 raise RuntimeError("No file processor available")
             
@@ -672,6 +671,12 @@ class FileProcessManager:
             # Determine device abbreviation for sorting
             device_settings = self.settings_manager.get_current_device()
             device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
+            if device_settings:
+                if not record.default_description:
+                    record.default_description = getattr(device_settings, "DEFAULT_RECORD_DESCRIPTION", None)
+                if not record.default_tags:
+                    record.default_tags = list(getattr(device_settings, "RECORD_TAGS", []))
+            
             # Determine target paths and perform device-specific processing
             record_path = get_record_path(filename_prefix, device_abbr)
             file_id = generate_file_id(filename_prefix)
