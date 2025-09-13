@@ -163,8 +163,17 @@ def move_item(src: str, dest: str) -> None:
     dest_path = Path(dest)
     
     # If destination exists as a placeholder file (empty), remove it first
-    if dest_path.exists() and dest_path.stat().st_size == 0:
-        dest_path.unlink()
+    if dest_path.exists():
+        if dest_path.is_file():
+            if dest_path.stat().st_size == 0:
+                dest_path.unlink()
+        elif dest_path.is_dir():
+            try:
+                dest_path.rmdir()
+            except OSError:
+                # Directory not empty, remove recursively
+                import shutil
+                shutil.rmtree(dest_path)
     
     try:
         src_path.rename(dest_path)
@@ -172,8 +181,17 @@ def move_item(src: str, dest: str) -> None:
         logger.warning("Path.rename() failed for '%s' to '%s': %s. Attempting shutil.move.", src, dest, e)
         try:
             # Remove placeholder if it exists
-            if dest_path.exists() and dest_path.stat().st_size == 0:
-                dest_path.unlink()
+            if dest_path.exists():
+                if dest_path.is_file():
+                    if dest_path.stat().st_size == 0:
+                        dest_path.unlink()
+                elif dest_path.is_dir():
+                    try:
+                        dest_path.rmdir()
+                    except OSError:
+                        import shutil
+                        shutil.rmtree(dest_path)
+            import shutil
             shutil.move(src, dest)
         except Exception as e_move:
             logger.error("Failed to move '%s' to '%s' using shutil.move: %s.", src, dest, e_move)

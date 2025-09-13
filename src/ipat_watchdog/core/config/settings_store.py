@@ -32,6 +32,8 @@ class SettingsManager:
     
     def select_device_for_file(self, filepath: str) -> Optional[DeviceSettings]:
         """Select appropriate device settings for a file."""
+        device: DeviceSettings
+
         for device in self._devices.values():
             if device.matches_file(filepath):
                 return device

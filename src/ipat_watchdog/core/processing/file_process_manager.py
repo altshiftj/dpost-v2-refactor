@@ -102,7 +102,7 @@ class FileProcessManager:
         path = Path(src_path)
         device_settings = self.settings_manager.select_device_for_file(src_path)
         if device_settings is None:
-            self._reject_immediately(path, "No device found that can process this file type")
+            self._reject_immediately(path, "Invalid Filetype")
             return
         # Ignore temp folders immediately
         if path.is_dir() and device_settings.TEMP_FOLDER_REGEX.search(path.name):
@@ -300,12 +300,6 @@ class FileProcessManager:
             contextual_reason=contextual_reason,
         )
 
-    # Routing helpers moved to routing module
-
-    # Append/unappend flows extracted to record_flow module
-
-    # Rename flow is delegated to rename_flow module
-
     def add_item_to_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS = None, notify=True):
         """
         Add a validated file/folder to a record and organize it properly.
@@ -369,8 +363,6 @@ class FileProcessManager:
                 severity="Error",
                 message="Failed to rename.",
             )
-
-    # record/session helper methods moved to record_utils module
 
     def sync_records_to_database(self):
         """Synchronize all pending records to database."""

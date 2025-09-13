@@ -19,10 +19,8 @@ participant Err as "error_handling.py"
 FS -> FPM : process_item(src_path)
 FPM -> Settings : select_device_for_file(src_path)
 alt device found
-  FPM -> Stability : start_tracking(path, device_settings, callbacks)
-  Stability -> Tracker : create & schedule probes
-  ... wait until stable ...
-  Tracker --> FPM : completion_callback(path)
+  FPM -> Tracker : probe_stability_inline(path, device_settings, callbacks)
+  Tracker --> FPM : completion_callback(path) (immediate if stable)
   FPM -> Ctx : enter() set current device
   activate Ctx
   FPM -> Factory : get_for_device(device_id)
@@ -52,7 +50,8 @@ alt device found
   FPM -> Ctx : exit() clear current device
   deactivate Ctx
 else no device for file
-  FPM -> Stability : reject_immediately(path, reason)
+  FPM -> Err : reject_immediately(path, reason)
+  Err -> FPM : move_to_exception_folder(path)
 end
 
 note right of FPM

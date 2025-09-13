@@ -163,7 +163,7 @@ def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings)
     # Check that the error message indicates unsupported data type or unsupported input
     assert any(
         ("Invalid Data Type" in title or "Unsupported Input" in title)
-        and "No device found that can process this file type" in msg
+        and "Invalid Filetype" in msg
         for title, msg in real_processing_app.ui.errors
     ), f"UI errors were: {real_processing_app.ui.errors}"
 
