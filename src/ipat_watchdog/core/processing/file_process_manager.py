@@ -182,6 +182,9 @@ class FileProcessManager:
             move_to_exception_folder(path)
         finally:
             self._rejected_queue.put((str(path), reason))
+            if hasattr(self, 'ui') and self.ui:
+                error_title = f"Rejected: {reason}" if "Invalid Filetype" in reason else "Rejected"
+                self.ui.show_error(error_title, f"{path.name} — {reason}")
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         """Get and clear rejected files list."""

@@ -97,7 +97,6 @@ def test_basic_file_processing_works(multi_device_app, tmp_settings):
     # Process the file directly
     multi_device_app.file_processing.process_item(str(tif_path))
     # Drive stability tracker probes
-    run_scheduled_tasks(multi_device_app.ui)
     
     # Test device uses DEVICE_ABBR in folder structure: INSTITUTE/USER/TEST-SAMPLE
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
@@ -119,7 +118,6 @@ def test_text_file_processing_works(multi_device_app, tmp_settings):
     txt_path.write_bytes(b"dummy test data")
     # Process the file directly
     multi_device_app.file_processing.process_item(str(txt_path))
-    run_scheduled_tasks(multi_device_app.ui)
 
     # Test device uses DEVICE_ABBR in folder structure: INSTITUTE/USER/TEST-SAMPLE
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
@@ -138,7 +136,6 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
 
     # Process the file directly
     multi_device_app.file_processing.process_item(str(unsupported_path))
-    run_scheduled_tasks(multi_device_app.ui)
 
     # Check that file was moved to exceptions
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.pdf"))
@@ -147,7 +144,7 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
     # Check UI error message (should show unsupported data type)
     assert len(multi_device_app.ui.errors) > 0, f"Expected error messages, but got none"
     error_titles = [title for title, msg in multi_device_app.ui.errors]
-    assert any("Invalid Data Type" in title or "Unsupported" in title for title in error_titles), f"Expected unsupported error, got: {multi_device_app.ui.errors}"
+    assert any("Invalid Filetype" in title or "Unsupported" in title for title in error_titles), f"Expected unsupported error, got: {multi_device_app.ui.errors}"
 
 
 def test_multiple_files_same_record(multi_device_app, tmp_settings):
@@ -163,7 +160,6 @@ def test_multiple_files_same_record(multi_device_app, tmp_settings):
         file_path.write_bytes(f"dummy test image data {i}".encode())
         # Process each file
         multi_device_app.file_processing.process_item(str(file_path))
-        run_scheduled_tasks(multi_device_app.ui)
 
     # Verify all files were processed and placed correctly
     # Test device uses DEVICE_ABBR: INSTITUTE/USER/TEST-SAMPLE
@@ -196,7 +192,6 @@ def test_different_user_groups_no_collision(multi_device_app, tmp_settings):
         file_path = tmp_settings.WATCH_DIR / f"{filename}.tif"
         file_path.write_bytes(f"data for {filename}".encode())
         multi_device_app.file_processing.process_item(str(file_path))
-        run_scheduled_tasks(multi_device_app.ui)
         # Calculate expected directory (test device doesn't normalize trailing digits)
         expected_dir = tmp_settings.DEST_DIR / institute.upper() / user.upper() / f"TEST-{filename.split('-')[2]}"
         expected_dirs.append(expected_dir)
@@ -219,9 +214,7 @@ def test_mixed_file_types_processed_correctly(multi_device_app, tmp_settings):
 
     # Process files directly
     multi_device_app.file_processing.process_item(str(tif_path))
-    run_scheduled_tasks(multi_device_app.ui)
     multi_device_app.file_processing.process_item(str(txt_path))
-    run_scheduled_tasks(multi_device_app.ui)
 
     # Verify both files were processed
     expected_base = tmp_settings.DEST_DIR / "IPAT" / "MUS"
