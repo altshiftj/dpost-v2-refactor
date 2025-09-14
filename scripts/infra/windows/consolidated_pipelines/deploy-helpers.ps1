@@ -54,8 +54,19 @@ function Deploy-Local {
         $targetPath = Join-Path $RemotePath $file
         if (Test-Path -LiteralPath $targetPath) {
             $backupPath = $targetPath -replace '\\.(\w+)$', '_backup.$1'
-            if (Test-Path -LiteralPath $backupPath) { Remove-Item -LiteralPath $backupPath -Force }
-            Rename-Item -Path $targetPath -NewName $backupPath -Force
+            try {
+                if (Test-Path -LiteralPath $backupPath) { Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue }
+                Rename-Item -Path $targetPath -NewName $backupPath -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "Initial backup rename failed for '$file': $($_.Exception.Message). Retrying after removing any existing backup."
+                try {
+                    if (Test-Path -LiteralPath $backupPath) { Remove-Item -LiteralPath $backupPath -Force -ErrorAction SilentlyContinue }
+                    Start-Sleep -Milliseconds 200
+                    Rename-Item -Path $targetPath -NewName $backupPath -Force -ErrorAction Stop
+                } catch {
+                    throw "Failed to create backup for '$file': $($_.Exception.Message)"
+                }
+            }
             Write-Host "Backed up: $file -> $([System.IO.Path]::GetFileName($backupPath))"
         }
     }
@@ -198,8 +209,18 @@ foreach (`$f in @(`$exe,'version.txt')) {
     `$src = Join-Path `$p `$f
     if (Test-Path `$src) {
         `$bak = `$src -replace '\.(\w+)$','_backup.`$1'
-        if (Test-Path `$bak) { Remove-Item `$bak -Force }
-        Rename-Item -Path `$src -NewName `$bak -Force
+        try {
+            if (Test-Path `$bak) { Remove-Item `$bak -Force -EA SilentlyContinue }
+            Rename-Item -Path `$src -NewName `$bak -Force -EA Stop
+        } catch {
+            try {
+                if (Test-Path `$bak) { Remove-Item `$bak -Force -EA SilentlyContinue }
+                Start-Sleep -Milliseconds 200
+                Rename-Item -Path `$src -NewName `$bak -Force -EA Stop
+            } catch {
+                throw "Failed to create backup for '`$f': `$($_.Exception.Message)"
+            }
+        }
     }
 }
 "@

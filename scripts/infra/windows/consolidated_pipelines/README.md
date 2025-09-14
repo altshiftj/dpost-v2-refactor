@@ -86,6 +86,12 @@ To add a new PC configuration, edit the `Get-PCConfigurations` function in `acce
 # Run with specific access configuration
 .\02-build.ps1 -AccessConfig "router_admin"
 .\04-deploy.ps1 -AccessConfig "sub_admin"
+
+# NEW: Specify PC directly at build time (embeds PC into binary)
+.\02-build.ps1 -PCName tischrem_blb
+
+# NEW: Run tests with specific PC/device plugin set
+.\01-test.ps1 -PCName tischrem_blb
 ```
 
 ### Full Pipeline

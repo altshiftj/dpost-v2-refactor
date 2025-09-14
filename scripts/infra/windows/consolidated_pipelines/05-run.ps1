@@ -33,6 +33,7 @@ try {
     $remotePath = $env:REMOTE_PATH
     $binaryName = "wd-$env:CI_JOB_NAME.exe"
     $remoteExePath = "$remotePath\$binaryName"
+    $taskName = "IPAT-Watchdog-$env:CI_JOB_NAME"
     
     Write-Host "Run Configuration:"
     Write-Host "  Target: $env:TARGET_USER@$env:TARGET_IP"
@@ -41,37 +42,20 @@ try {
     
     Write-PipelineStep "SERVICE SETUP" "Configuring Windows service/task"
     
-    # Prepare task registration script
-    $taskRegisterScript = @"
-`$exePath = '$remoteExePath'
-`$taskName = 'IPAT-Watchdog'
+    # Determine the user context to run under (prefer explicit RUN_AS_USER, else TARGET_USER, else current user)
+    $taskRunUser = if ($env:RUN_AS_USER) { $env:RUN_AS_USER } elseif ($env:TARGET_USER) { $env:TARGET_USER } else { $env:USERNAME }
+    Write-Host "Configured to run task as user: $taskRunUser"
 
-# Stop existing task if running
-try {
-    Stop-ScheduledTask -TaskName `$taskName -ErrorAction SilentlyContinue
-    Unregister-ScheduledTask -TaskName `$taskName -Confirm:`$false -ErrorAction SilentlyContinue
-} catch { }
-
-# Create new scheduled task
-`$action = New-ScheduledTaskAction -Execute `$exePath
-`$trigger = New-ScheduledTaskTrigger -AtStartup
-`$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
-`$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-
-Register-ScheduledTask -TaskName `$taskName -Action `$action -Trigger `$trigger -Settings `$settings -Principal `$principal -Force
-
-# Start the task
-Start-ScheduledTask -TaskName `$taskName
-Write-Host 'IPAT-Watchdog service started successfully'
-"@
+    # Build path to the remote registration script copied during deploy
+    $remoteRegisterScript = "$remotePath\register_task.ps1"
 
     # Execute based on access method
     switch ($config.Method) {
         "local" {
             Write-Host "Running locally..."
             
-            # Execute task registration script locally
-            Invoke-Expression $taskRegisterScript
+            # Execute registration locally via the standard script
+            & $remoteRegisterScript -TaskName $taskName -ExePath $remoteExePath
             
             if ($LASTEXITCODE -ne 0) {
                 Write-PipelineError "SERVICE SETUP" "Failed to register local service" $LASTEXITCODE
@@ -99,8 +83,16 @@ Write-Host 'IPAT-Watchdog service started successfully'
                 Write-PipelineError "SERVICE SETUP" "SSH connection test failed" 1
             }
             
-            # Execute task registration via SSH
-            $exitCode = Invoke-SSHCommand -Config $sshConfig -Command $taskRegisterScript
+            # Execute task registration via SSH using the remote register_task.ps1 (no EncodedCommand)
+            $plinkArgs = New-PlinkBaseArgs -Config $sshConfig -LogPrefix 'plink-cmd'
+            $plinkArgs += ("{0}@{1}" -f $sshConfig.User, $sshConfig.Host)
+            $remoteCmdParts = @('powershell','-NoProfile','-ExecutionPolicy','Bypass','-File', $remoteRegisterScript, '-TaskName', ('"' + $taskName + '"'), '-ExePath', ('"' + $remoteExePath + '"'))
+            $remoteCmd = ($remoteCmdParts -join ' ')
+            $plinkArgs += $remoteCmd
+
+            if ($global:__PipelineDiagnosticsEnabled) { Write-Host ("plink.exe {0}" -f (Write-MaskedArgs -InputArgs $plinkArgs)) }
+            & cmd /c "plink.exe $($plinkArgs -join ' ')"
+            $exitCode = $LASTEXITCODE
             
             if ($exitCode -ne 0) {
                 Write-PipelineError "SERVICE SETUP" "Failed to register remote service via SSH" $exitCode
@@ -159,8 +151,16 @@ Write-Host 'IPAT-Watchdog service started successfully'
                     Write-PipelineError "SERVICE SETUP" "Target SSH connection through tunnel failed" 1
                 }
                 
-                # Execute task registration through tunnel
-                $exitCode = Invoke-SSHCommand -Config $tunnelSSHConfig -Command $taskRegisterScript
+                # Execute task registration through tunnel using the remote register_task.ps1 (no EncodedCommand)
+                $plinkArgs = New-PlinkBaseArgs -Config $tunnelSSHConfig -LogPrefix 'plink-cmd'
+                $plinkArgs += ("{0}@{1}" -f $tunnelSSHConfig.User, $tunnelSSHConfig.Host)
+                $remoteCmdParts = @('powershell','-NoProfile','-ExecutionPolicy','Bypass','-File', $remoteRegisterScript, '-TaskName', ('"' + $taskName + '"'), '-ExePath', ('"' + $remoteExePath + '"'))
+                $remoteCmd = ($remoteCmdParts -join ' ')
+                $plinkArgs += $remoteCmd
+
+                if ($global:__PipelineDiagnosticsEnabled) { Write-Host ("plink.exe {0}" -f (Write-MaskedArgs -InputArgs $plinkArgs)) }
+                & cmd /c "plink.exe $($plinkArgs -join ' ')"
+                $exitCode = $LASTEXITCODE
                 
                 if ($exitCode -ne 0) {
                     Write-PipelineError "SERVICE SETUP" "Failed to register remote service via tunnel" $exitCode
@@ -179,7 +179,7 @@ Write-Host 'IPAT-Watchdog service started successfully'
         }
     }
     
-    Write-PipelineStep "VERIFICATION" "Verifying service startup"
+    Write-PipelineStep "VERIFICATION" "Verifying user-level task startup"
     
     # Wait a moment for service to start
     Start-Sleep -Seconds 5
@@ -187,16 +187,16 @@ Write-Host 'IPAT-Watchdog service started successfully'
     # Verify service is running (basic check)
     switch ($config.Method) {
         "local" {
-            $task = Get-ScheduledTask -TaskName 'IPAT-Watchdog' -ErrorAction SilentlyContinue
+            $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
             if ($task -and $task.State -eq 'Running') {
-                Write-Host "Service is running locally." -ForegroundColor Green
+                Write-Host "Task is running locally under user context." -ForegroundColor Green
             } else {
-                Write-Warning "Service may not be running properly. Check Task Scheduler."
+                Write-Warning "Task registered under user context but not running yet. If no session is active, it will start at next logon of $taskRunUser. Check Task Scheduler -> Task Scheduler Library for '$taskName'."
             }
         }
         
         default {
-            Write-Host "Service started remotely. Use health check script to verify status." -ForegroundColor Yellow
+            Write-Host "Task registered remotely under user context. If it didn't start, it will launch at that user's next logon. Use the health check script or Task Scheduler on the target to verify." -ForegroundColor Yellow
         }
     }
     

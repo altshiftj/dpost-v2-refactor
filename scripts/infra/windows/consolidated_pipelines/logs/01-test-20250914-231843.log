@@ -1,0 +1,1599 @@
+**********************
+PowerShell transcript start
+Start time: 20250914231843
+Username: IMVT\fitz
+RunAs User: IMVT\fitz
+Configuration Name: 
+Machine: AP-JAMFITZ (Microsoft Windows NT 10.0.22631.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 5404
+PSVersion: 7.5.3
+PSEdition: Core
+GitCommitId: 7.5.3
+OS: Microsoft Windows 10.0.22631
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\logs\01-test-20250914-231843.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-18-44
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+
+== TEST SETUP ==
+Creating virtual environment and installing dependencies
+Creating virtual environment: .test_testvenv
+VERBOSE: Activation script is located in path: 'D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts'
+VERBOSE: VenvExecDir Fullname: 'D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts
+VERBOSE: VenvExecDir Name: 'Scripts
+VERBOSE: VenvDir not given as a parameter, using parent directory name as VenvDir.
+VERBOSE: VenvDir=D:\Repos\ipat_data_watchdog\.test_testvenv
+VERBOSE: Given ConfigDir=D:\Repos\ipat_data_watchdog\.test_testvenv, obtain values in pyvenv.cfg
+VERBOSE: File exists, parse key = value lines
+VERBOSE: Adding Key: 'home'='C:\Python\Python312'
+VERBOSE: Adding Key: 'include-system-site-packages'='false'
+VERBOSE: Adding Key: 'version'='3.12.7'
+VERBOSE: Adding Key: 'executable'='C:\Python\Python312\python.exe'
+VERBOSE: Adding Key: 'command'='C:\Python\Python312\python.exe -m venv D:\Repos\ipat_data_watchdog\.test_testvenv'
+VERBOSE: Prompt not specified as argument to script, checking pyvenv.cfg value
+VERBOSE:   Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virtual environment)
+VERBOSE:   Got leaf-name of D:\Repos\ipat_data_watchdog\.test_testvenv='.test_testvenv'
+VERBOSE: Prompt = '.test_testvenv'
+VERBOSE: VenvDir='D:\Repos\ipat_data_watchdog\.test_testvenv'
+VERBOSE: Setting prompt to '.test_testvenv'
+Upgrading pip/setuptools/wheel...
+PS>TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+
+Elapsed time: 00:00:15
+PS>TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+>> TerminatingError(): "The pipeline has been stopped."
+]633;D;0]633;A]633;P;Cwd=D:\x5cRepos\x5cipat_data_watchdogPS D:\Repos\ipat_data_watchdog> ]633;B
+(.test_testvenv) .\scripts\infra\windows\consolidated_pipelines\full_pipeline.ps1 -AccessConfig "tischrem_blb" -Diagnostics
+========================================
+   IPAT Watchdog - Full Pipeline
+========================================
+Access Config: tischrem_blb
+Steps: test -> build -> sign -> deploy -> run -> health_check
+Continue on Error: False
+
+
+ + ============================================================
+STEP 1/6: TEST
+============================================================
+
+== INITIALIZE ==
+Setting up test environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\01-test-20250914-232234.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-22-35
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+
+== TEST SETUP ==
+Creating virtual environment and installing dependencies
+Creating virtual environment: .test_testvenv
+VERBOSE: Activation script is located in path: 'D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts'
+VERBOSE: VenvExecDir Fullname: 'D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts
+VERBOSE: VenvExecDir Name: 'Scripts
+VERBOSE: VenvDir not given as a parameter, using parent directory name as VenvDir.
+VERBOSE: VenvDir=D:\Repos\ipat_data_watchdog\.test_testvenv
+VERBOSE: Given ConfigDir=D:\Repos\ipat_data_watchdog\.test_testvenv, obtain values in pyvenv.cfg
+VERBOSE: File exists, parse key = value lines
+VERBOSE: Adding Key: 'home'='C:\Python\Python312'
+VERBOSE: Adding Key: 'include-system-site-packages'='false'
+VERBOSE: Adding Key: 'version'='3.12.7'
+VERBOSE: Adding Key: 'executable'='C:\Python\Python312\python.exe'
+VERBOSE: Adding Key: 'command'='C:\Python\Python312\python.exe -m venv D:\Repos\ipat_data_watchdog\.test_testvenv'
+VERBOSE: Prompt not specified as argument to script, checking pyvenv.cfg value
+VERBOSE:   Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virtual environment)
+VERBOSE:   Got leaf-name of D:\Repos\ipat_data_watchdog\.test_testvenv='.test_testvenv'
+VERBOSE: Prompt = '.test_testvenv'
+VERBOSE: VenvDir='D:\Repos\ipat_data_watchdog\.test_testvenv'
+VERBOSE: Setting prompt to '.test_testvenv'
+Upgrading pip/setuptools/wheel...
+Getting devices for PC: tischrem_blb
+Devices for tischrem_blb: sem_phenomxl2
+Installing project with extras: .[ci,sem_phenomxl2,tischrem_blb]
+helpy-0.14.0
+
+== PYTEST ==
+Running test suite
+==================================== 140 passed, 10 warnings in 8.65s =====================================
+
+All tests passed.
+
+Elapsed time: 00:01:10
+
+Days              : 0
+Hours             : 0
+Minutes           : 1
+Seconds           : 10
+Milliseconds      : 417
+Ticks             : 704173134
+TotalDays         : 0,000815015201388889
+TotalHours        : 0,0195603648333333
+TotalMinutes      : 1,17362189
+TotalSeconds      : 70,4173134
+TotalMilliseconds : 70417,3134
+
+
+Test pipeline completed successfully.
+
+Elapsed time: 00:01:10
+
+STEP 1 COMPLETED: test
+Duration: 00:01:10
+
+ + ============================================================
+STEP 2/6: BUILD
+============================================================
+
+== INITIALIZE ==
+Setting up build environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\02-build-20250914-232345.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-23-46
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+Build Configuration:
+  Job Name (PC): tischrem_blb
+  Commit Tag: v0.1.65-83-gb16780e
+
+== BUILD SETUP ==
+Creating build environment
+Creating virtual environment: .test_buildvenv
+VERBOSE: Activation script is located in path: 'D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts'
+VERBOSE: VenvExecDir Fullname: 'D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts
+VERBOSE: VenvExecDir Name: 'Scripts
+VERBOSE: VenvDir not given as a parameter, using parent directory name as VenvDir.
+VERBOSE: VenvDir=D:\Repos\ipat_data_watchdog\.test_buildvenv
+VERBOSE: Given ConfigDir=D:\Repos\ipat_data_watchdog\.test_buildvenv, obtain values in pyvenv.cfg
+VERBOSE: File exists, parse key = value lines
+VERBOSE: Adding Key: 'home'='C:\Python\Python312'
+VERBOSE: Adding Key: 'include-system-site-packages'='false'
+VERBOSE: Adding Key: 'version'='3.12.7'
+VERBOSE: Adding Key: 'executable'='D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts\python.exe'
+VERBOSE: Adding Key: 'command'='D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts\python.exe -m venv D:\Repos\ipat_data_watchdog\.test_buildvenv'
+VERBOSE: Prompt not specified as argument to script, checking pyvenv.cfg value
+VERBOSE:   Setting prompt based on parent's directory's name. (Is the directory name passed to venv module when creating the virtual environment)
+VERBOSE:   Got leaf-name of D:\Repos\ipat_data_watchdog\.test_buildvenv='.test_buildvenv'
+VERBOSE: Prompt = '.test_buildvenv'
+VERBOSE: VenvDir='D:\Repos\ipat_data_watchdog\.test_buildvenv'
+VERBOSE: Setting prompt to '.test_buildvenv'
+Upgrading pip/setuptools/wheel...
+==== After venv creation ====
+Timestamp: 2025-09-14 23:24:10
+PWD: D:\Repos\ipat_data_watchdog
+PSVersion: 7.5.3
+User: fitz
+PROJECT_ROOT: D:\Repos\ipat_data_watchdog
+CI_JOB_NAME: tischrem_blb
+PC_NAME: tischrem_blb
+PC_DEVICES: sem_phenomxl2
+Commit: v0.1.65-83-gb16780e (b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000) on dev-file_handle @ 2025-09-14_23-23-46
+Last Error (raw):
+Get-Variable: D:\Repos\ipat_data_watchdog\.test_testvenv\Scripts\Activate.ps1:105:9
+Line |
+ 105 |      if (Get-Variable -Name "_PYTHON_VENV_PROMPT_PREFIX" -ErrorAction  …
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | Cannot find a variable with the name '_PYTHON_VENV_PROMPT_PREFIX'.
+==========================
+
+== DEPENDENCIES ==
+Installing build dependencies
+Getting devices for PC: tischrem_blb
+Devices for tischrem_blb: sem_phenomxl2
+Installing project with extras: .[build,sem_phenomxl2,tischrem_blb]
+-2.32.5 six-1.17.0 urllib3-2.5.0 urllib3-future-2.13.909 waitress-3.0.2 wassima-2.0.1 watchdog-6.0.0 werkzeu
+g-3.1.3 xmlhelpy-0.14.0
+
+== VERSION FILE ==
+Creating version metadata
+
+== PYINSTALLER ==
+Building executable
+Using spec file: build/specs/tischrem_blb.spec
+PyInstaller command: D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts\python.exe -m PyInstaller build/specs/tischrem_blb.spec --clean --noconfirm --log-level DEBUG
+365 INFO: PyInstaller: 6.16.0, contrib hooks: 2025.8
+369 INFO: Python: 3.12.7
+482 INFO: Platform: Windows-11-10.0.22631-SP0
+482 INFO: Python environment: D:\Repos\ipat_data_watchdog\.test_buildvenv
+484 DEBUG: Testing UPX availability ...
+493 DEBUG: UPX is not available.
+493 INFO: Removing temporary files and cleaning cache in C:\Users\fitz\AppData\Local\pyinstaller
+502 DEBUG: Collecting submodules for ipat_watchdog.pc_plugins.tischrem_blb
+443 DEBUG: collect_submodules - scanning (sub)package ipat_watchdog.pc_plugins.tischrem_blb
+450 DEBUG: collect_submodules - scanning (sub)package ipat_watchdog.pc_plugins.tischrem_blb in location(s): ['D:\\Repos\\ipat_data_watchdog\\src\\ipat_watchdog\\pc_plugins\\tischrem_blb']
+2100 DEBUG: collect_submodules - found submodules: ['ipat_watchdog.pc_plugins.tischrem_blb', 'ipat_watchdog.pc_plugins.tischrem_blb.plugin', 'ipat_watchdog.pc_plugins.tischrem_blb.settings']
+2100 DEBUG: Collecting submodules for ipat_watchdog.device_plugins.sem_phenomxl2
+305 DEBUG: collect_submodules - scanning (sub)package ipat_watchdog.device_plugins.sem_phenomxl2
+305 DEBUG: collect_submodules - scanning (sub)package ipat_watchdog.device_plugins.sem_phenomxl2 in location(s): ['D:\\Repos\\ipat_data_watchdog\\src\\ipat_watchdog\\device_plugins\\sem_phenomxl2']
+3148 DEBUG: collect_submodules - found submodules: ['ipat_watchdog.device_plugins.sem_phenomxl2', 'ipat_watchdog.device_plugins.sem_phenomxl2.file_processor', 'ipat_watchdog.device_plugins.sem_phenomxl2.plugin', 'ipat_watchdog.device_plugins.sem_phenomxl2.settings']
+3150 DEBUG: script: D:\Repos\ipat_data_watchdog\src\ipat_watchdog\__main__.py
+3152 INFO: Module search paths (PYTHONPATH):
+['D:\\Repos\\ipat_data_watchdog',
+ 'D:\\Repos\\ipat_data_watchdog\\src',
+ 'C:\\Python\\Python312\\python312.zip',
+ 'C:\\Python\\Python312\\DLLs',
+ 'C:\\Python\\Python312\\Lib',
+ 'C:\\Python\\Python312',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\win32',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\win32\\lib',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\Pythonwin',
+ 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor',
+ 'D:\\Repos',
+ 'D:\\Repos\\ipat_data_watchdog\\src']
+589 DEBUG: discover_hook_directories: Hook directories: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks', -1000), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib', -1000)]
+4699 INFO: Appending 'datas' from .spec
+4701 INFO: checking Analysis
+4701 INFO: Building Analysis because Analysis-00.toc is non existent
+4701 INFO: Looking for Python shared library...
+4701 INFO: Using Python shared library: C:\Python\Python312\python312.dll
+4702 INFO: Running Analysis Analysis-00.toc
+4702 INFO: Target bytecode optimization level: 0
+4702 INFO: Initializing module dependency graph...
+4704 INFO: Initializing module graph hook caches...
+4739 INFO: Analyzing modules for base_library.zip ...
+4740 DEBUG: Collecting submodules for re
+352 DEBUG: collect_submodules - scanning (sub)package re
+354 DEBUG: collect_submodules - scanning (sub)package re in location(s): ['C:\\Python\\Python312\\Lib\\re']
+5730 DEBUG: collect_submodules - found submodules: ['re', 're._casefix', 're._compiler', 're._constants', 're._parser']
+5730 DEBUG: Collecting submodules for collections
+296 DEBUG: collect_submodules - scanning (sub)package collections
+301 DEBUG: collect_submodules - scanning (sub)package collections in location(s): ['C:\\Python\\Python312\\Lib\\collections']
+6473 DEBUG: collect_submodules - found submodules: ['collections', 'collections.abc']
+6481 DEBUG: Collecting submodules for encodings
+334 DEBUG: collect_submodules - scanning (sub)package encodings
+334 DEBUG: collect_submodules - scanning (sub)package encodings in location(s): ['C:\\Python\\Python312\\Lib\\encodings']
+7376 DEBUG: collect_submodules - found submodules: ['encodings', 'encodings.aliases', 'encodings.ascii', 'encodings.base64_codec', 'encodings.big5', 'encodings.big5hkscs', 'encodings.bz2_codec', 'encodings.charmap', 'encodings.cp037', 'encodings.cp1006', 'encodings.cp1026', 'encodings.cp1125', 'encodings.cp1140', 'encodings.cp1250', 'encodings.cp1251', 'encodings.cp1252', 'encodings.cp1253', 'encodings.cp1254', 'encodings.cp1255', 'encodings.cp1256', 'encodings.cp1257', 'encodings.cp1258', 'encodings.cp273', 'encodings.cp424', 'encodings.cp437', 'encodings.cp500', 'encodings.cp720', 'encodings.cp737', 'encodings.cp775', 'encodings.cp850', 'encodings.cp852', 'encodings.cp855', 'encodings.cp856', 'encodings.cp857', 'encodings.cp858', 'encodings.cp860', 'encodings.cp861', 'encodings.cp862', 'encodings.cp863', 'encodings.cp864', 'encodings.cp865', 'encodings.cp866', 'encodings.cp869', 'encodings.cp874', 'encodings.cp875', 'encodings.cp932', 'encodings.cp949', 'encodings.cp950', 'encodings.euc_jis_2004', 'encodings.euc_jisx0213', 'encodings.euc_jp', 'encodings.euc_kr', 'encodings.gb18030', 'encodings.gb2312', 'encodings.gbk', 'encodings.hex_codec', 'encodings.hp_roman8', 'encodings.hz', 'encodings.idna', 'encodings.iso2022_jp', 'encodings.iso2022_jp_1', 'encodings.iso2022_jp_2', 'encodings.iso2022_jp_2004', 'encodings.iso2022_jp_3', 'encodings.iso2022_jp_ext', 'encodings.iso2022_kr', 'encodings.iso8859_1', 'encodings.iso8859_10', 'encodings.iso8859_11', 'encodings.iso8859_13', 'encodings.iso8859_14', 'encodings.iso8859_15', 'encodings.iso8859_16', 'encodings.iso8859_2', 'encodings.iso8859_3', 'encodings.iso8859_4', 'encodings.iso8859_5', 'encodings.iso8859_6', 'encodings.iso8859_7', 'encodings.iso8859_8', 'encodings.iso8859_9', 'encodings.johab', 'encodings.koi8_r', 'encodings.koi8_t', 'encodings.koi8_u', 'encodings.kz1048', 'encodings.latin_1', 'encodings.mac_arabic', 'encodings.mac_croatian', 'encodings.mac_cyrillic', 'encodings.mac_farsi', 'encodings.mac_greek', 'encodings.mac_iceland', 'encodings.mac_latin2', 'encodings.mac_roman', 'encodings.mac_romanian', 'encodings.mac_turkish', 'encodings.mbcs', 'encodings.oem', 'encodings.palmos', 'encodings.ptcp154', 'encodings.punycode', 'encodings.quopri_codec', 'encodings.raw_unicode_escape', 'encodings.rot_13', 'encodings.shift_jis', 'encodings.shift_jis_2004', 'encodings.shift_jisx0213', 'encodings.tis_620', 'encodings.undefined', 'encodings.unicode_escape', 'encodings.utf_16', 'encodings.utf_16_be', 'encodings.utf_16_le', 'encodings.utf_32', 'encodings.utf_32_be', 'encodings.utf_32_le', 'encodings.utf_7', 'encodings.utf_8', 'encodings.utf_8_sig', 'encodings.uu_codec', 'encodings.zlib_codec']
+7555 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+7561 DEBUG: Suppressing import of 'doctest' from module 'heapq' due to excluded import 'doctest' specified in a hook for 'heapq' (or its parent package(s)).
+7635 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+7635 DEBUG: Collecting submodules for encodings
+320 DEBUG: collect_submodules - scanning (sub)package encodings
+320 DEBUG: collect_submodules - scanning (sub)package encodings in location(s): ['C:\\Python\\Python312\\Lib\\encodings']
+8456 DEBUG: collect_submodules - found submodules: ['encodings', 'encodings.aliases', 'encodings.ascii', 'encodings.base64_codec', 'encodings.big5', 'encodings.big5hkscs', 'encodings.bz2_codec', 'encodings.charmap', 'encodings.cp037', 'encodings.cp1006', 'encodings.cp1026', 'encodings.cp1125', 'encodings.cp1140', 'encodings.cp1250', 'encodings.cp1251', 'encodings.cp1252', 'encodings.cp1253', 'encodings.cp1254', 'encodings.cp1255', 'encodings.cp1256', 'encodings.cp1257', 'encodings.cp1258', 'encodings.cp273', 'encodings.cp424', 'encodings.cp437', 'encodings.cp500', 'encodings.cp720', 'encodings.cp737', 'encodings.cp775', 'encodings.cp850', 'encodings.cp852', 'encodings.cp855', 'encodings.cp856', 'encodings.cp857', 'encodings.cp858', 'encodings.cp860', 'encodings.cp861', 'encodings.cp862', 'encodings.cp863', 'encodings.cp864', 'encodings.cp865', 'encodings.cp866', 'encodings.cp869', 'encodings.cp874', 'encodings.cp875', 'encodings.cp932', 'encodings.cp949', 'encodings.cp950', 'encodings.euc_jis_2004', 'encodings.euc_jisx0213', 'encodings.euc_jp', 'encodings.euc_kr', 'encodings.gb18030', 'encodings.gb2312', 'encodings.gbk', 'encodings.hex_codec', 'encodings.hp_roman8', 'encodings.hz', 'encodings.idna', 'encodings.iso2022_jp', 'encodings.iso2022_jp_1', 'encodings.iso2022_jp_2', 'encodings.iso2022_jp_2004', 'encodings.iso2022_jp_3', 'encodings.iso2022_jp_ext', 'encodings.iso2022_kr', 'encodings.iso8859_1', 'encodings.iso8859_10', 'encodings.iso8859_11', 'encodings.iso8859_13', 'encodings.iso8859_14', 'encodings.iso8859_15', 'encodings.iso8859_16', 'encodings.iso8859_2', 'encodings.iso8859_3', 'encodings.iso8859_4', 'encodings.iso8859_5', 'encodings.iso8859_6', 'encodings.iso8859_7', 'encodings.iso8859_8', 'encodings.iso8859_9', 'encodings.johab', 'encodings.koi8_r', 'encodings.koi8_t', 'encodings.koi8_u', 'encodings.kz1048', 'encodings.latin_1', 'encodings.mac_arabic', 'encodings.mac_croatian', 'encodings.mac_cyrillic', 'encodings.mac_farsi', 'encodings.mac_greek', 'encodings.mac_iceland', 'encodings.mac_latin2', 'encodings.mac_roman', 'encodings.mac_romanian', 'encodings.mac_turkish', 'encodings.mbcs', 'encodings.oem', 'encodings.palmos', 'encodings.ptcp154', 'encodings.punycode', 'encodings.quopri_codec', 'encodings.raw_unicode_escape', 'encodings.rot_13', 'encodings.shift_jis', 'encodings.shift_jis_2004', 'encodings.shift_jisx0213', 'encodings.tis_620', 'encodings.undefined', 'encodings.unicode_escape', 'encodings.utf_16', 'encodings.utf_16_be', 'encodings.utf_16_le', 'encodings.utf_32', 'encodings.utf_32_be', 'encodings.utf_32_le', 'encodings.utf_7', 'encodings.utf_8', 'encodings.utf_8_sig', 'encodings.uu_codec', 'encodings.zlib_codec']
+9727 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+9734 DEBUG: Suppressing import of 'doctest' from module 'pickle' due to excluded import 'doctest' specified in a hook for 'pickle' (or its parent package(s)).
+9734 DEBUG: Suppressing import of 'argparse' from module 'pickle' due to excluded import 'argparse' specified in a hook for 'pickle' (or its parent package(s)).
+11063 INFO: Caching module dependency graph...
+11115 INFO: Analyzing D:\Repos\ipat_data_watchdog\src\ipat_watchdog\__main__.py
+11535 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+11548 DEBUG: Suppressing import of 'plistlib' from module 'platform' due to excluded import 'plistlib' specified in a hook for 'platform' (or its parent package(s)).
+12195 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+12195 INFO: SetuptoolsInfo: initializing cached setuptools info...
+440 DEBUG: Collecting submodules for setuptools._distutils
+440 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils
+440 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_distutils']
+440 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils.compat
+440 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils.compat in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_distutils\\compat']
+440 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils.command
+452 DEBUG: collect_submodules - scanning (sub)package setuptools._distutils.command in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_distutils\\command']
+452 DEBUG: collect_submodules - found submodules: ['setuptools._distutils', 'setuptools._distutils._log', 'setuptools._distutils._macos_compat', 'setuptools._distutils._modified', 'setuptools._distutils._msvccompiler', 'setuptools._distutils.archive_util', 'setuptools._distutils.ccompiler', 'setuptools._distutils.cmd', 'setuptools._distutils.command', 'setuptools._distutils.command._framework_compat', 'setuptools._distutils.command.bdist', 'setuptools._distutils.command.bdist_dumb', 'setuptools._distutils.command.bdist_rpm', 'setuptools._distutils.command.build', 'setuptools._distutils.command.build_clib', 'setuptools._distutils.command.build_ext', 'setuptools._distutils.command.build_py', 'setuptools._distutils.command.build_scripts', 'setuptools._distutils.command.check', 'setuptools._distutils.command.clean', 'setuptools._distutils.command.config', 'setuptools._distutils.command.install', 'setuptools._distutils.command.install_data', 'setuptools._distutils.command.install_egg_info', 'setuptools._distutils.command.install_headers', 'setuptools._distutils.command.install_lib', 'setuptools._distutils.command.install_scripts', 'setuptools._distutils.command.sdist', 'setuptools._distutils.compat', 'setuptools._distutils.compat.numpy', 'setuptools._distutils.compat.py39', 'setuptools._distutils.core', 'setuptools._distutils.cygwinccompiler', 'setuptools._distutils.debug', 'setuptools._distutils.dep_util', 'setuptools._distutils.dir_util', 'setuptools._distutils.dist', 'setuptools._distutils.errors', 'setuptools._distutils.extension', 'setuptools._distutils.fancy_getopt', 'setuptools._distutils.file_util', 'setuptools._distutils.filelist', 'setuptools._distutils.log', 'setuptools._distutils.spawn', 'setuptools._distutils.sysconfig', 'setuptools._distutils.text_file', 'setuptools._distutils.unixccompiler', 'setuptools._distutils.util', 'setuptools._distutils.version', 'setuptools._distutils.versionpredicate', 'setuptools._distutils.zosccompiler']
+2231 DEBUG: Collecting submodules for setuptools._vendor
+2231 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor
+2231 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor in location(s): _NamespacePath(['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor'])
+2239 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.zipp
+2248 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.zipp in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp']
+2251 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.zipp.compat
+2251 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.zipp.compat in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp\\compat']
+2252 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel
+2256 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel']
+2260 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.vendored
+2265 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.vendored in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel\\vendored']
+2266 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.vendored.packaging
+2267 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.vendored.packaging in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel\\vendored\\packaging']
+2268 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.cli
+2270 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.wheel.cli in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel\\cli']
+2273 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.typeguard
+2309 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.typeguard in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard']
+2310 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.tomli
+2312 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.tomli in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli']
+2312 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.platformdirs
+2314 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.platformdirs in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs']
+2314 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.packaging
+2315 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.packaging in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging']
+2316 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.packaging.licenses
+2319 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.packaging.licenses in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging\\licenses']
+2319 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.more_itertools
+2325 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.more_itertools in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools']
+2326 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.inflect
+3717 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.inflect in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect']
+3717 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.inflect.compat
+3717 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.inflect.compat in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect\\compat']
+3717 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.importlib_metadata
+3725 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.importlib_metadata in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata']
+3725 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.importlib_metadata.compat
+3725 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.importlib_metadata.compat in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata\\compat']
+3731 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports
+3734 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports']
+3735 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports.tarfile
+3749 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports.tarfile in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports\\tarfile']
+3749 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports.tarfile.compat
+3749 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.backports.tarfile.compat in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports\\tarfile\\compat']
+3749 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.autocommand
+3762 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.autocommand in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand']
+3762 DEBUG: collect_submodules - found submodules: ['setuptools._vendor', 'setuptools._vendor.autocommand', 'setuptools._vendor.autocommand.autoasync', 'setuptools._vendor.autocommand.autocommand', 'setuptools._vendor.autocommand.automain', 'setuptools._vendor.autocommand.autoparse', 'setuptools._vendor.autocommand.errors', 'setuptools._vendor.backports', 'setuptools._vendor.backports.tarfile', 'setuptools._vendor.backports.tarfile.__main__', 'setuptools._vendor.backports.tarfile.compat', 'setuptools._vendor.backports.tarfile.compat.py38', 'setuptools._vendor.importlib_metadata', 'setuptools._vendor.importlib_metadata._adapters', 'setuptools._vendor.importlib_metadata._collections', 'setuptools._vendor.importlib_metadata._compat', 'setuptools._vendor.importlib_metadata._functools', 'setuptools._vendor.importlib_metadata._itertools', 'setuptools._vendor.importlib_metadata._meta', 'setuptools._vendor.importlib_metadata._text', 'setuptools._vendor.importlib_metadata.compat', 'setuptools._vendor.importlib_metadata.compat.py311', 'setuptools._vendor.importlib_metadata.compat.py39', 'setuptools._vendor.importlib_metadata.diagnose', 'setuptools._vendor.inflect', 'setuptools._vendor.inflect.compat', 'setuptools._vendor.inflect.compat.py38', 'setuptools._vendor.more_itertools', 'setuptools._vendor.more_itertools.more', 'setuptools._vendor.more_itertools.recipes', 'setuptools._vendor.packaging', 'setuptools._vendor.packaging._elffile', 'setuptools._vendor.packaging._manylinux', 'setuptools._vendor.packaging._musllinux', 'setuptools._vendor.packaging._parser', 'setuptools._vendor.packaging._structures', 'setuptools._vendor.packaging._tokenizer', 'setuptools._vendor.packaging.licenses', 'setuptools._vendor.packaging.licenses._spdx', 'setuptools._vendor.packaging.markers', 'setuptools._vendor.packaging.metadata', 'setuptools._vendor.packaging.requirements', 'setuptools._vendor.packaging.specifiers', 'setuptools._vendor.packaging.tags', 'setuptools._vendor.packaging.utils', 'setuptools._vendor.packaging.version', 'setuptools._vendor.platformdirs', 'setuptools._vendor.platformdirs.__main__', 'setuptools._vendor.platformdirs.android', 'setuptools._vendor.platformdirs.api', 'setuptools._vendor.platformdirs.macos', 'setuptools._vendor.platformdirs.unix', 'setuptools._vendor.platformdirs.version', 'setuptools._vendor.platformdirs.windows', 'setuptools._vendor.tomli', 'setuptools._vendor.tomli._parser', 'setuptools._vendor.tomli._re', 'setuptools._vendor.tomli._types', 'setuptools._vendor.typeguard', 'setuptools._vendor.typeguard._checkers', 'setuptools._vendor.typeguard._config', 'setuptools._vendor.typeguard._decorators', 'setuptools._vendor.typeguard._exceptions', 'setuptools._vendor.typeguard._functions', 'setuptools._vendor.typeguard._importhook', 'setuptools._vendor.typeguard._memo', 'setuptools._vendor.typeguard._pytest_plugin', 'setuptools._vendor.typeguard._suppression', 'setuptools._vendor.typeguard._transformer', 'setuptools._vendor.typeguard._union_transformer', 'setuptools._vendor.typeguard._utils', 'setuptools._vendor.typing_extensions', 'setuptools._vendor.wheel', 'setuptools._vendor.wheel.__main__', 'setuptools._vendor.wheel._bdist_wheel', 'setuptools._vendor.wheel._setuptools_logging', 'setuptools._vendor.wheel.bdist_wheel', 'setuptools._vendor.wheel.cli', 'setuptools._vendor.wheel.cli.convert', 'setuptools._vendor.wheel.cli.pack', 'setuptools._vendor.wheel.cli.tags', 'setuptools._vendor.wheel.cli.unpack', 'setuptools._vendor.wheel.macosx_libfile', 'setuptools._vendor.wheel.metadata', 'setuptools._vendor.wheel.util', 'setuptools._vendor.wheel.vendored', 'setuptools._vendor.wheel.vendored.packaging', 'setuptools._vendor.wheel.vendored.packaging._elffile', 'setuptools._vendor.wheel.vendored.packaging._manylinux', 'setuptools._vendor.wheel.vendored.packaging._musllinux', 'setuptools._vendor.wheel.vendored.packaging._parser', 'setuptools._vendor.wheel.vendored.packaging._structures', 'setuptools._vendor.wheel.vendored.packaging._tokenizer', 'setuptools._vendor.wheel.vendored.packaging.markers', 'setuptools._vendor.wheel.vendored.packaging.requirements', 'setuptools._vendor.wheel.vendored.packaging.specifiers', 'setuptools._vendor.wheel.vendored.packaging.tags', 'setuptools._vendor.wheel.vendored.packaging.utils', 'setuptools._vendor.wheel.vendored.packaging.version', 'setuptools._vendor.wheel.wheelfile', 'setuptools._vendor.zipp', 'setuptools._vendor.zipp.compat', 'setuptools._vendor.zipp.compat.py310', 'setuptools._vendor.zipp.glob']
+3762 DEBUG: Collecting submodules for setuptools._vendor.jaraco
+3762 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco
+3762 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco in location(s): _NamespacePath(['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco'])
+3762 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.text
+3768 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.text in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\text']
+3772 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.functools
+3777 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.functools in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\functools']
+3780 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.collections
+3782 DEBUG: collect_submodules - scanning (sub)package setuptools._vendor.jaraco.collections in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\collections']
+3783 DEBUG: collect_submodules - found submodules: ['setuptools._vendor.jaraco', 'setuptools._vendor.jaraco.collections', 'setuptools._vendor.jaraco.context', 'setuptools._vendor.jaraco.functools', 'setuptools._vendor.jaraco.text', 'setuptools._vendor.jaraco.text.layouts']
+3783 DEBUG: Collecting data files for setuptools._vendor
+4023 DEBUG: collect_data_files - Found files: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\WHEEL', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\WHEEL', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\LICENSE.APACHE', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\top_level.txt', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\LICENSE', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\METADATA', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\LICENSE', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\WHEEL', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\top_level.txt', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\WHEEL', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\METADATA', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\REQUESTED', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\WHEEL', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\top_level.txt', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\LICENSE', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\top_level.txt', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\RECORD', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\WHEEL', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\WHEEL', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\REQUESTED', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typing_extensions-4.12.2.dist-info\\INSTALLER', 'setuptools\\_vendor\\typing_extensions-4.12.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\LICENSE', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\WHEEL', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\REQUESTED', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\WHEEL', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\INSTALLER', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\METADATA', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\RECORD', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\LICENSE', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typing_extensions-4.12.2.dist-info\\LICENSE', 'setuptools\\_vendor\\typing_extensions-4.12.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\INSTALLER', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typing_extensions-4.12.2.dist-info\\RECORD', 'setuptools\\_vendor\\typing_extensions-4.12.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\LICENSE.BSD', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\RECORD', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\top_level.txt', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\REQUESTED', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\REQUESTED', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\top_level.txt', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\INSTALLER', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\INSTALLER', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\WHEEL', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\INSTALLER', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\RECORD', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\METADATA', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\RECORD', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\RECORD', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\REQUESTED', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\RECORD', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\METADATA', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\RECORD', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\WHEEL', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\METADATA', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\LICENSE', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\RECORD', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\REQUESTED', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\RECORD', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\INSTALLER', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\INSTALLER', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\RECORD', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\top_level.txt', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\top_level.txt', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\METADATA', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typing_extensions-4.12.2.dist-info\\WHEEL', 'setuptools\\_vendor\\typing_extensions-4.12.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\LICENSE.txt', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\LICENSE', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\entry_points.txt', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\RECORD', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\LICENSE', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\licenses\\LICENSE', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\licenses'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\METADATA', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\LICENSE', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\REQUESTED', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\zipp-3.19.2.dist-info\\WHEEL', 'setuptools\\_vendor\\zipp-3.19.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\top_level.txt', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\METADATA', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\METADATA', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\METADATA', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\METADATA', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\METADATA', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info\\REQUESTED', 'setuptools\\_vendor\\backports.tarfile-1.2.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\WHEEL', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\packaging-24.2.dist-info\\RECORD', 'setuptools\\_vendor\\packaging-24.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typing_extensions-4.12.2.dist-info\\METADATA', 'setuptools\\_vendor\\typing_extensions-4.12.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\INSTALLER', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\platformdirs-4.2.2.dist-info\\RECORD', 'setuptools\\_vendor\\platformdirs-4.2.2.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\WHEEL', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\inflect-7.3.1.dist-info\\METADATA', 'setuptools\\_vendor\\inflect-7.3.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\LICENSE', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\LICENSE', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\wheel-0.45.1.dist-info\\entry_points.txt', 'setuptools\\_vendor\\wheel-0.45.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\more_itertools-10.3.0.dist-info\\RECORD', 'setuptools\\_vendor\\more_itertools-10.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info\\LICENSE', 'setuptools\\_vendor\\jaraco.collections-5.1.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\tomli-2.0.1.dist-info\\REQUESTED', 'setuptools\\_vendor\\tomli-2.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info\\METADATA', 'setuptools\\_vendor\\jaraco.functools-4.0.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.text-3.12.1.dist-info\\INSTALLER', 'setuptools\\_vendor\\jaraco.text-3.12.1.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\typeguard-4.3.0.dist-info\\top_level.txt', 'setuptools\\_vendor\\typeguard-4.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco.context-5.3.0.dist-info\\INSTALLER', 'setuptools\\_vendor\\jaraco.context-5.3.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info\\WHEEL', 'setuptools\\_vendor\\importlib_metadata-8.0.0.dist-info'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\autocommand-2.2.2.dist-info\\LICENSE', 'setuptools\\_vendor\\autocommand-2.2.2.dist-info')]
+4023 DEBUG: Collecting data files for setuptools._vendor.jaraco.text
+4023 DEBUG: collect_data_files - Found files: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\setuptools\\_vendor\\jaraco\\text\\Lorem ipsum.txt', 'setuptools\\_vendor\\jaraco\\text')]
+16569 INFO: Setuptools: 'typing_extensions' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.typing_extensions'!
+16582 INFO: Processing standard module hook 'hook-setuptools.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+16626 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+16731 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+16733 DEBUG: Suppressing import of '_osx_support' from module 'sysconfig' due to excluded import '_osx_support' specified in a hook for 'sysconfig' (or its parent package(s)).
+16739 DEBUG: Suppressing import of '_osx_support' from module 'sysconfig' due to excluded import '_osx_support' specified in a hook for 'sysconfig' (or its parent package(s)).
+16747 INFO: Processing pre-safe-import-module hook 'hook-jaraco.functools.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+16748 INFO: Setuptools: 'jaraco.functools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.functools'!
+16767 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+16776 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+17002 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17203 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+17277 INFO: Processing pre-safe-import-module hook 'hook-jaraco.text.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17291 INFO: Setuptools: 'jaraco.text' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.text'!
+17300 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+17302 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17304 INFO: Processing pre-safe-import-module hook 'hook-jaraco.context.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17305 INFO: Setuptools: 'jaraco.context' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco.context'!
+17320 INFO: Processing pre-safe-import-module hook 'hook-backports.tarfile.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17320 INFO: Setuptools: 'backports.tarfile' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.backports.tarfile'!
+17401 INFO: Processing standard module hook 'hook-backports.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+17495 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17495 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+17519 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+17521 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17521 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+17726 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+17726 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+18081 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+18701 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+18704 DEBUG: Suppressing import of 'test' from module 'multiprocessing.util' due to excluded import 'test' specified in a hook for 'multiprocessing.util' (or its parent package(s)).
+18776 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+19623 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+19623 DEBUG: Suppressing import of 'doctest' from module 'difflib' due to excluded import 'doctest' specified in a hook for 'difflib' (or its parent package(s)).
+19854 INFO: Processing standard module hook 'hook-jinja2.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+21093 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+21093 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+21479 INFO: Processing standard module hook 'hook-_tkinter.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+21622 INFO: Processing standard module hook 'hook-urllib3.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+21622 DEBUG: Collecting submodules for urllib3
+354 DEBUG: collect_submodules - scanning (sub)package urllib3
+512 DEBUG: collect_submodules - scanning (sub)package urllib3 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3']
+514 DEBUG: collect_submodules - scanning (sub)package urllib3.util
+514 DEBUG: collect_submodules - scanning (sub)package urllib3.util in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\util']
+515 DEBUG: collect_submodules - scanning (sub)package urllib3.util._async
+515 DEBUG: collect_submodules - scanning (sub)package urllib3.util._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\util\\_async']
+516 DEBUG: collect_submodules - scanning (sub)package urllib3.http2
+516 DEBUG: collect_submodules - scanning (sub)package urllib3.http2 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\http2']
+516 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib
+516 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib']
+520 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.webextensions
+520 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.webextensions in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\webextensions']
+521 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.webextensions._async
+521 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.webextensions._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\webextensions\\_async']
+522 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.ssa
+522 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.ssa in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\ssa']
+522 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver
+522 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver']
+525 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.system
+525 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.system in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\system']
+526 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.null
+528 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.null in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\null']
+529 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.in_memory
+531 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.in_memory in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\in_memory']
+533 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.dou
+534 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.dou in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\dou']
+536 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.dot
+538 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.dot in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\dot']
+538 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.doq
+679 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.doq in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\doq']
+679 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.doh
+699 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver.doh in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\doh']
+701 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async
+703 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async']
+708 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.system
+730 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.system in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\system']
+731 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.null
+741 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.null in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\null']
+744 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.in_memory
+759 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.in_memory in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\in_memory']
+759 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.dou
+768 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.dou in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\dou']
+768 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.dot
+782 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.dot in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\dot']
+783 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.doq
+797 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.doq in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\doq']
+798 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.doh
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.resolver._async.doh in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\resolver\\_async\\doh']
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.imcc
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.imcc in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\imcc']
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface']
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface\\protocols']
+808 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http3
+826 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http3 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface\\protocols\\http3']
+827 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http2
+990 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http2 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface\\protocols\\http2']
+990 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http1
+1066 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.protocols.http1 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface\\protocols\\http1']
+1079 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.events
+1079 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.hface.events in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\hface\\events']
+1081 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.emscripten
+1088 DEBUG: collect_submodules - scanning (sub)package urllib3.contrib.emscripten in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\contrib\\emscripten']
+1089 DEBUG: collect_submodules - scanning (sub)package urllib3.backend
+1089 DEBUG: collect_submodules - scanning (sub)package urllib3.backend in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\backend']
+1090 DEBUG: collect_submodules - scanning (sub)package urllib3.backend._async
+1090 DEBUG: collect_submodules - scanning (sub)package urllib3.backend._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\backend\\_async']
+1091 DEBUG: collect_submodules - scanning (sub)package urllib3._async
+1091 DEBUG: collect_submodules - scanning (sub)package urllib3._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3\\_async']
+23215 DEBUG: collect_submodules - found submodules: ['urllib3', 'urllib3._async', 'urllib3._async.connection', 'urllib3._async.connectionpool', 'urllib3._async.poolmanager', 'urllib3._async.response', 'urllib3._base_connection', 'urllib3._collections', 'urllib3._constant', 'urllib3._request_methods', 'urllib3._typing', 'urllib3._version', 'urllib3.backend', 'urllib3.backend._async', 'urllib3.backend._async._base', 'urllib3.backend._async.hface', 'urllib3.backend._base', 'urllib3.backend.hface', 'urllib3.connection', 'urllib3.connectionpool', 'urllib3.contrib', 'urllib3.contrib._socks_legacy', 'urllib3.contrib._socks_override', 'urllib3.contrib.emscripten', 'urllib3.contrib.emscripten.connection', 'urllib3.contrib.emscripten.fetch', 'urllib3.contrib.emscripten.request', 'urllib3.contrib.emscripten.response', 'urllib3.contrib.hface', 'urllib3.contrib.hface._configuration', 'urllib3.contrib.hface._stream_matrix', 'urllib3.contrib.hface._typing', 'urllib3.contrib.hface.events', 'urllib3.contrib.hface.events._events', 'urllib3.contrib.hface.protocols', 'urllib3.contrib.hface.protocols._factories', 'urllib3.contrib.hface.protocols._protocols', 'urllib3.contrib.hface.protocols.http1', 'urllib3.contrib.hface.protocols.http1._h11', 'urllib3.contrib.hface.protocols.http2', 'urllib3.contrib.hface.protocols.http2._h2', 'urllib3.contrib.hface.protocols.http3', 'urllib3.contrib.hface.protocols.http3._qh3', 'urllib3.contrib.imcc', 'urllib3.contrib.imcc._ctypes', 'urllib3.contrib.imcc._shm', 'urllib3.contrib.pyopenssl', 'urllib3.contrib.resolver', 'urllib3.contrib.resolver._async', 'urllib3.contrib.resolver._async.doh', 'urllib3.contrib.resolver._async.doh._urllib3', 'urllib3.contrib.resolver._async.doq', 'urllib3.contrib.resolver._async.doq._qh3', 'urllib3.contrib.resolver._async.dot', 'urllib3.contrib.resolver._async.dot._ssl', 'urllib3.contrib.resolver._async.dou', 'urllib3.contrib.resolver._async.dou._socket', 'urllib3.contrib.resolver._async.factories', 'urllib3.contrib.resolver._async.in_memory', 'urllib3.contrib.resolver._async.in_memory._dict', 'urllib3.contrib.resolver._async.null', 'urllib3.contrib.resolver._async.protocols', 'urllib3.contrib.resolver._async.system', 'urllib3.contrib.resolver._async.system._socket', 'urllib3.contrib.resolver.doh', 'urllib3.contrib.resolver.doh._urllib3', 'urllib3.contrib.resolver.doq', 'urllib3.contrib.resolver.doq._qh3', 'urllib3.contrib.resolver.dot', 'urllib3.contrib.resolver.dot._ssl', 'urllib3.contrib.resolver.dou', 'urllib3.contrib.resolver.dou._socket', 'urllib3.contrib.resolver.factories', 'urllib3.contrib.resolver.in_memory', 'urllib3.contrib.resolver.in_memory._dict', 'urllib3.contrib.resolver.null', 'urllib3.contrib.resolver.protocols', 'urllib3.contrib.resolver.system', 'urllib3.contrib.resolver.system._socket', 'urllib3.contrib.resolver.utils', 'urllib3.contrib.socks', 'urllib3.contrib.ssa', 'urllib3.contrib.ssa._timeout', 'urllib3.contrib.webextensions', 'urllib3.contrib.webextensions._async', 'urllib3.contrib.webextensions._async.protocol', 'urllib3.contrib.webextensions._async.raw', 'urllib3.contrib.webextensions._async.sse', 'urllib3.contrib.webextensions._async.ws', 'urllib3.contrib.webextensions.protocol', 'urllib3.contrib.webextensions.raw', 'urllib3.contrib.webextensions.sse', 'urllib3.contrib.webextensions.ws', 'urllib3.exceptions', 'urllib3.fields', 'urllib3.filepost', 'urllib3.http2', 'urllib3.http2.connection', 'urllib3.http2.probe', 'urllib3.poolmanager', 'urllib3.response', 'urllib3.util', 'urllib3.util._async', 'urllib3.util._async.ssl_', 'urllib3.util._async.traffic_police', 'urllib3.util.connection', 'urllib3.util.proxy', 'urllib3.util.request', 'urllib3.util.response', 'urllib3.util.retry', 'urllib3.util.ssl_', 'urllib3.util.ssl_match_hostname', 'urllib3.util.ssltransport', 'urllib3.util.timeout', 'urllib3.util.traffic_police', 'urllib3.util.url', 'urllib3.util.util', 'urllib3.util.wait']
+24633 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+24738 INFO: Processing standard module hook 'hook-certifi.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+24738 DEBUG: Collecting data files for certifi
+24759 DEBUG: collect_data_files - Found files: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\certifi\\cacert.pem', 'certifi'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\certifi\\py.typed', 'certifi')]
+24887 INFO: Processing standard module hook 'hook-dateutil.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+24889 DEBUG: Collecting data files for dateutil
+24913 DEBUG: collect_data_files - Found files: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\dateutil\\zoneinfo\\dateutil-zoneinfo.tar.gz', 'dateutil\\zoneinfo')]
+25036 INFO: Processing pre-safe-import-module hook 'hook-six.moves.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+25290 INFO: Processing standard module hook 'hook-rdflib.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+25290 DEBUG: Collecting submodules for rdflib.plugins
+310 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins
+498 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins']
+507 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.stores
+507 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.stores in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\stores']
+507 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.sparql
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.sparql in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\sparql']
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.sparql.results
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.sparql.results in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\sparql\\results']
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.shared
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.shared in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\shared']
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.shared.jsonld
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.shared.jsonld in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\shared\\jsonld']
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.serializers
+598 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.serializers in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\serializers']
+606 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.parsers
+607 DEBUG: collect_submodules - scanning (sub)package rdflib.plugins.parsers in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\rdflib\\plugins\\parsers']
+26816 DEBUG: collect_submodules - found submodules: ['rdflib.plugins', 'rdflib.plugins.parsers', 'rdflib.plugins.parsers.RDFVOC', 'rdflib.plugins.parsers.hext', 'rdflib.plugins.parsers.jsonld', 'rdflib.plugins.parsers.notation3', 'rdflib.plugins.parsers.nquads', 'rdflib.plugins.parsers.ntriples', 'rdflib.plugins.parsers.patch', 'rdflib.plugins.parsers.rdfxml', 'rdflib.plugins.parsers.trig', 'rdflib.plugins.parsers.trix', 'rdflib.plugins.serializers', 'rdflib.plugins.serializers.hext', 'rdflib.plugins.serializers.jsonld', 'rdflib.plugins.serializers.longturtle', 'rdflib.plugins.serializers.n3', 'rdflib.plugins.serializers.nquads', 'rdflib.plugins.serializers.nt', 'rdflib.plugins.serializers.patch', 'rdflib.plugins.serializers.rdfxml', 'rdflib.plugins.serializers.trig', 'rdflib.plugins.serializers.trix', 'rdflib.plugins.serializers.turtle', 'rdflib.plugins.serializers.xmlwriter', 'rdflib.plugins.shared', 'rdflib.plugins.shared.jsonld', 'rdflib.plugins.shared.jsonld.context', 'rdflib.plugins.shared.jsonld.errors', 'rdflib.plugins.shared.jsonld.keys', 'rdflib.plugins.shared.jsonld.util', 'rdflib.plugins.sparql', 'rdflib.plugins.sparql.aggregates', 'rdflib.plugins.sparql.algebra', 'rdflib.plugins.sparql.datatypes', 'rdflib.plugins.sparql.evaluate', 'rdflib.plugins.sparql.evalutils', 'rdflib.plugins.sparql.operators', 'rdflib.plugins.sparql.parser', 'rdflib.plugins.sparql.parserutils', 'rdflib.plugins.sparql.processor', 'rdflib.plugins.sparql.results', 'rdflib.plugins.sparql.results.csvresults', 'rdflib.plugins.sparql.results.graph', 'rdflib.plugins.sparql.results.jsonresults', 'rdflib.plugins.sparql.results.rdfresults', 'rdflib.plugins.sparql.results.tsvresults', 'rdflib.plugins.sparql.results.txtresults', 'rdflib.plugins.sparql.results.xmlresults', 'rdflib.plugins.sparql.sparql', 'rdflib.plugins.sparql.update', 'rdflib.plugins.stores', 'rdflib.plugins.stores.auditable', 'rdflib.plugins.stores.berkeleydb', 'rdflib.plugins.stores.concurrent', 'rdflib.plugins.stores.memory', 'rdflib.plugins.stores.regexmatching', 'rdflib.plugins.stores.sparqlconnector', 'rdflib.plugins.stores.sparqlstore']
+26953 INFO: Processing standard module hook 'hook-xml.dom.domreg.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+27802 INFO: Processing standard module hook 'hook-niquests.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+27802 DEBUG: Collecting submodules for niquests
+308 DEBUG: collect_submodules - scanning (sub)package niquests
+1214 DEBUG: collect_submodules - scanning (sub)package niquests in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests']
+1214 DEBUG: collect_submodules - scanning (sub)package niquests.extensions
+1214 DEBUG: collect_submodules - scanning (sub)package niquests.extensions in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions']
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions\\revocation']
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._ocsp
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._ocsp in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions\\revocation\\_ocsp']
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._ocsp._async
+1221 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._ocsp._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions\\revocation\\_ocsp\\_async']
+1228 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._crl
+1229 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._crl in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions\\revocation\\_crl']
+1230 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._crl._async
+1230 DEBUG: collect_submodules - scanning (sub)package niquests.extensions.revocation._crl._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\extensions\\revocation\\_crl\\_async']
+1234 DEBUG: collect_submodules - scanning (sub)package niquests._vendor
+1234 DEBUG: collect_submodules - scanning (sub)package niquests._vendor in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\_vendor']
+1238 DEBUG: collect_submodules - scanning (sub)package niquests._vendor.kiss_headers
+1238 DEBUG: collect_submodules - scanning (sub)package niquests._vendor.kiss_headers in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\niquests\\_vendor\\kiss_headers']
+29608 DEBUG: collect_submodules - found submodules: ['niquests', 'niquests.__version__', 'niquests._async', 'niquests._compat', 'niquests._constant', 'niquests._typing', 'niquests._vendor', 'niquests._vendor.kiss_headers', 'niquests._vendor.kiss_headers.api', 'niquests._vendor.kiss_headers.builder', 'niquests._vendor.kiss_headers.models', 'niquests._vendor.kiss_headers.serializer', 'niquests._vendor.kiss_headers.structures', 'niquests._vendor.kiss_headers.utils', 'niquests._vendor.kiss_headers.version', 'niquests.adapters', 'niquests.api', 'niquests.async_api', 'niquests.async_session', 'niquests.auth', 'niquests.cookies', 'niquests.exceptions', 'niquests.extensions', 'niquests.extensions.revocation', 'niquests.extensions.revocation._crl', 'niquests.extensions.revocation._crl._async', 'niquests.extensions.revocation._ocsp', 'niquests.extensions.revocation._ocsp._async', 'niquests.help', 'niquests.hooks', 'niquests.models', 'niquests.packages', 'niquests.sessions', 'niquests.status_codes', 'niquests.structures', 'niquests.utils']
+29618 INFO: Processing standard module hook 'hook-urllib3_future.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+29618 DEBUG: Collecting submodules for urllib3_future
+388 DEBUG: collect_submodules - scanning (sub)package urllib3_future
+656 DEBUG: collect_submodules - scanning (sub)package urllib3_future in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future']
+656 DEBUG: collect_submodules - scanning (sub)package urllib3_future.util
+656 DEBUG: collect_submodules - scanning (sub)package urllib3_future.util in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\util']
+660 DEBUG: collect_submodules - scanning (sub)package urllib3_future.util._async
+660 DEBUG: collect_submodules - scanning (sub)package urllib3_future.util._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\util\\_async']
+660 DEBUG: collect_submodules - scanning (sub)package urllib3_future.http2
+665 DEBUG: collect_submodules - scanning (sub)package urllib3_future.http2 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\http2']
+668 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib
+668 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib']
+676 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.webextensions
+676 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.webextensions in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\webextensions']
+680 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.webextensions._async
+680 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.webextensions._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\webextensions\\_async']
+683 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.ssa
+684 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.ssa in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\ssa']
+685 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver
+685 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver']
+693 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.system
+693 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.system in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\system']
+695 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.null
+696 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.null in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\null']
+701 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.in_memory
+705 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.in_memory in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\in_memory']
+708 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.dou
+715 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.dou in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\dou']
+717 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.dot
+718 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.dot in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\dot']
+723 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.doq
+797 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.doq in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\doq']
+797 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.doh
+807 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver.doh in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\doh']
+807 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async
+807 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async']
+814 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.system
+838 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.system in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\system']
+840 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.null
+847 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.null in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\null']
+848 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.in_memory
+860 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.in_memory in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\in_memory']
+860 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.dou
+877 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.dou in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\dou']
+879 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.dot
+894 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.dot in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\dot']
+897 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.doq
+908 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.doq in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\doq']
+908 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.doh
+929 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.resolver._async.doh in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\resolver\\_async\\doh']
+929 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.imcc
+929 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.imcc in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\imcc']
+929 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface
+929 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface']
+941 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols
+941 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface\\protocols']
+947 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http3
+974 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http3 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface\\protocols\\http3']
+974 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http2
+1030 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http2 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface\\protocols\\http2']
+1030 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http1
+1081 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.protocols.http1 in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface\\protocols\\http1']
+1081 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.events
+1081 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.hface.events in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\hface\\events']
+1081 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.emscripten
+1096 DEBUG: collect_submodules - scanning (sub)package urllib3_future.contrib.emscripten in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\contrib\\emscripten']
+1096 DEBUG: collect_submodules - scanning (sub)package urllib3_future.backend
+1096 DEBUG: collect_submodules - scanning (sub)package urllib3_future.backend in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\backend']
+1096 DEBUG: collect_submodules - scanning (sub)package urllib3_future.backend._async
+1101 DEBUG: collect_submodules - scanning (sub)package urllib3_future.backend._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\backend\\_async']
+1101 DEBUG: collect_submodules - scanning (sub)package urllib3_future._async
+1101 DEBUG: collect_submodules - scanning (sub)package urllib3_future._async in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\urllib3_future\\_async']
+31233 DEBUG: collect_submodules - found submodules: ['urllib3_future', 'urllib3_future._async', 'urllib3_future._async.connection', 'urllib3_future._async.connectionpool', 'urllib3_future._async.poolmanager', 'urllib3_future._async.response', 'urllib3_future._collections', 'urllib3_future._constant', 'urllib3_future._request_methods', 'urllib3_future._typing', 'urllib3_future._version', 'urllib3_future.backend', 'urllib3_future.backend._async', 'urllib3_future.backend._async._base', 'urllib3_future.backend._async.hface', 'urllib3_future.backend._base', 'urllib3_future.backend.hface', 'urllib3_future.connection', 'urllib3_future.connectionpool', 'urllib3_future.contrib', 'urllib3_future.contrib._socks_legacy', 'urllib3_future.contrib._socks_override', 'urllib3_future.contrib.emscripten', 'urllib3_future.contrib.hface', 'urllib3_future.contrib.hface._configuration', 'urllib3_future.contrib.hface._stream_matrix', 'urllib3_future.contrib.hface._typing', 'urllib3_future.contrib.hface.events', 'urllib3_future.contrib.hface.events._events', 'urllib3_future.contrib.hface.protocols', 'urllib3_future.contrib.hface.protocols._factories', 'urllib3_future.contrib.hface.protocols._protocols', 'urllib3_future.contrib.hface.protocols.http1', 'urllib3_future.contrib.hface.protocols.http1._h11', 'urllib3_future.contrib.hface.protocols.http2', 'urllib3_future.contrib.hface.protocols.http2._h2', 'urllib3_future.contrib.hface.protocols.http3', 'urllib3_future.contrib.hface.protocols.http3._qh3', 'urllib3_future.contrib.imcc', 'urllib3_future.contrib.imcc._ctypes', 'urllib3_future.contrib.imcc._shm', 'urllib3_future.contrib.pyopenssl', 'urllib3_future.contrib.resolver', 'urllib3_future.contrib.resolver._async', 'urllib3_future.contrib.resolver._async.doh', 'urllib3_future.contrib.resolver._async.doh._urllib3', 'urllib3_future.contrib.resolver._async.doq', 'urllib3_future.contrib.resolver._async.doq._qh3', 'urllib3_future.contrib.resolver._async.dot', 'urllib3_future.contrib.resolver._async.dot._ssl', 'urllib3_future.contrib.resolver._async.dou', 'urllib3_future.contrib.resolver._async.dou._socket', 'urllib3_future.contrib.resolver._async.factories', 'urllib3_future.contrib.resolver._async.in_memory', 'urllib3_future.contrib.resolver._async.in_memory._dict', 'urllib3_future.contrib.resolver._async.null', 'urllib3_future.contrib.resolver._async.protocols', 'urllib3_future.contrib.resolver._async.system', 'urllib3_future.contrib.resolver._async.system._socket', 'urllib3_future.contrib.resolver.doh', 'urllib3_future.contrib.resolver.doh._urllib3', 'urllib3_future.contrib.resolver.doq', 'urllib3_future.contrib.resolver.doq._qh3', 'urllib3_future.contrib.resolver.dot', 'urllib3_future.contrib.resolver.dot._ssl', 'urllib3_future.contrib.resolver.dou', 'urllib3_future.contrib.resolver.dou._socket', 'urllib3_future.contrib.resolver.factories', 'urllib3_future.contrib.resolver.in_memory', 'urllib3_future.contrib.resolver.in_memory._dict', 'urllib3_future.contrib.resolver.null', 'urllib3_future.contrib.resolver.protocols', 'urllib3_future.contrib.resolver.system', 'urllib3_future.contrib.resolver.system._socket', 'urllib3_future.contrib.resolver.utils', 'urllib3_future.contrib.socks', 'urllib3_future.contrib.ssa', 'urllib3_future.contrib.ssa._timeout', 'urllib3_future.contrib.webextensions', 'urllib3_future.contrib.webextensions._async', 'urllib3_future.contrib.webextensions._async.protocol', 'urllib3_future.contrib.webextensions._async.raw', 'urllib3_future.contrib.webextensions._async.sse', 'urllib3_future.contrib.webextensions._async.ws', 'urllib3_future.contrib.webextensions.protocol', 'urllib3_future.contrib.webextensions.raw', 'urllib3_future.contrib.webextensions.sse', 'urllib3_future.contrib.webextensions.ws', 'urllib3_future.exceptions', 'urllib3_future.fields', 'urllib3_future.filepost', 'urllib3_future.http2', 'urllib3_future.poolmanager', 'urllib3_future.response', 'urllib3_future.util', 'urllib3_future.util._async', 'urllib3_future.util._async.ssl_', 'urllib3_future.util._async.traffic_police', 'urllib3_future.util.connection', 'urllib3_future.util.proxy', 'urllib3_future.util.request', 'urllib3_future.util.response', 'urllib3_future.util.retry', 'urllib3_future.util.ssl_', 'urllib3_future.util.ssl_match_hostname', 'urllib3_future.util.ssltransport', 'urllib3_future.util.timeout', 'urllib3_future.util.traffic_police', 'urllib3_future.util.url', 'urllib3_future.util.util', 'urllib3_future.util.wait']
+32093 INFO: Processing standard module hook 'hook-lxml.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+32094 DEBUG: Collecting submodules for lxml
+222 DEBUG: collect_submodules - scanning (sub)package lxml
+222 DEBUG: collect_submodules - scanning (sub)package lxml in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml']
+222 DEBUG: collect_submodules - scanning (sub)package lxml.isoschematron
+349 DEBUG: collect_submodules - scanning (sub)package lxml.isoschematron in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron']
+349 DEBUG: collect_submodules - scanning (sub)package lxml.includes
+358 DEBUG: collect_submodules - scanning (sub)package lxml.includes in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\includes']
+363 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libxslt
+366 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libxslt in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\includes\\libxslt']
+366 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libxml
+373 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libxml in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\includes\\libxml']
+375 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libexslt
+378 DEBUG: collect_submodules - scanning (sub)package lxml.includes.libexslt in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\includes\\libexslt']
+380 DEBUG: collect_submodules - scanning (sub)package lxml.includes.extlibs
+384 DEBUG: collect_submodules - scanning (sub)package lxml.includes.extlibs in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\includes\\extlibs']
+385 DEBUG: collect_submodules - scanning (sub)package lxml.html
+401 DEBUG: collect_submodules - scanning (sub)package lxml.html in location(s): ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\html']
+32938 DEBUG: collect_submodules - found submodules: ['lxml', 'lxml.ElementInclude', 'lxml._elementpath', 'lxml.builder', 'lxml.cssselect', 'lxml.doctestcompare', 'lxml.etree', 'lxml.html', 'lxml.html.ElementSoup', 'lxml.html._diffcommand', 'lxml.html._html5builder', 'lxml.html._setmixin', 'lxml.html.builder', 'lxml.html.clean', 'lxml.html.defs', 'lxml.html.diff', 'lxml.html.formfill', 'lxml.html.html5parser', 'lxml.html.soupparser', 'lxml.html.usedoctest', 'lxml.includes', 'lxml.includes.extlibs', 'lxml.includes.libexslt', 'lxml.includes.libxml', 'lxml.includes.libxslt', 'lxml.isoschematron', 'lxml.objectify', 'lxml.pyclasslookup', 'lxml.sax', 'lxml.usedoctest']
+32939 INFO: Processing standard module hook 'hook-lxml.etree.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+32987 INFO: Analyzing hidden import 'ipat_watchdog.pc_plugins.tischrem_blb.plugin'
+32987 INFO: Analyzing hidden import 'ipat_watchdog.device_plugins.sem_phenomxl2.plugin'
+32996 DEBUG: Hidden import 'ipat_watchdog.build_config' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.pc_plugins.tischrem_blb' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.pc_plugins.tischrem_blb.plugin' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.pc_plugins.tischrem_blb.settings' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.device_plugins.sem_phenomxl2' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.device_plugins.sem_phenomxl2.file_processor' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.device_plugins.sem_phenomxl2.plugin' already found
+32996 DEBUG: Hidden import 'ipat_watchdog.device_plugins.sem_phenomxl2.settings' already found
+32996 INFO: Processing module hooks (post-graph stage)...
+33373 INFO: Processing standard module hook 'hook-lxml.isoschematron.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+33373 DEBUG: Collecting data files for lxml
+33389 DEBUG: collect_data_files - Found files: [('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_svrl_for_xslt1.xsl', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_message.xsl', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\RNG2Schtrn.xsl', 'lxml\\isoschematron\\resources\\xsl'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_schematron_skeleton_for_xslt1.xsl', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_dsdl_include.xsl', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\iso_abstract_expand.xsl', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\XSD2Schtrn.xsl', 'lxml\\isoschematron\\resources\\xsl'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\rng\\iso-schematron.rng', 'lxml\\isoschematron\\resources\\rng'), ('D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1\\readme.txt', 'lxml\\isoschematron\\resources\\xsl\\iso-schematron-xslt1')]
+33932 INFO: Processing standard module hook 'hook-xml.etree.cElementTree.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+34737 DEBUG: Suppressing import of 'docutils.frontend' from module 'setuptools._distutils.command.check' due to excluded import 'docutils' specified in a hook for 'setuptools._distutils.command.check' (or its parent package(s)).
+34737 DEBUG: Suppressing import of 'docutils.nodes' from module 'setuptools._distutils.command.check' due to excluded import 'docutils' specified in a hook for 'setuptools._distutils.command.check' (or its parent package(s)).
+34737 DEBUG: Suppressing import of 'docutils.parsers.rst' from module 'setuptools._distutils.command.check' due to excluded import 'docutils' specified in a hook for 'setuptools._distutils.command.check' (or its parent package(s)).
+34737 DEBUG: Suppressing import of 'docutils.utils' from module 'setuptools._distutils.command.check' due to excluded import 'docutils' specified in a hook for 'setuptools._distutils.command.check' (or its parent package(s)).
+34911 INFO: Processing standard module hook 'hook-_tkinter.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks'
+34911 INFO: Processing standard module hook 'hook-lxml.objectify.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+34942 INFO: Performing binary vs. data reclassification (952 entries)
+35935 INFO: Looking for ctypes DLLs
+35935 DEBUG: Scanning packaging._manylinux for ctypes-based references to shared libraries
+35938 DEBUG: Scanning setuptools._vendor.packaging._manylinux for ctypes-based references to shared libraries
+35941 DEBUG: Scanning setuptools.windows_support for ctypes-based references to shared libraries
+35941 DEBUG: Scanning wheel.vendored.packaging._manylinux for ctypes-based references to shared libraries
+35941 DEBUG: Scanning wheel.macosx_libfile for ctypes-based references to shared libraries
+35955 DEBUG: Scanning colorama.win32 for ctypes-based references to shared libraries
+35958 DEBUG: Scanning multiprocessing.sharedctypes for ctypes-based references to shared libraries
+35966 DEBUG: Scanning watchdog.observers.inotify_c for ctypes-based references to shared libraries
+35974 DEBUG: Scanning watchdog.observers.winapi for ctypes-based references to shared libraries
+35981 DEBUG: Scanning click._winconsole for ctypes-based references to shared libraries
+35988 DEBUG: Scanning urllib3.contrib.imcc._ctypes for ctypes-based references to shared libraries
+35992 DEBUG: Scanning urllib3.contrib.imcc._shm for ctypes-based references to shared libraries
+36006 DEBUG: Scanning dateutil.tz.win for ctypes-based references to shared libraries
+36008 DEBUG: Scanning urllib3_future.contrib.imcc._ctypes for ctypes-based references to shared libraries
+36020 DEBUG: Scanning urllib3_future.contrib.imcc._shm for ctypes-based references to shared libraries
+36037 DEBUG: Scanning wassima._os._macos for ctypes-based references to shared libraries
+36039 WARNING: Ignoring /System/Library/Frameworks/CoreFoundation.framework/CoreFoundation imported from D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\wassima\_os\_macos.py - only basenames are supported with ctypes imports!
+36039 WARNING: Ignoring /System/Library/Frameworks/Security.framework/Security imported from D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\wassima\_os\_macos.py - only basenames are supported with ctypes imports!
+36109 INFO: Analyzing run-time hooks ...
+36116 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+36128 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+36134 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+36144 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+36150 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+36231 DEBUG: Module collection settings: {}
+36231 DEBUG: Target optimization level 0 matches run-time optimization level 0 - using modulegraph's code-object cache.
+36244 INFO: Creating base_library.zip...
+37240 INFO: Looking for dynamic libraries
+42268 INFO: Extra DLL search directories (AddDllDirectory): []
+42268 INFO: Extra DLL search directories (PATH): []
+42278 DEBUG: Analyzing binary 'C:\\Python\\Python312\\python312.dll'
+42366 DEBUG: Processing dependency, name: 'api-ms-win-crt-process-l1-1-0.dll', resolved path: None
+42367 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42367 DEBUG: Collecting dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' as 'VCRUNTIME140.dll'.
+42367 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42367 DEBUG: Processing dependency, name: 'api-ms-win-crt-locale-l1-1-0.dll', resolved path: None
+42367 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42367 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42367 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42367 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42367 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'bcrypt.dll', resolved path: 'C:\\Windows\\system32\\bcrypt.dll'
+42368 DEBUG: Skipping dependency 'C:\\Windows\\system32\\bcrypt.dll' due to global exclusion rules.
+42368 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42368 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42368 DEBUG: Processing dependency, name: 'api-ms-win-crt-filesystem-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'api-ms-win-core-path-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42368 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42368 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42368 DEBUG: Processing dependency, name: 'VERSION.dll', resolved path: 'C:\\Windows\\system32\\VERSION.dll'
+42368 DEBUG: Skipping dependency 'C:\\Windows\\system32\\VERSION.dll' due to global exclusion rules.
+42369 DEBUG: Processing dependency, name: 'api-ms-win-crt-conio-l1-1-0.dll', resolved path: None
+42369 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\select.pyd'
+42381 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42381 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42381 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42381 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42382 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42382 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42382 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42382 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42384 DEBUG: Collecting dependency 'C:\\Python\\Python312\\python312.dll' as 'python312.dll'.
+42384 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\unicodedata.pyd'
+42425 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42425 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42425 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42425 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42425 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42427 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42427 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42427 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42428 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42428 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_decimal.pyd'
+42493 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42493 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42493 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42493 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42493 DEBUG: Processing dependency, name: 'api-ms-win-crt-locale-l1-1-0.dll', resolved path: None
+42494 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42494 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42495 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42495 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42495 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42495 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42495 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42499 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42499 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_hashlib.pyd'
+42520 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42520 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42520 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42520 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42520 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42520 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42521 DEBUG: Processing dependency, name: 'libcrypto-3.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll'
+42521 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll' as 'libcrypto-3.dll'.
+42521 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42522 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42522 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_socket.pyd'
+42542 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42542 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42542 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42542 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42542 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42542 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42542 DEBUG: Processing dependency, name: 'RPCRT4.dll', resolved path: 'C:\\Windows\\system32\\RPCRT4.dll'
+42542 DEBUG: Skipping dependency 'C:\\Windows\\system32\\RPCRT4.dll' due to global exclusion rules.
+42542 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42542 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42542 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42542 DEBUG: Processing dependency, name: 'IPHLPAPI.DLL', resolved path: 'C:\\Windows\\system32\\IPHLPAPI.DLL'
+42543 DEBUG: Skipping dependency 'C:\\Windows\\system32\\IPHLPAPI.DLL' due to global exclusion rules.
+42543 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42544 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42544 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_lzma.pyd'
+42551 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42551 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42551 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42551 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42552 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42552 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42552 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42552 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42552 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_bz2.pyd'
+42561 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42561 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42561 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42561 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42563 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42563 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42563 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42563 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42563 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42563 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_multiprocessing.pyd'
+42567 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42567 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42567 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42567 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42567 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42567 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42567 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42567 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42567 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42567 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\pyexpat.pyd'
+42584 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42584 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42585 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42585 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42585 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42585 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42585 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42585 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42586 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42586 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42586 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42586 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42586 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_ssl.pyd'
+42600 DEBUG: Processing dependency, name: 'CRYPT32.dll', resolved path: 'C:\\Windows\\system32\\CRYPT32.dll'
+42600 DEBUG: Skipping dependency 'C:\\Windows\\system32\\CRYPT32.dll' due to global exclusion rules.
+42601 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42601 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42601 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42601 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42601 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42601 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42601 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42601 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42601 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42601 DEBUG: Processing dependency, name: 'libssl-3.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\libssl-3.dll'
+42602 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\libssl-3.dll' as 'libssl-3.dll'.
+42602 DEBUG: Processing dependency, name: 'libcrypto-3.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll'
+42602 DEBUG: Skipping dependency 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll' due to prior processing.
+42602 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42603 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42603 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_ctypes.pyd'
+42616 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42616 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42616 DEBUG: Processing dependency, name: 'OLEAUT32.dll', resolved path: 'C:\\Windows\\system32\\OLEAUT32.dll'
+42616 DEBUG: Skipping dependency 'C:\\Windows\\system32\\OLEAUT32.dll' due to global exclusion rules.
+42616 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42616 DEBUG: Processing dependency, name: 'libffi-8.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\libffi-8.dll'
+42616 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\libffi-8.dll' as 'libffi-8.dll'.
+42617 DEBUG: Processing dependency, name: 'ole32.dll', resolved path: 'C:\\Windows\\system32\\ole32.dll'
+42617 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ole32.dll' due to global exclusion rules.
+42617 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42617 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42617 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42617 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42617 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42617 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42617 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_queue.pyd'
+42622 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42622 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42622 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42622 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42622 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42622 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42623 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42623 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_overlapped.pyd'
+42631 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42631 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42631 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42631 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42631 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42632 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42632 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42632 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42632 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42632 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42632 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_asyncio.pyd'
+42638 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42638 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42638 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42638 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42638 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42638 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42639 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42639 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_wmi.pyd'
+42650 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42650 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42650 DEBUG: Processing dependency, name: 'PROPSYS.dll', resolved path: 'C:\\Windows\\system32\\PROPSYS.dll'
+42650 DEBUG: Skipping dependency 'C:\\Windows\\system32\\PROPSYS.dll' due to global exclusion rules.
+42650 DEBUG: Processing dependency, name: 'OLEAUT32.dll', resolved path: 'C:\\Windows\\system32\\OLEAUT32.dll'
+42651 DEBUG: Skipping dependency 'C:\\Windows\\system32\\OLEAUT32.dll' due to global exclusion rules.
+42651 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42651 DEBUG: Processing dependency, name: 'VCRUNTIME140_1.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140_1.dll'
+42651 DEBUG: Collecting dependency 'C:\\Python\\Python312\\VCRUNTIME140_1.dll' as 'VCRUNTIME140_1.dll'.
+42651 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42651 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42651 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42651 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42651 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42651 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42651 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_tkinter.pyd'
+42664 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42664 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42664 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42664 DEBUG: Processing dependency, name: 'tk86t.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\tk86t.dll'
+42665 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\tk86t.dll' as 'tk86t.dll'.
+42665 DEBUG: Processing dependency, name: 'tcl86t.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\tcl86t.dll'
+42665 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\tcl86t.dll' as 'tcl86t.dll'.
+42665 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42665 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42665 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42665 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42665 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42666 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42666 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_uuid.pyd'
+42671 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42671 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42671 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42671 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42671 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42671 DEBUG: Processing dependency, name: 'RPCRT4.dll', resolved path: 'C:\\Windows\\system32\\RPCRT4.dll'
+42671 DEBUG: Skipping dependency 'C:\\Windows\\system32\\RPCRT4.dll' due to global exclusion rules.
+42671 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42671 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42671 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\markupsafe\\_speedups.cp312-win_amd64.pyd'
+42676 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42677 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42677 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42677 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42677 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42677 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42677 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42677 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\etree.cp312-win_amd64.pyd'
+42694 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42694 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-filesystem-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-locale-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42694 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42694 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42694 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42694 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42695 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42695 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42695 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42696 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42696 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42696 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42696 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42696 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42696 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\_elementpath.cp312-win_amd64.pyd'
+42696 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42696 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42696 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42696 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42696 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42696 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42696 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42696 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\sax.cp312-win_amd64.pyd'
+42706 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42706 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42706 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42706 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42706 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42706 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42706 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42707 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42707 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\objectify.cp312-win_amd64.pyd'
+42723 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42723 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-filesystem-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-locale-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42723 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42723 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42723 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42723 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42723 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\html\\diff.cp312-win_amd64.pyd'
+42729 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42730 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42730 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42730 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42730 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42730 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42730 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42730 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\lxml\\builder.cp312-win_amd64.pyd'
+42734 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42734 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42734 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42734 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42734 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42734 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42734 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42734 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\_elementtree.pyd'
+42741 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42741 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42741 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42741 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42741 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42741 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42741 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42741 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42741 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\qh3\\_hazmat.pyd'
+42761 DEBUG: Processing dependency, name: 'bcryptprimitives.dll', resolved path: 'C:\\Windows\\system32\\bcryptprimitives.dll'
+42761 DEBUG: Skipping dependency 'C:\\Windows\\system32\\bcryptprimitives.dll' due to global exclusion rules.
+42761 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42761 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'python3.dll', resolved path: 'C:\\Python\\Python312\\python3.dll'
+42761 DEBUG: Collecting dependency 'C:\\Python\\Python312\\python3.dll' as 'python3.dll'.
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42761 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42761 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42761 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42761 DEBUG: Processing dependency, name: 'api-ms-win-core-synch-l1-2-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'bcrypt.dll', resolved path: 'C:\\Windows\\system32\\bcrypt.dll'
+42761 DEBUG: Skipping dependency 'C:\\Windows\\system32\\bcrypt.dll' due to global exclusion rules.
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42761 DEBUG: Processing dependency, name: 'ntdll.dll', resolved path: 'C:\\Windows\\system32\\ntdll.dll'
+42761 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ntdll.dll' due to global exclusion rules.
+42761 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\charset_normalizer\\md__mypyc.cp312-win_amd64.pyd'
+42770 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42770 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42770 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42770 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42770 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42770 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42770 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42770 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42771 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42771 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\charset_normalizer\\md.cp312-win_amd64.pyd'
+42775 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42775 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42776 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42776 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42776 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42776 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42776 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42776 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\jh2\\_hazmat.pyd'
+42786 DEBUG: Processing dependency, name: 'bcryptprimitives.dll', resolved path: 'C:\\Windows\\system32\\bcryptprimitives.dll'
+42787 DEBUG: Skipping dependency 'C:\\Windows\\system32\\bcryptprimitives.dll' due to global exclusion rules.
+42787 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42787 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42787 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42787 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42787 DEBUG: Processing dependency, name: 'python3.dll', resolved path: 'C:\\Python\\Python312\\python3.dll'
+42788 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python3.dll' due to prior processing.
+42788 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42788 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42788 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42788 DEBUG: Processing dependency, name: 'api-ms-win-core-synch-l1-2-0.dll', resolved path: None
+42788 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42788 DEBUG: Processing dependency, name: 'ntdll.dll', resolved path: 'C:\\Windows\\system32\\ntdll.dll'
+42788 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ntdll.dll' due to global exclusion rules.
+42788 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\win32\\win32evtlog.pyd'
+42799 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42799 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42799 DEBUG: Processing dependency, name: 'pywintypes312.dll', resolved path: 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\pywin32_system32\\pywintypes312.dll'
+42799 DEBUG: Collecting dependency 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\pywin32_system32\\pywintypes312.dll' as 'pywin32_system32\\pywintypes312.dll'.
+42799 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42799 DEBUG: Processing dependency, name: 'VCRUNTIME140_1.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140_1.dll'
+42800 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140_1.dll' due to prior processing.
+42800 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42800 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42800 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42800 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42800 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42800 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42800 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42800 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42800 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\win32\\win32api.pyd'
+42816 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42816 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42816 DEBUG: Processing dependency, name: 'pywintypes312.dll', resolved path: 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\pywin32_system32\\pywintypes312.dll'
+42817 DEBUG: Skipping dependency 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\pywin32_system32\\pywintypes312.dll' due to prior processing.
+42817 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42817 DEBUG: Processing dependency, name: 'USER32.dll', resolved path: 'C:\\Windows\\system32\\USER32.dll'
+42817 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USER32.dll' due to global exclusion rules.
+42817 DEBUG: Processing dependency, name: 'VCRUNTIME140_1.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140_1.dll'
+42817 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140_1.dll' due to prior processing.
+42817 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42817 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42817 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42817 DEBUG: Processing dependency, name: 'VERSION.dll', resolved path: 'C:\\Windows\\system32\\VERSION.dll'
+42818 DEBUG: Skipping dependency 'C:\\Windows\\system32\\VERSION.dll' due to global exclusion rules.
+42818 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42818 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42818 DEBUG: Processing dependency, name: 'SHELL32.dll', resolved path: 'C:\\Windows\\system32\\SHELL32.dll'
+42818 DEBUG: Skipping dependency 'C:\\Windows\\system32\\SHELL32.dll' due to global exclusion rules.
+42818 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42818 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42818 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42818 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42818 DEBUG: Analyzing binary 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42826 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42826 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42826 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42826 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42826 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42826 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42826 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42826 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll'
+42866 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42866 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-filesystem-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'USER32.dll', resolved path: 'C:\\Windows\\system32\\USER32.dll'
+42866 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USER32.dll' due to global exclusion rules.
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42866 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42866 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42866 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42866 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42866 DEBUG: Processing dependency, name: 'bcrypt.dll', resolved path: 'C:\\Windows\\system32\\bcrypt.dll'
+42867 DEBUG: Skipping dependency 'C:\\Windows\\system32\\bcrypt.dll' due to global exclusion rules.
+42867 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42867 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42867 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\libssl-3.dll'
+42880 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42880 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42880 DEBUG: Processing dependency, name: 'api-ms-win-crt-filesystem-l1-1-0.dll', resolved path: None
+42880 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42880 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42880 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42880 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42880 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42882 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42882 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42882 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42882 DEBUG: Processing dependency, name: 'libcrypto-3.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll'
+42882 DEBUG: Skipping dependency 'C:\\Python\\Python312\\DLLs\\libcrypto-3.dll' due to prior processing.
+42882 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\libffi-8.dll'
+42884 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42885 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42885 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42885 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42885 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42885 DEBUG: Analyzing binary 'C:\\Python\\Python312\\VCRUNTIME140_1.dll'
+42890 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42890 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42890 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42890 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42890 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42890 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42890 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42890 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\tk86t.dll'
+42917 DEBUG: Processing dependency, name: 'IMM32.dll', resolved path: 'C:\\Windows\\system32\\IMM32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\IMM32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'COMCTL32.dll', resolved path: 'C:\\Windows\\system32\\COMCTL32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\COMCTL32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42918 DEBUG: Processing dependency, name: 'GDI32.dll', resolved path: 'C:\\Windows\\system32\\GDI32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\GDI32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'USER32.dll', resolved path: 'C:\\Windows\\system32\\USER32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USER32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42918 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42918 DEBUG: Processing dependency, name: 'ole32.dll', resolved path: 'C:\\Windows\\system32\\ole32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ole32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42918 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42918 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42918 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42918 DEBUG: Processing dependency, name: 'SHELL32.dll', resolved path: 'C:\\Windows\\system32\\SHELL32.dll'
+42918 DEBUG: Skipping dependency 'C:\\Windows\\system32\\SHELL32.dll' due to global exclusion rules.
+42918 DEBUG: Processing dependency, name: 'COMDLG32.dll', resolved path: 'C:\\Windows\\system32\\COMDLG32.dll'
+42919 DEBUG: Skipping dependency 'C:\\Windows\\system32\\COMDLG32.dll' due to global exclusion rules.
+42919 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42919 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42919 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42919 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\tcl86t.dll'
+42942 DEBUG: Processing dependency, name: 'NETAPI32.dll', resolved path: 'C:\\Windows\\system32\\NETAPI32.dll'
+42943 DEBUG: Skipping dependency 'C:\\Windows\\system32\\NETAPI32.dll' due to global exclusion rules.
+42943 DEBUG: Processing dependency, name: 'USERENV.dll', resolved path: 'C:\\Windows\\system32\\USERENV.dll'
+42944 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USERENV.dll' due to global exclusion rules.
+42944 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42944 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'USER32.dll', resolved path: 'C:\\Windows\\system32\\USER32.dll'
+42944 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USER32.dll' due to global exclusion rules.
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'WS2_32.dll', resolved path: 'C:\\Windows\\system32\\WS2_32.dll'
+42944 DEBUG: Skipping dependency 'C:\\Windows\\system32\\WS2_32.dll' due to global exclusion rules.
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-utility-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42944 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42944 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42944 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42944 DEBUG: Processing dependency, name: 'zlib1.dll', resolved path: 'C:\\Python\\Python312\\DLLs\\zlib1.dll'
+42944 DEBUG: Collecting dependency 'C:\\Python\\Python312\\DLLs\\zlib1.dll' as 'zlib1.dll'.
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-environment-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-convert-l1-1-0.dll', resolved path: None
+42944 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42944 DEBUG: Analyzing binary 'C:\\Python\\Python312\\python3.dll'
+42957 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42957 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42957 DEBUG: Analyzing binary 'D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\pywin32_system32\\pywintypes312.dll'
+42973 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42973 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+42973 DEBUG: Processing dependency, name: 'OLEAUT32.dll', resolved path: 'C:\\Windows\\system32\\OLEAUT32.dll'
+42973 DEBUG: Skipping dependency 'C:\\Windows\\system32\\OLEAUT32.dll' due to global exclusion rules.
+42973 DEBUG: Processing dependency, name: 'api-ms-win-crt-math-l1-1-0.dll', resolved path: None
+42973 DEBUG: Processing dependency, name: 'USER32.dll', resolved path: 'C:\\Windows\\system32\\USER32.dll'
+42973 DEBUG: Skipping dependency 'C:\\Windows\\system32\\USER32.dll' due to global exclusion rules.
+42973 DEBUG: Processing dependency, name: 'api-ms-win-crt-string-l1-1-0.dll', resolved path: None
+42973 DEBUG: Processing dependency, name: 'VCRUNTIME140_1.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140_1.dll'
+42974 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140_1.dll' due to prior processing.
+42974 DEBUG: Processing dependency, name: 'ole32.dll', resolved path: 'C:\\Windows\\system32\\ole32.dll'
+42974 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ole32.dll' due to global exclusion rules.
+42974 DEBUG: Processing dependency, name: 'api-ms-win-crt-runtime-l1-1-0.dll', resolved path: None
+42974 DEBUG: Processing dependency, name: 'VCRUNTIME140.dll', resolved path: 'C:\\Python\\Python312\\VCRUNTIME140.dll'
+42974 DEBUG: Skipping dependency 'C:\\Python\\Python312\\VCRUNTIME140.dll' due to prior processing.
+42974 DEBUG: Processing dependency, name: 'ADVAPI32.dll', resolved path: 'C:\\Windows\\system32\\ADVAPI32.dll'
+42974 DEBUG: Skipping dependency 'C:\\Windows\\system32\\ADVAPI32.dll' due to global exclusion rules.
+42974 DEBUG: Processing dependency, name: 'api-ms-win-crt-stdio-l1-1-0.dll', resolved path: None
+42974 DEBUG: Processing dependency, name: 'api-ms-win-crt-heap-l1-1-0.dll', resolved path: None
+42974 DEBUG: Processing dependency, name: 'api-ms-win-crt-time-l1-1-0.dll', resolved path: None
+42974 DEBUG: Processing dependency, name: 'python312.dll', resolved path: 'C:\\Python\\Python312\\python312.dll'
+42974 DEBUG: Skipping dependency 'C:\\Python\\Python312\\python312.dll' due to prior processing.
+42974 DEBUG: Analyzing binary 'C:\\Python\\Python312\\DLLs\\zlib1.dll'
+42980 DEBUG: Processing dependency, name: 'msvcrt.dll', resolved path: 'C:\\Windows\\system32\\msvcrt.dll'
+42980 DEBUG: Skipping dependency 'C:\\Windows\\system32\\msvcrt.dll' due to global exclusion rules.
+42980 DEBUG: Processing dependency, name: 'KERNEL32.dll', resolved path: 'C:\\Windows\\system32\\KERNEL32.dll'
+42980 DEBUG: Skipping dependency 'C:\\Windows\\system32\\KERNEL32.dll' due to global exclusion rules.
+43086 INFO: Warnings written to D:\Repos\ipat_data_watchdog\build\tischrem_blb\warn-tischrem_blb.txt
+43188 INFO: Graph cross-reference written to D:\Repos\ipat_data_watchdog\build\tischrem_blb\xref-tischrem_blb.html
+43408 INFO: Graph drawing written to D:\Repos\ipat_data_watchdog\build\tischrem_blb\graph-tischrem_blb.dot
+43484 INFO: checking PYZ
+43485 INFO: Building PYZ because PYZ-00.toc is non existent
+43485 INFO: Building PYZ (ZlibArchive) D:\Repos\ipat_data_watchdog\build\tischrem_blb\PYZ-00.pyz
+44501 INFO: Building PYZ (ZlibArchive) D:\Repos\ipat_data_watchdog\build\tischrem_blb\PYZ-00.pyz completed successfully.
+44548 INFO: checking PKG
+44548 INFO: Building PKG because PKG-00.toc is non existent
+44548 INFO: Building PKG (CArchive) wd-tischrem_blb.pkg
+44961 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\loader\pyiboot01_bootstrap.py
+44961 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth_inspect.py
+44973 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth__tkinter.py
+44973 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth_pkgutil.py
+44973 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth_setuptools.py
+44973 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\hooks\rthooks\pyi_rth_multiprocessing.py
+44973 DEBUG: Compiling python script/module file D:\Repos\ipat_data_watchdog\src\ipat_watchdog\__main__.py
+50693 INFO: Building PKG (CArchive) wd-tischrem_blb.pkg completed successfully.
+50707 INFO: Bootloader D:\Repos\ipat_data_watchdog\.test_buildvenv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+50707 INFO: checking EXE
+50707 INFO: Building EXE because EXE-00.toc is non existent
+50707 INFO: Building EXE from EXE-00.toc
+50707 INFO: Copying bootloader EXE to D:\Repos\ipat_data_watchdog\dist\wd-tischrem_blb.exe
+50774 INFO: Copying icon to EXE
+50774 DEBUG: Copying icons from ['D:\\Repos\\ipat_data_watchdog\\.test_buildvenv\\Lib\\site-packages\\PyInstaller\\bootloader\\images\\icon-windowed.ico']
+50819 DEBUG: Writing RT_GROUP_ICON 1 resource with 104 bytes
+50819 DEBUG: Writing RT_ICON 1 resource with 3752 bytes
+50819 DEBUG: Writing RT_ICON 2 resource with 2216 bytes
+50819 DEBUG: Writing RT_ICON 3 resource with 1384 bytes
+50819 DEBUG: Writing RT_ICON 4 resource with 38188 bytes
+50819 DEBUG: Writing RT_ICON 5 resource with 9640 bytes
+50819 DEBUG: Writing RT_ICON 6 resource with 4264 bytes
+50819 DEBUG: Writing RT_ICON 7 resource with 1128 bytes
+50839 INFO: Copying 0 resources to EXE
+50839 INFO: Embedding manifest in EXE
+50903 INFO: Appending PKG archive to EXE
+50976 INFO: Fixing EXE headers
+51277 INFO: Building EXE from EXE-00.toc completed successfully.
+51318 INFO: Build complete! The results are available in: D:\Repos\ipat_data_watchdog\dist
+
+== VALIDATION ==
+Checking build output
+Build succeeded. Executable: D:\Repos\ipat_data_watchdog\dist\wd-tischrem_blb.exe
+File size: 23.75 MB
+Created: 09/14/2025 23:25:44
+
+Elapsed time: 00:01:59
+Days              : 0
+Hours             : 0
+Minutes           : 1
+Seconds           : 59
+Milliseconds      : 621
+Ticks             : 1196219890
+TotalDays         : 0,00138451376157407
+TotalHours        : 0,0332283302777778
+TotalMinutes      : 1,99369981666667
+TotalSeconds      : 119,621989
+TotalMilliseconds : 119621,989
+
+
+Build pipeline completed successfully.
+
+Elapsed time: 00:01:59
+
+STEP 2 COMPLETED: build
+Duration: 00:01:59
+
+ + ============================================================
+STEP 3/6: SIGN
+============================================================
+
+== INITIALIZE ==
+Setting up signing environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\03-sign-20250914-232545.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-25-46
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+
+== VALIDATION ==
+Checking build artifacts
+
+== CERTIFICATE ==
+Validating signing certificate
+Certificate: C:\Users\fitz\.secure\ipat_wd.pfx
+Target binary: D:\Repos\ipat_data_watchdog\dist\wd-tischrem_blb.exe
+
+== SIGNING ==
+Digitally signing executable
+Running signtool...
+Number of warnings: 0
+Number of errors: 0
+
+== VERIFICATION ==
+Verifying digital signature
+Number of warnings: 0
+Number of errors: 0
+
+Executable successfully signed and verified.
+
+Signature Details:
+  Status: Valid
+  Subject: CN=ipat_wd
+  Thumbprint: D9612377BEF0927BC271043F66A51D132578717A
+  Valid From: 03/17/2025 16:51:03
+  Valid To: 03/17/2026 17:11:03
+  Timestamp: CN=DigiCert SHA256 RSA4096 Timestamp Responder 2025 1, O="DigiCert, Inc.", C=US
+
+Elapsed time: 00:00:03
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 3
+Milliseconds      : 92
+Ticks             : 30928568
+TotalDays         : 3,57969537037037E-05
+TotalHours        : 0,000859126888888889
+TotalMinutes      : 0,0515476133333333
+TotalSeconds      : 3,0928568
+TotalMilliseconds : 3092,8568
+
+
+Signing pipeline completed successfully.
+
+Elapsed time: 00:00:03
+
+STEP 3 COMPLETED: sign
+Duration: 00:00:03
+
+ + ============================================================
+STEP 4/6: DEPLOY
+============================================================
+
+== INITIALIZE ==
+Setting up deployment environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\04-deploy-20250914-232548.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-25-49
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+Tooling versions (for diagnostics):
+Compiler: clang 14.0.6 , emulating Visual Studio 2022 (17.2), _MSC_VER=1932, _MSC_FULL_VER=193231329
+Source commit: d2c178c49a0ae6fa9ef75ca84fb3c9d0d675ea85
+
+PATH: D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts;C:\Program Files\PowerShell\7;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Program Files\PowerShell\7\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Tools;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Python\Python312\Scripts\;C:\Python\Python312\;C:\Users\fitz\AppData\Local\Programs\Python\Launcher\;C:\Users\fitz\AppData\Local\Microsoft\WindowsApps;C:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\fitz\AppData\Local\JetBrains\DataGrip 2023.3\bin;C:\Users\fitz\AppData\Local\Programs\Git\cmd;C:\Program Files\PowerShell\7;C:\Users\fitz\nodejs;C:\Users\fitz\nodejs\node_modules\npm\bin;C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64;C:\Users\fitz\bin;;c:\Users\fitz\.vscode\extensions\ms-python.debugpy-2025.10.0-win32-x64\bundled\scripts\noConfigScripts;c:\Users\fitz\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand
+
+== VALIDATION ==
+Checking deployment prerequisites
+Deployment Configuration:
+  Target: TischREM@134.169.58.85
+  Remote Path: C:\Watchdog
+  Binary: wd-tischrem_blb.exe
+  Access Method: direct
+
+== DEPLOYMENT ==
+Deploying application using direct method
+Deploying via direct SSH to: TischREM@134.169.58.85:C:\Watchdog
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-test-134.169.58.85-20250914-232550.log TischREM@134.169.58.85 echo SSH_TEST_SUCCESS
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-cmd-134.169.58.85-20250914-232551.log TischREM@134.169.58.85 powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand aQBmACAAKAAhACgAVABlAHMAdAAtAFAAYQB0AGgAIAAnAEMAOgBcAFcAYQB0AGMAaABkAG8AZwAnACkAKQAgAHsAIABOAGUAdwAtAEkAdABlAG0AIAAtAEkAdABlAG0AVAB5AHAAZQAgAEQAaQByAGUAYwB0AG8AcgB5ACAALQBGAG8AcgBjAGUAIAAtAFAAYQB0AGgAIAAnAEMAOgBcAFcAYQB0AGMAaABkAG8AZwAnACAAfAAgAE8AdQB0AC0ATgB1AGwAbAAgAH0A
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-cmd-134.169.58.85-20250914-232554.log TischREM@134.169.58.85 powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand JABwACAAIAAgACAAPQAgACcAQwA6AFwAVwBhAHQAYwBoAGQAbwBnACcADQAKACQAZQB4AGUAIAAgAD0AIAAnAHcAZAAtAHQAaQBzAGMAaAByAGUAbQBfAGIAbABiAC4AZQB4AGUAJwANAAoAJABwAGEAdABoACAAPQAgAEoAbwBpAG4ALQBQAGEAdABoACAAJABwACAAJABlAHgAZQANAAoADQAKAGkAZgAgACgAIQAoAFQAZQBzAHQALQBQAGEAdABoACAAJABwACkAKQAgAHsAIABOAGUAdwAtAEkAdABlAG0AIAAkAHAAIAAtAEkAdABlAG0AVAB5AHAAZQAgAEQAaQByAGUAYwB0AG8AcgB5ACAALQBGAG8AcgBjAGUAIAB8ACAATwB1AHQALQBOAHUAbABsACAAfQANAAoADQAKAEcAZQB0AC0AUwBjAGgAZQBkAHUAbABlAGQAVABhAHMAawAgAHwAIABXAGgAZQByAGUALQBPAGIAagBlAGMAdAAgAHsAIAAkAF8ALgBUAGEAcwBrAE4AYQBtAGUAIAAtAGwAaQBrAGUAIAAnAEkAUABBAFQALQBXAGEAdABjAGgAZABvAGcAKgAnACAAfQAgAHwADQAKACAAIAAgACAARgBvAHIARQBhAGMAaAAtAE8AYgBqAGUAYwB0ACAAewANAAoAIAAgACAAIAAgACAAIAAgAFMAdABvAHAALQBTAGMAaABlAGQAdQBsAGUAZABUAGEAcwBrACAAIAAgACAAIAAgACAALQBUAGEAcwBrAE4AYQBtAGUAIAAkAF8ALgBUAGEAcwBrAE4AYQBtAGUAIAAtAEUAQQAgAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUADQAKACAAIAAgACAAIAAgACAAIABVAG4AcgBlAGcAaQBzAHQAZQByAC0AUwBjAGgAZQBkAHUAbABlAGQAVABhAHMAawAgAC0AVABhAHMAawBOAGEAbQBlACAAJABfAC4AVABhAHMAawBOAGEAbQBlACAALQBDAG8AbgBmAGkAcgBtADoAJABmAGEAbABzAGUADQAKACAAIAAgACAAfQANAAoAUwB0AGEAcgB0AC0AUwBsAGUAZQBwACAAMgANAAoADQAKAEcAZQB0AC0AUAByAG8AYwBlAHMAcwAgAC0ARQBBACAAUwBpAGwAZQBuAHQAbAB5AEMAbwBuAHQAaQBuAHUAZQAgAHwADQAKACAAIAAgACAAVwBoAGUAcgBlAC0ATwBiAGoAZQBjAHQAIAB7ACAAJABfAC4AUABhAHQAaAAgAC0AZQBxACAAJABwAGEAdABoACAAfQAgAHwADQAKACAAIAAgACAAUwB0AG8AcAAtAFAAcgBvAGMAZQBzAHMAIAAtAEYAbwByAGMAZQANAAoADQAKAGYAbwByAGUAYQBjAGgAIAAoACQAZgAgAGkAbgAgAEAAKAAkAGUAeABlACwAJwB2AGUAcgBzAGkAbwBuAC4AdAB4AHQAJwApACkAIAB7AA0ACgAgACAAIAAgACQAcwByAGMAIAA9ACAASgBvAGkAbgAtAFAAYQB0AGgAIAAkAHAAIAAkAGYADQAKACAAIAAgACAAaQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgACQAcwByAGMAKQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAkAGIAYQBrACAAPQAgACQAcwByAGMAIAAtAHIAZQBwAGwAYQBjAGUAIAAnAFwALgAoAFwAdwArACkAJAAnACwAJwBfAGIAYQBjAGsAdQBwAC4AJAAxACcADQAKACAAIAAgACAAIAAgACAAIAB0AHIAeQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAGkAZgAgACgAVABlAHMAdAAtAFAAYQB0AGgAIAAkAGIAYQBrACkAIAB7ACAAUgBlAG0AbwB2AGUALQBJAHQAZQBtACAAJABiAGEAawAgAC0ARgBvAHIAYwBlACAALQBFAEEAIABTAGkAbABlAG4AdABsAHkAQwBvAG4AdABpAG4AdQBlACAAfQANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAUgBlAG4AYQBtAGUALQBJAHQAZQBtACAALQBQAGEAdABoACAAJABzAHIAYwAgAC0ATgBlAHcATgBhAG0AZQAgACQAYgBhAGsAIAAtAEYAbwByAGMAZQAgAC0ARQBBACAAUwB0AG8AcAANAAoAIAAgACAAIAAgACAAIAAgAH0AIABjAGEAdABjAGgAIAB7AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB0AHIAeQAgAHsADQAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAaQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgACQAYgBhAGsAKQAgAHsAIABSAGUAbQBvAHYAZQAtAEkAdABlAG0AIAAkAGIAYQBrACAALQBGAG8AcgBjAGUAIAAtAEUAQQAgAFMAaQBsAGUAbgB0AGwAeQBDAG8AbgB0AGkAbgB1AGUAIAB9AA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgAFMAdABhAHIAdAAtAFMAbABlAGUAcAAgAC0ATQBpAGwAbABpAHMAZQBjAG8AbgBkAHMAIAAyADAAMAANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIABSAGUAbgBhAG0AZQAtAEkAdABlAG0AIAAtAFAAYQB0AGgAIAAkAHMAcgBjACAALQBOAGUAdwBOAGEAbQBlACAAJABiAGEAawAgAC0ARgBvAHIAYwBlACAALQBFAEEAIABTAHQAbwBwAA0ACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAB9ACAAYwBhAHQAYwBoACAAewANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAB0AGgAcgBvAHcAIAAiAEYAYQBpAGwAZQBkACAAdABvACAAYwByAGUAYQB0AGUAIABiAGEAYwBrAHUAcAAgAGYAbwByACAAJwAkAGYAJwA6ACAAJAAoAGQAaQByAGUAYwB0AC4ARQB4AGMAZQBwAHQAaQBvAG4ALgBNAGUAcwBzAGEAZwBlACkAIgANAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAfQANAAoAIAAgACAAIAAgACAAIAAgAH0ADQAKACAAIAAgACAAfQANAAoAfQA=
+pscp.exe -batch -scp -v -P 22 -pw ***** -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 D:\Repos\ipat_data_watchdog\dist\wd-tischrem_blb.exe TischREM@134.169.58.85:"C:\Watchdog/wd-tischrem_blb.exe"
+Copied: wd-tischrem_blb.exe
+pscp.exe -batch -scp -v -P 22 -pw ***** -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 version.txt TischREM@134.169.58.85:"C:\Watchdog/version.txt"
+Copied: version.txt
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-cmd-134.169.58.85-20250914-232614.log TischREM@134.169.58.85 powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand aQBmACAAKAAhACgAVABlAHMAdAAtAFAAYQB0AGgAIAAnAEMAOgBcAFcAYQB0AGMAaABkAG8AZwBcAHMAYwByAGkAcAB0AHMAXABpAG4AZgByAGEAXAB3AGkAbgBkAG8AdwBzAFwAdQB0AGkAbABzACcAKQApACAAewAgAE4AZQB3AC0ASQB0AGUAbQAgAC0ASQB0AGUAbQBUAHkAcABlACAARABpAHIAZQBjAHQAbwByAHkAIAAtAEYAbwByAGMAZQAgAC0AUABhAHQAaAAgACcAQwA6AFwAVwBhAHQAYwBoAGQAbwBnAFwAcwBjAHIAaQBwAHQAcwBcAGkAbgBmAHIAYQBcAHcAaQBuAGQAbwB3AHMAXAB1AHQAaQBsAHMAJwAgAHwAIABPAHUAdAAtAE4AdQBsAGwAIAB9AA==
+pscp.exe -batch -scp -v -P 22 -pw ***** -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 scripts\infra\windows\utils\register_task.ps1 TischREM@134.169.58.85:"C:\Watchdog/scripts\infra\windows\utils\register_task.ps1"
+Copied: scripts\infra\windows\utils\register_task.ps1
+
+== VERIFICATION ==
+Verifying deployment
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-cmd-134.169.58.85-20250914-232617.log TischREM@134.169.58.85 powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -EncodedCommand aQBmACAAKABUAGUAcwB0AC0AUABhAHQAaAAgACcAQwA6AFwAVwBhAHQAYwBoAGQAbwBnAFwAdwBkAC0AdABpAHMAYwBoAHIAZQBtAF8AYgBsAGIALgBlAHgAZQAnACkAIAB7ACAAZQB4AGkAdAAgADAAIAB9ACAAZQBsAHMAZQAgAHsAIABlAHgAaQB0ACAAMQAgAH0A
+Deployment verified successfully.
+
+Elapsed time: 00:00:31
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 31
+Milliseconds      : 565
+Ticks             : 315659933
+TotalDays         : 0,000365347144675926
+TotalHours        : 0,00876833147222222
+TotalMinutes      : 0,526099888333333
+TotalSeconds      : 31,5659933
+TotalMilliseconds : 31565,9933
+
+
+Deployment pipeline completed successfully.
+
+Elapsed time: 00:00:31
+
+STEP 4 COMPLETED: deploy
+Duration: 00:00:31
+
+ + ============================================================
+STEP 5/6: RUN
+============================================================
+
+== INITIALIZE ==
+Setting up run environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\05-run-20250914-232620.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-26-21
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+Tooling versions (for diagnostics):
+Compiler: clang 14.0.6 , emulating Visual Studio 2022 (17.2), _MSC_VER=1932, _MSC_FULL_VER=193231329
+Source commit: d2c178c49a0ae6fa9ef75ca84fb3c9d0d675ea85
+PATH: D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts;C:\Program Files\PowerShell\7;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Program Files\PowerShell\7\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Tools;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Python\Python312\Scripts\;C:\Python\Python312\;C:\Users\fitz\AppData\Local\Programs\Python\Launcher\;C:\Users\fitz\AppData\Local\Microsoft\WindowsApps;C:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\fitz\AppData\Local\JetBrains\DataGrip 2023.3\bin;C:\Users\fitz\AppData\Local\Programs\Git\cmd;C:\Program Files\PowerShell\7;C:\Users\fitz\nodejs;C:\Users\fitz\nodejs\node_modules\npm\bin;C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64;C:\Users\fitz\bin;;c:\Users\fitz\.vscode\extensions\ms-python.debugpy-2025.10.0-win32-x64\bundled\scripts\noConfigScripts;c:\Users\fitz\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand
+Run Configuration:
+  Target: TischREM@134.169.58.85
+  Executable: C:\Watchdog\wd-tischrem_blb.exe
+  Access Method: direct
+
+== SERVICE SETUP ==
+Configuring Windows service/task
+Configured to run task as user: TischREM
+Running via direct SSH...
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-test-134.169.58.85-20250914-232621.log TischREM@134.169.58.85 echo SSH_TEST_SUCCESS
+plink.exe -batch -ssh -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-cmd-134.169.58.85-20250914-232623.log TischREM@134.169.58.85 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Watchdog\register_task.ps1 -TaskName "IPAT-Watchdog-tischrem_blb" -ExePath "C:\Watchdog\wd-tischrem_blb.exe"
+Try the new cross-platform PowerShell https://aka.ms/pscore6
+
+== VERIFICATION ==
+Verifying user-level task startup
+Task registered remotely under user context. If it didn't start, it will launch at that user's next logon. Use the health check script or Task Scheduler on the target to verify.
+
+Elapsed time: 00:00:08
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 8
+Milliseconds      : 818
+Ticks             : 88181973
+TotalDays         : 0,00010206246875
+TotalHours        : 0,00244949925
+TotalMinutes      : 0,146969955
+TotalSeconds      : 8,8181973
+TotalMilliseconds : 8818,1973
+
+
+Run pipeline completed successfully.
+
+Elapsed time: 00:00:09
+
+STEP 5 COMPLETED: run
+Duration: 00:00:09
+
+ + ============================================================
+STEP 6/6: HEALTH_CHECK
+============================================================
+
+== INITIALIZE ==
+Setting up health check environment
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\build\logs\06-health_check-20250914-232629.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-83-gb16780e
+  Branch: dev-file_handle
+  Commit Hash: b16780ee2bb00ff8c1b1b90f6f6f87cd5f8cc000
+  Build Time: 2025-09-14_23-26-30
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+Tooling versions (for diagnostics):
+Compiler: clang 14.0.6 , emulating Visual Studio 2022 (17.2), _MSC_VER=1932, _MSC_FULL_VER=193231329
+Source commit: d2c178c49a0ae6fa9ef75ca84fb3c9d0d675ea85
+PATH: D:\Repos\ipat_data_watchdog\.test_buildvenv\Scripts;C:\Program Files\PowerShell\7;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Program Files\PowerShell\7\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Tools;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Python\Python312\Scripts\;C:\Python\Python312\;C:\Users\fitz\AppData\Local\Programs\Python\Launcher\;C:\Users\fitz\AppData\Local\Microsoft\WindowsApps;C:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\fitz\AppData\Local\JetBrains\DataGrip 2023.3\bin;C:\Users\fitz\AppData\Local\Programs\Git\cmd;C:\Program Files\PowerShell\7;C:\Users\fitz\nodejs;C:\Users\fitz\nodejs\node_modules\npm\bin;C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64;C:\Users\fitz\bin;;c:\Users\fitz\.vscode\extensions\ms-python.debugpy-2025.10.0-win32-x64\bundled\scripts\noConfigScripts;c:\Users\fitz\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand
+Health Check Configuration:
+  Access Method: direct
+  SSH Login: TischREM@134.169.58.85:22
+  Tunnel: 18001 -> 127.0.0.1:8001
+  Timeout: 30 seconds
+
+== HEALTH CHECK ==
+Opening SSH tunnel and polling /health
+plink.exe -batch -N -L 18001:127.0.0.1:8001 -pw ***** -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -sshlog D:\Repos\ipat_data_watchdog\build\logs\plink-tunnel-134.169.58.85-20250914-232631.log TischREM@134.169.58.85
+Waiting for service at http://127.0.0.1:18001/health ...
+VERBOSE: Requested HTTP/1.1 GET with 0-byte payload
+VERBOSE: Received HTTP/1.1 16-byte response of content type application/json
+VERBOSE: Content encoding: utf-8
+
+== RESULTS ==
+Health check results
+Health check PASSED after 1 attempt(s).
+Elapsed time: 00:00:01
+
+Elapsed time: 00:00:02
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 2
+Milliseconds      : 911
+Ticks             : 29110003
+TotalDays         : 3,36921331018518E-05
+TotalHours        : 0,000808611194444444
+TotalMinutes      : 0,0485166716666667
+TotalSeconds      : 2,9110003
+TotalMilliseconds : 2911,0003
+
+
+Health check pipeline completed successfully.
+
+Elapsed time: 00:00:03
+
+STEP 6 COMPLETED: health_check
+Duration: 00:00:03
+
+Elapsed time: 00:03:59
+
+ + ============================================================
+PIPELINE COMPLETED SUCCESSFULLY
+============================================================
+Access Configuration: tischrem_blb
+Completed Steps: test, build, sign, deploy, run, health_check
+Total Duration: 00:03:59
+
+Pipeline Summary:
+  [PASS] test
+  [PASS] build
+  [PASS] sign
+  [PASS] deploy
+  [PASS] run
+  [PASS] health_check
+
+Next steps:
+  1. Verify application is running correctly
+  2. Monitor application logs
+  3. Test critical functionality
+  4. Run health checks periodically
+]633;D;0]633;A]633;P;Cwd=D:\x5cRepos\x5cipat_data_watchdogPS D:\Repos\ipat_data_watchdog> ]633;B
+(.test_buildvenv) pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File "d:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\02-build.ps1" -PCName tischrem_blb -Diagnostics
+Days              : 0
+Hours             : 0
+Minutes           : 1
+Seconds           : 51
+Milliseconds      : 121
+Ticks             : 1111212593
+TotalDays         : 0,00128612568634259
+TotalHours        : 0,0308670164722222
+TotalMinutes      : 1,85202098833333
+TotalSeconds      : 111,1212593
+TotalMilliseconds : 111121,2593
+
+
+Build pipeline completed successfully.
+]633;D;0]633;A]633;P;Cwd=D:\x5cRepos\x5cipat_data_watchdogPS D:\Repos\ipat_data_watchdog> ]633;B
+(.test_buildvenv) pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File "d:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\02-build.ps1" -PCName tischrem_blb -Diagnostics
+
+]633;D;0]633;A]633;P;Cwd=D:\x5cRepos\x5cipat_data_watchdogPS D:\Repos\ipat_data_watchdog> ]633;B

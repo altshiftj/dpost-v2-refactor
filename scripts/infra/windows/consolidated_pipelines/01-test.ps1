@@ -8,6 +8,8 @@ Purpose:
 param(
     [Parameter(Mandatory = $false)]
     [string] $AccessConfig = "admin",
+    [Parameter(Mandatory = $false)]
+    [string] $PCName,
     [switch] $Diagnostics
 )
 
@@ -26,12 +28,28 @@ try {
     
     Write-PipelineStep "TEST SETUP" "Creating virtual environment and installing dependencies"
     
+    # Resolve PC/Job name for tests
+    if (-not $PCName -or [string]::IsNullOrWhiteSpace($PCName)) {
+        if ($env:PC_NAME) { $PCName = $env:PC_NAME }
+        elseif ($env:CI_JOB_NAME) { $PCName = $env:CI_JOB_NAME }
+        else { throw "PCName not provided. Pass -PCName or set PC_NAME/CI_JOB_NAME." }
+    }
+    $env:PC_NAME = $PCName
+    $env:CI_JOB_NAME = $PCName
+
     # Create virtual environment
     $venv = New-PythonVirtualEnv -VenvName ".test_testvenv" -ProjectRoot $env:PROJECT_ROOT
     
-    # Install test dependencies
-    $extras = @("ci", $env:CI_JOB_NAME)
-    $pipTarget = Get-PipInstallTarget -Extras $extras
+    # Install test dependencies with device and PC-specific extras
+    Write-Host "Getting devices for PC: $PCName"
+    $devices = Get-DevicesForPC -PCName $PCName -ProjectRoot $env:PROJECT_ROOT
+    if ($devices -and $devices.Count -gt 0) {
+        Write-Host "Devices for $PCName`: $($devices -join ', ')"
+    } else {
+        Write-Host "No devices defined for $PCName" -ForegroundColor Yellow
+    }
+    $allExtras = @('ci') + $devices + @($PCName)
+    $pipTarget = Get-PipInstallTarget -Extras $allExtras
     Write-Host "Installing project with extras: $pipTarget"
     $pipArgs = @('-m','pip','install','-e', $pipTarget)
     if ($Diagnostics) { $pipArgs += '--verbose' }
@@ -40,6 +58,15 @@ try {
     if ($LASTEXITCODE -ne 0) {
         Write-PipelineError "TEST SETUP" "Failed to install dependencies" $LASTEXITCODE
     }
+    
+    # Generate build-time config consumed by the app during tests
+    $buildConfigPath = Join-Path $env:PROJECT_ROOT "src\ipat_watchdog\build_config.py"
+    $buildConfigContent = @(
+        "# Auto-generated for tests. Do not commit.",
+        "PC_NAME = '" + $PCName + "'"
+    ) -join [Environment]::NewLine
+    $null = New-Item -Path (Split-Path $buildConfigPath) -ItemType Directory -Force -ErrorAction SilentlyContinue
+    Set-Content -Path $buildConfigPath -Value $buildConfigContent -Encoding UTF8
     
     Write-PipelineStep "PYTEST" "Running test suite"
     
@@ -60,6 +87,12 @@ try {
     Write-DiagnosticSnapshot -Title "Test Failure Snapshot"
     Write-PipelineError "TEST" "Test execution failed: $($_.Exception.Message)" 1
 } finally {
+    # Clean up generated build config to avoid accidental commits
+    try {
+        if ($buildConfigPath -and (Test-Path -LiteralPath $buildConfigPath)) {
+            Remove-Item -LiteralPath $buildConfigPath -Force -ErrorAction SilentlyContinue
+        }
+    } catch {}
     Stop-PipelineTimer $timer
     Disable-PipelineDiagnostics
 }
