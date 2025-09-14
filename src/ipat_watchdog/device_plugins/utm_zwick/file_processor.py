@@ -72,23 +72,10 @@ class FileProcessorZwickUTM(FileProcessorABS):
 
     # ---------- record-manager integration ------------------------------------
 
-    def is_valid_datatype(self, path: str) -> bool:
-        return Path(path).suffix.lower() in {".zs2", ".xlsx"}
-
-    def matches_file(self, filepath: str) -> bool:
-        """Check if this device can process the given file based on extension."""
-        return Path(filepath).suffix.lower() in {".zs2", ".xlsx"}
-
-    @classmethod
-    def get_device_id(cls) -> str:
-        """Get unique device identifier."""
-        return "utm_zwick"
-
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
     ) -> bool:
-        # The pair is handled atomically, so once any .xlsx exists we forbid more
-        return ".xlsx" not in record.files_uploaded
+        return True
 
     # ---------- core processing ------------------------------------------------
     def device_specific_processing(

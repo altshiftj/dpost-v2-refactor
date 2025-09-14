@@ -9,9 +9,7 @@ class DummyProcessor(FileProcessorABS):
         # Pretend to sanitize the path
         return src_path
 
-    def is_valid_datatype(self, path: str) -> bool:
-        # Use configurable behavior for tests
-        return self.valid_datatype
+    # is_valid_datatype removed; use matches_file instead
 
     def is_appendable(self, record, filename_prefix: str, extension: str) -> bool:
         # Use configurable behavior for tests

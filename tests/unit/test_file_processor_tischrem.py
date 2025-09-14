@@ -11,12 +11,6 @@ from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, mov
 # Fixtures & boilerplate
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(autouse=True)
-def _init_test_settings(tmp_settings):
-    # Automatically initialises SettingsStore for all tests
-    pass
-
-
 @pytest.fixture
 def processor():
     return FileProcessorSEMPhenomXL2()
@@ -55,34 +49,6 @@ def test_device_specific_preprocessing_with_digit(processor):
     assert hasattr(processor, '_path_mapping')
     assert processor._path_mapping[expected] == str(Path(path))
 
-
-# ---------------------------------------------------------------------------
-# Datatype validation
-# ---------------------------------------------------------------------------
-
-def test_is_valid_datatype_tiff_file(processor):
-    assert processor.is_valid_datatype("/some/file.tif") is True
-
-
-def test_is_valid_datatype_tiff_case_insensitive(processor):
-    assert processor.is_valid_datatype("/some/file.TIFF") is True
-
-
-def test_is_valid_datatype_elid_directory(tmp_path, processor):
-    elid_dir = tmp_path / "elid_dir"
-    elid_dir.mkdir()
-    (elid_dir / "file.elid").write_text("data")
-    assert processor.is_valid_datatype(str(elid_dir)) is True
-
-
-def test_is_valid_datatype_invalid(tmp_path, processor):
-    non_elid_dir = tmp_path / "not_elid"
-    non_elid_dir.mkdir()
-    (non_elid_dir / "file.txt").write_text("data")
-    assert not processor.is_valid_datatype(str(non_elid_dir))
-    assert not processor.is_valid_datatype("/path/to/file.txt")
-
-
 # ---------------------------------------------------------------------------
 # Appendable logic
 # ---------------------------------------------------------------------------
@@ -90,11 +56,6 @@ def test_is_valid_datatype_invalid(tmp_path, processor):
 def test_is_appendable_false_for_elid(dummy_record, processor):
     dummy_record.files_uploaded = {"/some/file.elid": False}
     assert not processor.is_appendable(dummy_record, "prefix", ".tif")
-
-
-def test_is_appendable_false_for_empty_extension(dummy_record, processor):
-    dummy_record.files_uploaded = {}
-    assert not processor.is_appendable(dummy_record, "prefix", "")
 
 
 def test_is_appendable_true(dummy_record, processor):

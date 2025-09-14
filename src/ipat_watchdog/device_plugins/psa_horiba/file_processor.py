@@ -25,8 +25,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
 
     # ---------- record-manager integration ------------------------------------
 
-    def is_valid_datatype(self, path: str) -> bool:
-        return True
+    # is_valid_datatype removed; use matches_file instead
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str

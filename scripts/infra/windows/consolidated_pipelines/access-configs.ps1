@@ -72,6 +72,7 @@ function Get-PCConfigurations {
             TargetUser = "TischREM"
             SSHPort = "22"
             PCName = "tischrem_blb"
+            Devices = @("sem_phenomxl2")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -89,6 +90,7 @@ function Get-PCConfigurations {
             TargetUser = "horiba"
             SSHPort = "22"
             PCName = "horiba_blb"
+            Devices = @("psa_horiba", "dsv_horiba")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -108,6 +110,7 @@ function Get-PCConfigurations {
             TargetUser = "messrechner"
             SSHPort = "22"
             PCName = "utm_zwick"
+            Devices = @("utm_zwick")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -122,6 +125,7 @@ function Get-PCConfigurations {
             TargetUser = $env:USERNAME
             SSHPort = "22"
             PCName = "tischrem_blb"
+            Devices = @("test_device")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -129,12 +133,13 @@ function Get-PCConfigurations {
         }
         
         # New PC configurations - add your PCs here
-        "tischrem-pc" = @{
+        "tischrem_blb" = @{
             Method = "direct"
             TargetIP = "134.169.58.85"
             TargetUser = "TischREM"
             SSHPort = "22"
             PCName = "tischrem_blb"
+            Devices = @("sem_phenomxl2")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -150,6 +155,7 @@ function Get-PCConfigurations {
             TargetIP = "192.168.1.99"
             TargetUser = "horiba"
             PCName = "horiba_blb"
+            Devices = @("psa_horiba", "dsv_horiba")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -168,6 +174,7 @@ function Get-PCConfigurations {
             TargetIP = "134.169.58.131"
             TargetUser = "messrechner"
             PCName = "utm_zwick"
+            Devices = @("utm_zwick")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -180,6 +187,7 @@ function Get-PCConfigurations {
             TargetIP = "192.168.1.100"
             TargetUser = "LabUser"
             PCName = "lab_workstation_blb"
+            Devices = @("test_device")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
@@ -194,6 +202,33 @@ function Get-PCConfigurations {
 function Get-AvailablePCs {
     $pcConfigs = Get-PCConfigurations
     return $pcConfigs.Keys | Sort-Object
+}
+
+function Get-PCDevices {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $PCName
+    )
+    $pcConfigs = Get-PCConfigurations
+    if (-not $pcConfigs.ContainsKey($PCName)) {
+        $available = ($pcConfigs.Keys | Sort-Object) -join "', '"
+        throw "PC '$PCName' not found. Available PCs: '$available'"
+    }
+    $devices = @()
+    if ($pcConfigs[$PCName].Devices) {
+        $devices = @($pcConfigs[$PCName].Devices)
+    }
+    return $devices
+}
+
+# Backward-compatible wrapper used by other scripts
+function Get-DevicesForPC {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $PCName,
+        [string] $ProjectRoot = $null
+    )
+    return Get-PCDevices -PCName $PCName
 }
 function Get-AccessConfig {
     param(
@@ -221,11 +256,11 @@ function Get-AccessConfig {
                 $config = New-DirectSSHConfig -TargetIP $pcConfig.TargetIP -TargetUser $pcConfig.TargetUser
                 $config.SSHPort = if ($pcConfig.SSHPort) { $pcConfig.SSHPort } else { "22" }
                 $config.SecurePaths = $pcConfig.SecurePaths
-                $config.CustomProperties = @{
-                    PCName = $pcConfig.PCName
-                    SSHHostKey = $pcConfig.SSHHostKey
-                    TunnelPorts = $pcConfig.TunnelPorts
-                }
+                # Build CustomProperties carefully to avoid missing property errors
+                $custom = @{ PCName = $pcConfig.PCName }
+                if ($pcConfig.ContainsKey('SSHHostKey') -and $pcConfig.SSHHostKey) { $custom.SSHHostKey = $pcConfig.SSHHostKey }
+                if ($pcConfig.ContainsKey('TunnelPorts') -and $pcConfig.TunnelPorts) { $custom.TunnelPorts = $pcConfig.TunnelPorts }
+                $config.CustomProperties = $custom
                 return $config
             }
             
@@ -338,15 +373,24 @@ function Initialize-PipelineEnvironment {
     if ($accessConfig.CustomProperties.SSHHostKey) {
         $env:SSH_HOSTKEY = $accessConfig.CustomProperties.SSHHostKey
     }
-    if ($accessConfig.CustomProperties.TunnelPorts) {
+    if ($accessConfig.CustomProperties -and ($accessConfig.CustomProperties.ContainsKey('TunnelPorts')) -and $accessConfig.CustomProperties.TunnelPorts) {
         $env:TUN_PORT_0 = $accessConfig.CustomProperties.TunnelPorts[0]
         $env:TUN_PORT_1 = $accessConfig.CustomProperties.TunnelPorts[1]
     }
     
+    # Export device list for this PC (comma-separated)
+    try {
+        $pcDevices = Get-PCDevices -PCName $env:CI_JOB_NAME
+        $env:PC_DEVICES = ($pcDevices -join ',')
+    } catch {
+        $env:PC_DEVICES = ""
+    }
+
     Write-Host "Environment initialized for: $AccessConfigName"
     Write-Host "CI_JOB_NAME: $env:CI_JOB_NAME"
     Write-Host "TARGET: $env:TARGET_USER@$env:TARGET_IP"
     Write-Host "ACCESS_METHOD: $($accessConfig.Method)"
+    if ($env:PC_DEVICES) { Write-Host "DEVICES: $env:PC_DEVICES" }
     
     return $accessConfig
 }

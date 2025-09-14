@@ -63,7 +63,8 @@ class DeviceWatchdogApp:
     ):
         self.start_time = datetime.now()
         logger.info(f"WatchdogApp started at {self.start_time.isoformat()}")
-
+        
+        # Deprecated local counter; rely on Prometheus metric FILES_PROCESSED for truth
         self.files_processed = 0
         self.settings_manager = settings_manager
         self.ui = ui
@@ -113,20 +114,20 @@ class DeviceWatchdogApp:
                 with FILE_PROCESS_TIME.time():
                     self.file_processing.process_item(src_path)
             
-                self.files_processed += 1
-                FILES_PROCESSED.inc()
+                # Do not increment files_processed metric here.
+                # We only count a file as processed when it is successfully synced to the DB
+                # (increment happens in sync manager after upload).
             
         except queue.Empty:
             pass
         except Exception as e:
             logger.exception(f"Error processing file: {e}")
-            FILES_FAILED.inc()
+            # Lower layers handle failure metrics; avoid double counting here.
 
-        # Handle any rejected files from processing
+        # Handle any rejected files from processing (already counted in tracker callback)
         rejected = self.file_processing.get_and_clear_rejected()
         for path_str, reason in rejected:
             path_name = Path(path_str).name
-            FILES_FAILED.inc()
             self.ui.show_error(
                 "Unsupported Input",
                 f"The file or folder '{path_name}' was rejected.\n\n{reason}"
@@ -174,14 +175,19 @@ class DeviceWatchdogApp:
             self.observer.stop()
             self.observer.join()
 
-        # Stop any stability trackers in FileProcessManager
-        self.file_processing.shutdown()
-
         self.ui.destroy()
+
+        # Read the metric value for logging if available; fall back to local counter
+        try:
+            from prometheus_client import REGISTRY
+            metric = next(m for m in REGISTRY.collect() if m.name == FILES_PROCESSED._name)
+            total_processed = sum(s.counter.value for s in metric.samples if s.name == FILES_PROCESSED._name)
+        except Exception:
+            total_processed = self.files_processed
 
         logger.info(
             f"WatchdogApp shutdown at {end_time.isoformat()} "
-            f"(uptime: {duration}, files processed: {self.files_processed})"
+            f"(uptime: {duration}, files processed: {int(total_processed)})"
         )
 
     def run(self):

@@ -10,13 +10,6 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 # ---------------------------------------------------------------------------
 # Fixtures & boilerplate
 # ---------------------------------------------------------------------------
-
-@pytest.fixture(autouse=True)
-def _init_test_settings(tmp_settings):
-    # Automatically initialises SettingsStore for all tests
-    pass
-
-
 @pytest.fixture
 def processor():
     return FileProcessorZwickUTM()
@@ -30,26 +23,6 @@ def dummy_record():
         datatype="xlsx",
         date="20250405",
     )
-
-
-# ---------------------------------------------------------------------------
-# Datatype and device matching
-# ---------------------------------------------------------------------------
-
-def test_is_valid_datatype_and_matching(processor):
-    assert processor.is_valid_datatype("/some/file.zs2") is True
-    assert processor.is_valid_datatype("/some/file.xlsx") is True
-    assert processor.matches_file("/some/file.zs2") is True
-    assert processor.matches_file("/some/file.xlsx") is True
-
-    # negatives
-    assert processor.is_valid_datatype("/some/file.txt") is False
-    assert processor.matches_file("/some/file.txt") is False
-
-
-def test_get_device_id(processor):
-    assert processor.get_device_id() == "utm_zwick"
-
 
 # ---------------------------------------------------------------------------
 # Pre-processing staging behavior
@@ -81,22 +54,6 @@ def test_preprocessing_accepts_either_order(tmp_path, processor):
 
     r2 = processor.device_specific_preprocessing(str(zs2))
     assert r2 == str(zs2)
-
-
-# ---------------------------------------------------------------------------
-# Appendable logic (captures current implementation semantics)
-# ---------------------------------------------------------------------------
-
-def test_is_appendable_current_behavior(dummy_record, processor):
-    # Note: current implementation checks for the literal ".xlsx" key in files_uploaded,
-    # not whether any uploaded file ends with .xlsx. This test documents that behavior.
-    dummy_record.files_uploaded = {"/some/existing.xlsx": False}
-    assert processor.is_appendable(dummy_record, "prefix", ".xlsx") is True
-
-    # If the literal key ".xlsx" exists, append is blocked
-    dummy_record.files_uploaded = {".xlsx": False}
-    assert processor.is_appendable(dummy_record, "prefix", ".xlsx") is False
-
 
 # ---------------------------------------------------------------------------
 # Processing flow

@@ -7,7 +7,8 @@ Purpose:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string] $AccessConfig = "admin"
+    [string] $AccessConfig = "admin",
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -16,6 +17,8 @@ param(
 
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up build environment"
+
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "02-build"
 
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
@@ -35,6 +38,7 @@ try {
     
     # Create/activate virtual environment
     $venv = New-PythonVirtualEnv -VenvName ".test_buildvenv" -ProjectRoot $env:PROJECT_ROOT
+    Write-DiagnosticSnapshot -Title "After venv creation"
     
     Write-PipelineStep "DEPENDENCIES" "Installing build dependencies"
     
@@ -51,7 +55,9 @@ try {
     
     $pipTarget = Get-PipInstallTarget -Extras $allExtras
     Write-Host "Installing project with extras: $pipTarget"
-    & $venv.Python -m pip install -e $pipTarget
+    $pipArgs = @('-m','pip','install','-e', $pipTarget)
+    if ($Diagnostics) { $pipArgs += '--verbose' }
+    & $venv.Python @pipArgs
     
     if ($LASTEXITCODE -ne 0) {
         Write-PipelineError "DEPENDENCIES" "Failed to install build dependencies" $LASTEXITCODE
@@ -73,7 +79,7 @@ try {
     Write-PipelineStep "PYINSTALLER" "Building executable"
     
     # Build executable using PyInstaller
-    $specFile = "build/specs/pc_$CI_JOB_NAME.spec"
+    $specFile = "build/specs/$CI_JOB_NAME.spec"
     Write-Host "Using spec file: $specFile"
     
     if (-not (Test-Path $specFile)) {
@@ -81,10 +87,19 @@ try {
     }
     
     $env:PYTHONPATH = "$env:PROJECT_ROOT\src"
-    pyinstaller $specFile --clean --noconfirm
+    $pyArgs = @($specFile, '--clean', '--noconfirm')
+    if ($Diagnostics) { $pyArgs += @('--log-level','DEBUG') }
+    # Invoke PyInstaller via the venv's python to avoid PATH/version mismatches
+    $pyLogDir = Join-Path $env:PROJECT_ROOT 'build\logs'
+    if (-not (Test-Path -LiteralPath $pyLogDir)) { New-Item -ItemType Directory -Path $pyLogDir -Force | Out-Null }
+    $pyLog = Join-Path $pyLogDir ("pyinstaller-{0}-{1:yyyyMMdd-HHmmss}.log" -f $CI_JOB_NAME,(Get-Date))
+    Write-Host ("PyInstaller command: {0} -m PyInstaller {1}" -f $venv.Python, ($pyArgs -join ' '))
+    & $venv.Python -m PyInstaller @pyArgs 2>&1 | Tee-Object -FilePath $pyLog
     
     if ($LASTEXITCODE -ne 0) {
-        Write-PipelineError "PYINSTALLER" "PyInstaller failed with exit code $LASTEXITCODE" $LASTEXITCODE
+    Write-Host ("Last 200 lines of {0}:" -f $pyLog) -ForegroundColor Yellow
+        Get-Content -Path $pyLog -Tail 200 | Write-Host
+        Write-PipelineError "PYINSTALLER" "PyInstaller failed with exit code $LASTEXITCODE (see $pyLog)" $LASTEXITCODE
     }
     
     Write-PipelineStep "VALIDATION" "Checking build output"
@@ -99,9 +114,14 @@ try {
     Write-Host "Created: $($fileInfo.CreationTime)"
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Build Failure Snapshot"
     Write-PipelineError "BUILD" "Build failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nBuild pipeline completed successfully." -ForegroundColor Green

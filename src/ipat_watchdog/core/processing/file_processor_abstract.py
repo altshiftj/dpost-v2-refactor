@@ -16,11 +16,6 @@ class FileProcessorABS(ABC):
         pass
 
     @abstractmethod
-    def is_valid_datatype(self, path: str) -> bool:
-        """
-        Checks if the file/folder at the given path is valid for this processor.
-        """
-        pass
 
     @abstractmethod
     def is_appendable(
@@ -52,11 +47,6 @@ class FileProcessorBase(FileProcessorABS):
         """
         return src_path
 
-    def is_valid_datatype(self, path: str) -> tuple[bool, str | None]:
-        """
-        Default implementation always returns None (no validation).
-        """
-        return True
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str

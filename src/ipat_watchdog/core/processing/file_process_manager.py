@@ -38,7 +38,6 @@ from ipat_watchdog.core.processing.record_utils import (
 from ipat_watchdog.core.processing.notifications import notify_success
 from ipat_watchdog.core.processing.error_handling import (
     move_to_exception_and_inform as _move_to_exception_and_inform,
-    handle_invalid_datatype as _handle_invalid_datatype,
 )
 from ipat_watchdog.core.processing.device_context import DeviceContext
 from ipat_watchdog.core.processing.record_flow import (
@@ -116,7 +115,7 @@ class FileProcessManager:
         def on_reject(p: str, reason: str):
             # Collect for DeviceWatchdogApp to surface to user
             self._rejected_queue.put((p, reason))
-            self._handle_rejected_file(p, reason)
+            FILES_FAILED.inc()
 
         tracker = FileStabilityTracker(
             file_path=path,
@@ -136,13 +135,6 @@ class FileProcessManager:
                     f"Selected processor for {src_path}: {type(file_processor).__name__}"
                 )
 
-                filename_prefix, extension = parse_filename(src_path)
-
-                if not file_processor.is_valid_datatype(src_path):
-                    self._handle_invalid_datatype(src_path, filename_prefix, extension)
-                    FILES_FAILED.inc()
-                    return
-
                 preprocessed_src_path = file_processor.device_specific_preprocessing(
                     src_path
                 )
@@ -158,22 +150,10 @@ class FileProcessManager:
 
         except Exception as e:
             logger.exception(f"Error processing stable file {src_path}: {e}")
-            filename_prefix, extension = parse_filename(src_path)
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity=ErrorMessages.PROCESSING_ERROR,
-                message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
-                    filename=Path(src_path).name, error=str(e)
-                ),
-            )
+            move_to_exception_folder(src_path)
+            FILES_FAILED.inc()
+            raise RuntimeError(f"File processing failed for {src_path}: {e}")
 
-    def _handle_rejected_file(self, src_path: str, reason: str):
-        """Handle a file that was rejected during stability tracking."""
-        # Already removed by service callback; enqueue for external retrieval as well
-        # (Service also enqueues; this keeps compatibility if needed.)
-        pass
 
     def _reject_immediately(self, path: Path, reason: str):
         """Reject a file/folder without tracking and move it to exceptions."""
@@ -182,9 +162,9 @@ class FileProcessManager:
             move_to_exception_folder(path)
         finally:
             self._rejected_queue.put((str(path), reason))
-            if hasattr(self, 'ui') and self.ui:
-                error_title = f"Rejected: {reason}" if "Invalid Filetype" in reason else "Rejected"
-                self.ui.show_error(error_title, f"{path.name} — {reason}")
+            FILES_FAILED.inc()
+            raise RuntimeError(f"Rejected file {path}: {reason}")
+
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         """Get and clear rejected files list."""
@@ -216,7 +196,9 @@ class FileProcessManager:
         device_settings = self.settings_manager.select_device_for_file(src_path)
         
         if device_settings is None:
-            raise RuntimeError(f"No device found that can process file: {src_path}")
+            move_to_exception_folder(src_path)
+            FILES_FAILED.inc()
+            raise RuntimeError(f"No Processor: Invalid Filetype: {src_path}")
         
         # Set the device context for this thread
         self.settings_manager.set_current_device(device_settings)
@@ -226,10 +208,10 @@ class FileProcessManager:
         try:
             return self._processor_factory.get_for_device(device_id)
         except ImportError as e:
-            logger.error(f"Failed to load processor for device {device_id}: {e}")
+            move_to_exception_folder(src_path)
+            FILES_FAILED.inc()
             raise RuntimeError(f"No processor available for device: {device_id}") from e
 
-    
 
     def _move_to_exception_and_inform(
         self, src_path: str, prefix: str, extension: str, severity: str, message: str
@@ -239,9 +221,6 @@ class FileProcessManager:
             f"Moved item '{src_path}' to exception folder with severity '{severity}'."
         )
 
-    def _handle_invalid_datatype(self, src_path: str, filename_prefix: str, extension: str):
-        _handle_invalid_datatype(self.ui, src_path, filename_prefix, extension)
-        logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
 
     def _route_item(self, src_path: str, filename_prefix: str, extension: str, file_processor: FileProcessorABS):
         """
@@ -324,6 +303,8 @@ class FileProcessManager:
         try:
             processor = file_processor
             if processor is None:
+                move_to_exception_folder(src_path)
+                FILES_FAILED.inc()
                 raise RuntimeError("No file processor available")
             
             # Ensure we have a record to work with
@@ -357,15 +338,9 @@ class FileProcessManager:
             manage_session(self.session_manager)
 
         except Exception as e:
-            # Handle processing failures gracefully
-            self.ui.show_error("Error", ErrorMessages.RENAME_FAILED.format(error=str(e)))
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity="Error",
-                message="Failed to rename.",
-            )
+            move_to_exception_folder(src_path)
+            FILES_FAILED.inc()
+            raise RuntimeError(f"Failed to add item to record for {src_path}: {e}")
 
     def sync_records_to_database(self):
         """Synchronize all pending records to database."""
@@ -375,9 +350,3 @@ class FileProcessManager:
             
         logger.debug("Syncing records to database.")
         self.records.sync_records_to_database()
-
-    def shutdown(self):
-        """Shutdown hook (no-op for synchronous tracking)."""
-        return
-
-

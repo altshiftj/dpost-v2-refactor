@@ -7,7 +7,8 @@ Purpose:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string] $AccessConfig = "admin"
+    [string] $AccessConfig = "admin",
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -18,25 +19,36 @@ param(
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up deployment environment"
 
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "04-deploy"
+
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
     Set-Location -Path $env:PROJECT_ROOT
+    if ($global:__PipelineDiagnosticsEnabled) {
+        Write-Host "Tooling versions (for diagnostics):"
+        try { & cmd /c "plink.exe -V" } catch {}
+        try { & cmd /c "pscp.exe -V" } catch {}
+        Write-Host "PATH: $env:PATH"
+    }
     
     Write-PipelineStep "VALIDATION" "Checking deployment prerequisites"
     
     # Verify build artifacts
     $artifacts = Test-BuildArtifacts -ProjectRoot $env:PROJECT_ROOT -JobName $env:CI_JOB_NAME
     
+    # Determine job name (prefer PC_NAME for target naming)
+    $jobName = if ($env:PC_NAME) { $env:PC_NAME } else { $env:CI_JOB_NAME }
+
     # Prepare deployment configuration
     $deployConfig = @{
-        BinaryName = $artifacts.BinaryName
-        BinaryPath = $artifacts.BinaryPath
-        JobName = $env:CI_JOB_NAME
+        BinaryName = "wd-$jobName.exe"        # target filename on remote
+        BinaryPath = $artifacts.BinaryPath     # source path of built artifact
+        JobName = $jobName                     # used for process/task names
     }
     
     $remotePath = $env:REMOTE_PATH
     $filesToDeploy = @(
-        $artifacts.BinaryName
+        $deployConfig.BinaryName
         'version.txt'
         'scripts\infra\windows\utils\register_task.ps1'
     )
@@ -53,7 +65,7 @@ try {
     Write-Host "Deployment Configuration:"
     Write-Host "  Target: $env:TARGET_USER@$env:TARGET_IP"
     Write-Host "  Remote Path: $remotePath"
-    Write-Host "  Binary: $($artifacts.BinaryName)"
+    Write-Host "  Binary: $($deployConfig.BinaryName)"
     Write-Host "  Access Method: $($config.Method)"
     
     # Check required tools based on access method
@@ -123,7 +135,7 @@ try {
     
     switch ($config.Method) {
         "local" {
-            $remoteExePath = Join-Path $remotePath $artifacts.BinaryName
+            $remoteExePath = Join-Path $remotePath $deployConfig.BinaryName
             $verificationSuccess = Test-Path $remoteExePath
         }
         
@@ -132,10 +144,11 @@ try {
                 Host = $env:TARGET_IP
                 Port = $env:SSH_PORT
                 User = $env:TARGET_USER
+                Password = $env:TARGET_PASS
                 HostKey = $env:SSH_HOSTKEY
             }
             
-            $verifyCmd = "Test-Path '$remotePath\$($artifacts.BinaryName)'"
+            $verifyCmd = "if (Test-Path '$remotePath\$($deployConfig.BinaryName)') { exit 0 } else { exit 1 }"
             $exitCode = Invoke-SSHCommand -Config $sshConfig -Command $verifyCmd
             $verificationSuccess = $exitCode -eq 0
         }
@@ -154,9 +167,14 @@ try {
     }
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Deployment Failure Snapshot"
     Write-PipelineError "DEPLOYMENT" "Deployment failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nDeployment pipeline completed successfully." -ForegroundColor Green

@@ -7,7 +7,8 @@ Purpose:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string] $AccessConfig = "admin"
+    [string] $AccessConfig = "admin",
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -16,6 +17,8 @@ param(
 
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up signing environment"
+
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "03-sign"
 
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
@@ -102,9 +105,14 @@ try {
     }
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Signing Failure Snapshot"
     Write-PipelineError "SIGNING" "Signing failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nSigning pipeline completed successfully." -ForegroundColor Green

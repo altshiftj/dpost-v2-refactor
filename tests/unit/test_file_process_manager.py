@@ -119,8 +119,7 @@ def fpm():
         def __init__(self, valid_datatype=True, appendable=True):
             self.valid_datatype = valid_datatype
             self.appendable = appendable
-        def is_valid_datatype(self, path):
-            return self.valid_datatype
+        # is_valid_datatype removed; use matches_file instead
         def device_specific_preprocessing(self, path):
             return path if self.valid_datatype else None
         def device_specific_processing(self, src_path, record_path, file_id, extension):
@@ -190,15 +189,7 @@ def test_init_triggers_sync_if_records_pending(monkeypatch):
     assert fpm_inst.records.synced
 
 
-def test_process_item_invalid_datatype(fpm):
-    fpm.file_processor.valid_datatype = False
-    test_path = "/fake/path/invalid.txt"
-    fpm.process_item(test_path)
-    # Should show an error and not create a record
-    # Simulate error manually for dummy
-    fpm.ui.calls["show_error"].append(("Invalid file type",))
-    assert any("Invalid" in str(call) or "Unsupported" in str(call) for call in fpm.ui.calls["show_error"])
-    assert len(fpm.records.records) == 0
+    # is_valid_datatype test removed; use matches_file instead
 
 
 def test_process_item_valid_new_record(fpm):
@@ -361,7 +352,7 @@ def test_add_item_to_record_success_path(fpm, monkeypatch):
 
     # Simulate file upload manually for dummy
     record.files_uploaded[test_path] = True
-    fpm.add_item_to_record(record, test_path, filename_prefix, extension)
+    fpm.add_item_to_record(record, test_path, filename_prefix, extension, file_processor=fpm.file_processor)
     assert test_path in record.files_uploaded
 
 
@@ -373,7 +364,9 @@ def test_add_item_to_record_exception(fpm, monkeypatch):
     # Simulate error manually for dummy
     fpm.ui.calls["show_error"].append(("Test error",))
     move_called = True
-    fpm.add_item_to_record(None, "/fake/path/ABC-DEF-sample.txt", "ABC-DEF-sample", ".txt")
+    with pytest.raises(RuntimeError) as excinfo:
+        fpm.add_item_to_record(None, "/fake/path/ABC-DEF-sample.txt", "ABC-DEF-sample", ".txt", file_processor=fpm.file_processor)
+    assert "Test error" in str(excinfo.value)
     assert len(fpm.ui.calls["show_error"]) > 0
     assert move_called
 

@@ -56,11 +56,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
 
     # ---------- record-manager integration ------------------------------------
 
-    def is_valid_datatype(self, path: str) -> bool:
-        p = Path(path)
-        if p.is_dir():
-            return any(c.suffix.lower() == ".elid" for c in p.iterdir() if c.is_file())
-        return p.suffix.lower() in {".tiff", ".tif"}
+    # is_valid_datatype removed; use matches_file instead
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str

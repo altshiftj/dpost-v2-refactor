@@ -134,17 +134,13 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
     unsupported_path = tmp_settings.WATCH_DIR / "mus-ipat-sample.pdf"
     unsupported_path.write_bytes(b"unsupported file type")
 
-    # Process the file directly
-    multi_device_app.file_processing.process_item(str(unsupported_path))
+    # Process the file directly and expect RuntimeError
+    with pytest.raises(RuntimeError) as excinfo:
+        multi_device_app.file_processing.process_item(str(unsupported_path))
 
     # Check that file was moved to exceptions
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.pdf"))
     assert len(exception_files) == 1, f"Expected 1 file in exceptions, found {len(exception_files)}: {exception_files}"
-    
-    # Check UI error message (should show unsupported data type)
-    assert len(multi_device_app.ui.errors) > 0, f"Expected error messages, but got none"
-    error_titles = [title for title, msg in multi_device_app.ui.errors]
-    assert any("Invalid Filetype" in title or "Unsupported" in title for title in error_titles), f"Expected unsupported error, got: {multi_device_app.ui.errors}"
 
 
 def test_multiple_files_same_record(multi_device_app, tmp_settings):

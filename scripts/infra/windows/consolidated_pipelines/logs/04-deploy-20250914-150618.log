@@ -1,0 +1,101 @@
+**********************
+PowerShell transcript start
+Start time: 20250914150618
+Username: IMVT\fitz
+RunAs User: IMVT\fitz
+Configuration Name: 
+Machine: AP-JAMFITZ (Microsoft Windows NT 10.0.22631.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -noexit -command try { . "c:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
+Process ID: 22592
+PSVersion: 7.5.3
+PSEdition: Core
+GitCommitId: 7.5.3
+OS: Microsoft Windows 10.0.22631
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Diagnostics enabled. Transcript: D:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\logs\04-deploy-20250914-150618.log
+Project Root: D:\Repos\ipat_data_watchdog
+Git Metadata:
+  Commit Tag: v0.1.65-82-g47bddf5
+  Branch: dev-file_handle
+  Commit Hash: 47bddf56959fe0a13a9c60856f73b3a76d05ca0d
+  Build Time: 2025-09-14_15-06-20
+Environment initialized for: tischrem_blb
+CI_JOB_NAME: tischrem_blb
+TARGET: TischREM@134.169.58.85
+ACCESS_METHOD: direct
+DEVICES: sem_phenomxl2
+Tooling versions (for diagnostics):
+
+
+PATH: C:\Program Files\PowerShell\7;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Program Files\PowerShell\7\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Tools;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files\dotnet\;C:\Users\admlamping\AppData\Local\Microsoft\WindowsApps;C:\Users\admlamping\AppData\Local\Programs\Microsoft VS Code\bin;C:\Tools;C:\Python\Python312\Scripts\;C:\Python\Python312\;C:\Users\fitz\AppData\Local\Programs\Python\Launcher\;C:\Users\fitz\AppData\Local\Microsoft\WindowsApps;C:\Users\fitz\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\fitz\AppData\Local\JetBrains\DataGrip 2023.3\bin;C:\Users\fitz\AppData\Local\Programs\Git\cmd;C:\Program Files\PowerShell\7;C:\Users\fitz\nodejs;C:\Users\fitz\nodejs\node_modules\npm\bin;C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64;C:\Users\fitz\bin;;c:\Users\fitz\.vscode\extensions\ms-python.debugpy-2025.10.0-win32-x64\bundled\scripts\noConfigScripts;c:\Users\fitz\AppData\Roaming\Code\User\globalStorage\github.copilot-chat\debugCommand
+
+== VALIDATION ==
+Checking deployment prerequisites
+Deployment Configuration:
+  Target: TischREM@134.169.58.85
+  Remote Path: C:\Watchdog
+  Binary: wd-tischrem_blb.exe
+  Access Method: direct
+
+== DEPLOYMENT ==
+Deploying application using direct method
+Deploying via direct SSH to: TischREM@134.169.58.85:C:\Watchdog
+WARNING: plink.exe -batch -o ConnectTimeout=10 -v -hostkey AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4 -pw ***** TischREM@134.169.58.85 echo SSH_TEST_SUCCESS
+WARNING: plink exit code: 1
+WARNING: plink output (first 20 lines):
+plink: unknown option "-o"
+PS>TerminatingError(): "SSH connection test failed"
+Verbose error details:
+Exception: D:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\deploy-helpers.ps1:74:9
+Line |
+  74 |          throw "SSH connection test failed"
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | SSH connection test failed
+At: At D:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\deploy-helpers.ps1:74 char:9
++         throw "SSH connection test failed"
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+==== Deployment Failure Snapshot ====
+Timestamp: 2025-09-14 15:06:21
+PWD: D:\Repos\ipat_data_watchdog
+PSVersion: 7.5.3
+User: fitz
+PROJECT_ROOT: D:\Repos\ipat_data_watchdog
+CI_JOB_NAME: tischrem_blb
+PC_NAME: tischrem_blb
+PC_DEVICES: sem_phenomxl2
+Commit: v0.1.65-82-g47bddf5 (47bddf56959fe0a13a9c60856f73b3a76d05ca0d) on dev-file_handle @ 2025-09-14_15-06-20
+Last Error (raw):
+Exception: D:\Repos\ipat_data_watchdog\scripts\infra\windows\consolidated_pipelines\deploy-helpers.ps1:74:9
+Line |
+  74 |          throw "SSH connection test failed"
+     |          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | SSH connection test failed
+==========================
+
+!! DEPLOYMENT FAILED !!
+PS>TerminatingError(Write-PipelineError): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: Deployment failed: SSH connection test failed"
+>> TerminatingError(Write-PipelineError): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: Deployment failed: SSH connection test failed"
+
+Elapsed time: 00:00:02
+
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 2
+Milliseconds      : 386
+Ticks             : 23867210
+TotalDays         : 2,76240856481481E-05
+TotalHours        : 0,000662978055555556
+TotalMinutes      : 0,0397786833333333
+TotalSeconds      : 2,386721
+TotalMilliseconds : 2386,721
+
+**********************
+PowerShell transcript end
+End time: 20250914150621
+**********************

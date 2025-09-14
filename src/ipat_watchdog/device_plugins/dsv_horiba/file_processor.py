@@ -75,9 +75,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
 
     # ---------- record-manager integration ------------------------------------
 
-    def is_valid_datatype(self, path: str) -> bool:
-        # Accept raw data and txt files as valid inputs
-        return Path(path).suffix.lower() in {".wdb", ".wdk", ".wdp", ".txt"}
+    # is_valid_datatype removed; use matches_file instead
 
     def matches_file(self, filepath: str) -> bool:
         """Check if this device can process the given file based on extension."""

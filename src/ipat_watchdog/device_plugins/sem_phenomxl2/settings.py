@@ -29,11 +29,11 @@ class SEMPhenomXL2Settings(DeviceSettings):
     # 📟 Device Identity
     # ──────────────────────────────────────────────────────────────────────────────
     
-    DEVICE_USER_KADI_ID = "rem-01-usr"
+    DEVICE_USER_KADI_ID = "sem-01-usr"
     DEVICE_USER_PERSISTENT_ID = 22
-    DEVICE_RECORD_KADI_ID = "rem_01"
+    DEVICE_RECORD_KADI_ID = "sem_01"
     DEVICE_RECORD_PERSISTENT_ID = 190
-    DEVICE_ABBR = "REM"
+    DEVICE_ABBR = "SEM"
 
     # ──────────────────────────────────────────────────────────────────────────────
     # 📝 Metadata Defaults

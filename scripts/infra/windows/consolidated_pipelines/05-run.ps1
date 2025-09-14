@@ -7,7 +7,8 @@ Purpose:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string] $AccessConfig = "admin"
+    [string] $AccessConfig = "admin",
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -18,9 +19,16 @@ param(
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up run environment"
 
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "05-run"
+
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
     Set-Location -Path $env:PROJECT_ROOT
+    if ($global:__PipelineDiagnosticsEnabled) {
+        Write-Host "Tooling versions (for diagnostics):"
+        try { & cmd /c "plink.exe -V" } catch {}
+        Write-Host "PATH: $env:PATH"
+    }
     
     $remotePath = $env:REMOTE_PATH
     $binaryName = "wd-$env:CI_JOB_NAME.exe"
@@ -82,6 +90,7 @@ Write-Host 'IPAT-Watchdog service started successfully'
                 Host = $env:TARGET_IP
                 Port = $env:SSH_PORT
                 User = $env:TARGET_USER
+                Password = $env:TARGET_PASS
                 HostKey = $env:SSH_HOSTKEY
             }
             
@@ -111,6 +120,7 @@ Write-Host 'IPAT-Watchdog service started successfully'
                 User = $env:ROUTER_USER
                 KeyFile = $env:ROUTER_SSH_KEY
                 HostKey = $env:ROUTER_SSH_HOSTKEY
+                Password = $env:ROUTER_PASS
             }
             
             $targetConfig = @{
@@ -118,6 +128,7 @@ Write-Host 'IPAT-Watchdog service started successfully'
                 User = $env:TARGET_USER
                 KeyFile = $env:TARGET_SSH_KEY
                 HostKey = $env:TARGET_SSH_HOSTKEY
+                Password = $env:TARGET_PASS
                 TunnelPort = $env:TARGET_TUNNEL_PORT
             }
             
@@ -141,6 +152,7 @@ Write-Host 'IPAT-Watchdog service started successfully'
                     User = $targetConfig.User
                     KeyFile = $targetConfig.KeyFile
                     HostKey = $targetConfig.HostKey
+                    Password = $targetConfig.Password
                 }
                 
                 if (-not (Test-SSHConnection -Config $tunnelSSHConfig)) {
@@ -158,6 +170,8 @@ Write-Host 'IPAT-Watchdog service started successfully'
                 # Clean up tunnel
                 if ($tunnelProcess) {
                     Stop-SSHTunnel -TunnelProcess $tunnelProcess
+                }
+            }
         }
         
         default {
@@ -187,9 +201,14 @@ Write-Host 'IPAT-Watchdog service started successfully'
     }
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Run Failure Snapshot"
     Write-PipelineError "RUN" "Run failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nRun pipeline completed successfully." -ForegroundColor Green

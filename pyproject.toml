@@ -26,6 +26,11 @@ sem_phenomxl2 = []
 psa_horibalinks_blb = []
 utm_zwick = []
 dsv_horiba = []
+## PC-specific extras (empty) to allow selecting by PC without warnings
+tischrem_blb = []
+zwick_blb = []
+horiba_blb = []
+test_pc = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
 sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"

@@ -10,7 +10,9 @@ param(
     [string] $AccessConfig = "admin",
     
     [Parameter(Mandatory = $false)]
-    [switch] $Force
+    [switch] $Force,
+    
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -21,12 +23,15 @@ param(
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up rollback environment"
 
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "07-rollback"
+
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
     Set-Location -Path $env:PROJECT_ROOT
     
     $remotePath = $env:REMOTE_PATH
-    $binaryName = "wd-$env:CI_JOB_NAME.exe"
+    $jobName = if ($env:PC_NAME) { $env:PC_NAME } else { $env:CI_JOB_NAME }
+    $binaryName = "wd-$jobName.exe"
     $remoteExePath = "$remotePath\$binaryName"
     $backupBinaryName = $binaryName -replace '\.exe$', '_backup.exe'
     $backupVersionName = 'version_backup.txt'
@@ -44,7 +49,7 @@ try {
 `$binaryName = '$binaryName'
 `$backupBinaryName = '$backupBinaryName'
 `$backupVersionName = '$backupVersionName'
-`$taskName = 'IPAT-Watchdog'
+`$taskName = 'IPAT-Watchdog-$jobName'
 `$force = `$$Force
 
 `$currentExe = Join-Path `$remotePath `$binaryName
@@ -54,10 +59,9 @@ try {
 
 Write-Host "Starting rollback process..."
 
-# Check if backup files exist
+# Note: Do not fail early if backups are missing; continue and warn (admin behavior)
 if (-not (Test-Path `$backupExe)) {
-    Write-Error "Backup executable not found: `$backupExe"
-    exit 1
+    Write-Host "EXE backup not found: `$backupExe"
 }
 
 if (-not `$force) {
@@ -76,11 +80,7 @@ if (-not `$force) {
         Write-Host "    No current version file found"
     }
     
-    `$confirmation = Read-Host "`nProceed with rollback? (y/N)"
-    if (`$confirmation -notmatch '^[Yy]') {
-        Write-Host "Rollback cancelled by user"
-        exit 0
-    }
+    Write-Host "Proceeding with rollback (non-interactive)."
 }
 
 Write-Host "`nStopping current application..."
@@ -106,34 +106,37 @@ Start-Sleep -Seconds 3
 
 Write-Host "`nPerforming rollback..."
 
-# Backup current files (in case we need to roll forward)
+# Create pre-rollback backups of current files (safety copy)
 if (Test-Path `$currentExe) {
-    `$rollforwardExe = `$currentExe -replace '\.exe`$', '_rollforward.exe'
+    `$preRollbackExe = `$currentExe -replace '\.exe`$', '_pre_rollback.exe'
     try {
-        Copy-Item `$currentExe `$rollforwardExe -Force
-        Write-Host "Created roll-forward backup: `$rollforwardExe"
+        Copy-Item `$currentExe `$preRollbackExe -Force
+        Write-Host "Created pre-rollback backup: `$preRollbackExe"
     } catch {
-        Write-Warning "Failed to create roll-forward backup: `$(`$_.Exception.Message)"
+        Write-Warning "Failed to create pre-rollback backup: `$(`$_.Exception.Message)"
     }
 }
 
 if (Test-Path `$currentVersion) {
-    `$rollforwardVersion = Join-Path `$remotePath 'version_rollforward.txt'
+    `$preRollbackVersion = Join-Path `$remotePath 'version_pre_rollback.txt'
     try {
-        Copy-Item `$currentVersion `$rollforwardVersion -Force
-        Write-Host "Created roll-forward version backup: `$rollforwardVersion"
+        Copy-Item `$currentVersion `$preRollbackVersion -Force
+        Write-Host "Created pre-rollback version backup: `$preRollbackVersion"
     } catch {
-        Write-Warning "Failed to create roll-forward version backup: `$(`$_.Exception.Message)"
+        Write-Warning "Failed to create pre-rollback version backup: `$(`$_.Exception.Message)"
     }
 }
 
-# Restore backup files
-try {
-    Copy-Item `$backupExe `$currentExe -Force
-    Write-Host "Restored executable from backup"
-} catch {
-    Write-Error "Failed to restore executable: `$(`$_.Exception.Message)"
-    exit 1
+# Restore backup files (match original tolerant behavior)
+if (Test-Path `$backupExe) {
+    try {
+        Copy-Item `$backupExe `$currentExe -Force
+        Write-Host "Restored executable from backup"
+    } catch {
+        Write-Warning "Failed to restore executable: `$(`$_.Exception.Message)"
+    }
+} else {
+    Write-Host "EXE backup not found: `$backupExe"
 }
 
 if (Test-Path `$backupVersion) {
@@ -143,6 +146,8 @@ if (Test-Path `$backupVersion) {
     } catch {
         Write-Warning "Failed to restore version file: `$(`$_.Exception.Message)"
     }
+} else {
+    Write-Host "version.txt backup not found"
 }
 
 Write-Host "`nRestarting application..."
@@ -179,7 +184,7 @@ if (`$isRunning) {
     Write-Host "Check the application manually or run a health check"
 }
 
-exit $(if (`$isRunning) { 0 } else { 1 })
+if (`$isRunning) { exit 0 } else { exit 1 }
 "@
 
     Write-PipelineStep "ROLLBACK" "Performing application rollback"
@@ -192,7 +197,7 @@ exit $(if (`$isRunning) { 0 } else { 1 })
             Write-Host "Performing local rollback..."
             
             try {
-                $rollbackOutput = Invoke-Expression $rollbackScript
+                Invoke-Expression $rollbackScript
                 $rollbackSuccess = $LASTEXITCODE -eq 0
             } catch {
                 Write-Warning "Local rollback failed: $($_.Exception.Message)"
@@ -212,6 +217,7 @@ exit $(if (`$isRunning) { 0 } else { 1 })
                 Host = $env:TARGET_IP
                 Port = $env:SSH_PORT
                 User = $env:TARGET_USER
+                Password = $env:TARGET_PASS
                 HostKey = $env:SSH_HOSTKEY
             }
             
@@ -219,9 +225,24 @@ exit $(if (`$isRunning) { 0 } else { 1 })
             if (-not (Test-SSHConnection -Config $sshConfig)) {
                 Write-PipelineError "ROLLBACK" "SSH connection test failed" 1
             }
-            
-            # Execute rollback via SSH
-            $exitCode = Invoke-SSHCommand -Config $sshConfig -Command $rollbackScript
+
+            # Prepare rollback script locally and copy to remote
+            $localTmp = Join-Path ([IO.Path]::GetTempPath()) ("rollback-{0:yyyyMMdd-HHmmss}.ps1" -f (Get-Date))
+            $rollbackScript | Out-File -FilePath $localTmp -Encoding UTF8 -Force
+            $remoteScriptPath = Join-Path $remotePath '_rollback.ps1'
+
+            if (-not (Get-Command pscp -ErrorAction SilentlyContinue)) { Write-PipelineError "ROLLBACK" "pscp not found. Install PuTTY tools." 1 }
+            $dst = ("{0}@{1}:`"{2}`"" -f $sshConfig.User, $sshConfig.Host, ($remoteScriptPath.Replace('\\','/')))
+            $pscpArgs = New-PscpBaseArgs -Config $sshConfig -LogPrefix 'pscp-copy'
+            $pscpArgs += $localTmp
+            $pscpArgs += $dst
+            if ($global:__PipelineDiagnosticsEnabled) { Write-Host ("pscp.exe {0}" -f (Write-MaskedArgs -InputArgs $pscpArgs)) }
+            & cmd /c "pscp.exe $($pscpArgs -join ' ')"
+            if ($LASTEXITCODE -ne 0) { Write-PipelineError "ROLLBACK" "Failed to copy rollback script via SCP (exit code: $LASTEXITCODE)" $LASTEXITCODE }
+
+            # Execute remote script with short command
+            $runCmd = "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$remoteScriptPath`""
+            $exitCode = Invoke-SSHCommand -Config $sshConfig -Command $runCmd
             $rollbackSuccess = $exitCode -eq 0
         }
         
@@ -238,6 +259,7 @@ exit $(if (`$isRunning) { 0 } else { 1 })
                 User = $env:ROUTER_USER
                 KeyFile = $env:ROUTER_SSH_KEY
                 HostKey = $env:ROUTER_SSH_HOSTKEY
+                Password = $env:ROUTER_PASS
             }
             
             $targetConfig = @{
@@ -246,6 +268,7 @@ exit $(if (`$isRunning) { 0 } else { 1 })
                 KeyFile = $env:TARGET_SSH_KEY
                 HostKey = $env:TARGET_SSH_HOSTKEY
                 TunnelPort = $env:TARGET_TUNNEL_PORT
+                Password = $env:TARGET_PASS
             }
             
             # Test router connection
@@ -268,14 +291,30 @@ exit $(if (`$isRunning) { 0 } else { 1 })
                     User = $targetConfig.User
                     KeyFile = $targetConfig.KeyFile
                     HostKey = $targetConfig.HostKey
+                    Password = $targetConfig.Password
                 }
                 
                 if (-not (Test-SSHConnection -Config $tunnelSSHConfig)) {
                     Write-PipelineError "ROLLBACK" "Target SSH connection through tunnel failed" 1
                 }
-                
-                # Execute rollback through tunnel
-                $exitCode = Invoke-SSHCommand -Config $tunnelSSHConfig -Command $rollbackScript
+
+                # Prepare rollback script locally and copy through tunnel
+                $localTmp = Join-Path ([IO.Path]::GetTempPath()) ("rollback-{0:yyyyMMdd-HHmmss}.ps1" -f (Get-Date))
+                $rollbackScript | Out-File -FilePath $localTmp -Encoding UTF8 -Force
+                $remoteScriptPath = Join-Path $remotePath '_rollback.ps1'
+
+                if (-not (Get-Command pscp -ErrorAction SilentlyContinue)) { Write-PipelineError "ROLLBACK" "pscp not found. Install PuTTY tools." 1 }
+                $dst = ("{0}@{1}:`"{2}`"" -f $tunnelSSHConfig.User, $tunnelSSHConfig.Host, ($remoteScriptPath.Replace('\\','/')))
+                $pscpArgs = New-PscpBaseArgs -Config $tunnelSSHConfig -LogPrefix 'pscp-copy'
+                $pscpArgs += $localTmp
+                $pscpArgs += $dst
+                if ($global:__PipelineDiagnosticsEnabled) { Write-Host ("pscp.exe {0}" -f (Write-MaskedArgs -InputArgs $pscpArgs)) }
+                & cmd /c "pscp.exe $($pscpArgs -join ' ')"
+                if ($LASTEXITCODE -ne 0) { Write-PipelineError "ROLLBACK" "Failed to copy rollback script via SCP (exit code: $LASTEXITCODE)" $LASTEXITCODE }
+
+                # Execute remote script with short command via tunnel
+                $runCmd = "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$remoteScriptPath`""
+                $exitCode = Invoke-SSHCommand -Config $tunnelSSHConfig -Command $runCmd
                 $rollbackSuccess = $exitCode -eq 0
                 
             } finally {
@@ -313,9 +352,14 @@ exit $(if (`$isRunning) { 0 } else { 1 })
     }
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Rollback Failure Snapshot"
     Write-PipelineError "ROLLBACK" "Rollback failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nRollback pipeline completed successfully." -ForegroundColor Green

@@ -7,7 +7,8 @@ Purpose:
 
 param(
     [Parameter(Mandatory = $false)]
-    [string] $AccessConfig = "admin"
+    [string] $AccessConfig = "admin",
+    [switch] $Diagnostics
 )
 
 # Load utilities and initialize environment
@@ -16,6 +17,8 @@ param(
 
 $timer = Start-PipelineTimer
 Write-PipelineStep "INITIALIZE" "Setting up test environment"
+
+Enable-PipelineDiagnostics -Enabled:$Diagnostics -ScriptName "01-test"
 
 try {
     $config = Initialize-PipelineEnvironment -AccessConfigName $AccessConfig
@@ -30,7 +33,9 @@ try {
     $extras = @("ci", $env:CI_JOB_NAME)
     $pipTarget = Get-PipInstallTarget -Extras $extras
     Write-Host "Installing project with extras: $pipTarget"
-    & $venv.Python -m pip install -e $pipTarget
+    $pipArgs = @('-m','pip','install','-e', $pipTarget)
+    if ($Diagnostics) { $pipArgs += '--verbose' }
+    & $venv.Python @pipArgs
     
     if ($LASTEXITCODE -ne 0) {
         Write-PipelineError "TEST SETUP" "Failed to install dependencies" $LASTEXITCODE
@@ -49,9 +54,14 @@ try {
     }
     
 } catch {
+    Write-Host "Verbose error details:" -ForegroundColor Red
+    $_ | Format-List * | Out-String | Write-Host
+    if ($_.InvocationInfo) { Write-Host "At: $($_.InvocationInfo.PositionMessage)" }
+    Write-DiagnosticSnapshot -Title "Test Failure Snapshot"
     Write-PipelineError "TEST" "Test execution failed: $($_.Exception.Message)" 1
 } finally {
     Stop-PipelineTimer $timer
+    Disable-PipelineDiagnostics
 }
 
 Write-Host "`nTest pipeline completed successfully." -ForegroundColor Green

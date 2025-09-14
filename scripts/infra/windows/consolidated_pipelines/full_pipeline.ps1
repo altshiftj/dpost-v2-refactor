@@ -22,7 +22,10 @@ param(
     [switch] $SkipConfirmation,
     
     [Parameter(Mandatory = $false)]
-    [switch] $ListPCs
+    [switch] $ListPCs,
+
+    [Parameter(Mandatory = $false)]
+    [switch] $Diagnostics
 )
 
 # Load utilities
@@ -103,37 +106,37 @@ try {
         try {
             switch ($step.ToLower()) {
                 "test" {
-                    & "$PSScriptRoot\01-test.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\01-test.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "build" {
-                    & "$PSScriptRoot\02-build.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\02-build.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "sign" {
-                    & "$PSScriptRoot\03-sign.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\03-sign.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "deploy" {
-                    & "$PSScriptRoot\04-deploy.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\04-deploy.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "run" {
-                    & "$PSScriptRoot\05-run.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\05-run.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "health_check" {
-                    & "$PSScriptRoot\06-health_check.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\06-health_check.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 
                 "rollback" {
-                    & "$PSScriptRoot\07-rollback.ps1" -AccessConfig $finalAccessConfig
+                    & "$PSScriptRoot\07-rollback.ps1" -AccessConfig $finalAccessConfig -Diagnostics:$Diagnostics
                     $stepSuccess = $LASTEXITCODE -eq 0
                 }
                 

@@ -80,9 +80,19 @@ function Get-SecurePassword {
     
     try {
         if (Test-Path -LiteralPath $PasswordFilePath) {
-            $securePassword = Get-Content $PasswordFilePath | ConvertTo-SecureString
-            $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
-            return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+            $raw = (Get-Content -LiteralPath $PasswordFilePath -Raw).Trim()
+            if (-not $raw) { return $null }
+
+            # Try to interpret as a protected secure string first (output of ConvertFrom-SecureString)
+            try {
+                $securePassword = $raw | ConvertTo-SecureString
+                $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePassword)
+                return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+            } catch {
+                # Fallback: treat file as plain text password
+                Write-Verbose "Using plain-text $Description loaded from $PasswordFilePath"
+                return $raw
+            }
         } else {
             Write-Warning "$Description file not found: $PasswordFilePath"
             return $null
@@ -147,14 +157,12 @@ function New-PythonVirtualEnv {
 function Get-DevicesForPC {
     param([string] $PCName, [string] $ProjectRoot)
     
-    $pythonPath = $env:PYTHONPATH
-    $env:PYTHONPATH = "$ProjectRoot\src"
-    
     try {
-        $devices = python -c "from ipat_watchdog.pc_device_mapping import get_devices_for_pc; print(','.join(get_devices_for_pc('$PCName')))"
+        $devices = python -c "import sys; from importlib.metadata import entry_points; eps = entry_points(group='ipat_watchdog.pc_plugins'); names = [ep.name for ep in eps if ep.name == '$PCName']; print(','.join(names))"
         return $devices -split ',' | ForEach-Object { $_.Trim() }
-    } finally {
-        $env:PYTHONPATH = $pythonPath
+    } catch {
+        Write-Warning "Failed to load PC plugins from pyproject.toml entry points."
+        return @()
     }
 }
 
@@ -273,4 +281,77 @@ function Stop-PipelineTimer {
     $duration = $endTime - $StartTime
     Write-Host "`nElapsed time: $($duration.ToString('hh\:mm\:ss'))" -ForegroundColor Cyan
     return $duration
+}
+
+# ------------------------------
+# Diagnostics Helpers
+# ------------------------------
+function Enable-PipelineDiagnostics {
+    param(
+        [switch] $Enabled,
+        [string] $ScriptName = "pipeline",
+        [string] $LogDir = $null
+    )
+
+    if (-not $Enabled) { return }
+
+    try {
+        if (-not $LogDir) {
+            if ($env:PROJECT_ROOT -and (Test-Path -LiteralPath $env:PROJECT_ROOT)) {
+                $LogDir = Join-Path $env:PROJECT_ROOT 'build\logs'
+            } else {
+                $LogDir = Join-Path $PSScriptRoot 'logs'
+            }
+        }
+        if (-not (Test-Path -LiteralPath $LogDir)) {
+            New-Item -ItemType Directory -Path $LogDir -Force | Out-Null
+        }
+
+        $script:PipelineLogPath = Join-Path $LogDir ("{0}-{1:yyyyMMdd-HHmmss}.log" -f $ScriptName, (Get-Date))
+        Set-StrictMode -Version Latest
+        $global:ErrorActionPreference = 'Stop'
+        $global:VerbosePreference = 'Continue'
+        $global:DebugPreference = 'Continue'
+        try { Start-Transcript -Path $script:PipelineLogPath -Append | Out-Null } catch {}
+        $global:__PipelineDiagnosticsEnabled = $true
+
+        Write-Host "Diagnostics enabled. Transcript: $script:PipelineLogPath"
+    } catch {
+        Write-Warning "Failed to enable diagnostics: $($_.Exception.Message)"
+    }
+}
+
+function Disable-PipelineDiagnostics {
+    if ($global:__PipelineDiagnosticsEnabled) {
+        try { Stop-Transcript | Out-Null } catch {}
+        $global:__PipelineDiagnosticsEnabled = $false
+    }
+}
+
+function Write-DiagnosticSnapshot {
+    param(
+        [string] $Title = "Diagnostic Snapshot"
+    )
+    try {
+        Write-Host "==== $Title ====" -ForegroundColor Yellow
+        Write-Host "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
+        Write-Host "PWD: $(Get-Location)"
+        if ($PSVersionTable) {
+            Write-Host "PSVersion: $($PSVersionTable.PSVersion)"
+        }
+        Write-Host "User: $env:USERNAME"
+        Write-Host "PROJECT_ROOT: $env:PROJECT_ROOT"
+        Write-Host "CI_JOB_NAME: $env:CI_JOB_NAME"
+        Write-Host "PC_NAME: $env:PC_NAME"
+        if ($env:PC_DEVICES) { Write-Host "PC_DEVICES: $env:PC_DEVICES" }
+        if ($env:COMMIT_TAG) { Write-Host "Commit: $env:COMMIT_TAG ($env:COMMIT_HASH) on $env:GIT_BRANCH @ $env:BUILD_TIME" }
+        if ($global:PipelineLogPath) { Write-Host "Transcript: $global:PipelineLogPath" }
+        if ($Error.Count -gt 0) {
+            Write-Host "Last Error (raw):" -ForegroundColor Red
+            $Error[0] | Format-List * | Out-String | Write-Host
+        }
+        Write-Host "=========================="
+    } catch {
+        Write-Warning "Failed to write diagnostic snapshot: $($_.Exception.Message)"
+    }
 }

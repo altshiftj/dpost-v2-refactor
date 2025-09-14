@@ -26,9 +26,7 @@ class TestFileProcessor(FileProcessorABS):
 
     # ---------- record-manager integration ------------------------------------
 
-    def is_valid_datatype(self, path: str) -> bool:
-        """Accept .tif and .txt files for testing."""
-        return Path(path).suffix.lower() in {".tif", ".txt"}
+    # is_valid_datatype removed; use matches_file instead
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
