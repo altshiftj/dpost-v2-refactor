@@ -13,8 +13,6 @@ from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 
 logger = setup_logger(__name__)
 
-# Try to get PC_NAME from the runtime-injected module first (PyInstaller runtime hook),
-# then fall back to environment for dev runs.
 def _resolve_pc_name() -> str:
     build_pc_name = None
     try:
@@ -33,7 +31,6 @@ def _resolve_pc_name() -> str:
         )
         sys.exit(1)
     return pc
-
 
 def main() -> None:
     pc_name = _resolve_pc_name()
