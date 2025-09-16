@@ -148,12 +148,13 @@ function Get-PCConfigurations {
             SSHHostKey = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4'
         }
         
-        "horiba-pc" = @{
+        "horiba_blb" = @{
             Method = "router"
-            RouterIP = "144.169.58.132"
+            RouterIP = "134.169.58.199"
             RouterUser = "jamfitz"
-            TargetIP = "192.168.1.99"
+            TargetIP = "192.168.1.2"
             TargetUser = "horiba"
+            SSHPort = "22"
             PCName = "horiba_blb"
             Devices = @("psa_horiba", "dsv_horiba")
             SecurePaths = @{
@@ -169,17 +170,19 @@ function Get-PCConfigurations {
             TunnelPort = "2222"
         }
         
-        "zwick-pc" = @{
+        "zwick_blb" = @{
             Method = "direct"
-            TargetIP = "134.169.58.131"
+            TargetIP = "134.169.58.118"
             TargetUser = "messrechner"
-            PCName = "utm_zwick"
+            SSHPort = "22"
+            PCName = "zwick_blb"
             Devices = @("utm_zwick")
             SecurePaths = @{
                 PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
                 PFXPass = "$env:USERPROFILE\.secure\pfxpass.txt"
-                TargetPass = "$env:USERPROFILE\.secure\utm_zwick.txt"
+                TargetPass = "$env:USERPROFILE\.secure\zwick_blb.txt"
             }
+            SSHHostKey = 'AAAAC3NzaC1lZDI1NTE5AAAAIEaXU0p4npXkadBZ0RSBVFeaMg3HtUmErmEJo7kj+gR9'
         }
         
         "lab-workstation" = @{

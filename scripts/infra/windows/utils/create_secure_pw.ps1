@@ -1,7 +1,7 @@
 # create-secure-password.ps1
 # Prompts for a password, encrypts it, and saves it to a specified file
 param (
-    [string]$OutputPath = "$env:USERPROFILE\.secure\psa_horibalinks_blb.txt"
+    [string]$OutputPath = "$env:USERPROFILE\.secure\horiba_blb.txt"
 )
 
 # Ensure the folder exists

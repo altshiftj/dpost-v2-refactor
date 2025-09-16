@@ -1,5 +1,9 @@
 import os
 import sys
+from pathlib import Path
+from typing import List
+
+from dotenv import load_dotenv
 from prometheus_client import start_http_server
 
 from ipat_watchdog.core.logging.logger import setup_logger
@@ -13,41 +17,91 @@ from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 
 logger = setup_logger(__name__)
 
-def _resolve_pc_name() -> str:
-    build_pc_name = None
-    try:
-        from ipat_watchdog.build_config import PC_NAME as _PC_NAME  # provided by runtime hook when frozen
-        build_pc_name = _PC_NAME
-    except Exception:
-        # Not frozen or hook didn't run — dev fallback to env
-        pass
+# ---------------------------
+# Load only the bundled .env
+# ---------------------------
 
-    pc = (build_pc_name or os.environ.get("PC_NAME") or "").strip()
+def _bundle_dir() -> Path:
+    """
+    When frozen, PyInstaller unpacks datas into sys._MEIPASS.
+    In dev, read from repo/build so behavior mirrors the exe.
+    """
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    # dev: src/ipat_watchdog/__main__.py → up 3 → repo root → build/
+    return Path(__file__).resolve().parents[3] / "build"
+
+def _load_bundled_env() -> None:
+    env_path = _bundle_dir() / ".env"
+    if env_path.exists():
+        load_dotenv(env_path, override=False)
+        logger.info(f"Loaded bundled env: {env_path}")
+    else:
+        logger.error(f"Bundled .env not found at {env_path}")
+        # keep running; _require_pc_name will enforce PC_NAME presence
+
+# Load config before anything reads env vars
+_load_bundled_env()
+
+# ---------------------------
+# Config resolution
+# ---------------------------
+
+def _split_list_env(value: str) -> List[str]:
+    return [p.strip() for p in value.replace(";", ",").split(",") if p.strip()]
+
+def _require_pc_name() -> str:
+    pc = os.getenv("PC_NAME", "").strip()
     if not pc:
-        logger.error(
-            "PC_NAME not available. "
-            "When frozen, ensure the PyInstaller runtime hook injects ipat_watchdog.build_config "
-            "(module with PC_NAME). For dev runs, set environment variable PC_NAME."
-        )
+        logger.error("PC_NAME must be set in bundled .env or environment.")
         sys.exit(1)
     return pc
 
-def main() -> None:
-    pc_name = _resolve_pc_name()
-    device_names = get_devices_for_pc(pc_name)
-    logger.info(f"Loading PC plugin: {pc_name} with devices: {device_names}")
+def _resolve_device_names(pc_name: str) -> List[str]:
+    explicit = _split_list_env(os.getenv("DEVICE_PLUGINS", ""))
+    if explicit:
+        logger.info(f"Using devices from DEVICE_PLUGINS: {explicit}")
+        return explicit
+    inferred = get_devices_for_pc(pc_name)
+    logger.info(f"No DEVICE_PLUGINS set; inferred from PC '{pc_name}': {inferred}")
+    return inferred
 
-    # Load PC plugin
+# ---------------------------
+# App entry
+# ---------------------------
+
+PROMETHEUS_PORT = 8000
+OBSERVABILITY_PORT = 8001
+
+def main() -> None:
+    try:
+        pc_name = _require_pc_name()
+    except SystemExit:
+        # Fallback: prompt user for PC name if not set
+        pc_name = "horiba_blb"
+        if not pc_name:
+            logger.error("PC_NAME is required.")
+            sys.exit(1)
+
+    # Allow device_names to be specified via env, fallback to prompt if not set/inferred
+    device_names = _resolve_device_names(pc_name)
+    if not device_names:
+        # Hardcoded device names fallback
+        device_names = ["psa_horiba", "dsv_horiba"]  # Replace with your actual device names
+        logger.warning(f"No devices found; using hardcoded list: {device_names}")
+        if not device_names:
+            logger.error("At least one device name is required.")
+            sys.exit(1)
+
+    logger.info(f"Loading PC plugin: {pc_name} with devices: {device_names}")
     pc_plugin = load_pc_plugin(pc_name)
     pc_settings = pc_plugin.get_settings()
 
-    # Collect device settings from plugins
     device_settings_list = []
     for dn in device_names:
-        plugin = load_device_plugin(dn.strip())
+        plugin = load_device_plugin(dn)
         device_settings_list.append(plugin.get_settings())
 
-    # Initialize settings manager
     settings_manager = SettingsManager(
         available_devices=device_settings_list,
         pc_settings=pc_settings,
@@ -56,25 +110,21 @@ def main() -> None:
 
     init_dirs()
 
-    # Start observability endpoints
-    start_http_server(8000)
-    logger.info("Prometheus metrics server started on port 8000")
+    start_http_server(PROMETHEUS_PORT)
+    logger.info(f"Prometheus metrics server started on port {PROMETHEUS_PORT}")
 
     start_observability_server()
-    logger.info("Observability server started on port 8001")
+    logger.info(f"Observability server started on port {OBSERVABILITY_PORT}")
 
-    # Init UI and sync manager
     ui = TKinterUI()
     sync = KadiSyncManager(ui=ui, settings_manager=settings_manager)
 
-    # Run watchdog app
     app = DeviceWatchdogApp(
         ui=ui,
         sync_manager=sync,
         settings_manager=settings_manager,
     )
     app.run()
-
 
 if __name__ == "__main__":
     try:

@@ -50,11 +50,11 @@ Use `.\list-pcs.ps1` or `.\full_pipeline.ps1 -ListPCs` to see all available PC c
 
 - **tischrem-pc** - Direct SSH to TischREM SEM device
 - **horiba-pc** - Router tunnel to Horiba test system  
-- **zwick-pc** - Direct SSH to Zwick UTM device
+- **zwick_blb** - Direct SSH to Zwick UTM device
 - **lab-workstation** - Local development machine
 - **admin** - Legacy admin configuration (maps to tischrem-pc)
 - **router_admin** - Legacy router configuration (maps to horiba-pc)
-- **sub_admin** - Legacy subnet configuration (maps to zwick-pc)
+- **sub_admin** - Legacy subnet configuration (maps to zwick_blb)
 - **local** - Legacy local configuration (maps to lab-workstation)
 
 ### Adding New PC Configurations
@@ -105,7 +105,7 @@ To add a new PC configuration, edit the `Get-PCConfigurations` function in `acce
 .\full_pipeline.ps1 -PCName horiba-pc -Steps @('build', 'deploy', 'run')
 
 # Health check on Zwick UTM
-.\full_pipeline.ps1 -PCName zwick-pc -Steps @('health_check')
+.\full_pipeline.ps1 -PCName zwick_blb -Steps @('health_check')
 
 # List all available PCs
 .\full_pipeline.ps1 -ListPCs

@@ -23,7 +23,7 @@ ci     = ["pytest", "pyfakefs"]
 build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
 sem_phenomxl2 = []
-psa_horibalinks_blb = []
+psa_horiba = []
 utm_zwick = []
 dsv_horiba = []
 ## PC-specific extras (empty) to allow selecting by PC without warnings

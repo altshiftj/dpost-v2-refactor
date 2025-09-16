@@ -1,8 +1,10 @@
 """File processing orchestrator: routes stable files into records via device plugins."""
 from pathlib import Path
 import queue
+import re
 from typing import Tuple
 
+from ipat_watchdog.device_plugins.sem_phenomxl2 import file_processor
 from ipat_watchdog.metrics import FILES_FAILED
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
@@ -47,23 +49,37 @@ from ipat_watchdog.core.processing.record_flow import (
 
 logger = setup_logger(__name__)
 
-# File processing routing states are provided by routing module
+# ──────────────────────────────────────────────────────────────────────────────
+# Internal staging folder handling
+# ──────────────────────────────────────────────────────────────────────────────
+STAGING_DIR_RE = re.compile(r"\.__staged__(\d+)?$", re.IGNORECASE)
 
+def _is_internal_staging_path(path: Path) -> bool:
+    """Return True if `path` is a staging folder or located inside one."""
+    if STAGING_DIR_RE.search(path.name):
+        return True
+    for parent in path.parents:
+        if STAGING_DIR_RE.search(parent.name):
+            return True
+    return False
+
+
+# File processing routing states are provided by routing module
 class FileProcessManager:
     """
     Central coordinator for file processing workflow.
-    
+
     Manages the complete file processing pipeline from initial file detection
     through final placement in organized records. Handles validation, user
     interaction for naming issues, session management, and database synchronization.
-    
+
     Key responsibilities:
     - Route files based on naming validation and record state
     - Handle user interactions for file naming corrections
     - Coordinate with device-specific file processors
     - Manage session lifecycle and database synchronization
     """
-    
+
     def __init__(
         self,
         ui: UserInterface,
@@ -99,10 +115,17 @@ class FileProcessManager:
         Starts device-aware stability tracking, then processes when stable.
         """
         path = Path(src_path)
+
+        # 🔒 Ignore our internal staging folders and anything within them
+        if _is_internal_staging_path(path):
+            logger.debug(f"Ignoring internal staging path: {path}")
+            return
+
         device_settings = self.settings_manager.select_device_for_file(src_path)
         if device_settings is None:
             self._reject_immediately(path, "Invalid Filetype")
             return
+
         # Ignore temp folders immediately
         if path.is_dir() and device_settings.TEMP_FOLDER_REGEX.search(path.name):
             logger.debug(f"Ignoring temp folder: {path.name}")
@@ -117,7 +140,8 @@ class FileProcessManager:
             self._rejected_queue.put((p, reason))
             FILES_FAILED.inc()
 
-        tracker = FileStabilityTracker(
+        # Start synchronous stability tracking
+        FileStabilityTracker(
             file_path=path,
             device_settings=device_settings,
             completion_callback=on_complete,
@@ -127,6 +151,11 @@ class FileProcessManager:
 
     def _handle_stable_file(self, src_path: str):
         """Handle a file that has become stable - process it fully."""
+        from pathlib import Path
+
+        preprocessed_src_path: str | None = None
+        routed_path: str = src_path  # default to original unless we materialize a staging path
+
         try:
             # Set device context for this processing
             with DeviceContext.from_file(self.settings_manager, src_path):
@@ -135,25 +164,47 @@ class FileProcessManager:
                     f"Selected processor for {src_path}: {type(file_processor).__name__}"
                 )
 
-                preprocessed_src_path = file_processor.device_specific_preprocessing(
-                    src_path
-                )
+                # Let the device preprocessor normalize / stage as needed
+                preprocessed_src_path = file_processor.device_specific_preprocessing(src_path)
                 if preprocessed_src_path is None:
+                    # Pairwise files (e.g. horiba, zwick) can return None until their twin arrives (keep current behavior)
                     return
 
-                final_filename_prefix, final_extension = parse_filename(
-                    preprocessed_src_path
-                )
+                # ✂️ Strip '<prefix>.__staged__[#]' from the NAME *only for parsing*
+                parse_target = preprocessed_src_path
+                name = Path(preprocessed_src_path).name
+                m = re.match(r"^(?P<stem>.+?)\.__staged__(?:\d+)?$", name, flags=re.IGNORECASE)
+                if m:
+                    parse_target = str(Path(preprocessed_src_path).with_name(m.group("stem")))
+
+                # Parse the (possibly normalized) path to get prefix + extension
+                final_filename_prefix, final_extension = parse_filename(parse_target)
+
+                # Route using a *materialized* preprocessed path (e.g., staging folder) when available;
+                # otherwise keep using the original src_path (e.g., SEM returns a synthetic name)
+                routed_path = preprocessed_src_path if Path(preprocessed_src_path).exists() else src_path
+
                 self._route_item(
-                    src_path, final_filename_prefix, final_extension, file_processor
+                    routed_path, final_filename_prefix, final_extension, file_processor
                 )
 
         except Exception as e:
             logger.exception(f"Error processing stable file {src_path}: {e}")
-            move_to_exception_folder(src_path)
+
+            # ── Extra hardening ────────────────────────────────────────────────────
+            # Move the routed item first (this is the staging folder for pair devices),
+            # then also try to move the materialized preprocessed path if it is different.
+            try:
+                move_to_exception_folder(routed_path)
+            finally:
+                try:
+                    if preprocessed_src_path and preprocessed_src_path != routed_path and Path(preprocessed_src_path).exists():
+                        move_to_exception_folder(preprocessed_src_path)
+                except Exception as sub_e:
+                    logger.warning("Failed to move preprocessed path to exceptions: %s", sub_e)
+            # metrics + rethrow (keep existing behavior)
             FILES_FAILED.inc()
             raise RuntimeError(f"File processing failed for {src_path}: {e}")
-
 
     def _reject_immediately(self, path: Path, reason: str):
         """Reject a file/folder without tracking and move it to exceptions."""
@@ -164,7 +215,6 @@ class FileProcessManager:
             self._rejected_queue.put((str(path), reason))
             FILES_FAILED.inc()
             raise RuntimeError(f"Rejected file {path}: {reason}")
-
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         """Get and clear rejected files list."""
@@ -179,13 +229,13 @@ class FileProcessManager:
     def _get_processor_for_file(self, src_path: str) -> FileProcessorABS:
         """
         Get the appropriate file processor for a given file.
-        
+
         Args:
             src_path: Path to the file to process
-            
+
         Returns:
             FileProcessorABS: The appropriate file processor
-            
+
         Raises:
             RuntimeError: If no suitable processor is found
         """
@@ -194,12 +244,12 @@ class FileProcessManager:
             return self.file_processor
 
         device_settings = self.settings_manager.select_device_for_file(src_path)
-        
+
         if device_settings is None:
             move_to_exception_folder(src_path)
             FILES_FAILED.inc()
             raise RuntimeError(f"No Processor: Invalid Filetype: {src_path}")
-        
+
         # Set the device context for this thread
         self.settings_manager.set_current_device(device_settings)
 
@@ -212,7 +262,6 @@ class FileProcessManager:
             FILES_FAILED.inc()
             raise RuntimeError(f"No processor available for device: {device_id}") from e
 
-
     def _move_to_exception_and_inform(
         self, src_path: str, prefix: str, extension: str, severity: str, message: str
     ):
@@ -221,11 +270,10 @@ class FileProcessManager:
             f"Moved item '{src_path}' to exception folder with severity '{severity}'."
         )
 
-
     def _route_item(self, src_path: str, filename_prefix: str, extension: str, file_processor: FileProcessorABS):
         """
         Route files to appropriate handling based on naming validation and record state.
-        
+
         Determines the current state of the file and record, then routes to:
         - Unappendable record handling (file can't be added to existing record)
         - Append to synced record handling (adding to already-uploaded record)
@@ -234,7 +282,7 @@ class FileProcessManager:
         """
         # Get sanitized filename and check if record exists
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(self.records, filename_prefix)
-        
+
         # Determine routing state based on validation and record status
         state = determine_routing_state(record, is_valid_format, filename_prefix, extension, file_processor)
 
@@ -285,13 +333,13 @@ class FileProcessManager:
     def add_item_to_record(self, record, src_path, filename_prefix, extension, file_processor: FileProcessorABS = None, notify=True):
         """
         Add a validated file/folder to a record and organize it properly.
-        
+
         This is the final step of successful file processing:
         1. Get or create the target record
         2. Determine target path and perform device-specific processing
         3. Update record metadata
         4. Manage session state
-        
+
         Args:
             record: Existing LocalRecord or None to create new one
             src_path: Source path of file/folder to process
@@ -306,7 +354,7 @@ class FileProcessManager:
                 move_to_exception_folder(src_path)
                 FILES_FAILED.inc()
                 raise RuntimeError("No file processor available")
-            
+
             # Ensure we have a record to work with
             record = get_or_create_record(self.records, record, filename_prefix)
 
@@ -314,7 +362,7 @@ class FileProcessManager:
             device_settings = self.settings_manager.get_current_device()
             device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
             apply_device_defaults(record, device_settings)
-            
+
             # Determine target paths and perform device-specific processing
             record_path = get_record_path(filename_prefix, device_abbr)
             file_id = generate_file_id(filename_prefix, device_abbr)
@@ -347,6 +395,6 @@ class FileProcessManager:
         if self.records.all_records_uploaded():
             logger.debug("All records already uploaded, skipping sync.")
             return
-            
+
         logger.debug("Syncing records to database.")
         self.records.sync_records_to_database()
