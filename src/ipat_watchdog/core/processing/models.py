@@ -6,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.records.local_record import LocalRecord
 
@@ -33,7 +33,7 @@ class ProcessingRequest:
     """Minimal information needed to start processing an item."""
 
     source: Path
-    device_settings: DeviceSettings
+    device: DeviceConfig
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class ProcessingCandidate:
     prefix: str
     extension: str
     processor: FileProcessorABS
-    device_settings: DeviceSettings
+    device: DeviceConfig
     preprocessed_path: Optional[Path] = None
 
 

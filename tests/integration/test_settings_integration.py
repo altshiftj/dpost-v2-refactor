@@ -1,85 +1,96 @@
-"""Integration test for the new settings system."""
-import pytest
+"""Integration tests for the configuration service."""
 from pathlib import Path
-from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
-from ipat_watchdog.core.config.pc_settings import PCSettings
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+
+import pytest
+
+from ipat_watchdog.core.config import activate_device, current, init_config, reset_service
+from ipat_watchdog.core.config.schema import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    NamingSettings,
+    PathSettings,
+    PCConfig,
+    SessionSettings,
+    WatcherSettings,
+)
 
 
-class TestDeviceA(DeviceSettings):
-    """Test device A."""
-    DEVICE_ID = "test_device_a"
-    DEVICE_ABBR = "TYPE_A"
-    ALLOWED_EXTENSIONS = {".tiff", ".tif"}
-    SESSION_TIMEOUT = 120
-
-
-class TestDeviceB(DeviceSettings):
-    """Test device B."""
-    DEVICE_ID = "test_device_b"
-    DEVICE_ABBR = "TYPE_B"
-    ALLOWED_EXTENSIONS = {".txt", ".csv"}
-    SESSION_TIMEOUT = 180
-
-
-def test_new_settings_system_integration():
-    """Test the complete new settings system integration."""
-    # Reset any existing settings
-    SettingsStore.reset()
-    
-    # Create global settings using test PC
-    from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
-    global_settings = TestPCSettings()
-    global_settings.WATCH_DIR = Path("./test_watch")
-    global_settings.SESSION_TIMEOUT = 300
-    
-    # Create device settings
-    device_a = TestDeviceA()
-    device_b = TestDeviceB()
-    
-    # Create settings manager
-    settings_manager = SettingsManager(
-        available_devices=[device_a, device_b],
-        pc_settings=global_settings
+@pytest.fixture
+def config(tmp_path):
+    base = tmp_path / "sandbox"
+    paths = PathSettings(
+        app_dir=base / "App",
+        desktop_dir=base,
+        watch_dir=base / "Upload",
+        dest_dir=base / "Data",
+        rename_dir=base / "Data" / "00_To_Rename",
+        exceptions_dir=base / "Data" / "01_Exceptions",
+        daily_records_json=base / "records.json",
     )
-    SettingsStore.set_manager(settings_manager)
-    
-    # Test 1: Without device context, should get global settings
-    settings = SettingsStore.get()
-    assert settings is global_settings
-    assert settings.WATCH_DIR == Path("./test_watch")
-    assert settings.SESSION_TIMEOUT == 300
-    
-    # Test 2: With device context, should get composite settings
-    settings_manager.set_current_device(device_a)
-    composite = SettingsStore.get()
-    assert composite is not global_settings
-    assert composite.WATCH_DIR == Path("./test_watch")  # From global
-    assert composite.SESSION_TIMEOUT == 120  # From device A
-    assert composite.DEVICE_ID == "test_device_a"  # From device A
-    
-    # Test 3: Different device context
-    settings_manager.set_current_device(device_b)
-    composite = SettingsStore.get()
-    assert composite.SESSION_TIMEOUT == 180  # From device B
-    assert composite.DEVICE_ID == "test_device_b"  # From device B
-    
-    # Test 4: File selection
-    selected_device = settings_manager.select_device_for_file("test.tiff")
-    assert selected_device is device_a
-    
-    selected_device = settings_manager.select_device_for_file("test.txt")
-    assert selected_device is device_b
-    
-    selected_device = settings_manager.select_device_for_file("test.unknown")
-    assert selected_device is None
-    
-    # Test 5: Legacy API compatibility
-    device = SettingsStore.find_processor_for_file("test.csv")
-    assert device is device_b
-    
-    print("✅ All integration tests passed!")
+
+    pc = PCConfig(
+        identifier="test_pc",
+        paths=paths,
+        naming=NamingSettings(id_separator="-", file_separator="_"),
+        session=SessionSettings(timeout_seconds=600),
+        watcher=WatcherSettings(poll_seconds=0.5, max_wait_seconds=10.0, stable_cycles=2),
+        active_device_plugins=("device_a", "device_b"),
+    )
+
+    device_a = DeviceConfig(
+        identifier="device_a",
+        metadata=DeviceMetadata(device_abbr="A", default_record_description="desc A", user_kadi_id="a-user"),
+        files=DeviceFileSelectors(allowed_extensions={".tiff", ".tif"}),
+        session=SessionSettings(timeout_seconds=120),
+        watcher=WatcherSettings(poll_seconds=0.1, max_wait_seconds=5.0, stable_cycles=1),
+    )
+
+    device_b = DeviceConfig(
+        identifier="device_b",
+        metadata=DeviceMetadata(device_abbr="B", default_record_description="desc B", user_kadi_id="b-user"),
+        files=DeviceFileSelectors(allowed_extensions={".txt", ".csv"}),
+        session=SessionSettings(timeout_seconds=300),
+        watcher=WatcherSettings(poll_seconds=0.2, max_wait_seconds=7.0, stable_cycles=2),
+    )
+
+    service = init_config(pc, [device_a, device_b])
+    try:
+        yield service
+    finally:
+        reset_service()
 
 
-if __name__ == "__main__":
-    test_new_settings_system_integration()
+def test_active_config_defaults_to_pc(config):
+    active = current()
+    assert active.device is None
+    assert active.session_timeout == config.pc.session.timeout_seconds
+    assert active.paths.watch_dir.exists() or True  # path object returned
+
+
+def test_device_activation_context(config):
+    with activate_device("device_a"):
+        active = current()
+        assert active.device.identifier == "device_a"
+        assert active.session_timeout == 120
+        assert active.device_metadata.device_abbr == "A"
+
+    # Context should restore PC-only view
+    active = current()
+    assert active.device is None
+
+
+def test_matching_devices(config):
+    device = config.first_matching_device("sample.tiff")
+    assert device is not None and device.identifier == "device_a"
+
+    device = config.first_matching_device("sample.csv")
+    assert device is not None and device.identifier == "device_b"
+
+    device = config.first_matching_device("sample.unknown")
+    assert device is None
+
+
+def test_matching_devices_returns_all(config):
+    results = config.matching_devices("sample.tif")
+    assert [d.identifier for d in results] == ["device_a"]

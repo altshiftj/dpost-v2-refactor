@@ -1,7 +1,9 @@
 import pytest
+
 from ipat_watchdog.loader import load_pc_plugin
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.core.config import PCConfig
+
 
 def test_load_test_pc_plugin():
     """Test loading the test PC plugin."""
@@ -12,14 +14,13 @@ def test_load_test_pc_plugin():
         return
     assert isinstance(plugin, PCPlugin)
 
-    settings = plugin.get_settings()
-    assert isinstance(settings, PCSettings)
+    config = plugin.get_config()
+    assert isinstance(config, PCConfig)
+    assert config.identifier == "test_pc"
+    assert "test_device" in config.active_device_plugins
+    assert str(config.paths.watch_dir).endswith("Upload")
+    assert str(config.paths.dest_dir).endswith("Data")
 
-    # Verify test PC specific settings
-    assert str(settings.WATCH_DIR).endswith("Upload")
-    assert str(settings.DEST_DIR).endswith("Data")
-    assert settings.PC_NAME == "TEST_PC"
-    assert settings.PC_LOCATION == "Test Lab"
 
 def test_load_real_pc_plugin():
     """Test loading a real PC plugin."""
@@ -30,8 +31,9 @@ def test_load_real_pc_plugin():
         return
     assert isinstance(plugin, PCPlugin)
 
-    settings = plugin.get_settings()
-    assert isinstance(settings, PCSettings)
+    config = plugin.get_config()
+    assert isinstance(config, PCConfig)
+
 
 def test_pc_plugin_not_found():
     """Test error handling for non-existent PC plugin."""

@@ -65,35 +65,38 @@ class RecordManager:
         logger.info("Reloading persisted records from disk...")
         self._persist_records_dict = load_persisted_records()
 
-    def create_record(self, filename_prefix: str) -> LocalRecord:
+    def create_record(self, filename_prefix: str, device=None) -> LocalRecord:
         """
         Creates and stores a new LocalRecord using the filename prefix.
-        
+
         Extracts sample name from prefix and generates unique record ID.
         The new record is immediately stored and persisted.
-        
+
         Args:
-            filename_prefix: Standardized filename prefix (e.g., "usr-ipat-sample123")
-            
+            filename_prefix: Standardized filename prefix (e.g., 'usr-ipat-sample123')
+            device: Optional device configuration providing record identity information
+
         Returns:
             LocalRecord: Newly created record instance
         """
         # Generate unique identifier and extract sample name
-        record_id = generate_record_id(filename_prefix)
-        sample_name = filename_prefix.split("-")[-1]  # Extract last part as sample name
-        
+        record_id = generate_record_id(
+            filename_prefix,
+            dev_kadi_record_id=(device.metadata.record_kadi_id if device else None),
+        )
+        sample_name = filename_prefix.split('-')[-1]  # Extract last part as sample name
+
         # Create new record with current date
         record = LocalRecord(
             identifier=record_id,
             sample_name=sample_name,
-            date=datetime.datetime.now().strftime("%Y%m%d"),
+            date=datetime.datetime.now().strftime('%Y%m%d'),
         )
-        
+
         # Store and persist the new record
         self._store_record(record)
         logger.debug(f"Created new record with id '{record_id}'.")
         return record
-
     def add_item_to_record(self, path: str, record: LocalRecord):
         """
         Adds a file path to a record and updates metrics and persistence.

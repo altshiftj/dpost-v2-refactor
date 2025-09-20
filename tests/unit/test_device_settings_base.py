@@ -1,65 +1,41 @@
-"""Tests for DeviceSettings base class."""
-import pytest
+"""Tests for DeviceConfig matching behaviour."""
 from pathlib import Path
-import tempfile
-import os
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+
+from ipat_watchdog.core.config.schema import DeviceConfig, DeviceFileSelectors, SessionSettings, WatcherSettings
 
 
-class TestDeviceSettings(DeviceSettings):
-    """Test implementation of DeviceSettings."""
-    DEVICE_ID = "test_device"
-    DEVICE_ABBR = "TEST"
-    ALLOWED_EXTENSIONS = {".tiff", ".txt"}
-    ALLOWED_FOLDER_CONTENTS = {".elid", ".odt"}
+def test_matches_file_by_extension():
+    config = DeviceConfig(
+        identifier="device",
+        files=DeviceFileSelectors(allowed_extensions={".tiff", ".tif"}),
+    )
+
+    assert config.matches_file("sample.tiff")
+    assert config.matches_file("sample.TIF")
+    assert not config.matches_file("sample.txt")
 
 
-class TestDeviceSettingsMatching:
-    """Test device settings file matching functionality."""
+def test_matches_directory_by_contents(tmp_path):
+    config = DeviceConfig(
+        identifier="device",
+        files=DeviceFileSelectors(allowed_extensions=set(), allowed_folder_contents={".dat"}),
+    )
 
-    def setup_method(self):
-        """Set up test device settings."""
-        self.device = TestDeviceSettings()
+    folder = tmp_path / "bundle"
+    folder.mkdir()
+    (folder / "data.dat").write_text("payload")
+    (folder / "ignore.txt").write_text("payload")
 
-    def test_matches_file_with_allowed_extension(self):
-        """Test file matching with allowed extension."""
-        assert self.device.matches_file("test.tiff")
-        assert self.device.matches_file("test.txt")
-        assert self.device.matches_file("TEST.TIFF")  # Case insensitive
+    assert config.matches_file(str(folder))
 
-    def test_matches_file_with_disallowed_extension(self):
-        """Test file matching with disallowed extension."""
-        assert not self.device.matches_file("test.jpg")
-        assert not self.device.matches_file("test.pdf")
 
-    def test_matches_directory_with_allowed_contents(self):
-        """Test directory matching with allowed contents."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create files with allowed extensions
-            (Path(temp_dir) / "file1.elid").touch()
-            (Path(temp_dir) / "file2.odt").touch()
-            
-            assert self.device.matches_file(temp_dir)
+def test_session_and_watcher_defaults():
+    config = DeviceConfig(
+        identifier="device",
+        session=SessionSettings(timeout_seconds=120),
+        watcher=WatcherSettings(poll_seconds=0.1, stable_cycles=2, max_wait_seconds=5.0),
+    )
 
-    def test_matches_directory_with_disallowed_contents(self):
-        """Test directory matching with disallowed contents."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create files with disallowed extensions
-            (Path(temp_dir) / "file1.jpg").touch()
-            (Path(temp_dir) / "file2.pdf").touch()
-            
-            assert not self.device.matches_file(temp_dir)
-
-    def test_matches_directory_with_mixed_contents(self):
-        """Test directory matching with mixed contents."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # Create files with both allowed and disallowed extensions
-            (Path(temp_dir) / "file1.elid").touch()
-            (Path(temp_dir) / "file2.jpg").touch()
-            
-            # Should match because it contains at least one allowed file
-            assert self.device.matches_file(temp_dir)
-
-    def test_get_device_id(self):
-        """Test device ID retrieval."""
-        assert TestDeviceSettings.get_device_id() == "test_device"
+    assert config.session.timeout_seconds == 120
+    assert config.watcher.poll_seconds == 0.1
+    assert config.watcher.stable_cycles == 2

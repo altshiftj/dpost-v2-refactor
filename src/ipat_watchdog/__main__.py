@@ -10,7 +10,7 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.observability import start_observability_server
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.loader import load_device_plugin, load_pc_plugin, get_devices_for_pc
-from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
+from ipat_watchdog.core.config import ConfigService, DeviceConfig, init_config
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
 from ipat_watchdog.core.ui.adapters import UiInteractionAdapter
@@ -30,7 +30,7 @@ def _bundle_dir() -> Path:
     """
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return Path(sys._MEIPASS)
-    # dev: src/ipat_watchdog/__main__.py → up 3 → repo root → build/
+    # dev: src/ipat_watchdog/__main__.py ↩ up 3 ↩ repo root ↩ build/
     return Path(__file__).resolve().parents[3] / "build"
 
 
@@ -74,6 +74,20 @@ def _resolve_device_names(pc_name: str) -> List[str]:
     return inferred
 
 
+def _load_configs(pc_name: str, device_names: List[str]) -> tuple[ConfigService, list[DeviceConfig]]:
+    logger.info("Loading PC plugin: %s with devices: %s", pc_name, device_names)
+    pc_plugin = load_pc_plugin(pc_name)
+    pc_config = pc_plugin.get_config()
+
+    device_configs: list[DeviceConfig] = []
+    for dn in device_names:
+        plugin = load_device_plugin(dn)
+        device_configs.append(plugin.get_config())
+
+    service = init_config(pc_config, device_configs)
+    return service, device_configs
+
+
 # ---------------------------
 # App entry
 # ---------------------------
@@ -102,20 +116,7 @@ def main() -> None:
             logger.error("At least one device name is required.")
             sys.exit(1)
 
-    logger.info("Loading PC plugin: %s with devices: %s", pc_name, device_names)
-    pc_plugin = load_pc_plugin(pc_name)
-    pc_settings = pc_plugin.get_settings()
-
-    device_settings_list = []
-    for dn in device_names:
-        plugin = load_device_plugin(dn)
-        device_settings_list.append(plugin.get_settings())
-
-    settings_manager = SettingsManager(
-        available_devices=device_settings_list,
-        pc_settings=pc_settings,
-    )
-    SettingsStore.set_manager(settings_manager)
+    config_service, _ = _load_configs(pc_name, device_names)
 
     init_dirs()
 
@@ -127,12 +128,12 @@ def main() -> None:
 
     ui = TKinterUI()
     interaction_port = UiInteractionAdapter(ui)
-    sync = KadiSyncManager(interactions=interaction_port, settings_manager=settings_manager)
+    sync = KadiSyncManager(interactions=interaction_port)
 
     app = DeviceWatchdogApp(
         ui=ui,
         sync_manager=sync,
-        settings_manager=settings_manager,
+        config_service=config_service,
     )
     app.run()
 

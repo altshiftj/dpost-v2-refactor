@@ -1,78 +1,62 @@
 #!/usr/bin/env python3
 """
-Test script to demonstrate PC/Device settings integration with sync manager
+Manual smoke test demonstrating config service wiring with the sync manager.
 """
 import pytest
 pytest.importorskip("kadi_apy")
 from pathlib import Path
-import sys
 
-# Add src to Python path
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
-
-from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.core.config import init_config, reset_service
+from ipat_watchdog.core.config.schema import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    PathSettings,
+    PCConfig,
+    SessionSettings,
+)
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
-import sys
-import os
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
 from tests.helpers.fake_ui import HeadlessUI
 
-# Create a simple device settings for testing
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 
-class TestDeviceSettings(DeviceSettings):
-    DEVICE_ABBR = "TEST_DEVICE"
-    ID_SEP = "-"
-    # Database settings that would normally be device-specific
-    DEVICE_USER_KADI_ID = "test-device-usr"
-    DEVICE_USER_PERSISTENT_ID = 123
-    DEVICE_RECORD_KADI_ID = "test_device_01"
-    DEVICE_RECORD_PERSISTENT_ID = 456
-    DEFAULT_RECORD_DESCRIPTION = "Test record from sync integration test"
-    RECORD_TAGS = ["automated", "test"]
-    @classmethod
-    def matches_file(self, filepath: str) -> bool:
-        return True
+def test_sync_settings_integration(tmp_path):
+    base = tmp_path / "sandbox"
+    paths = PathSettings(
+        app_dir=base / "App",
+        desktop_dir=base,
+        watch_dir=base / "Upload",
+        dest_dir=base / "Data",
+        rename_dir=base / "Data" / "00_To_Rename",
+        exceptions_dir=base / "Data" / "01_Exceptions",
+        daily_records_json=base / "records.json",
+    )
 
-def test_sync_settings_integration():
-    """Test that sync manager gets proper composite settings."""
-    # Create fake PC settings
-    class FakePCSettings(PCSettings):
-        APP_DIR = Path("/tmp/app")
-        def get_active_device_plugins(self):
-            return ["test_device"]
+    pc = PCConfig(
+        identifier="manual_pc",
+        paths=paths,
+        session=SessionSettings(timeout_seconds=600),
+        active_device_plugins=("manual_device",),
+    )
 
-    pc_settings = FakePCSettings()
-    device_settings = TestDeviceSettings()
-    settings_manager = SettingsManager(available_devices=[device_settings], pc_settings=pc_settings)
-    SettingsStore.set_manager(settings_manager)
+    device = DeviceConfig(
+        identifier="manual_device",
+        metadata=DeviceMetadata(device_abbr="MANUAL", default_record_description="Manual test device"),
+        files=DeviceFileSelectors(allowed_extensions={".tif"}),
+        session=SessionSettings(timeout_seconds=120),
+    )
 
-    ui = HeadlessUI()
-    sync_manager = KadiSyncManager(interactions=ui, settings_manager=settings_manager)
+    service = init_config(pc, [device])
+    try:
+        ui = HeadlessUI()
+        sync_manager = KadiSyncManager(interactions=ui)
+        assert sync_manager is not None
+    finally:
+        reset_service()
 
-    # Test record sync without device context
-    print("4. Testing record sync...")
-    from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-    from ipat_watchdog.core.session.session_manager import SessionManager
-    
-    session_manager = SessionManager(interactions=ui, scheduler=ui, end_session_callback=lambda: None)
-    file_process_manager = FileProcessManager(interactions=ui, sync_manager=sync_manager, session_manager=session_manager)
-    file_process_manager.sync_records_to_database()
-    print("   ✓ Record sync completed")
-    
-    composite = settings_manager.get_composite_settings()
-    print("Composite settings type:", type(composite).__name__)
-    if hasattr(composite, 'device_id'):
-        print("Composite settings device ID:", composite.device_id)
-    print("Composite settings global APP_DIR:", composite.get_global_settings().APP_DIR if hasattr(composite, 'get_global_settings') else getattr(composite, 'APP_DIR', 'N/A'))
-    if hasattr(composite, 'get_device_settings'):
-        print("Composite settings device ABBR:", composite.get_device_settings().DEVICE_ABBR)
-    print("Sync manager type:", type(sync_manager).__name__)
 
 if __name__ == "__main__":
-    print("Running test_sync_settings_integration...")
-    test_sync_settings_integration()
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as tmp:
+        test_sync_settings_integration(Path(tmp))
+        print("Manual sync integration smoke test completed.")

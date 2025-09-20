@@ -16,8 +16,7 @@ from ipat_watchdog.metrics import (
     SESSION_EXIT_STATUS,
 )
 
-from ipat_watchdog.core.config.settings_store import SettingsManager
-from ipat_watchdog.core.config.constants import WATCH_DIR
+from ipat_watchdog.core.config import ConfigService
 from ipat_watchdog.core.interactions import ErrorMessages
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
@@ -52,7 +51,7 @@ class DeviceWatchdogApp:
         self,
         ui: UserInterface,
         sync_manager: ISyncManager,
-        settings_manager: SettingsManager,
+        config_service: ConfigService,
         session_manager_cls=SessionManager,
         file_process_manager_cls=FileProcessManager,
     ) -> None:
@@ -60,7 +59,9 @@ class DeviceWatchdogApp:
         logger.info("WatchdogApp started at %s", self.start_time.isoformat())
 
         self.files_processed = 0
-        self.settings_manager = settings_manager
+        self.config_service = config_service
+        self.watch_dir = self.config_service.pc.paths.watch_dir
+
         self.ui = ui
         self.interactions = UiInteractionAdapter(ui)
         self.scheduler = UiTaskScheduler(ui)
@@ -84,16 +85,16 @@ class DeviceWatchdogApp:
             interactions=self.interactions,
             sync_manager=sync_manager,
             session_manager=self.session_manager,
-            settings_manager=self.settings_manager,
+            config_service=self.config_service,
         )
 
     def initialize(self) -> None:
         """Initializes the file observer and UI loop."""
-        logger.info("Monitoring directory: %s", WATCH_DIR)
+        logger.info("Monitoring directory: %s", self.watch_dir)
 
         self.event_handler = BasicFileEventHandler(self.event_queue)
         self.observer = Observer()
-        self.observer.schedule(self.event_handler, path=WATCH_DIR, recursive=False)
+        self.observer.schedule(self.event_handler, path=str(self.watch_dir), recursive=False)
         self.observer.start()
 
         self._schedule_next_event_check()

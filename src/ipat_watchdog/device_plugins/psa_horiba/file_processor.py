@@ -7,7 +7,8 @@ import time
 from typing import Dict, Optional
 
 from ipat_watchdog.core.config import constants as _CONST
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config import current
+from ipat_watchdog.core.config import current
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
@@ -21,6 +22,13 @@ from ipat_watchdog.core.storage.filesystem_utils import (
 )
 
 logger = setup_logger(__name__)
+
+
+def _id_separator() -> str:
+    try:
+        return current().id_separator
+    except RuntimeError:
+        return _CONST.ID_SEP
 
 
 class FileProcessorPSAHoriba(FileProcessorABS):
@@ -246,10 +254,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         seeded_path = Path(get_unique_filename(str(record_dir), filename_prefix, res_ext))
         base_stem = seeded_path.stem
 
-        try:
-            sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
-        except Exception:
-            sep = _CONST.ID_SEP
+        sep = _id_separator()
 
         try:
             stem_no_counter, counter_str = base_stem.rsplit(sep, 1)

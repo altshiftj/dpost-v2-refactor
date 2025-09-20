@@ -1,18 +1,26 @@
-from pathlib import Path
+from __future__ import annotations
+
 import re
-from typing import List, Pattern, Optional, Tuple
-import os
-from ipat_watchdog.core.config.pc_settings import PCSettings
 
-class PCHoribaSettings(PCSettings):
-    """Horiba BLB PC specific settings with optimized configuration for Horiba BLB workstations."""
-    
-    SESSION_TIMEOUT: int = 600  # seconds
-    POLL_SECONDS: float = 1.5
-    MAX_WAIT_SECONDS: float = 30.0
-    STABLE_CYCLES: int = 3
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
+from ipat_watchdog.core.config import (
+    NamingSettings,
+    PCConfig,
+    SessionSettings,
+    WatcherSettings,
+)
 
-    def get_active_device_plugins(self) -> list[str]:
-        """Return device plugins for Horiba PC."""
-        return ["psa_horiba", "dsv_horiba"]
+
+def build_config() -> PCConfig:
+    """Return the Horiba BLB PC configuration."""
+    return PCConfig(
+        identifier="horiba_blb",
+        session=SessionSettings(timeout_seconds=600),
+        watcher=WatcherSettings(
+            poll_seconds=1.5,
+            max_wait_seconds=30.0,
+            stable_cycles=3,
+            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+        ),
+        active_device_plugins=("psa_horiba", "dsv_horiba"),
+        naming=NamingSettings(),
+    )

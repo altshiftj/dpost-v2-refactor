@@ -1,14 +1,12 @@
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock
-from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
+
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from ..helpers.fake_observer import FakeObserver
-from ..helpers.fake_handler import FakeFileEventHandler
 
 
 @pytest.fixture
 def patched_watchdog_app(watchdog_app):
-    # No observer setup needed for synchronous app
     return watchdog_app
 
 
@@ -25,7 +23,6 @@ def _drain_pending_tasks(ui, max_iterations: int = 10):
 def test_initialization(patched_watchdog_app, fake_ui):
     patched_watchdog_app.initialize()
 
-    # Only check UI and session manager setup
     assert fake_ui.close_handler is not None
     assert fake_ui.exception_handler is not None
     assert (
@@ -39,14 +36,16 @@ def test_initialization(patched_watchdog_app, fake_ui):
 def test_process_events_with_item(patched_watchdog_app):
     patched_watchdog_app.initialize()
 
-    settings = SettingsStore()
-    sample_path = str(settings.WATCH_DIR / "mus-ipat-sample.tif")
-    patched_watchdog_app.event_queue.put(sample_path)
+    watch_dir = Path(patched_watchdog_app.watch_dir)
+    watch_dir.mkdir(parents=True, exist_ok=True)
+    sample_path = watch_dir / "mus-ipat-sample.tif"
+    sample_path.write_text("data")
+
+    patched_watchdog_app.event_queue.put(str(sample_path))
     patched_watchdog_app.file_processing.processed = []
 
     patched_watchdog_app.process_events()
 
-    # For synchronous mode, check that the file was processed (may need to check output dir)
     assert isinstance(patched_watchdog_app.file_processing.processed, list)
 
 

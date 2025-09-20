@@ -8,9 +8,8 @@ import re
 from typing import Optional, Tuple
 
 from ipat_watchdog.metrics import FILES_FAILED
-from ipat_watchdog.core.config.settings_store import SettingsManager
+from ipat_watchdog.core.config import ConfigService, DeviceConfig, get_service
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.processing.device_context import DeviceContext
 from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
 from ipat_watchdog.core.processing.models import (
     ProcessingCandidate,
@@ -63,17 +62,12 @@ class FileProcessManager:
         interactions: UserInteractionPort,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        settings_manager: SettingsManager | None = None,
+        config_service: ConfigService | None = None,
         file_processor: FileProcessorABS | None = None,
     ) -> None:
         self.interactions = interactions
         self.session_manager = session_manager
-        if settings_manager is None:
-            from ipat_watchdog.core.config.settings_store import SettingsStore
-
-            settings_manager = SettingsStore.get_manager()
-        self.settings_manager = settings_manager
-
+        self.config_service = config_service or get_service()
         self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
         self._processor_factory = FileProcessorFactory()
@@ -95,11 +89,11 @@ class FileProcessManager:
             logger.debug(message)
             return ProcessingResult(ProcessingStatus.DEFERRED, message)
 
-        device_settings = self.settings_manager.select_device_for_file(src_path)
-        if device_settings is None:
+        device = self.config_service.first_matching_device(src_path)
+        if device is None:
             return self._reject_immediately(path, "Invalid file type")
 
-        stability_outcome = FileStabilityTracker(path, device_settings).wait()
+        stability_outcome = FileStabilityTracker(path, device).wait()
         if stability_outcome.rejected:
             reason = stability_outcome.reason or "File rejected by stability guard"
             self._register_rejection(str(path), reason)
@@ -107,12 +101,12 @@ class FileProcessManager:
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
 
-        request = ProcessingRequest(source=path, device_settings=device_settings)
+        request = ProcessingRequest(source=path, device=device)
         candidate: Optional[ProcessingCandidate] = None
 
         try:
-            with DeviceContext(self.settings_manager, device_settings):
-                processor = self._resolve_processor(str(request.source))
+            with self.config_service.activate_device(device):
+                processor = self._resolve_processor(device)
                 item = self._build_candidate(request, processor)
                 if isinstance(item, ProcessingResult):
                     return item
@@ -125,7 +119,7 @@ class FileProcessManager:
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         rejected: list[Tuple[str, str]] = []
-        while not self._rejected_queue.empty():
+        while True:
             try:
                 rejected.append(self._rejected_queue.get_nowait())
             except queue.Empty:
@@ -140,6 +134,7 @@ class FileProcessManager:
         extension: str,
         file_processor: Optional[FileProcessorABS] = None,
         notify: bool = True,
+        device: DeviceConfig | None = None,
     ) -> Optional[str]:
         processor = file_processor or self.file_processor
         if processor is None:
@@ -147,10 +142,10 @@ class FileProcessManager:
             FILES_FAILED.inc()
             raise RuntimeError("No file processor available")
 
-        record = get_or_create_record(self.records, record, filename_prefix)
-        device_settings = self.settings_manager.get_current_device()
-        device_abbr = getattr(device_settings, "DEVICE_ABBR", None) if device_settings else None
-        apply_device_defaults(record, device_settings)
+        device = device or self.config_service.current_device()
+        record = get_or_create_record(self.records, record, filename_prefix, device)
+        device_abbr = device.metadata.device_abbr if device else None
+        apply_device_defaults(record, device)
 
         record_path = get_record_path(filename_prefix, device_abbr)
         file_id = generate_file_id(filename_prefix, device_abbr)
@@ -162,11 +157,7 @@ class FileProcessManager:
         if notify:
             notify_success(self.interactions, src_path, output.final_path)
 
-        logger.debug(
-            "Processed %s → %s",
-            src_path,
-            output.final_path,
-        )
+        logger.debug("Processed %s -> %s", src_path, output.final_path)
 
         update_record(self.records, output.final_path, record)
         manage_session(self.session_manager)
@@ -183,18 +174,10 @@ class FileProcessManager:
     # ------------------------------------------------------------------
     # Internal helpers
     # ------------------------------------------------------------------
-    def _resolve_processor(self, src_path: str) -> FileProcessorABS:
+    def _resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
         if self.file_processor is not None:
             return self.file_processor
-
-        device_settings = self.settings_manager.select_device_for_file(src_path)
-        if device_settings is None:
-            move_to_exception_folder(src_path)
-            FILES_FAILED.inc()
-            raise RuntimeError(f"No processor: unable to match device for {src_path}")
-
-        device_id = device_settings.get_device_id()
-        return self._processor_factory.get_for_device(device_id)
+        return self._processor_factory.get_for_device(device.identifier)
 
     def _build_candidate(
         self,
@@ -222,13 +205,13 @@ class FileProcessManager:
             prefix=prefix,
             extension=extension,
             processor=processor,
-            device_settings=request.device_settings,
+            device=request.device,
             preprocessed_path=preprocessed_path,
         )
 
     def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            self.records, candidate.prefix
+            self.records, candidate.prefix, candidate.device
         )
         decision = determine_routing_state(
             record,
@@ -241,12 +224,9 @@ class FileProcessManager:
 
     def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
         candidate = context.candidate
-        rename_delegate = lambda path, prefix, ext, contextual_reason=None: self._invoke_rename_flow(
-            candidate,
-            prefix,
-            ext,
-            contextual_reason,
-        )
+
+        def rename_delegate(path, prefix, ext, contextual_reason=None):
+            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
 
         if context.decision is RoutingDecision.UNAPPENDABLE:
             return handle_unappendable_record(self.interactions, rename_delegate, context)
@@ -254,7 +234,7 @@ class FileProcessManager:
         if context.decision is RoutingDecision.APPEND_TO_SYNCED:
             return handle_append_to_synced_record(
                 self.interactions,
-                self.add_item_to_record,
+                lambda *args, **kwargs: self.add_item_to_record(*args, **kwargs, device=candidate.device),
                 rename_delegate,
                 context,
             )
@@ -267,6 +247,7 @@ class FileProcessManager:
                 candidate.extension,
                 candidate.processor,
                 notify=False,
+                device=candidate.device,
             )
             return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
 
@@ -297,7 +278,7 @@ class FileProcessManager:
         self, candidate: ProcessingCandidate, prefix_override: str
     ) -> ProcessingResult:
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            self.records, prefix_override
+            self.records, prefix_override, candidate.device
         )
         decision = determine_routing_state(
             record,

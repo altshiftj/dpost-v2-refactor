@@ -1,20 +1,20 @@
-from pathlib import Path
+from __future__ import annotations
+
 import re
-from typing import List, Pattern, Optional, Tuple
-import os
-from ipat_watchdog.core.config.pc_settings import PCSettings
 
-class PCTischREMSettings(PCSettings):
-    """Lab workstation specific settings with optimized configuration for active lab work."""
-    
-    SESSION_TIMEOUT: int = 600  # seconds
+from ipat_watchdog.core.config import PCConfig, SessionSettings, WatcherSettings
 
-    POLL_SECONDS: float = 1.5
-    MAX_WAIT_SECONDS: float = 30.0
-    STABLE_CYCLES: int = 3
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
 
-    def get_active_device_plugins(self) -> list[str]:
-        """Return device plugins for TischREM PC."""
-        return ["sem_phenomxl2"]
-
+def build_config() -> PCConfig:
+    """Return the TischREM BLB PC configuration."""
+    return PCConfig(
+        identifier="tischrem_blb",
+        session=SessionSettings(timeout_seconds=600),
+        watcher=WatcherSettings(
+            poll_seconds=1.5,
+            max_wait_seconds=30.0,
+            stable_cycles=3,
+            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+        ),
+        active_device_plugins=("sem_phenomxl2",),
+    )

@@ -7,6 +7,7 @@ import datetime as dt
 import time
 from typing import Any, Iterable, Optional
 
+from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -28,9 +29,9 @@ class StabilityOutcome:
 class FileStabilityTracker:
     """Inline (blocking) stability tracker used by the processing pipeline."""
 
-    def __init__(self, file_path: Path, device_settings: Any) -> None:
+    def __init__(self, file_path: Path, device: DeviceConfig | None) -> None:
         self.file_path = Path(file_path)
-        self.device_settings = device_settings
+        self.device = device
 
     def wait(self) -> StabilityOutcome:
         deadline = dt.datetime.now() + dt.timedelta(seconds=self._max_wait_seconds())
@@ -69,9 +70,7 @@ class FileStabilityTracker:
             if self._await_sentinel(poll_seconds):
                 continue
 
-            logger.info(
-                "File/folder is stable: %s", self.file_path.name
-            )
+            logger.info("File/folder is stable: %s", self.file_path.name)
             return StabilityOutcome(path=self.file_path, stable=True)
 
     # ------------------------------------------------------------------
@@ -79,8 +78,10 @@ class FileStabilityTracker:
     # ------------------------------------------------------------------
     def _await_sentinel(self, poll_seconds: float) -> bool:
         """Return True if we must wait for a sentinel to appear."""
-        sentinel_name = getattr(self.device_settings, "SENTINEL_NAME", None)
-        if not sentinel_name or not self.file_path.is_dir():
+        if self.device is None or not self.file_path.is_dir():
+            return False
+        sentinel_name = self.device.watcher.sentinel_name
+        if not sentinel_name:
             return False
         sentinel_path = self.file_path / sentinel_name
         if sentinel_path.exists():
@@ -109,11 +110,13 @@ class FileStabilityTracker:
         return file_count, total_size, newest_mtime
 
     def _iter_files(self, directory: Path) -> Iterable[Path]:
-        temp_patterns = getattr(self.device_settings, "TEMP_PATTERNS", tuple())
-        if isinstance(temp_patterns, str):
-            temp_patterns = (temp_patterns,)
-        temp_patterns = tuple(p.lower() for p in temp_patterns)
-
+        temp_patterns: tuple[str, ...] = tuple()
+        if self.device is not None:
+            patterns = self.device.watcher.temp_patterns
+            if isinstance(patterns, str):
+                temp_patterns = (patterns.lower(),)
+            else:
+                temp_patterns = tuple(p.lower() for p in patterns)
         for path in directory.rglob("*"):
             if not path.is_file():
                 continue
@@ -122,22 +125,19 @@ class FileStabilityTracker:
             yield path
 
     def _poll_seconds(self) -> float:
-        try:
-            return max(float(getattr(self.device_settings, "POLL_SECONDS", 1.0)), 0.0)
-        except Exception:
+        if self.device is None:
             return 1.0
+        return max(float(self.device.watcher.poll_seconds), 0.0)
 
     def _max_wait_seconds(self) -> int:
-        try:
-            return int(getattr(self.device_settings, "MAX_WAIT_SECONDS", 300))
-        except Exception:
+        if self.device is None:
             return 300
+        return int(self.device.watcher.max_wait_seconds)
 
     def _stable_cycles(self) -> int:
-        try:
-            return int(getattr(self.device_settings, "STABLE_CYCLES", 3))
-        except Exception:
+        if self.device is None:
             return 3
+        return int(self.device.watcher.stable_cycles)
 
     @staticmethod
     def _sleep(seconds: float) -> None:

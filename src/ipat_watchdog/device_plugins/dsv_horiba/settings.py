@@ -1,36 +1,26 @@
-# ipat_watchdog/device_plugins/dsv_horiba/settings.py
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-import re
+from __future__ import annotations
 
-class SettingsDSVHoriba(DeviceSettings):
-    """
-    Configuration for the Horiba Dissolver.
-    Handles raw data files (.wdb, .wdk, .wdp) and exported text files (.txt).
-    """
+from ipat_watchdog.core.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    SessionSettings,
+    WatcherSettings,
+)
 
-    # Device identity
-    DEVICE_ID = "dsv_horiba"
 
-    # ─── Runtime / Watchdog ----------------------------------------------------
-    SESSION_TIMEOUT       = 600 # seconds
-
-    # ─── File handling ---------------------------------------------------------
-    ALLOWED_EXTENSIONS        = {".wdb", ".wdk", ".wdp", ".txt"}
-
-    # ─── Device identity -------------------------------------------------------
-    DEVICE_USER_KADI_ID       = "dsv-01-usr"
-    DEVICE_USER_PERSISTENT_ID = 31
-    DEVICE_RECORD_KADI_ID     = "dsv_01"
-    DEVICE_RECORD_PERSISTENT_ID = 562
-    DEVICE_ABBR               = "DSV"
-
-    # ─── Metadata defaults -----------------------------------------------------
-    RECORD_TAGS = [
-        "Dissolution Test",
-        "Particle Analysis",
-    ]
-
-    DEFAULT_RECORD_DESCRIPTION = r"""
+def build_config() -> DeviceConfig:
+    """Return the Horiba dissolver device configuration."""
+    return DeviceConfig(
+        identifier="dsv_horiba",
+        metadata=DeviceMetadata(
+            user_kadi_id="dsv-01-usr",
+            user_persistent_id=31,
+            record_kadi_id="dsv_01",
+            record_persistent_id=562,
+            device_abbr="DSV",
+            record_tags=("Dissolution Test", "Particle Analysis"),
+            default_record_description=r"""
 ## Horiba Dissolver Analysis
 
 This record contains both the **raw binary data** (`*.wdb`, `*.wdk`, `*.wdp`, compressed into ZIP)
@@ -45,5 +35,11 @@ processed results and dissolution curves.
 - `.txt` - Exported dissolution results and curves
 
 **Analysis parameters:** Sample size, dissolution medium, temperature, stirring rate.
-"""
-
+""",
+        ),
+        files=DeviceFileSelectors(
+            allowed_extensions={".wdb", ".wdk", ".wdp", ".txt"},
+        ),
+        session=SessionSettings(timeout_seconds=600),
+        watcher=WatcherSettings(),
+    )

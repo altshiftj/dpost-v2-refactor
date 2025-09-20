@@ -1,14 +1,13 @@
-# tests/conftest.py
 import pytest
 from pathlib import Path
+from dataclasses import replace
+from types import SimpleNamespace
 
-import dotenv
-dotenv.load_dotenv()
-
-from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from ipat_watchdog.core.config.pc_settings import PCSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from ipat_watchdog.core.config import init_config, reset_service, current
+from ipat_watchdog.core.storage.filesystem_utils import init_dirs
+from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config
+from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 from tests.helpers.fake_ui import HeadlessUI
 from tests.helpers.fake_sync import DummySyncManager
@@ -18,88 +17,74 @@ from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_process_manager import FakeFileProcessManager
 
-# ───────────────────────────────────────── fixtures ──────────────────────────
 
 @pytest.fixture
-def fake_settings_manager(tmp_settings):
-    """Create a fake settings manager for tests using test PC plugin."""
-    from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
-    
-    # Get the path overrides from tmp_settings
-    path_overrides = {
-        attr: getattr(tmp_settings, attr) for attr in [
-            'APP_DIR', 'WATCH_DIR', 'DEST_DIR', 'RENAME_DIR', 
-            'EXCEPTIONS_DIR', 'DAILY_RECORDS_JSON', 'LOG_FILE'
-        ] if hasattr(tmp_settings, attr)
-    }
-    
-    # Create test PC plugin with the same path overrides
-    test_pc_plugin = TestPCPlugin(override_paths=path_overrides)
-    pc_settings = test_pc_plugin.get_settings()
-    
-    settings_manager = SettingsManager(
-        available_devices=[tmp_settings],
-        pc_settings=pc_settings
-    )
-    SettingsStore.set_manager(settings_manager)
-    return settings_manager
-
-@pytest.fixture(autouse=True)
-def _reset_settings_store():
-    yield
-    SettingsStore.reset()           # leaves prod global state untouched
-
-
-@pytest.fixture
-def tmp_settings(tmp_path) -> DeviceSettings:
-    """Return a settings instance whose entire file-tree lives in tmp_path."""
-    from ipat_watchdog.device_plugins.test_device.settings import TestDeviceSettings
-    from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
-    from pathlib import Path
-    
+def config_service(tmp_path) -> init_config.__annotations__["return"]:
+    """Initialise the configuration service with sandboxed paths for tests."""
     root: Path = tmp_path / "sandbox"
-
-    # Create path overrides for both device and PC settings
-    path_overrides = {
-        'APP_DIR': root / "App",
-        'WATCH_DIR': root / "Upload",
-        'DEST_DIR': root / "Data", 
-        'RENAME_DIR': root / "Data" / "00_To_Rename",
-        'EXCEPTIONS_DIR': root / "Data" / "01_Exceptions",
-        'DAILY_RECORDS_JSON': root / "records.json",
-        'LOG_FILE': root / "watchdog.log"
+    overrides = {
+        "app_dir": root / "App",
+        "watch_dir": root / "Upload",
+        "dest_dir": root / "Data",
+        "rename_dir": root / "Data" / "00_To_Rename",
+        "exceptions_dir": root / "Data" / "01_Exceptions",
+        "daily_records_json": root / "records.json",
     }
 
-    # Create test PC plugin with path overrides
-    test_pc_plugin = TestPCPlugin(override_paths=path_overrides)
-    pc_settings = test_pc_plugin.get_settings()
-    
-    # Create a test device settings instance with the same path overrides
-    settings = TestDeviceSettings()
-    
-    # Override paths to use temporary directory
-    for key, value in path_overrides.items():
-        setattr(settings, key, value)  # Force set even if attribute doesn't exist yet
-    
-    # Override for faster testing
-    settings.POLL_SECONDS = 0.2
-    settings.STABLE_CYCLES = 1
-    settings.MAX_WAIT_SECONDS = 10.0
-    settings.SESSION_TIMEOUT = 300
-    settings.DEBOUNCE_TIME = 0.1
-    settings.SENTINEL_NAME = None  # Can be overridden by individual tests
+    pc_config = build_pc_config(override_paths=overrides)
+    pc_config = replace(pc_config, session=replace(pc_config.session, timeout_seconds=300))
 
-    # Automatically create dirs when instantiated
-    for d in (
-        settings.WATCH_DIR,
-        settings.DEST_DIR,
-        settings.RENAME_DIR,
-        settings.EXCEPTIONS_DIR,
-    ):
-        d.mkdir(parents=True, exist_ok=True)
+    device_config = build_device_config()
+    device_config = replace(
+        device_config,
+        session=replace(device_config.session, timeout_seconds=300),
+        watcher=replace(
+            device_config.watcher,
+            poll_seconds=0.2,
+            max_wait_seconds=10.0,
+            stable_cycles=1,
+        ),
+    )
 
-    SettingsStore.set_manager(SettingsManager(available_devices=[settings], pc_settings=pc_settings))
-    return settings
+    service = init_config(pc_config, [device_config])
+    init_dirs()
+    yield service
+    reset_service()
+
+
+@pytest.fixture
+def pc_paths(config_service):
+    return config_service.pc.paths
+
+
+@pytest.fixture
+def device_config(config_service):
+    return config_service.devices[0]
+
+
+@pytest.fixture
+def tmp_settings(config_service, pc_paths, device_config):
+    log_file = pc_paths.app_dir / "watchdog.log"
+    return SimpleNamespace(
+        APP_DIR=pc_paths.app_dir,
+        WATCH_DIR=pc_paths.watch_dir,
+        DEST_DIR=pc_paths.dest_dir,
+        RENAME_DIR=pc_paths.rename_dir,
+        EXCEPTIONS_DIR=pc_paths.exceptions_dir,
+        DAILY_RECORDS_JSON=pc_paths.daily_records_json,
+        LOG_FILE=log_file,
+        POLL_SECONDS=device_config.watcher.poll_seconds,
+        STABLE_CYCLES=device_config.watcher.stable_cycles,
+        MAX_WAIT_SECONDS=device_config.watcher.max_wait_seconds,
+        SESSION_TIMEOUT=device_config.session.timeout_seconds,
+        DEBOUNCE_TIME=0.1,
+        SENTINEL_NAME=device_config.watcher.sentinel_name,
+    )
+
+
+@pytest.fixture
+def active_config(config_service):
+    return current()
 
 
 @pytest.fixture
@@ -138,15 +123,12 @@ def fake_file_process_manager():
 
 
 @pytest.fixture
-def watchdog_app(
-    tmp_settings,
-    fake_ui,
-    fake_sync,
-    fake_settings_manager
-):
-    app = DeviceWatchdogApp(
+def watchdog_app(config_service, fake_ui, fake_sync):
+    init_dirs()
+    return DeviceWatchdogApp(
         ui=fake_ui,
         sync_manager=fake_sync,
-        settings_manager=fake_settings_manager,
+        config_service=config_service,
+        session_manager_cls=FakeSessionManager,
+        file_process_manager_cls=FakeFileProcessManager,
     )
-    return app

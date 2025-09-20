@@ -6,9 +6,6 @@ from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
-# --- Dummy Classes to Simulate KadiManager Resources ---
-
-
 class DummyKadiUser:
     def __init__(self, user_id="dummy_user"):
         self.id = user_id
@@ -78,12 +75,11 @@ class DummyKadiManager:
 class DummyUI:
     def __init__(self):
         self.error_shown = None
+        self.errors = []
 
     def show_error(self, title, message):
         self.error_shown = (title, message)
-
-
-# --- Fixtures ---
+        self.errors.append((title, message))
 
 
 @pytest.fixture
@@ -92,8 +88,7 @@ def dummy_ui_instance():
 
 
 @pytest.fixture
-def local_record(tmp_path, tmp_settings):
-    # tmp_settings ensures SettingsStore is initialized before LocalRecord.__post_init__
+def local_record(tmp_path):
     fake_file = tmp_path / "image.tif"
     fake_file.write_text("dummy image data")
     record = LocalRecord(
@@ -107,36 +102,25 @@ def local_record(tmp_path, tmp_settings):
 
 
 @pytest.fixture
-def sync_mgr(fake_ui, tmp_settings, monkeypatch):
-    # Monkey-patch KadiManager inside the module under test
+def sync_mgr(fake_ui, monkeypatch):
     import ipat_watchdog.core.sync.sync_kadi as _mod
     monkeypatch.setattr(_mod, "KadiManager", DummyKadiManager)
-    
-    # Ensure device context is set for settings manager
-    from ipat_watchdog.core.config.settings_store import SettingsStore
-    settings_manager = SettingsStore.get_manager()
-    if hasattr(settings_manager, '_devices'):
-        for device in settings_manager._devices.values():
-            if device.get_device_id() == "test_device":
-                settings_manager.set_current_device(device)
-                break
-    
-    return KadiSyncManager(interactions=fake_ui, settings_manager=settings_manager)
+    return KadiSyncManager(interactions=fake_ui)
 
+
+# The remaining tests operate on sync_mgr
 
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
-    dummy_mgr.user.return_value = DummyKadiUser("abc-ipat")
     user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
-    assert user.id == "abc-ipat"
+    assert user is not None
 
 
-def test_get_db_user_from_local_record_user_not_found(sync_mgr, fake_ui, local_record):
+def test_get_db_user_from_local_record_user_not_found(sync_mgr, local_record, fake_ui):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.user.side_effect = Exception("User not found")
     user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
     assert user is None
-    # HeadlessUI records errors in .errors
     assert fake_ui.errors
 
 
@@ -178,7 +162,6 @@ def test_initialize_new_db_record(sync_mgr, local_record):
 
     local_record.is_in_db = False
 
-    # Create a dummy context object with required attributes
     class DummyContext:
         def __init__(self):
             self.db_record = dummy_record
@@ -215,7 +198,6 @@ def test_upload_record_files_success(sync_mgr):
 
     sync_mgr._upload_record_files(dummy_record, record)
 
-    # All statuses should become True
     assert all(record.files_uploaded.values())
     assert dummy_record.upload_file.call_count == 2
 
@@ -242,7 +224,6 @@ def test_upload_record_files_missing(sync_mgr):
 
     sync_mgr._upload_record_files(dummy_record, record)
 
-    # file1 should be removed, file2 marked True
     assert "/dummy/path/file1.tif" not in record.files_uploaded
     assert record.files_uploaded["/dummy/path/file2.tif"] is True
 

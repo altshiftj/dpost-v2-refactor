@@ -1,77 +1,40 @@
-# tests/unit/test_test_pc_plugin.py
-"""
-Tests for the test PC plugin to ensure it provides proper isolation.
-"""
-import pytest
+"""Tests for the test PC plugin to ensure it provides proper isolation."""
 from pathlib import Path
 
 from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
-from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
+from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 
 def test_test_pc_plugin_basic_functionality():
-    """Test that test PC plugin creates properly configured settings."""
     plugin = TestPCPlugin()
-    settings = plugin.get_settings()
-    
-    assert isinstance(settings, TestPCSettings)
-    assert settings.PC_NAME == "TEST_PC"
-    assert settings.PC_LOCATION == "Test Lab"
-    assert "test_device" in settings.DEVICE_MAPPING
+    config = plugin.get_config()
+
+    assert config.identifier == "test_pc"
+    assert config.name == "TEST_PC"
+    assert config.location == "Test Lab"
+    assert tuple(config.active_device_plugins) == ("test_device",)
 
 
 def test_test_pc_plugin_path_overrides(tmp_path):
-    """Test that test PC plugin accepts path overrides for testing."""
     override_paths = {
-        'WATCH_DIR': tmp_path / "test_upload",
-        'DEST_DIR': tmp_path / "test_data",
-        'RENAME_DIR': tmp_path / "test_data" / "rename",
-        'EXCEPTIONS_DIR': tmp_path / "test_data" / "exceptions",
+        "app_dir": tmp_path / "app",
+        "watch_dir": tmp_path / "upload",
+        "dest_dir": tmp_path / "data",
+        "rename_dir": tmp_path / "data" / "rename",
+        "exceptions_dir": tmp_path / "data" / "exceptions",
+        "daily_records_json": tmp_path / "records.json",
     }
-    
-    plugin = TestPCPlugin(override_paths=override_paths)
-    settings = plugin.get_settings()
-    
-    assert settings.WATCH_DIR == override_paths['WATCH_DIR']
-    assert settings.DEST_DIR == override_paths['DEST_DIR']
-    assert settings.RENAME_DIR == override_paths['RENAME_DIR']
-    assert settings.EXCEPTIONS_DIR == override_paths['EXCEPTIONS_DIR']
+
+    config = build_pc_config(override_paths=override_paths)
+
+    assert config.paths.watch_dir == override_paths["watch_dir"]
+    assert config.paths.dest_dir == override_paths["dest_dir"]
+    assert config.paths.rename_dir == override_paths["rename_dir"]
+    assert config.paths.exceptions_dir == override_paths["exceptions_dir"]
 
 
-def test_test_pc_settings_device_mapping():
-    """Test that test PC settings has correct device mapping."""
-    settings = TestPCSettings()
-    
-    assert settings.get_pc_id() == "test_pc"
-    assert settings.get_active_device_plugins() == ["test_device"]
-    assert settings.validate_configuration() is True
-
-
-def test_test_pc_settings_paths():
-    """Test that test PC settings has expected default paths."""
-    settings = TestPCSettings()
-    
-    # Should have default paths
-    assert hasattr(settings, 'WATCH_DIR')
-    assert hasattr(settings, 'DEST_DIR')
-    assert hasattr(settings, 'RENAME_DIR')
-    assert hasattr(settings, 'EXCEPTIONS_DIR')
-    
-    # Paths should be Path objects
-    assert isinstance(settings.WATCH_DIR, Path)
-    assert isinstance(settings.DEST_DIR, Path)
-
-
-def test_test_pc_plugin_integration_with_device():
-    """Test that test PC plugin works well with test device plugin."""
-    plugin = TestPCPlugin()
-    settings = plugin.get_settings()
-    
-    # Should map to test device
-    device_mapping = settings.DEVICE_MAPPING
-    assert "test_device" in device_mapping
-    assert device_mapping["test_device"] == "test_device"
-    
-    # Should have test device in active plugins
-    active_devices = settings.get_active_device_plugins()
-    assert "test_device" in active_devices
+def test_test_pc_config_attributes():
+    config = build_pc_config()
+    assert isinstance(config.paths.watch_dir, Path)
+    assert isinstance(config.paths.dest_dir, Path)
+    assert config.active_device_plugins == ("test_device",)

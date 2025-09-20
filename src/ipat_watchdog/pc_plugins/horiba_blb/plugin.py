@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.pc_plugins.horiba_blb.settings import PCHoribaSettings
-from ipat_watchdog.core.config.pc_settings import PCSettings
+from ipat_watchdog.pc_plugins.horiba_blb.settings import build_config
+from ipat_watchdog.core.config import PCConfig
+
 
 class PCHoribaPlugin(PCPlugin):
-    """Horiba BLB PC plugin with optimized settings for Horiba environments."""
+    """Horiba BLB PC plugin with optimised configuration."""
 
     def __init__(self) -> None:
-        self._settings = PCHoribaSettings()
+        self._config = build_config()
 
-    # ---- PCPlugin contract ---------------------------------------------
-
-    def get_settings(self) -> PCSettings:
-        return self._settings
+    def get_config(self) -> PCConfig:
+        return self._config

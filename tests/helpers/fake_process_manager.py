@@ -2,11 +2,12 @@ from ipat_watchdog.core.processing.models import ProcessingResult, ProcessingSta
 
 
 class FakeFileProcessManager:
-    def __init__(self, interactions, sync_manager, session_manager, settings_manager=None, file_processor=None, **kwargs):
+    def __init__(self, interactions, sync_manager, session_manager, config_service=None, file_processor=None, **kwargs):
         self.processed = []
         self.records_synced = False
         self._rejected = []
         self.interactions = interactions
+        self.config_service = config_service
 
     def process_item(self, path):
         self.processed.append(path)

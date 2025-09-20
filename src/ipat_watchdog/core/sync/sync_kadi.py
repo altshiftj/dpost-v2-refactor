@@ -5,7 +5,6 @@ from typing import Optional
 from ipat_watchdog.core.interactions import ErrorMessages, UserInteractionPort
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.config.settings_store import SettingsManager
 from ipat_watchdog.core.config.constants import ID_SEP
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.metrics import FILES_PROCESSED
@@ -32,11 +31,10 @@ class DataSyncContext:
 class KadiSyncManager(ISyncManager):
     """Synchronise `LocalRecord` instances with the Kadi database."""
 
-    def __init__(self, interactions: UserInteractionPort, settings_manager: SettingsManager) -> None:
+    def __init__(self, interactions: UserInteractionPort) -> None:
         """Initialise the sync manager with UI-agnostic collaborators."""
         super().__init__(interactions)
         self.db_manager = KadiManager()
-        self.settings_manager = settings_manager
 
     def sync_record_to_database(self, local_record: LocalRecord) -> bool:
         try:

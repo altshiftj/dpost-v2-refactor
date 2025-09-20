@@ -1,54 +1,35 @@
-from typing import Set, List, Tuple, Pattern, Optional
+from __future__ import annotations
 
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
 import re
 
-class SettingsZwickUTM(DeviceSettings):
-    """
-    Configuration for the Zwick/Roell universal testing machine.
-    Overrides device-specific settings from DeviceSettings.
-    """
-
-    # Device identity
-    DEVICE_ID = "utm_zwick"
-
-    # ─── Runtime / Watchdog ----------------------------------------------------
-    SESSION_TIMEOUT       = 4 * 3600             # close session after 4 h idle
-
-    # ─── File handling ---------------------------------------------------------
-    ALLOWED_EXTENSIONS        = {".zs2", ".xlsx"}
-    ALLOWED_FOLDER_CONTENTS   = set()             # device writes plain files
-    SENTINEL_NAME             = None              # rely on stable-cycles logic
-
-   # === Snapshot Watcher Settings ===
-    POLL_SECONDS: float = 0.5
-    MAX_WAIT_SECONDS: float = 30
-    STABLE_CYCLES: int = 2
-    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
-    SENTINEL_NAME: Optional[str] = None
+from ipat_watchdog.core.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    SessionSettings,
+    WatcherSettings,
+)
 
 
-    # ─── Device identity -------------------------------------------------------
-    DEVICE_USER_KADI_ID       = "utm-01-usr"
-    DEVICE_USER_PERSISTENT_ID = 30
-    DEVICE_RECORD_KADI_ID     = "utm_01"
-    DEVICE_RECORD_PERSISTENT_ID = 561
-    DEVICE_ABBR               = "UTM"
-
-    # ─── Metadata defaults -----------------------------------------------------
-    RECORD_TAGS = [
-        "Mechanical Test",
-    ]
-
-    DEFAULT_RECORD_DESCRIPTION = r"""
+def build_config() -> DeviceConfig:
+    """Return the Zwick UTM device configuration."""
+    return DeviceConfig(
+        identifier="utm_zwick",
+        metadata=DeviceMetadata(
+            user_kadi_id="utm-01-usr",
+            user_persistent_id=30,
+            record_kadi_id="utm_01",
+            record_persistent_id=561,
+            device_abbr="UTM",
+            record_tags=("Mechanical Test",),
+            default_record_description=r"""
 ## Zwick/Roell Universal Testing Machine
 
 This record contains both the **raw binary output** (`*.zs2`, compressed into ZIP)
 and the **post-processed Excel workbook** (`*.xlsx`) for each tensile/compression
-test.  Raw files preserve the full resolution of force–displacement channels and
+test.  Raw files preserve the full resolution of force-displacement channels and
 can be re-analysed in Zwick testXpert.  The Excel file includes the calculated
-stress–strain curve and summary statistics.
+stress-strain curve and summary statistics.
 
 **Typical columns in the workbook**
 
@@ -62,4 +43,18 @@ stress–strain curve and summary statistics.
 
 Please add sample geometry, material batch, gauge length and other context
 information below.
-"""
+""",
+        ),
+        files=DeviceFileSelectors(
+            allowed_extensions={".zs2", ".xlsx"},
+        ),
+        session=SessionSettings(timeout_seconds=4 * 3600),
+        watcher=WatcherSettings(
+            poll_seconds=0.5,
+            max_wait_seconds=30,
+            stable_cycles=2,
+            temp_patterns=(".tmp", ".part", ".crdownload", ".~", "-journal"),
+            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+            sentinel_name=None,
+        ),
+    )

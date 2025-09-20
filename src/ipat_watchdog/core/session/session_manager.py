@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.config import current
 from ipat_watchdog.core.interactions import TaskScheduler, UserInteractionPort
 from ipat_watchdog.core.logging.logger import setup_logger
 
@@ -24,7 +24,6 @@ class SessionManager:
         self.end_session_callback = end_session_callback
         self.session_active = False
         self.timer_id: Optional[Any] = None
-        self.settings = SettingsStore.get()
 
     @property
     def is_active(self) -> bool:
@@ -52,7 +51,11 @@ class SessionManager:
 
     def _schedule_timeout(self) -> None:
         self._cancel_timer()
-        timeout_ms = self.settings.SESSION_TIMEOUT * 1000
+        timeout_seconds = current().session_timeout
+        if timeout_seconds < 0:
+            logger.debug("Session timeout disabled (value: %s).", timeout_seconds)
+            return
+        timeout_ms = timeout_seconds * 1000
         self.timer_id = self._scheduler.schedule(timeout_ms, self.end_session)
 
     def _cancel_timer(self) -> None:

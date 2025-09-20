@@ -2,38 +2,17 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager
-from ipat_watchdog.pc_plugins.test_pc.settings import TestPCSettings
 from ipat_watchdog.core.records.local_record import LocalRecord
-
-
-# ──────────────────────────────── Fixtures ──────────────────────────────── #
-
-@pytest.fixture(autouse=True)
-def init_settings(tmp_path):
-    """
-    Ensures that the SettingsStore is initialized before each test.
-    Required for LocalRecord to parse identifier correctly.
-    """
-    pc_settings = TestPCSettings()
-    pc_settings.ID_SEP = "-"
-    settings_manager = SettingsManager(
-        available_devices=[],
-        pc_settings=pc_settings
-    )
-    SettingsStore.set_manager(settings_manager)
-    yield
-    SettingsStore.reset()
 
 
 @pytest.fixture
 def sample_record():
     return LocalRecord(
-        identifier="dev-jdoe-ipat-sample_1", datatype="tiff", date="20250405"
+        identifier="dev-jdoe-ipat-sample_1",
+        datatype="tiff",
+        date="20250405",
     )
 
-
-# ──────────────────────────────── Tests ──────────────────────────────── #
 
 def test_init_defaults():
     record = LocalRecord()

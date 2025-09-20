@@ -1,48 +1,28 @@
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+from __future__ import annotations
+
 import re
-from typing import Set, List, Tuple, Pattern, Optional
 
-class SEMPhenomXL2Settings(DeviceSettings):
-    """
-    Configuration for the Phenom XL TischREM device.
-    Overrides device-specific settings from DeviceSettings.
-    """
-    # Device identity
-    DEVICE_ID = "sem_phenomxl2"
-
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📂 File Settings
-    # ──────────────────────────────────────────────────────────────────────────────
-    ALLOWED_EXTENSIONS = {".tiff", ".tif"}
-    ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
-
-   # === Snapshot Watcher Settings ===
-    POLL_SECONDS: float = 1.5
-    MAX_WAIT_SECONDS: float = 30
-    STABLE_CYCLES: int = 3
-    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
-    SENTINEL_NAME: Optional[str] = None
+from ipat_watchdog.core.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    SessionSettings,
+    WatcherSettings,
+)
 
 
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📟 Device Identity
-    # ──────────────────────────────────────────────────────────────────────────────
-    
-    DEVICE_USER_KADI_ID = "sem-01-usr"
-    DEVICE_USER_PERSISTENT_ID = 22
-    DEVICE_RECORD_KADI_ID = "sem_01"
-    DEVICE_RECORD_PERSISTENT_ID = 190
-    DEVICE_ABBR = "SEM"
-
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📝 Metadata Defaults
-    # ──────────────────────────────────────────────────────────────────────────────
-    RECORD_TAGS = [
-        "Electron Microscopy",
-    ]
-
-    DEFAULT_RECORD_DESCRIPTION = r"""
+def build_config() -> DeviceConfig:
+    """Return the Phenom XL2 SEM device configuration."""
+    return DeviceConfig(
+        identifier="sem_phenomxl2",
+        metadata=DeviceMetadata(
+            user_kadi_id="sem-01-usr",
+            user_persistent_id=22,
+            record_kadi_id="sem_01",
+            record_persistent_id=190,
+            device_abbr="SEM",
+            record_tags=("Electron Microscopy",),
+            default_record_description=r"""
     # Default Description
     *Can be edited and/or overwritten*  
     **Please provide a detailed description of the data contained in this record, especially if the data will be used in publications or future research.**
@@ -63,18 +43,33 @@ class SEMPhenomXL2Settings(DeviceSettings):
     2. **Elemental Analysis**  
        - Analyses can be performed at a point, along a line, or within a defined region.  
        - Results typically include:  
-         - **Documentation Files** – Summaries of measurement settings.  
-         - **Images** – Overlaid with elemental signals or regions of interest.  
-         - **Graphs** – Depicting elemental composition and distribution.
+         - **Documentation Files** - Summaries of measurement settings.  
+         - **Images** - Overlaid with elemental signals or regions of interest.  
+         - **Graphs** - Depicting elemental composition and distribution.
 
     3. **Surface Profiling**  
        - Although used infrequently, this feature produces:  
-         - **Documentation Files** – Descriptions of the profiling methods.  
-         - **Images** – Visual overviews of the sample’s surface.  
-         - **Heat Maps** – Indicating surface elevations or contours.  
+         - **Documentation Files** - Descriptions of the profiling methods.  
+         - **Images** - Visual overviews of the sample's surface.  
+         - **Heat Maps** - Indicating surface elevations or contours.  
        - **Note:** Data integration of these file types is currently not supported. If you require this integration, please contact the system administrator.
 
     ---
 
     **Please ensure all relevant information (such as measurement conditions, parameters or additional metadata) is accurately recorded here for future reference and publication.**
-    """
+    """,
+        ),
+        files=DeviceFileSelectors(
+            allowed_extensions={".tiff", ".tif"},
+            allowed_folder_contents={".odt", ".elid"},
+        ),
+        session=SessionSettings(timeout_seconds=300),
+        watcher=WatcherSettings(
+            poll_seconds=1.5,
+            max_wait_seconds=30,
+            stable_cycles=3,
+            temp_patterns=(".tmp", ".part", ".crdownload", ".~", "-journal"),
+            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+            sentinel_name=None,
+        ),
+    )

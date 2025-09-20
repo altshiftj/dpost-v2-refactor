@@ -1,50 +1,28 @@
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
+from __future__ import annotations
+
 import re
-from typing import Optional, Pattern, Tuple
 
-class PSAHoribaSettings(DeviceSettings):
-    """
-    Configuration for the Horiba Partica LA-960 device.
-    Overrides device-specific settings from DeviceSettings.
-    """
+from ipat_watchdog.core.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    SessionSettings,
+    WatcherSettings,
+)
 
-    # Device identity
-    DEVICE_ID = "psa_horiba"
 
-    SESSION_TIMEOUT = 600  # seconds
-
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📂 File Settings
-    # ──────────────────────────────────────────────────────────────────────────────
-    ALLOWED_EXTENSIONS = {".csv", ".ngb"}
-    ALLOWED_FOLDER_CONTENTS = {".csv", ".ngb"}
-
-   # === Snapshot Watcher Settings ===
-    POLL_SECONDS: float = 0.25
-    MAX_WAIT_SECONDS: float = 30
-    STABLE_CYCLES: int = 2
-    TEMP_PATTERNS: Tuple[str, ...] = ('.tmp', '.part', '.crdownload', '.~', '-journal')
-    TEMP_FOLDER_REGEX: Pattern[str] = re.compile(r"\.[A-Za-z0-9]{6}$")
-    SENTINEL_NAME: Optional[str] = None
-
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📟 Device Identity
-    # ──────────────────────────────────────────────────────────────────────────────
-    
-    DEVICE_USER_KADI_ID = "psa-01-usr"
-    DEVICE_USER_PERSISTENT_ID = 34
-    DEVICE_RECORD_KADI_ID = "psa_01"
-    DEVICE_RECORD_PERSISTENT_ID = 613
-    DEVICE_ABBR = "PSA"
-
-    # ──────────────────────────────────────────────────────────────────────────────
-    # 📝 Metadata Defaults
-    # ──────────────────────────────────────────────────────────────────────────────
-    RECORD_TAGS = [
-        "Laser Diffraction",
-    ]
-
-    DEFAULT_RECORD_DESCRIPTION = r"""
+def build_config() -> DeviceConfig:
+    """Return the PSA Horiba device configuration."""
+    return DeviceConfig(
+        identifier="psa_horiba",
+        metadata=DeviceMetadata(
+            user_kadi_id="psa-01-usr",
+            user_persistent_id=34,
+            record_kadi_id="psa_01",
+            record_persistent_id=613,
+            device_abbr="PSA",
+            record_tags=("Laser Diffraction",),
+            default_record_description=r"""
     # Default Description
     *Can be edited and/or overwritten*  
     **Please provide a detailed description of the data contained in this record, especially if the data will be used in publications or future research.**
@@ -59,4 +37,19 @@ class PSAHoribaSettings(DeviceSettings):
     ## Data Types
 
     **Please ensure all relevant information (such as measurement conditions, parameters or additional metadata) is accurately recorded here for future reference and publication.**
-    """
+    """,
+        ),
+        files=DeviceFileSelectors(
+            allowed_extensions={".csv", ".ngb"},
+            allowed_folder_contents={".csv", ".ngb"},
+        ),
+        session=SessionSettings(timeout_seconds=600),
+        watcher=WatcherSettings(
+            poll_seconds=0.25,
+            max_wait_seconds=30,
+            stable_cycles=2,
+            temp_patterns=(".tmp", ".part", ".crdownload", ".~", "-journal"),
+            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+            sentinel_name=None,
+        ),
+    )
