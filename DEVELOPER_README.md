@@ -22,530 +22,291 @@ src/ipat_watchdog/
 ├── observability.py              # Health checks and log viewer
 ├── core/                          # Core framework components
 │   ├── app/
-│   │   └── device_watchdog_app.py # Main application orchestrator
-│   ├── config/
-│   │   ├── settings_base.py       # Base configuration class
-│   │   └── settings_store.py      # Global settings management
-│   ├── handlers/
-│   │   └── file_event_handler.py  # Filesystem event handling
-│   ├── logging/
-│   │   └── logger.py              # Structured logging setup
-│   ├── processing/
-│   │   ├── file_processor_abstract.py # File processing interface
-│   │   └── file_process_manager.py    # File processing orchestration
-│   ├── records/
-│   │   ├── local_record.py        # Data record model
-│   │   └── record_manager.py      # Record lifecycle management
-│   ├── session/
-│   │   └── session_manager.py     # Session handling and timeouts
-│   ├── storage/
-│   │   └── filesystem_utils.py    # File system utilities
-│   ├── sync/
-│   │   ├── sync_abstract.py       # Sync interface
-│   │   └── sync_kadi.py           # Kadi database synchronization
-│   └── ui/
-│       ├── ui_abstract.py         # UI interface
-│       ├── ui_tkinter.py          # Tkinter UI implementation
-│       ├── ui_messages.py         # Standard UI messages
-│       └── dialogs.py             # Custom dialog implementations
-└── device_plugins/                # Device-specific implementations
-    ├── device_plugin.py           # Plugin interface
-    ├── sem_phenomxl2/             # SEM TischREM device plugin
-    ├── psa_horiba/                # PSA Horiba device plugin
-    ├── dsv_horiba/                # DSV Horiba device plugin
-    └── utm_zwick/                 # UTM Zwick device plugin
-└── pc_plugins/                    # PC-specific implementations
-    ├── pc_plugin.py               # PC Plugin interface
-    ├── tischrem_blb/              # TischREM lab configuration
-    ├── zwick_blb/                 # Zwick testing configuration
-    └── horiba_blb/                # Horiba lab configuration
-```
-
-## 🔧 Key Components
-
-### Application Startup Flow
-
-The application startup follows this sequence:
-
-1. **Environment Detection**: Reads `PC_NAME` environment variable to determine PC type
-2. **PC Plugin Loading**: Loads the specified PC plugin (defaults to `tischrem_blb` for development)
-3. **Device Discovery**: PC plugin settings determine which device plugins to load
-4. **Settings Assembly**: Creates `SettingsManager` with PC settings and all device configurations
-5. **Service Initialization**: Starts Prometheus metrics and observability servers
-6. **Application Launch**: Initializes the main `DeviceWatchdogApp` with all components
-
-**Environment Variables:**
-- `PC_NAME`: Specifies which PC plugin to load (e.g., `tischrem_blb`, `horiba_blb`)
-- Standard `.env` file variables for database connections, paths, etc.
-
-### Application Entry Point (`__main__.py`)
-
-The main entry point orchestrates the application startup:
-
-1. **Environment Setup**: Loads `.env` configuration
-2. **Plugin Loading**: Discovers and loads the appropriate PC plugin and associated device plugins
-3. **Service Initialization**: 
-   - Prometheus metrics server (port 8000)
-   - Observability server with health checks and log viewer (port 8001)
-4. **Application Assembly**: Wires together UI, sync manager, settings manager, and device configurations
-5. **Application Startup**: Initializes and runs the main application
-
-### Device Plugin System (`loader.py` + `device_plugins/`)
-
-The plugin system uses Python entry points for automatic discovery:
-
-```python
-# In pyproject.toml
-[project.entry-points."ipat_watchdog.device_plugins"]
-sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
-psa_horiba = "ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin"
-```
-
-Each plugin must implement the `DevicePlugin` interface:
-
-```python
-class DevicePlugin(ABC):
-    @abstractmethod
-    def get_settings(self) -> DeviceSettings:
-        """Return device-specific configuration"""
-        pass
-
-    @abstractmethod
-    def get_file_processor(self) -> FileProcessorBase:
-        """Return device-specific file processor"""
-        pass
-```
-
-### PC Plugin System (`loader.py` + `pc_plugins/`)
-
-The PC plugin system complements device plugins by providing PC-specific configuration:
-
-```python
-# In pyproject.toml
-[project.entry-points."ipat_watchdog.pc_plugins"]
-tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
-```
-
-Each PC plugin implements the `PCPlugin` interface:
-
-```python
-class PCPlugin(ABC):
-    @abstractmethod
-    def get_settings(self) -> PCSettings:
-        """Return PC-specific configuration including device mappings"""
-        pass
-```
-
-The PC plugin determines which device plugins to load through its settings:
-
-```python
-class PCTischREMSettings(PCSettings):
-    def get_active_device_plugins(self) -> list[str]:
-        return ["sem_phenomxl2"]
-```
-
-### Main Application (`DeviceWatchdogApp`)
+# IPAT Data Watchdog — Developer Guide (ground truth)
 
-The central orchestrator coordinates all components:
-
-- **Filesystem Monitoring**: Uses `watchdog` library to monitor directories
-- **Event Processing**: Queues and processes file system events
-- **Device Selection**: Automatically selects appropriate device processor per file
-- **UI Management**: Handles user interactions and error dialogs
-- **Session Control**: Manages processing sessions with configurable timeouts
-- **Metrics Collection**: Tracks performance and error metrics
+This guide reflects what’s actually implemented in the codebase today. It maps the real modules, runtime behavior, plugin system, processing pipeline, metrics, and tests.
 
-**Key Methods:**
-- `initialize()`: Sets up filesystem observer and UI
-- `process_events()`: Main event loop for file processing
-- `handle_exception()`: Global exception handling
-- `end_session()`: Triggers database synchronization
+## What it does
 
-### Configuration System (`core/config/`)
+The app watches a directory for new files/folders from laboratory devices, validates and routes them via device-specific processors, organizes them into a record structure, and syncs records to an external system. It exposes Prometheus metrics and an observability web UI, and logs structured JSON to disk.
 
-Configuration follows a hierarchical pattern:
-
-1. **PC Settings** (`pc_settings.py`): Global application configuration from PC plugins
-2. **Device Settings**: Device-specific overrides in plugin directories  
-3. **Composite Settings**: Runtime combination of PC and device settings per file
-4. **Environment Variables**: Runtime configuration via `.env` files
+## Runtime and entry point
 
-**Key Configuration Areas:**
-- Directory paths (watch, destination, exceptions)
-- File naming patterns and validation rules
-- Session timeouts and processing parameters
-- Database connection settings
-- Device metadata (user IDs, record types, tags)
-- Device plugin mappings per PC type
+- Entry point: `src/ipat_watchdog/__main__.py` defines `main()` and is also registered as a console script `ipat-watchdog`.
+- Env loading: on startup it loads a bundled `.env` from `build/.env` (when present). This mirrors the frozen app layout. You can still set environment variables in the OS; bundled values don’t override existing ones.
+- Required env: `PC_NAME` must be set or the app exits; in the current code a fallback default of `tischrem_blb` is applied if missing.
+- Device list: optional `DEVICE_PLUGINS` (comma/semicolon allowed) overrides device auto-selection. If not set, devices are inferred from the loaded PC plugin via `loader.get_devices_for_pc()`.
+- Services started:
+  - Prometheus metrics server on port 8000 (`prometheus_client.start_http_server`).
+  - Observability server on port 8001 (Flask app served by Waitress).
+- App wiring: constructs `ConfigService` from the PC plugin config and all device configs, calls `init_dirs()` to ensure folders exist, builds a `TKinterUI`, `UiInteractionAdapter`, and a `KadiSyncManager`, then runs `DeviceWatchdogApp`.
 
-**Settings Manager:**
-The `SettingsManager` coordinates configuration across the application:
-- Manages PC-specific global settings
-- Registers multiple device configurations
-- Provides device selection per file
-- Creates composite settings for processing context
+## Plugins (what exists right now)
 
-### File Processing Pipeline (`core/processing/`)
+Discovery is via Python entry points (see `pyproject.toml`) and loaded using `importlib.metadata.entry_points` in `loader.py`.
 
-The processing pipeline handles the complete file lifecycle:
+- Device plugins registered:
+  - `sem_phenomxl2` → `SEMPhenomXL2Plugin`
+  - `utm_zwick` → `UTMZwickPlugin`
+  - `psa_horiba` → `PSAHoribaPlugin`
+  - `dsv_horiba` → `DSVHoribaPlugin`
+  - `test_device` → `TestDevicePlugin`
+- PC plugins registered:
+  - `tischrem_blb` → `PCTischREMPlugin`
+  - `zwick_blb` → `PCZwickPlugin`
+  - `horiba_blb` → `PCHoribaPlugin`
+  - `test_pc` → `TestPCPlugin`
 
-1. **Event Detection**: Filesystem events trigger processing
-2. **File Validation**: Check naming conventions and file integrity
-3. **Metadata Extraction**: Extract device-specific metadata
-4. **Record Creation**: Create or update data records
-5. **File Organization**: Move files to appropriate directories
-6. **Database Sync**: Upload metadata and files to external systems
-
-**Abstract Interface:**
-```python
-class FileProcessorBase(ABC):
-    @abstractmethod
-    def validate_filename(self, filename: str) -> bool:
-        """Validate file naming convention"""
-        pass
+Each device plugin implements:
 
-    @abstractmethod
-    def extract_metadata(self, file_path: Path) -> dict:
-        """Extract device-specific metadata"""
-        pass
+- `DevicePlugin.get_config() -> DeviceConfig`
+- `DevicePlugin.get_file_processor() -> FileProcessorABS`
 
-    @abstractmethod
-    def process_file(self, file_path: Path) -> LocalRecord:
-        """Complete file processing workflow"""
-        pass
-```
+Each PC plugin implements:
 
-### Record Management (`core/records/`)
+- `PCPlugin.get_config() -> PCConfig`
 
-Data records represent collections of related files from a single measurement:
+The loader will raise `RuntimeError` with a helpful message if a named plugin isn’t installed.
 
-- **LocalRecord**: Immutable data structure representing a measurement record
-- **RecordManager**: Manages the lifecycle of records during a session
-- **Persistence**: JSON serialization for record state and audit trails
+## Configuration model
 
-### Session Management (`core/session/`)
+`core/config` provides a small runtime container and context helpers:
 
-Sessions group related files and determine when to sync to the database:
+- `ConfigService(pc: PCConfig, devices: Iterable[DeviceConfig])` registers a PC config and one or more device configs.
+- Device activation is scoped via `ConfigService.activate_device(device)` context manager and exposed through `current()`; helpers in `filesystem_utils` read from this active context.
+- `ActiveConfig` exposes effective `paths`, `naming`, `watcher` and device metadata. Devices can override some PC-level behavior (e.g., session timeout, watcher settings).
 
-- **Automatic Sessions**: Start when files arrive, end after timeout
-- **Manual Control**: UI controls for starting/ending sessions
-- **Database Sync**: Triggered at session end
-- **State Persistence**: Maintains session state across restarts
+You don’t need to know the PC or device file formats here; device and PC configs come from their respective plugin `settings.py` implementations.
 
-### Synchronization (`core/sync/`)
+## Logging and observability
 
-Database synchronization handles external data persistence:
+- Logging: `core/logging/logger.py` sets up a JSON formatter and writes to `C:/Watchdog/logs/watchdog.log` with rotation. Logs also go to stdout when available.
+- Observability: `observability.py` serves:
+  - `GET /health` → `{"status": "ok"}`
+  - `GET /logs?tail=N` → a simple HTML log viewer that pretty-prints JSON rows and supports client-side filtering.
+  - The log path is configurable via `LOG_FILE_PATH` (defaults to `C:/Watchdog/logs/watchdog.log`).
+  - Served by Waitress on `0.0.0.0:8001` in a daemon thread.
 
-- **Kadi Integration**: Primary implementation using `kadi-apy`
-- **Batch Processing**: Efficient bulk uploads
-- **Error Handling**: Retry logic and error reporting
-- **Audit Trail**: Comprehensive logging of sync operations
+## Metrics (Prometheus)
 
-### User Interface (`core/ui/`)
+Defined in `metrics.py` and exposed on `:8000`:
 
-Minimal UI for error handling and user input:
+- `files_processed` (Counter)
+- `files_processed_by_record{record_id=...}` (Counter)
+- `files_failed` (Counter)
+- `events_processed` (Counter)
+- `file_process_time_seconds` (Histogram)
+- `session_exit_status` (Gauge; 0=clean, 1=crashed)
+- `session_duration_seconds` (Gauge)
+- `exceptions_thrown` (Counter)
 
-- **Abstract Interface**: Pluggable UI implementations
-- **Tkinter Implementation**: Cross-platform desktop UI
-- **Dialog System**: Standardized error and input dialogs
-- **Background Operation**: Non-blocking UI for service mode
+`DeviceWatchdogApp` updates these during lifecycle and on errors.
 
-### Observability (`metrics.py` + `observability.py`)
+## File watching and UI
 
-Comprehensive monitoring and debugging capabilities:
+- `DeviceWatchdogApp` sets up a `watchdog` observer on the configured watch directory and places created files/folders onto a queue.
+- The Tkinter UI (`core/ui/ui_tkinter.py`) is used for dialogs, warnings, and short prompts. The UI runs the event loop; file processing is scheduled periodically via `UiTaskScheduler`.
 
-**Prometheus Metrics:**
-- `files_processed`: Total files processed
-- `files_failed`: Failed file processing attempts
-- `session_duration`: Session length tracking
-- `file_process_time`: Processing performance metrics
+## Processing pipeline (as implemented)
 
-**Health Monitoring:**
-- REST endpoints for health checks (`/health`)
-- Web-based log viewer (`/logs`) with filtering
-- Real-time metrics endpoint
-- Structured JSON logging
+Orchestrator: `core/processing/file_process_manager.py` with these steps:
 
-## 🔌 Creating a New Device Plugin
+1. Ignore internal staging artefacts: any path that matches `.__staged__` patterns is deferred.
+2. Resolve device: `DeviceResolver` gathers all matching device configs (selector rules), probes candidates via `FileProcessorABS.probe_file()`, and chooses the best match. If none matches, the item is rejected and moved to exceptions.
+3. Stability guard: `FileStabilityTracker.wait()` blocks until the file/folder is stable. It supports per-device overrides, temp file filters, and optional directory sentinels.
+4. Preprocessing: `FileProcessorABS.device_specific_preprocessing(src)` may return `None` (defer until paired artefacts arrive) or a new effective path to continue with. A `.__staged__` suffix is stripped from names before parsing.
+5. Parse and route: filename prefix and extension are parsed; `routing.fetch_record_for_prefix()` sanitizes and checks validity, looks up an existing record, then `routing.determine_routing_state()` decides among: ACCEPT, REQUIRE_RENAME, UNAPPENDABLE, APPEND_TO_SYNCED.
+6. Rename flow: `RenameService` loops the user through a guided rename; on cancel, the item is moved to the rename folder and a friendly info message is shown.
+7. Add to record: `add_item_to_record()` computes record and file IDs from config, calls the device `FileProcessorABS.device_specific_processing()` which returns `ProcessingOutput(final_path, datatype)`, updates the record model, and notifies the user.
 
-### 1. Create Plugin Directory Structure
-
-```
-
-#### New Orchestration and Helpers (modularized)
-
-To keep `FileProcessManager` focused on orchestration, the workflow is split into small modules:
-
-- `stability_tracker.py` — low-level, device-aware stability probing for files/folders
-- `stability_service.py` — manages trackers and a small rejection queue
-- `processor_factory.py` — dynamic plugin loader/cache for device file processors
-- `routing.py` — determines handling state (valid/invalid/unappendable/append-to-synced)
-- `rename_flow.py` — interactive rename dialog and retry routing on success
-- `record_flow.py` — prompts for unappendable and append-to-synced record cases
-- `record_utils.py` — create/update records and manage session touch
-- `error_handling.py` — move-to-exception and invalid datatype helpers
-- `notifications.py` — user success notifications
-- `device_context.py` — context manager to set/clear current device for scoped operations
-
-The orchestrator, `file_process_manager.py`, wires these modules together in a clear sequence:
-
-1. Select device + start stability tracking
-2. When stable: enter `DeviceContext`, validate datatype via processor
-3. Device pre-processing and filename parsing
-4. Use `routing.py` to compute state and branch to `record_flow` or normal add
-5. Use `record_utils.py` to update records and `notifications.py` for UI
-6. On errors, use `error_handling.py` to move items to the exceptions area
-
-This layout improves readability, testability, and reuse across future orchestrators.
-
-#### Diagram: Processing Pipeline
-
-A sequence diagram visualizing the flow is available as PlantUML:
-
-- `docs/architecture/processing_pipeline.puml`
-
-Render it with your preferred PlantUML tool or VS Code extension. Example (optional):
-
-```bash
-# Using VS Code: install "PlantUML" extension and open the .puml to preview
-# Or via CLI (requires Java + PlantUML jar available on PATH)
-plantuml docs/architecture/processing_pipeline.puml
-```
-
-The diagram shows key participants (FileProcessManager, StabilityService, plugin FileProcessor, routing and record flows) and their interactions for valid/invalid naming and append-to-synced scenarios.
-
-Rendered PNG (generate locally if missing):
-
-![Processing Pipeline](docs/architecture/processing_pipeline.png)
-
-Tip: On Windows you can render the PNG via the helper script:
-
-```powershell
-# From repo root
-./scripts/docs/render_processing_pipeline.ps1
-```
-
-Inline (GitHub-rendered) Mermaid version for quick viewing:
+### Processing pipeline (Mermaid)
 
 ```mermaid
 sequenceDiagram
-    participant FS as Filesystem
+    title IPAT Watchdog – Processing Pipeline (ground truth)
+
+    participant FS as Filesystem (watchdog)
+    participant App as DeviceWatchdogApp
     participant FPM as FileProcessManager
-    participant Settings as SettingsManager
-    participant Stability as StabilityService
-    participant Tracker as FileStabilityTracker
-    participant Ctx as DeviceContext
-    participant Factory as FileProcessorFactory
-    participant Proc as FileProcessor
-    participant Routing as routing.py
+    participant Res as DeviceResolver
+    participant Cfg as ConfigService
+    participant Fac as FileProcessorFactory
+    participant Proc as FileProcessor (plugin)
+    participant Stab as FileStabilityTracker
+    participant Route as routing.py
+    participant Ren as rename_flow.py
     participant RFlow as record_flow.py
-    participant Rename as rename_flow.py
-    participant RUtils as record_utils.py
-    participant Notify as notifications.py
+    participant RUtil as record_utils.py
+    participant FSU as filesystem_utils.py
+    participant UI as UI (Tk/Adapter)
     participant Err as error_handling.py
 
-    FS->>FPM: process_item(src_path)
-    FPM->>Settings: select_device_for_file
-    alt device found
-        FPM->>Stability: start_tracking(...)
-        Stability->>Tracker: probe until stable
-        Tracker-->>FPM: completion_callback
-        FPM->>Ctx: enter (set current device)
-        FPM->>Factory: get_for_device
-        Factory-->>FPM: Proc
-        FPM->>Proc: is_valid_datatype?
-        alt invalid
-            FPM->>Err: handle_invalid_datatype
-        else valid
-            FPM->>Routing: fetch_record_for_prefix
-            Routing-->>FPM: (sanitized, is_valid, record?)
-            FPM->>Routing: determine_routing_state
-            Routing-->>FPM: state
-            alt UNAPPENDABLE
-                FPM->>RFlow: handle_unappendable_record
-                RFlow->>Rename: rename_flow_controller
-            else APPEND_SYNCED
-                FPM->>RFlow: handle_append_to_synced_record
-            else INVALID_NAME
-                FPM->>Rename: rename_flow_controller
-            else VALID_NAME
-                FPM->>RUtils: get/create/apply_defaults
-                FPM->>Proc: device_specific_processing
-                FPM->>RUtils: update_record/manage_session
-                FPM->>Notify: notify_success
-            end
-        end
-        FPM->>Ctx: exit (clear device)
-    else no device
-        FPM->>Stability: reject_immediately
+    %% Event ingestion
+    FS->>App: created(file|folder)
+    App->>FPM: process_item(src_path)
+
+    %% Early filter: internal staging ignore
+    alt internal staging path (.__staged__)
+      FPM-->>App: ProcessingResult(DEFERRED, "internal staging")
+      return
+    end
+
+    %% Device resolution
+    FPM->>Res: resolve(src_path)
+    Res->>Cfg: matching_devices(src_path)
+    alt no candidates
+      FPM->>FSU: move_to_exception_folder(src_path)
+      FPM-->>App: ProcessingResult(REJECTED, reason)
+      return
+    else one candidate
+      Res-->>FPM: selected device (probe skipped)
+    else multiple candidates
+      loop probe candidates
+        Res->>Fac: get_for_device(device_id)
+        Fac-->>Res: Proc
+        Res->>Proc: probe_file(src_path)
+        Proc-->>Res: FileProbeResult
+      end
+      Res-->>FPM: selected device (best match/fallback)
+    end
+
+    %% Stability guard
+    FPM->>Stab: wait()
+    alt rejected (timeout/disappeared)
+      FPM->>Err: safe_move_to_exception(src_path)
+      FPM-->>App: ProcessingResult(REJECTED, reason)
+      return
+    else stable
+      Stab-->>FPM: ok
+    end
+
+    %% Device-scoped processing
+    FPM->>Cfg: activate_device(device)
+    activate Cfg
+    FPM->>Fac: get_for_device(device.identifier)
+    Fac-->>FPM: Proc
+    FPM->>Proc: device_specific_preprocessing(src_path)
+    alt returns None (await pair)
+      FPM-->>App: ProcessingResult(DEFERRED)
+      deactivate Cfg
+      return
+    else returns effective_path
+      FPM->>FSU: parse_filename(strip_stage_suffix(effective_path))
+      FSU-->>FPM: (prefix, extension)
+    end
+
+    %% Routing
+    FPM->>Route: fetch_record_for_prefix(records, prefix, device)
+    Route-->>FPM: (sanitized_prefix, is_valid, record?)
+    FPM->>Route: determine_routing_state(record, is_valid, prefix, extension, Proc)
+    Route-->>FPM: decision
+
+    alt UNAPPENDABLE
+      FPM->>RFlow: handle_unappendable_record(UI, renameDelegate, context)
+      RFlow->>Ren: obtain_valid_prefix(...)
+      alt user cancels
+        Ren->>FSU: move_to_rename_folder(...)
+        UI<-FPM: info moved to rename
+        FPM-->>App: ProcessingResult(REJECTED)
+      else user provides valid prefix
+        FPM: re-route with new prefix
+      end
+
+    else APPEND_TO_SYNCED
+      FPM->>RFlow: handle_append_to_synced_record(UI, add_item_to_record, renameDelegate, context)
+
+    else REQUIRE_RENAME
+      FPM->>Ren: obtain_valid_prefix(current_prefix)
+      alt user cancels
+        Ren->>FSU: move_to_rename_folder(...)
+        UI<-FPM: info moved to rename
+        FPM-->>App: ProcessingResult(REJECTED)
+      else user provides valid prefix
+        FPM: re-route with new prefix
+      end
+
+    else ACCEPT
+      FPM->>RUtil: get_or_create_record / apply_device_defaults
+      FPM->>Proc: device_specific_processing(effective, record_path, file_id, extension)
+      Proc-->>FPM: ProcessingOutput(final_path, datatype)
+      FPM->>RUtil: update_record / manage_session
+      UI<-FPM: notify_success(src_path, final_path)
+      FPM-->>App: ProcessingResult(PROCESSED, final_path)
+    end
+
+    FPM->>Cfg: exit device context
+    deactivate Cfg
+
+    %% App surfaces rejections to UI
+    App->>FPM: get_and_clear_rejected()
+    FPM-->>App: [(path, reason), ...]
+    loop per rejected item
+      App->>UI: show_error("Unsupported Input", reason)
     end
 ```
-src/ipat_watchdog/device_plugins/my_device/
-├── __init__.py
-├── plugin.py              # Main plugin class
-├── settings.py            # Device-specific settings
-└── file_processor.py      # File processing logic
+8. On failures: items are moved to the exceptions folder; a rejection is queued for UI display; metrics are updated.
+
+Key abstractions you will work with:
+
+- `FileProcessorABS`: override `probe_file`, `matches_file`, `is_appendable`, `device_specific_preprocessing`, and must implement `device_specific_processing()`.
+- `LocalRecord`: minimal record state with upload flags; JSON persisted via `filesystem_utils`.
+- `RecordManager` and `SessionManager`: manage record lifecycle and session boundaries; app calls `sync_records_to_database()` on session end.
+
+## Running locally (Windows PowerShell)
+
+Install in editable mode with dev tools, then run the app. Ensure `PC_NAME` is set and that a `.env` exists at `build/.env` if you rely on it.
+
+```powershell
+# From repo root
+python -m pip install -e .[dev]
+
+# Minimal env (override DEVICE_PLUGINS to force devices if needed)
+$env:PC_NAME = "tischrem_blb"
+# optional: $env:DEVICE_PLUGINS = "sem_phenomxl2"
+
+# Run
+python -m ipat_watchdog
+# or the console script
+ipat-watchdog
 ```
 
-### 2. Implement Settings Class
+Prometheus: http://localhost:8000/metrics
 
-```python
-# settings.py
-from ipat_watchdog.core.config.device_settings_base import DeviceSettings
-from typing import Set
-import re
+Observability UI: http://localhost:8001/logs and http://localhost:8001/health
 
-class MyDeviceSettings(DeviceSettings):
-    # Override base settings
-    DEVICE_ABBR = "MY_DEVICE"
-    ALLOWED_EXTENSIONS = {".dat", ".csv", ".log"}
-    
-    # Device-specific settings
-    DEVICE_USER_KADI_ID = "my_device_user"
-    RECORD_TAGS = ["My Device", "Automated"]
-    
-    # Custom filename pattern
-    FILENAME_PATTERN = re.compile(r"^md-\w+-\d{8}\.dat$")
+## Tests (pytest)
+
+- Install CI/test extras: the `ci` extra includes `pytest` and `pyfakefs`.
+- Test helpers live under `tests/helpers` (fake UI, sync, processors, sessions).
+- There are unit and integration tests; integration tests exercise filesystem flows.
+
+```powershell
+python -m pip install -e .[ci]
+pytest
 ```
 
-### 3. Implement File Processor
+## Extending the system
 
-```python
-# file_processor.py
-from pathlib import Path
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorBase
-from ipat_watchdog.core.records.local_record import LocalRecord
+Add a device plugin:
 
-class MyDeviceFileProcessor(FileProcessorBase):
-    def validate_filename(self, filename: str) -> bool:
-        # Implement device-specific validation
-        return filename.endswith('.dat')
-    
-    def extract_metadata(self, file_path: Path) -> dict:
-        # Extract device-specific metadata
-        return {
-            "file_size": file_path.stat().st_size,
-            "device_type": "My Device"
-        }
-    
-    def process_file(self, file_path: Path) -> LocalRecord:
-        # Implement complete processing workflow
-        metadata = self.extract_metadata(file_path)
-        # Create and return LocalRecord
-        pass
-```
+1. Create `src/ipat_watchdog/device_plugins/my_device/` with `plugin.py`, `settings.py`, and your `file_processor.py` implementing `FileProcessorABS`.
+2. Register it in `pyproject.toml` under `[project.entry-points."ipat_watchdog.device_plugins"]`.
+3. Provide an optional extra under `[project.optional-dependencies]` so users can `pip install ipat-watchdog[my_device]`.
 
-### 4. Implement Plugin Class
+Add a PC plugin:
 
-```python
-# plugin.py
-from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-from .settings import MyDeviceSettings
-from .file_processor import MyDeviceFileProcessor
+1. Create `src/ipat_watchdog/pc_plugins/my_pc/` with `plugin.py` and `settings.py` that build a `PCConfig` and declare the active device plugin IDs.
+2. Register it in `pyproject.toml` under `[project.entry-points."ipat_watchdog.pc_plugins"]`.
+3. Set `PC_NAME=my_pc` (via OS env or `build/.env`).
 
-class MyDevicePlugin(DevicePlugin):
-    def __init__(self):
-        self._settings = MyDeviceSettings()
-        self._processor = MyDeviceFileProcessor()
-    
-    def get_settings(self):
-        return self._settings
-    
-    def get_file_processor(self):
-        return self._processor
-```
+## Guarantees and limitations (based on code)
 
-### 5. Register Plugin in pyproject.toml
+- The app requires Windows paths in defaults (e.g., log directory is `C:/Watchdog`), but most logic is OS-agnostic.
+- If `PC_NAME` or device entry points are missing, startup will fail with a clear error.
+- Filename validation, sanitization, and routing are centralized in `core/storage/filesystem_utils.py` and `core/processing/routing.py`.
+- Internal staging artefacts are ignored by design to avoid double-processing during preprocessing.
 
-```toml
-[project.entry-points."ipat_watchdog.device_plugins"]
-my_device = "ipat_watchdog.device_plugins.my_device.plugin:MyDevicePlugin"
-
-[project.optional-dependencies]
-my_device = []  # Add any device-specific dependencies
-```
-
-## 🔌 Creating a New PC Plugin
-
-### 1. Create PC Plugin Directory Structure
-
-```
-src/ipat_watchdog/pc_plugins/my_pc_blb/
-├── __init__.py
-├── plugin.py              # Main PC plugin class
-└── settings.py            # PC-specific settings
-```
-
-### 2. Implement PC Settings Class
-
-```python
-# settings.py
-from ipat_watchdog.core.config.pc_settings import PCSettings
-from pathlib import Path
-
-class MyPCSettings(PCSettings):
-    # Override PC-specific paths and settings
-    WATCH_DIR = Path("C:\\MyPC\\Upload")
-    DEST_DIR = Path("C:\\MyPC\\Data")
-    
-    # Custom session timeout
-    SESSION_TIMEOUT = 300  # 5 minutes
-    
-    def get_active_device_plugins(self) -> list[str]:
-        """Define which devices this PC supports."""
-        return ["my_device", "sem_phenomxl2"]
-```
-
-### 3. Implement PC Plugin Class
-
-```python
-# plugin.py
-from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from .settings import MyPCSettings
-
-class MyPCPlugin(PCPlugin):
-    def __init__(self):
-        self._settings = MyPCSettings()
-    
-    def get_settings(self):
-        return self._settings
-```
-
-### 4. Register PC Plugin in pyproject.toml
-
-```toml
-[project.entry-points."ipat_watchdog.pc_plugins"]
-my_pc_blb = "ipat_watchdog.pc_plugins.my_pc_blb.plugin:MyPCPlugin"
-
-[project.optional-dependencies]
-my_pc_blb = []  # Add any PC-specific dependencies
-```
-
-### 5. Set Environment Variable
-
-```bash
-# In .env file or CI environment
-PC_NAME=my_pc_blb
-```
-
-## 🧪 Testing
-
-### Unit Testing
-
-The project uses pytest with several testing utilities:
-
-```python
-# Example test structure
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from tests.helpers.fake_ui import FakeUI
-from tests.helpers.fake_sync import FakeSyncManager
-
-def test_file_processing():
-    app = DeviceWatchdogApp(
-        ui=FakeUI(),
-        sync_manager=FakeSyncManager(),
-        file_processor=TestFileProcessor()
-    )
+If you need deeper API details, browse the referenced modules alongside this guide; each section above maps directly to concrete files in `src/ipat_watchdog`.
     # Test implementation
 ```
 
