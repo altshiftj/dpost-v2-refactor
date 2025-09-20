@@ -148,7 +148,6 @@ sequenceDiagram
     %% Early filter: internal staging ignore
     alt internal staging path (.__staged__)
       FPM-->>App: ProcessingResult(DEFERRED, "internal staging")
-      return
     end
 
     %% Device resolution
@@ -157,7 +156,6 @@ sequenceDiagram
     alt no candidates
       FPM->>FSU: move_to_exception_folder(src_path)
       FPM-->>App: ProcessingResult(REJECTED, reason)
-      return
     else one candidate
       Res-->>FPM: selected device (probe skipped)
     else multiple candidates
@@ -175,7 +173,6 @@ sequenceDiagram
     alt rejected (timeout/disappeared)
       FPM->>Err: safe_move_to_exception(src_path)
       FPM-->>App: ProcessingResult(REJECTED, reason)
-      return
     else stable
       Stab-->>FPM: ok
     end
@@ -189,7 +186,6 @@ sequenceDiagram
     alt returns None (await pair)
       FPM-->>App: ProcessingResult(DEFERRED)
       deactivate Cfg
-      return
     else returns effective_path
       FPM->>FSU: parse_filename(strip_stage_suffix(effective_path))
       FSU-->>FPM: (prefix, extension)
@@ -206,10 +202,10 @@ sequenceDiagram
       RFlow->>Ren: obtain_valid_prefix(...)
       alt user cancels
         Ren->>FSU: move_to_rename_folder(...)
-        UI<-FPM: info moved to rename
+        FPM->>UI: info moved to rename
         FPM-->>App: ProcessingResult(REJECTED)
       else user provides valid prefix
-        FPM: re-route with new prefix
+        FPM->>FPM: re-route with new prefix
       end
 
     else APPEND_TO_SYNCED
@@ -219,10 +215,10 @@ sequenceDiagram
       FPM->>Ren: obtain_valid_prefix(current_prefix)
       alt user cancels
         Ren->>FSU: move_to_rename_folder(...)
-        UI<-FPM: info moved to rename
+        FPM->>UI: info moved to rename
         FPM-->>App: ProcessingResult(REJECTED)
       else user provides valid prefix
-        FPM: re-route with new prefix
+        FPM->>FPM: re-route with new prefix
       end
 
     else ACCEPT
@@ -230,7 +226,7 @@ sequenceDiagram
       FPM->>Proc: device_specific_processing(effective, record_path, file_id, extension)
       Proc-->>FPM: ProcessingOutput(final_path, datatype)
       FPM->>RUtil: update_record / manage_session
-      UI<-FPM: notify_success(src_path, final_path)
+      FPM->>UI: notify_success(src_path, final_path)
       FPM-->>App: ProcessingResult(PROCESSED, final_path)
     end
 
