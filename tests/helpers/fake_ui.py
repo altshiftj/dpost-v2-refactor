@@ -1,5 +1,5 @@
 # tests/helpers/fake_ui.py
-from ipat_watchdog.core.interactions import RenameDecision, RenamePrompt
+from ipat_watchdog.core.interactions import RenameDecision, RenamePrompt, SessionPromptDetails
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 
@@ -30,6 +30,8 @@ class HeadlessUI(UserInterface):
         self.prompt_rename_return = None
         self.prompt_append_record_return = None
         self.show_rename_dialog_return = None
+
+        self.session_details_history = []
 
     # ------------------------------------------------------------------
     # UserInterface methods
@@ -79,7 +81,8 @@ class HeadlessUI(UserInterface):
             return self.prompt_append_record_return
         return True
 
-    def show_done_dialog(self, on_done_callback):
+    def show_done_dialog(self, session_details: SessionPromptDetails, on_done_callback):
+        self.session_details_history.append(session_details)
         if self.auto_close_session:
             on_done_callback()
 
@@ -117,8 +120,8 @@ class HeadlessUI(UserInterface):
             return RenameDecision(cancelled=True, values=None)
         return RenameDecision(cancelled=False, values=result)
 
-    def show_done_prompt(self, on_done_callback):
-        self.show_done_dialog(on_done_callback)
+    def show_done_prompt(self, session_details: SessionPromptDetails, on_done_callback):
+        self.show_done_dialog(session_details, on_done_callback)
 
     def schedule(self, interval_ms, callback):
         return self.schedule_task(interval_ms, callback)

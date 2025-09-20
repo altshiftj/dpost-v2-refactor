@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 import datetime as dt
 import time
-from typing import Any, Iterable, Optional
+from typing import Iterable, Optional
 
-from ipat_watchdog.core.config import DeviceConfig
+from ipat_watchdog.core.config import DeviceConfig, StabilityOverride
 from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -32,6 +32,7 @@ class FileStabilityTracker:
     def __init__(self, file_path: Path, device: DeviceConfig | None) -> None:
         self.file_path = Path(file_path)
         self.device = device
+        self._stability_override: Optional[StabilityOverride] = self._resolve_override()
 
     def wait(self) -> StabilityOutcome:
         deadline = dt.datetime.now() + dt.timedelta(seconds=self._max_wait_seconds())
@@ -124,17 +125,37 @@ class FileStabilityTracker:
                 continue
             yield path
 
+    def _resolve_override(self) -> Optional[StabilityOverride]:
+        if self.device is None:
+            return None
+        overrides = getattr(self.device.watcher, "stability_overrides", tuple())
+        if not overrides:
+            return None
+        for override in overrides:
+            if override.matches(self.file_path):
+                return override
+        return None
+
     def _poll_seconds(self) -> float:
+        override = self._stability_override
+        if override is not None and override.poll_seconds is not None:
+            return max(float(override.poll_seconds), 0.0)
         if self.device is None:
             return 1.0
         return max(float(self.device.watcher.poll_seconds), 0.0)
 
     def _max_wait_seconds(self) -> int:
+        override = self._stability_override
+        if override is not None and override.max_wait_seconds is not None:
+            return int(override.max_wait_seconds)
         if self.device is None:
             return 300
         return int(self.device.watcher.max_wait_seconds)
 
     def _stable_cycles(self) -> int:
+        override = self._stability_override
+        if override is not None and override.stable_cycles is not None:
+            return int(override.stable_cycles)
         if self.device is None:
             return 3
         return int(self.device.watcher.stable_cycles)

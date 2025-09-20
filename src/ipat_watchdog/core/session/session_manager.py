@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from ipat_watchdog.core.config import current
-from ipat_watchdog.core.interactions import TaskScheduler, UserInteractionPort
+from ipat_watchdog.core.interactions import SessionPromptDetails, TaskScheduler, UserInteractionPort
 from ipat_watchdog.core.logging.logger import setup_logger
+
+if TYPE_CHECKING:
+    from ipat_watchdog.core.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -24,17 +27,39 @@ class SessionManager:
         self.end_session_callback = end_session_callback
         self.session_active = False
         self.timer_id: Optional[Any] = None
+        self._session_users: list[str] = []
+        self._session_records: list[str] = []
+        self._session_record_counts: dict[str, int] = {}
 
     @property
     def is_active(self) -> bool:
         return self.session_active
+
+    def note_activity(self, record: "LocalRecord") -> None:
+        """Record session activity for the current item and refresh prompts."""
+        user_tag = self._derive_user_tag(record)
+        record_label = self._derive_sample_label(record)
+
+        if not self.session_active:
+            self._reset_session_activity()
+
+        self._push_unique(self._session_users, user_tag)
+        self._push_unique(self._session_records, record_label)
+        if record_label:
+            self._session_record_counts[record_label] = self._session_record_counts.get(record_label, 0) + 1
+
+        if not self.session_active:
+            self.start_session()
+        else:
+            self.reset_timer()
+            self._refresh_prompt()
 
     def start_session(self) -> None:
         if not self.session_active:
             logger.debug("Starting a new session.")
             self.session_active = True
             self._schedule_timeout()
-            self._interactions.show_done_prompt(self.end_session)
+            self._refresh_prompt()
 
     def end_session(self) -> None:
         if self.session_active:
@@ -43,6 +68,7 @@ class SessionManager:
             self._cancel_timer()
             if self.end_session_callback:
                 self.end_session_callback()
+            self._reset_session_activity()
 
     def reset_timer(self) -> None:
         if self.session_active:
@@ -62,3 +88,55 @@ class SessionManager:
         if self.timer_id is not None:
             self._scheduler.cancel(self.timer_id)
             self.timer_id = None
+
+    def _refresh_prompt(self) -> None:
+        if not self.session_active:
+            return
+        details = self._current_prompt_details()
+        self._interactions.show_done_prompt(details, self.end_session)
+
+    def _current_prompt_details(self) -> SessionPromptDetails:
+        return SessionPromptDetails(
+            users=tuple(self._session_users),
+            records=tuple(
+                self._format_record_label(label) for label in self._session_records
+            ),
+        )
+
+    def _format_record_label(self, label: Optional[str]) -> str:
+        if not label:
+            return "Unknown Sample (Files: 0)"
+        count = self._session_record_counts.get(label, 0)
+        return f"{label} (Files: {count})"
+
+
+    def _reset_session_activity(self) -> None:
+        self._session_users = []
+        self._session_records = []
+        self._session_record_counts = {}
+
+    @staticmethod
+    def _push_unique(target: list[str], value: Optional[str]) -> None:
+        if value and value not in target:
+            target.append(value)
+
+    def _derive_user_tag(self, record: "LocalRecord") -> Optional[str]:
+        user = getattr(record, "user", None)
+        institute = getattr(record, "institute", None)
+        if not user or user == "null":
+            return None
+        if institute and institute != "null":
+            return f"{user}-{institute}"
+        return user
+
+    def _derive_sample_label(self, record: "LocalRecord") -> Optional[str]:
+        sample = getattr(record, "sample_name", None)
+        if sample and sample != "null":
+            return sample
+        identifier = getattr(record, "identifier", None)
+        if identifier and identifier != "null":
+            parts = identifier.split("-")
+            if len(parts) >= 4:
+                return "-".join(parts[3:])
+            return identifier
+        return None

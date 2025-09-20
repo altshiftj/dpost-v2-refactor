@@ -1,6 +1,7 @@
 from .schema import (
     PathSettings,
     NamingSettings,
+    StabilityOverride,
     WatcherSettings,
     SessionSettings,
     DeviceMetadata,
@@ -21,6 +22,7 @@ from .runtime import (
 __all__ = [
     'PathSettings',
     'NamingSettings',
+    'StabilityOverride',
     'WatcherSettings',
     'SessionSettings',
     'DeviceMetadata',

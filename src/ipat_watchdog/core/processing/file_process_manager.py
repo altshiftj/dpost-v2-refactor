@@ -163,7 +163,7 @@ class FileProcessManager:
         logger.debug("Processed %s -> %s", src_path, output.final_path)
 
         update_record(self.records, output.final_path, record)
-        manage_session(self.session_manager)
+        manage_session(self.session_manager, record)
 
         return output.final_path
 

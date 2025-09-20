@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict
 from ipat_watchdog.core.interactions import (
     RenameDecision,
     RenamePrompt,
+    SessionPromptDetails,
     TaskScheduler,
     UserInteractionPort,
 )
@@ -43,8 +44,10 @@ class UiInteractionAdapter(UserInteractionPort):
             return RenameDecision(cancelled=True, values=None)
         return RenameDecision(cancelled=False, values=result)
 
-    def show_done_prompt(self, on_done_callback: Callable[[], None]) -> None:
-        self._ui.show_done_dialog(on_done_callback)
+    def show_done_prompt(
+        self, session_details: SessionPromptDetails, on_done_callback: Callable[[], None]
+    ) -> None:
+        self._ui.show_done_dialog(session_details, on_done_callback)
 
 
 class UiTaskScheduler(TaskScheduler):

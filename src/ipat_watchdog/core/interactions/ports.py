@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Sequence
 
 
 @dataclass(frozen=True)
@@ -12,6 +12,14 @@ class RenamePrompt:
     attempted_prefix: str
     analysis: Dict[str, Any]
     contextual_reason: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class SessionPromptDetails:
+    """Snapshot of the current session activity for UI presentation."""
+
+    users: Sequence[str] = ()
+    records: Sequence[str] = ()
 
 
 @dataclass(frozen=True)
@@ -46,7 +54,11 @@ class UserInteractionPort(ABC):
         """Collect rename input from the user and return their decision."""
 
     @abstractmethod
-    def show_done_prompt(self, on_done_callback: Callable[[], None]) -> None:
+    def show_done_prompt(
+        self,
+        session_details: SessionPromptDetails,
+        on_done_callback: Callable[[], None],
+    ) -> None:
         """Ask the user to confirm they are done with the current session."""
 
 

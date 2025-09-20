@@ -1,0 +1,22 @@
+*** Begin Patch
+*** Update File: tests/helpers/fake_session.py
+@@
+     def __init__(self, interactions=None, scheduler=None, end_session_callback=None, **kwargs):
+         self.session_active = False
+         self.started = False
+         self.ended = False
+         self.end_session_callback = end_session_callback
+         self.start_session_called = False
+         self.reset_timer_called = False
++        self.note_activity_called = False
+@@
+     def reset_timer(self):
+         self.reset_timer_called = True
++
++    def note_activity(self, record):
++        self.note_activity_called = True
++        if not self.session_active:
++            self.start_session()
++        else:
++            self.reset_timer()
+*** End Patch

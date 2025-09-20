@@ -30,9 +30,6 @@ def update_record(records: RecordManager, final_path: str, record: LocalRecord) 
     records.add_item_to_record(final_path, record)
 
 
-def manage_session(session_manager: SessionManager) -> None:
-    """Start a new session or reset timer for the active session."""
-    if not session_manager.session_active:
-        session_manager.start_session()
-    else:
-        session_manager.reset_timer()
+def manage_session(session_manager: SessionManager, record: LocalRecord) -> None:
+    """Record activity to start or keep the current session alive."""
+    session_manager.note_activity(record)

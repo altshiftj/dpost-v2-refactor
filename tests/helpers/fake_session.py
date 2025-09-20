@@ -6,6 +6,7 @@ class FakeSessionManager:
         self.end_session_callback = end_session_callback
         self.start_session_called = False
         self.reset_timer_called = False
+        self.note_activity_called = False
 
     def start_session(self):
         self.session_active = True
@@ -20,3 +21,10 @@ class FakeSessionManager:
 
     def reset_timer(self):
         self.reset_timer_called = True
+
+    def note_activity(self, record):
+        self.note_activity_called = True
+        if not self.session_active:
+            self.start_session()
+        else:
+            self.reset_timer()

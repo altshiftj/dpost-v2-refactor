@@ -3,6 +3,8 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Any, Callable
 
+from ipat_watchdog.core.interactions import SessionPromptDetails
+
 
 class UserInterface(ABC):
     """
@@ -72,7 +74,9 @@ class UserInterface(ABC):
         pass
 
     @abstractmethod
-    def show_done_dialog(self, on_done_callback: Callable[[], None]) -> None:
+    def show_done_dialog(
+        self, session_details: SessionPromptDetails, on_done_callback: Callable[[], None]
+    ) -> None:
         """
         Show a dialog or prompt that the user can acknowledge to end the session.
         Invoke 'on_done_callback' when the user chooses to finish.

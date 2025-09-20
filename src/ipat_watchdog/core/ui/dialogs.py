@@ -122,6 +122,7 @@ class RenameDialog(simpledialog.Dialog):
     def body(self, master: tk.Frame) -> tk.Widget:
         self.wm_attributes("-topmost", 1)
         self.lift()
+        self.focus_force()
         self.geometry(f"+{self.winfo_screenwidth() // 2 - 200}+0")
         
         tk.Label(
@@ -174,7 +175,15 @@ class RenameDialog(simpledialog.Dialog):
 
         form_frame.grid_columnconfigure(1, weight=1)
 
+        self.after_idle(self._focus_primary_input)
         return self.user_entry
+
+    def _focus_primary_input(self) -> None:
+        try:
+            self.user_entry.focus_force()
+        except Exception:
+            pass
+
 
     def buttonbox(self):
         box = tk.Frame(self)

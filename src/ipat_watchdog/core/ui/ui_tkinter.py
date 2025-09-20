@@ -12,6 +12,7 @@ import threading
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.dialogs import RenameDialog
+from ipat_watchdog.core.interactions import SessionPromptDetails
 from ipat_watchdog.core.interactions.messages import InfoMessages, DialogPrompts
 
 
@@ -92,7 +93,9 @@ class TKinterUI(UserInterface):
             parent=self.dialog_parent,
         )
 
-    def show_done_dialog(self, on_done_callback: Callable[[], None]) -> None:
+    def show_done_dialog(
+        self, session_details: SessionPromptDetails, on_done_callback: Callable[[], None]
+    ) -> None:
         """
         Show a pop-up dialog that prompts the user to confirm they are done.
         Calls 'on_done_callback' when user clicks 'Done'.
@@ -106,9 +109,16 @@ class TKinterUI(UserInterface):
         done_dialog = tk.Toplevel(self.root)
         done_dialog.title(InfoMessages.SESSION_ACTIVE)
         done_dialog.attributes("-topmost", True)
+        done_dialog.resizable(False, False)
 
-        label = tk.Label(done_dialog, text=InfoMessages.SESSION_ACTIVE_DETAILS)
-        label.pack(padx=20, pady=10)
+        message_text = self._compose_session_message(session_details)
+        label = tk.Label(
+            done_dialog,
+            text=message_text,
+            justify=tk.LEFT,
+            anchor="w",
+        )
+        label.pack(padx=20, pady=10, fill="both")
 
         if not callable(on_done_callback):
             raise TypeError(
@@ -124,7 +134,7 @@ class TKinterUI(UserInterface):
 
         # Disable 'X' button by overriding close protocol with a no-op
         done_dialog.protocol("WM_DELETE_WINDOW", lambda: None)
-        
+
         self._active_dialogs["done_dialog"] = done_dialog
 
     def get_root(self) -> tk.Tk:
@@ -221,6 +231,18 @@ class TKinterUI(UserInterface):
     # -------------------------------------------------------------------------
     # Internal Helpers
     # -------------------------------------------------------------------------
+
+    def _compose_session_message(self, details: SessionPromptDetails) -> str:
+        lines = [InfoMessages.SESSION_ACTIVE_DETAILS]
+        if details.users:
+            lines.append("")
+            lines.append("Users in session:")
+            lines.extend(f"  - {user}" for user in details.users)
+        if details.records:
+            lines.append("")
+            lines.append("Records processed in this session:")
+            lines.extend(f"  - {record}" for record in details.records)
+        return "\n".join(lines)
 
     def _handle_done_clicked(
         self, dialog: tk.Toplevel, callback: Callable[[], None]

@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Pattern, Sequence
+from typing import Mapping, Optional, Pattern, Sequence
 import os
 import re
 
 __all__ = [
     "PathSettings",
     "NamingSettings",
+    "StabilityOverride",
     "WatcherSettings",
     "SessionSettings",
     "DeviceMetadata",
@@ -43,6 +44,19 @@ def _default_temp_folder_regex() -> Pattern[str]:
     return re.compile(r"\.[A-Za-z0-9]{6}$")
 
 
+def _normalize_suffix(value: str) -> str:
+    value = value.strip().lower()
+    if not value:
+        return value
+    if not value.startswith("."):
+        return f".{value}"
+    return value
+
+
+def _normalize_segment(value: str) -> str:
+    return value.strip().lower()
+
+
 @dataclass(slots=True)
 class PathSettings:
     app_dir: Path = field(default_factory=_default_app_dir)
@@ -71,6 +85,34 @@ class NamingSettings:
 
 
 @dataclass(slots=True)
+class StabilityOverride:
+    suffixes: tuple[str, ...] = ()
+    folders: tuple[str, ...] = ()
+    poll_seconds: Optional[float] = None
+    stable_cycles: Optional[int] = None
+    max_wait_seconds: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        suffixes = tuple(
+            normalized for normalized in (_normalize_suffix(value) for value in self.suffixes) if normalized
+        )
+        folders = tuple(
+            normalized for normalized in (_normalize_segment(value) for value in self.folders) if normalized
+        )
+        object.__setattr__(self, "suffixes", suffixes)
+        object.__setattr__(self, "folders", folders)
+
+    def matches(self, path: Path) -> bool:
+        lower_name = path.name.lower()
+        if self.folders and lower_name in self.folders:
+            return True
+        if self.suffixes:
+            if any(lower_name.endswith(suffix) for suffix in self.suffixes):
+                return True
+        return False
+
+
+@dataclass(slots=True)
 class WatcherSettings:
     poll_seconds: float = 1.0
     max_wait_seconds: float = 60.0
@@ -78,6 +120,26 @@ class WatcherSettings:
     temp_patterns: tuple[str, ...] = field(default_factory=_default_temp_patterns)
     temp_folder_regex: Pattern[str] = field(default_factory=_default_temp_folder_regex, repr=False)
     sentinel_name: Optional[str] = None
+    stability_overrides: tuple[StabilityOverride, ...] = field(default_factory=tuple, repr=False)
+
+    def __post_init__(self) -> None:
+        overrides = self.stability_overrides
+        if not overrides:
+            object.__setattr__(self, "stability_overrides", tuple())
+            return
+        if isinstance(overrides, StabilityOverride):
+            overrides = (overrides,)
+        normalized: list[StabilityOverride] = []
+        for override in overrides:
+            if isinstance(override, StabilityOverride):
+                normalized.append(override)
+            elif isinstance(override, Mapping):
+                normalized.append(StabilityOverride(**override))
+            else:
+                raise TypeError(
+                    "WatcherSettings.stability_overrides must contain StabilityOverride instances or mapping definitions"
+                )
+        object.__setattr__(self, "stability_overrides", tuple(normalized))
 
 
 @dataclass(slots=True)

@@ -7,6 +7,7 @@ from ipat_watchdog.core.config import (
     DeviceFileSelectors,
     DeviceMetadata,
     SessionSettings,
+    StabilityOverride,
     WatcherSettings,
 )
 
@@ -71,5 +72,19 @@ def build_config() -> DeviceConfig:
             temp_patterns=(".tmp", ".part", ".crdownload", ".~", "-journal"),
             temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
             sentinel_name=None,
+            stability_overrides=(
+                StabilityOverride(
+                    suffixes=(".tiff", ".tif"),
+                    poll_seconds=0.1,
+                    stable_cycles=1,
+                    max_wait_seconds=20,
+                ),
+                StabilityOverride(
+                    suffixes=(".elid",),
+                    poll_seconds=1.5,
+                    stable_cycles=6,
+                    max_wait_seconds=120,
+                ),
+            ),
         ),
     )
