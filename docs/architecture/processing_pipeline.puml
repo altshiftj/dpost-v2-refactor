@@ -72,8 +72,8 @@ end
 
 == Routing ==
 FPM -> Routing : fetch_record_for_prefix(records, prefix, device)
-Routing --> FPM : (sanitized_prefix, is_valid, record?)
-FPM -> Routing : determine_routing_state(record, is_valid, prefix, extension, Proc)
+Routing --> FPM : (sanitized_prefix, is_valid_format, record?)
+FPM -> Routing : determine_routing_state(record, is_valid_format, prefix, extension, Proc)
 Routing --> FPM : decision
 
 alt UNAPPENDABLE
@@ -81,10 +81,10 @@ alt UNAPPENDABLE
   RFlow -> Rename : obtain_valid_prefix(...)
   alt user cancels
     Rename -> FSUtil : move_to_rename_folder(...)
-    UI <- FPM : info moved to rename
+    UI <- Rename : info moved to rename
     FPM --> App : ProcessingResult(REJECTED)
-  else user provides valid prefix
-    FPM : re-route with new prefix
+    else user provides valid prefix
+      FPM -> FPM : re-route with new prefix
   end
 else APPEND_TO_SYNCED
   FPM -> RFlow : handle_append_to_synced_record(UI, add_item_to_record, renameDelegate, context)
@@ -92,17 +92,16 @@ else REQUIRE_RENAME
   FPM -> Rename : obtain_valid_prefix(current_prefix)
   alt user cancels
     Rename -> FSUtil : move_to_rename_folder(...)
-    UI <- FPM : info moved to rename
+    UI <- Rename : info moved to rename
     FPM --> App : ProcessingResult(REJECTED)
   else user provides valid prefix
-    FPM : re-route with new prefix
+    FPM -> FPM : re-route with new prefix
   end
 else ACCEPT
   FPM -> RUtils : get_or_create_record / apply_device_defaults
   FPM -> Proc : device_specific_processing(effective, record_path, file_id, extension)
   Proc --> FPM : ProcessingOutput(final_path, datatype)
   FPM -> RUtils : update_record / manage_session
-  UI <- FPM : notify_success(src_path, final_path)
   FPM --> App : ProcessingResult(PROCESSED, final_path)
 end
 
