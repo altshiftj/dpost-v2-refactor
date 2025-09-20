@@ -9,6 +9,7 @@ from watchdog.observers.polling import PollingObserver
 
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import (
     generate_record_id,
     init_dirs,
@@ -148,20 +149,18 @@ def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings)
     bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"
     bad.write_bytes(b"nope")
 
-    with pytest.raises(RuntimeError) as excinfo:
-        real_processing_app.file_processing.process_item(str(bad))
+    result = real_processing_app.file_processing.process_item(str(bad))
     run_scheduled_tasks(real_processing_app.ui)
+    assert result.status is ProcessingStatus.REJECTED
 
     # Check if file was moved to exceptions
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.jpg"))
     assert len(exception_files) == 1, f"Expected 1 file in exceptions, found {len(exception_files)}: {exception_files}"
     assert exception_files[0].exists(), f"Exception file should exist: {exception_files[0]}"
-    
+
     # Verify the original file was moved (not copied)
     assert not bad.exists(), f"Original file should be moved, not copied: {bad}"
 
-
-# ───────────────────────── invalid prefix → rename ───────────────────────────
 def test_invalid_prefix_moves_to_rename(real_processing_app, tmp_settings):
     bad = tmp_settings.WATCH_DIR / "badprefix.tif"
     bad.write_bytes(b"dummy")
@@ -287,3 +286,4 @@ def test_multiple_files_same_record(real_processing_app, tmp_settings):
     # Verify the correct total number of files were processed
     all_tif_files = list(tmp_settings.DEST_DIR.rglob("*.tif"))
     assert len(all_tif_files) == num_files, f"Expected {num_files} files, found {len(all_tif_files)}"
+

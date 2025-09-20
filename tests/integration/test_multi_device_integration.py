@@ -9,6 +9,7 @@ from watchdog.observers.polling import PollingObserver
 
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
@@ -134,14 +135,13 @@ def test_unsupported_file_rejected(multi_device_app, tmp_settings):
     unsupported_path = tmp_settings.WATCH_DIR / "mus-ipat-sample.pdf"
     unsupported_path.write_bytes(b"unsupported file type")
 
-    # Process the file directly and expect RuntimeError
-    with pytest.raises(RuntimeError) as excinfo:
-        multi_device_app.file_processing.process_item(str(unsupported_path))
+    result = multi_device_app.file_processing.process_item(str(unsupported_path))
+    assert result.status is ProcessingStatus.REJECTED
 
-    # Check that file was moved to exceptions
+    # Check exceptions directory for the file
     exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.pdf"))
-    assert len(exception_files) == 1, f"Expected 1 file in exceptions, found {len(exception_files)}: {exception_files}"
-
+    assert len(exception_files) == 1
+    assert exception_files[0].exists()
 
 def test_multiple_files_same_record(multi_device_app, tmp_settings):
     """Test that multiple files with the same base name get processed correctly."""

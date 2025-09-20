@@ -1,285 +1,262 @@
-# ipat_watchdog/core/processing/file_processor_psa_horiba.py
+"""Processor for Horiba Partica LA-960 exports."""
 from __future__ import annotations
 
 from pathlib import Path
-import time
 import shutil
+import time
 from typing import Dict, Optional
 
+from ipat_watchdog.core.config import constants as _CONST
+from ipat_watchdog.core.config.settings_store import SettingsStore
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.processing.file_processor_abstract import (
+    FileProcessorABS,
+    ProcessingOutput,
+)
 from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.storage.filesystem_utils import (
+    get_unique_filename,
     move_item,
     move_to_exception_folder,
-    get_unique_filename,
 )
-from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config import constants as _CONST
-from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
 class FileProcessorPSAHoriba(FileProcessorABS):
-    """
-    Horiba Partica LA-960 processor.
+    """Pairs `.ngb` raw files with exported `.csv` results."""
 
-    Emits per sample:
-      <stem>.ngb    (raw)
-      <stem>.csv    (results)
+    _TTL_SECONDS = 60 * 10  # Seconds before staged artefacts are discarded
 
-    Behavior:
-      • First arrival becomes naming authority (primary_stem).
-      • Second arrival is auto-renamed to primary_stem.<ext>.
-      • When both exist, they’re staged to '<primary_stem>.__staged__'.
-      • Processing zips .ngb and moves results into the record directory.
-      • Both outputs share the **same counter**: e.g. '...-01.csv' and '...-01.ngb.zip'.
-    """
-
-    # in-memory buckets:  stem → {"t": float, "primary_stem": str, "first_kind": "raw"|"res",
-    #                             "raw": Path|None, "res": Path|None, "res_ext": ".csv"|None}
-    _TTL_SECONDS: int = 60 * 10  # orphan lifetime, 10 minutes
-
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._pending: Dict[str, Dict[str, object]] = {}
 
-    # ---------- preprocessing --------------------------------------------------
-
+    # ------------------------------------------------------------------
+    # Pre-processing
+    # ------------------------------------------------------------------
     def device_specific_preprocessing(self, path: str) -> Optional[str]:
-        p = Path(path)
-        ext = p.suffix.lower()
+        element = Path(path)
+        ext = element.suffix.lower()
         kind = self._classify(ext)  # "raw" | "res" | None
 
         if kind is None:
-            # Unrelated filetype; let the manager handle it.
-            return path
+            return path  # Let the orchestrator decide what to do
 
-        stem = p.stem
-        bucket = self._pending.get(stem)
-
-        if bucket is None:
-            bucket = {
+        stem = element.stem
+        bucket = self._pending.setdefault(
+            stem,
+            {
                 "t": time.time(),
                 "primary_stem": stem,
                 "first_kind": kind,
                 "raw": None,
                 "res": None,
                 "res_ext": None,
-            }
-            self._pending[stem] = bucket
+            },
+        )
 
-        # Fill the slot
         if kind == "raw":
-            bucket["raw"] = p
+            bucket["raw"] = element
         else:
-            bucket["res"] = p
+            bucket["res"] = element
             bucket["res_ext"] = ext
 
-        # Cross-stem pairing: attach a mismatched-stem second arrival
         if not self._is_complete(bucket):
-            if bucket["first_kind"] == kind:
-                target_key = self._find_open_bucket_missing(kind, exclude=stem)
-                if target_key:
-                    target = self._pending[target_key]
-                    primary = str(target["primary_stem"])
-                    desired = p.with_name(f"{primary}{ext}")
-                    try:
-                        if p != desired and not desired.exists():
-                            p = p.rename(desired)
-                            logger.debug("Auto-renamed '%s' → '%s'", path, desired)
-                        if kind == "raw":
-                            target["raw"] = p
-                        else:
-                            target["res"] = p
-                            target["res_ext"] = ext
-                        self._pending.pop(stem, None)
-                        bucket = target
-                        stem = target_key
-                    except Exception as e:
-                        logger.warning("Could not auto-rename/attach '%s' to '%s': %s", p, primary, e)
+            self._maybe_attach_cross_stem(bucket, kind, element)
 
         self._purge_orphans()
 
-        # Need both, and both must still exist
         if not self._is_complete(bucket) or not self._paths_exist(bucket):
             return None
 
-        # Stage under the primary stem
         primary_stem = str(bucket["primary_stem"])
-        stage_dir = self._unique_stage_dir(p.parent, primary_stem)
+        stage_dir = self._unique_stage_dir(element.parent, primary_stem)
         stage_dir.mkdir(parents=True, exist_ok=True)
 
-        raw_path: Path = bucket["raw"]  # type: ignore
-        res_path: Path = bucket["res"]  # type: ignore
+        for src in (bucket["raw"], bucket["res"]):
+            src_path = Path(src)
+            shutil.move(str(src_path), stage_dir / src_path.name)
 
-        for src in (raw_path, res_path):
-            if src.exists():
-                shutil.move(str(src), stage_dir / src.name)
-
-        # Clear cache immediately
         self._pending.pop(stem, None)
-
         return str(stage_dir)
 
-    # ---------- record-manager integration ------------------------------------
+    def matches_file(self, filepath: str) -> bool:
+        return Path(filepath).suffix.lower() in {".ngb", ".csv"}
 
     def is_appendable(
-        self, record: LocalRecord, filename_prefix: str, extension: str
+        self,
+        record: LocalRecord,
+        filename_prefix: str,
+        extension: str,
     ) -> bool:
         return True
 
-    # ---------- core processing ------------------------------------------------
+    @classmethod
+    def get_device_id(cls) -> str:
+        return "psa_horiba"
 
+    # ------------------------------------------------------------------
+    # Core processing
+    # ------------------------------------------------------------------
     def device_specific_processing(
-        self, src_path: str, record_path: str, filename_prefix: str, extension: str
-    ) -> tuple[str, str]:
-        """
-        src_path is the staging folder created in preprocessing.
-        """
+        self,
+        src_path: str,
+        record_path: str,
+        filename_prefix: str,
+        extension: str,
+    ) -> ProcessingOutput:
         stage_dir = Path(src_path)
         record_dir = Path(record_path)
 
-        # Find staged files (support .csv for results)
-        ngb_list = list(stage_dir.glob("*.ngb"))
-        csv_list = list(stage_dir.glob("*.csv"))
+        raw_candidates = list(stage_dir.glob("*.ngb"))
+        res_candidates = [candidate for candidate in stage_dir.iterdir() if candidate.suffix.lower() != ".ngb"]
 
-        if not ngb_list or not csv_list:
-            raise FileNotFoundError(f"Staging folder missing required files: {stage_dir}")
+        if not raw_candidates or not res_candidates:
+            raise RuntimeError(f"Stage directory {stage_dir} missing expected files")
 
-        ngb_path = ngb_list[0]
-        res_path = csv_list[0]
-        res_ext = res_path.suffix.lower()  # ".csv"
+        raw_path = raw_candidates[0]
+        res_path = res_candidates[0]
+        res_ext = res_path.suffix.lower()
 
-        # Allocate ONE base stem with counter that's unique across BOTH outputs
         base_stem = self._allocate_base_stem(record_dir, filename_prefix, res_ext)
 
-        # 1) ZIP the raw .ngb inside staging using that base stem, then remove the raw
         zip_stage = stage_dir / f"{base_stem}.ngb.zip"
         try:
             shutil.make_archive(
-                base_name=str(zip_stage.with_suffix("")),  # drop ".zip" for make_archive
+                base_name=str(zip_stage.with_suffix("")),
                 format="zip",
-                root_dir=str(ngb_path.parent),
-                base_dir=ngb_path.name,
+                root_dir=str(raw_path.parent),
+                base_dir=raw_path.name,
             )
-            logger.debug("Archived '%s' → '%s'", ngb_path, zip_stage)
-            ngb_path.unlink(missing_ok=True)
-        except Exception as e:
-            logger.error("Failed to archive '%s': %s", ngb_path, e)
+            logger.debug("Archived '%s' to '%s'", raw_path, zip_stage)
+            raw_path.unlink(missing_ok=True)
+        except Exception as exc:
+            logger.error("Failed to archive '%s': %s", raw_path, exc)
             raise
 
-        # 2) Move the results using the same base stem
         dest_res = record_dir / f"{base_stem}{res_ext}"
         try:
             move_item(str(res_path), str(dest_res))
-        except Exception as e:
-            logger.error("Failed to move '%s' to '%s': %s", res_path, dest_res, e)
+        except Exception as exc:
+            logger.error("Failed to move '%s' to '%s': %s", res_path, dest_res, exc)
             raise
 
-        # 3) Move the ZIP into the record directory with the same base stem
         dest_zip = record_dir / f"{base_stem}.ngb.zip"
         try:
             move_item(str(zip_stage), str(dest_zip))
-        except Exception as e:
-            logger.error("Failed to move '%s' to '%s': %s", zip_stage, dest_zip, e)
+        except Exception as exc:
+            logger.error("Failed to move '%s' to '%s': %s", zip_stage, dest_zip, exc)
             raise
 
-        # 4) Best-effort: remove empty staging folder
         try:
             if not any(stage_dir.iterdir()):
                 stage_dir.rmdir()
-        except Exception:
+        except Exception:  # pragma: no cover - best effort cleanup
             pass
 
-        return str(record_dir), "psa"
+        return ProcessingOutput(final_path=str(record_dir), datatype="psa")
 
-    # ---------- helpers --------------------------------------------------------
-
-    def _classify(self, ext: str) -> Optional[str]:
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _classify(ext: str) -> Optional[str]:
         if ext == ".ngb":
             return "raw"
         if ext == ".csv":
             return "res"
         return None
 
-    def _is_complete(self, bucket: Dict[str, object]) -> bool:
+    @staticmethod
+    def _is_complete(bucket: Dict[str, object]) -> bool:
         return bool(bucket.get("raw")) and bool(bucket.get("res"))
 
-    def _paths_exist(self, bucket: Dict[str, object]) -> bool:
+    @staticmethod
+    def _paths_exist(bucket: Dict[str, object]) -> bool:
         raw = bucket.get("raw")
         res = bucket.get("res")
         return isinstance(raw, Path) and raw.exists() and isinstance(res, Path) and res.exists()
 
+    def _maybe_attach_cross_stem(self, bucket: Dict[str, object], kind: str, candidate: Path) -> None:
+        if bucket["first_kind"] != kind:
+            return
+        target_key = self._find_open_bucket_missing(kind, exclude=candidate.stem)
+        if not target_key:
+            return
+        target = self._pending[target_key]
+        primary = str(target["primary_stem"])
+        desired = candidate.with_name(f"{primary}{candidate.suffix}")
+        try:
+            if candidate != desired and not desired.exists():
+                original = candidate
+                candidate = candidate.rename(desired)
+                logger.debug("Auto-renamed '%s' to '%s'", original, candidate)
+            if kind == "raw":
+                target["raw"] = candidate
+            else:
+                target["res"] = candidate
+                target["res_ext"] = candidate.suffix.lower()
+            self._pending.pop(candidate.stem, None)
+        except Exception as exc:
+            logger.warning("Could not auto-attach '%s' to '%s': %s", candidate, primary, exc)
+
     def _find_open_bucket_missing(self, kind: str, exclude: str) -> Optional[str]:
         candidates = []
-        for k, b in self._pending.items():
-            if k == exclude:
+        for key, payload in self._pending.items():
+            if key == exclude:
                 continue
-            has_raw = bool(b.get("raw"))
-            has_res = bool(b.get("res"))
+            has_raw = bool(payload.get("raw"))
+            has_res = bool(payload.get("res"))
             if kind == "raw" and not has_raw and has_res:
-                candidates.append((k, b))
-            if kind == "res" and not has_res and has_raw:
-                candidates.append((k, b))
+                candidates.append((key, payload))
+            elif kind == "res" and not has_res and has_raw:
+                candidates.append((key, payload))
         if not candidates:
             return None
         candidates.sort(key=lambda kv: kv[1].get("t", 0), reverse=True)
         return candidates[0][0]
 
-    def _purge_orphans(self):
+    def _purge_orphans(self) -> None:
         now = time.time()
-        stale = [k for k, v in self._pending.items() if now - float(v.get("t", 0)) > self._TTL_SECONDS]
-        for k in stale:
-            entry = self._pending.pop(k, {})
+        stale = [key for key, payload in self._pending.items() if now - float(payload.get("t", 0)) > self._TTL_SECONDS]
+        for key in stale:
+            payload = self._pending.pop(key, {})
             for label in ("raw", "res"):
-                p = entry.get(label)
-                if isinstance(p, Path) and p.exists():
+                path_obj = payload.get(label)
+                if isinstance(path_obj, Path) and path_obj.exists():
                     try:
-                        move_to_exception_folder(str(p))
-                        logger.info("Purged orphan '%s'", p)
-                    except Exception as e:
-                        logger.warning("Could not purge orphan '%s': %s", p, e)
+                        move_to_exception_folder(str(path_obj))
+                        logger.info("Purged orphan '%s'", path_obj)
+                    except Exception as exc:  # pragma: no cover - defensive
+                        logger.warning("Could not purge orphan '%s': %s", path_obj, exc)
 
     def _unique_stage_dir(self, parent: Path, stem: str) -> Path:
         base = parent / f"{stem}.__staged__"
         if not base.exists():
             return base
-        i = 2
+        counter = 2
         while True:
-            candidate = parent / f"{stem}.__staged__{i}"
+            candidate = parent / f"{stem}.__staged__{counter}"
             if not candidate.exists():
                 return candidate
-            i += 1
+            counter += 1
 
     def _allocate_base_stem(self, record_dir: Path, filename_prefix: str, res_ext: str) -> str:
-        """
-        Pick one counter so BOTH outputs are unique:
-        <base_stem>{res_ext}   and   <base_stem>.ngb.zip
-
-        Strategy:
-        1) Use get_unique_filename() for the results file to seed a counter.
-        2) If the corresponding ZIP already exists, bump the counter until
-            both names are free.
-        """
-        # 1) Seed from get_unique_filename for the results file
         seeded_path = Path(get_unique_filename(str(record_dir), filename_prefix, res_ext))
         base_stem = seeded_path.stem
 
-        # Use the same separator the utility used
         try:
             sep = getattr(SettingsStore.get(), "ID_SEP", _CONST.ID_SEP)
         except Exception:
             sep = _CONST.ID_SEP
 
-        # Parse the counter we just got (fallback to 1 if pattern unexpected)
         try:
-            stem_no_cnt, cnt_str = base_stem.rsplit(sep, 1)
-            counter = int(cnt_str) if stem_no_cnt == filename_prefix else 1
+            stem_no_counter, counter_str = base_stem.rsplit(sep, 1)
+            counter = int(counter_str) if stem_no_counter == filename_prefix else 1
         except Exception:
             counter = 1
 
-        # 2) Ensure the matching ZIP is also free; if not, bump until both are free
         while True:
             res_candidate = record_dir / f"{base_stem}{res_ext}"
             zip_candidate = record_dir / f"{base_stem}.ngb.zip"

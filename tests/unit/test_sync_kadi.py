@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, patch
+pytest.importorskip('kadi_apy')
 
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.records.local_record import LocalRecord

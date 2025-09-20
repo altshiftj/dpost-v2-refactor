@@ -44,7 +44,7 @@ def test_device_specific_preprocessing_with_digit(processor):
 
     result = processor.device_specific_preprocessing(path)
     assert result == expected
-    
+
     # Verify that the path mapping was created for later use
     assert hasattr(processor, '_path_mapping')
     assert processor._path_mapping[expected] == str(Path(path))
@@ -83,12 +83,12 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
         "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
     ) as mock_move:
 
-        result, dtype = processor.device_specific_processing(
+        output = processor.device_specific_processing(
             str(src_file), str(record_dir), "prefix", ".tif"
         )
 
-        assert result == str(unique_file)
-        assert dtype == "img"
+        assert output.final_path == str(unique_file)
+        assert output.datatype == "img"
         mock_unique.assert_called_once_with(str(record_dir), "prefix", ".tif")
         mock_move.assert_called_once_with(src_file, str(unique_file))
 
@@ -124,13 +124,12 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
 
         mock_archive.return_value = str(record_dir / "prefix.zip")
 
-        result_path, dtype = processor.device_specific_processing(
+        output = processor.device_specific_processing(
             str(elid_dir), str(record_dir), "prefix", ".elid"
         )
 
-        # ---- return values --------------------------------------------------
-        assert Path(result_path) == record_dir
-        assert dtype == "elid"
+        assert Path(output.final_path) == record_dir
+        assert output.datatype == "elid"
 
         # ---- archive call ---------------------------------------------------
         # make_archive is called with the *base* path (no .zip suffix)

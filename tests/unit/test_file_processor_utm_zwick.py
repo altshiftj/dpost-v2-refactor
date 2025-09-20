@@ -86,13 +86,13 @@ def test_device_specific_processing_happy_path(tmp_path, processor):
         mock_archive.return_value = str(record_dir / "prefix.zs2.zip")
 
         # Trigger processing once both are present
-        result_path, dtype = processor.device_specific_processing(
+        output = processor.device_specific_processing(
             str(xlsx), str(record_dir), "prefix", ".xlsx"
         )
 
         # returns folder path and declared datatype
-        assert Path(result_path) == record_dir
-        assert dtype == "xlsx"
+        assert Path(output.final_path) == record_dir
+        assert output.datatype == "xlsx"
 
         # archiving call builds from the raw .zs2
         expected_base = str((record_dir / "prefix.zs2.zip").with_suffix(""))

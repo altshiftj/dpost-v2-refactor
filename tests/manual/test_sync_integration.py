@@ -2,6 +2,8 @@
 """
 Test script to demonstrate PC/Device settings integration with sync manager
 """
+import pytest
+pytest.importorskip("kadi_apy")
 from pathlib import Path
 import sys
 

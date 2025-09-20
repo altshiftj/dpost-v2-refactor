@@ -1,57 +1,51 @@
+"""Abstract contract for device specific file processors."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
+@dataclass(frozen=True)
+class ProcessingOutput:
+    """Standardised return value from device_specific_processing."""
+
+    final_path: str
+    datatype: str
+
+
 class FileProcessorABS(ABC):
-    """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
-    """
+    """Processors transform raw artefacts into organised records."""
 
-    @abstractmethod
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        """
-        Method to implement optional preprocessing steps before routing the item.
-        """
-        pass
+    def device_specific_preprocessing(self, src_path: str) -> str | None:
+        """Give processors a hook to stage or normalise incoming files.
 
-    @abstractmethod
-
-    @abstractmethod
-    def is_appendable(
-        self, record: LocalRecord, filename_prefix: str, extension: str
-    ) -> bool:
-        """
-        Checks if the record can be appended to with this processor's data type.
-        Return: (appendable, message_if_not_appendable)
-        """
-        pass
-
-    @abstractmethod
-    def device_specific_processing(self, source_path, record_path, file_id, extension) -> str:
-        """
-        Allows subclasses to implement custom moves, renames, or metadata extraction.
-        Must return the final path of the processed item.
-        """
-        pass
-
-class FileProcessorBase(FileProcessorABS):
-    """
-    A base class for file processors that provides default implementations for
-    some methods. Subclasses can override these methods as needed.
-    """
-
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        """
-        Default implementation does nothing and returns the source path.
+        Returning `None` keeps the item in a deferred state (e.g. waiting for
+        a paired file). Returning a string continues the pipeline using that
+        path as the effective artefact.
         """
         return src_path
 
+    def matches_file(self, filepath: str) -> bool:
+        """Optional hint to quickly filter compatible files."""
+        return True
 
-    def is_appendable(
-        self, record: LocalRecord, filename_prefix: str, extension: str
-    ) -> bool:
-        """
-        Default implementation always returns True (appendable).
-        """
-        return True, ""
+    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+        """Whether an item may be appended to an existing record."""
+        return True
+
+    @abstractmethod
+    def device_specific_processing(
+        self,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        """Perform the actual move/rename and return final metadata."""
+
+
+class FileProcessorBase(FileProcessorABS):
+    """Convenience subclass providing permissive defaults."""
+
+    pass

@@ -1,38 +1,62 @@
-"""
-Record interaction flows: unappendable records and append-to-synced prompts.
-"""
+"""Record interaction flows invoked by the processing pipeline."""
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Callable, Optional
+
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
+from ipat_watchdog.core.processing.models import RouteContext, ProcessingResult, ProcessingStatus
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import DialogPrompts, WarningMessages
-from ipat_watchdog.core.processing.rename_flow import rename_flow_controller
 
 
-def handle_unappendable_record(ui, rename_delegate, src_path: str, filename_prefix: str, extension: str) -> None:
-    """Show warning and force rename flow with context for unappendable records."""
+def handle_unappendable_record(
+    ui: UserInterface,
+    rename_delegate: Callable[[str, str, str, str | None], ProcessingResult],
+    context: RouteContext,
+) -> ProcessingResult:
+    """Display warning and redirect to rename flow when record cannot be appended."""
+    candidate = context.candidate
     ui.show_warning(WarningMessages.INVALID_RECORD, WarningMessages.INVALID_RECORD_DETAILS)
-    rename_delegate(
-        src_path,
-        filename_prefix,
-        extension,
-        contextual_reason=DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(record_id=filename_prefix),
+    return rename_delegate(
+        str(candidate.effective_path),
+        context.sanitized_prefix,
+        candidate.extension,
+        contextual_reason=DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
+            record_id=context.sanitized_prefix
+        ),
     )
 
 
 def handle_append_to_synced_record(
-    ui,
-    add_item_delegate,
-    rename_delegate,
-    record,
-    src_path: str,
-    filename_prefix: str,
-    extension: str,
-    file_processor,
-) -> None:
-    """Prompt user to append to a synced record; proceed or force rename based on response."""
-    if ui.prompt_append_record(filename_prefix):
-        add_item_delegate(record, src_path, filename_prefix, extension, file_processor)
-    else:
-        rename_delegate(
-            src_path,
-            filename_prefix,
-            extension,
-            contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(record_id=filename_prefix),
+    ui: UserInterface,
+    add_item_delegate: Callable[[object, str, str, str, FileProcessorABS, bool], Optional[str]],
+    rename_delegate: Callable[[str, str, str, str | None], ProcessingResult],
+    context: RouteContext,
+) -> ProcessingResult:
+    """Prompt the user before appending to fully synced records."""
+    candidate = context.candidate
+    record = context.existing_record
+    prefix = context.sanitized_prefix
+
+    if ui.prompt_append_record(prefix):
+        final_path = add_item_delegate(
+            record,
+            str(candidate.effective_path),
+            prefix,
+            candidate.extension,
+            candidate.processor,
+            False,
         )
+        return ProcessingResult(
+            ProcessingStatus.PROCESSED,
+            "Appended to synced record",
+            None if final_path is None else Path(final_path),
+        )
+
+    return rename_delegate(
+        str(candidate.effective_path),
+        prefix,
+        candidate.extension,
+        contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(record_id=prefix),
+    )

@@ -1,7 +1,8 @@
-"""
-Notification helpers for user-facing messages in the processing workflow.
-"""
+"""Notification helpers for success paths in the processing workflow."""
+from __future__ import annotations
+
 from pathlib import Path
+
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import InfoMessages
 

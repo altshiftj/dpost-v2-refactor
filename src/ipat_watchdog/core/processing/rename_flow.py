@@ -1,81 +1,77 @@
-"""
-Rename flow helpers: interactive dialog to correct invalid filenames and
-retry routing after a successful rename.
-"""
+"""Interactive rename flow used when filenames fail validation."""
 from __future__ import annotations
 
-from typing import Callable, Optional
+from dataclasses import dataclass
 from pathlib import Path
+from time import sleep
+from typing import Optional
 
+from ipat_watchdog.core.storage.filesystem_utils import (
+    analyze_user_input,
+    explain_filename_violation,
+    move_to_rename_folder,
+)
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.ui_messages import InfoMessages
-from ipat_watchdog.core.storage.filesystem_utils import (
-    move_to_rename_folder,
-    explain_filename_violation,
-    analyze_user_input,
-)
-from time import sleep
-try:
+
+try:  # pragma: no cover - importing from tkinter is optional in tests
     from tkinter import TclError  # type: ignore
 except Exception:  # pragma: no cover
     class TclError(Exception):
         pass
 
 
-def interactive_rename_loop(
-    ui: UserInterface,
-    filename_prefix: str,
-    contextual_reason: Optional[str] = None,
-) -> Optional[str]:
-    """
-    Interactive loop for getting valid filename from user.
+@dataclass
+class RenameOutcome:
+    """Result of running the interactive rename flow."""
 
-    Returns sanitized prefix or None if user cancels.
-    """
-    attempted = filename_prefix
-    last_analysis = explain_filename_violation(attempted)
-    if contextual_reason:
-        last_analysis["reasons"].insert(0, contextual_reason)
-
-    while True:
-        try:
-            user_input = ui.show_rename_dialog(attempted, last_analysis)
-        except TclError:
-            # Dialog race (e.g., closed before visible) — small backoff and retry
-            sleep(0.05)
-            continue
-        if user_input is None:
-            return None
-        analysis = analyze_user_input(user_input)
-        if analysis["valid"]:
-            return analysis["sanitized"]
-        attempted = f"{user_input.get('name', '')}-{user_input.get('institute', '')}-{user_input.get('sample_ID', '')}"
-        last_analysis = analysis
+    sanitized_prefix: Optional[str]
+    cancelled: bool = False
 
 
-def rename_flow_controller(
-    ui: UserInterface,
-    get_processor_for_file: Callable[[str], object],
-    route_item: Callable[[str, str, str, object], None],
-    src_path: str,
-    filename_prefix: str,
-    extension: str,
-    contextual_reason: Optional[str] = None,
-) -> None:
-    """
-    Manage the interactive rename flow and retry routing when successful.
-    """
-    new_prefix = interactive_rename_loop(ui, filename_prefix, contextual_reason)
-    if new_prefix is not None:
-        try:
-            file_processor = get_processor_for_file(src_path)
-            route_item(src_path, new_prefix, extension, file_processor)
-        except Exception as e:
-            # If retrying fails, move item to rename folder for manual handling
-            move_to_rename_folder(src_path, filename_prefix, extension)
-            ui.show_error("Processing Error", f"Unable to process file: {e}")
-        return
+class RenameService:
+    """Owns the rename dialog loop and follow-up actions."""
 
-    # User cancelled rename - move to rename folder for manual handling
-    move_to_rename_folder(src_path, filename_prefix, extension)
-    ui.show_info(InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME)
+    def __init__(self, ui: UserInterface) -> None:
+        self._ui = ui
+
+    def obtain_valid_prefix(
+        self,
+        current_prefix: str,
+        contextual_reason: Optional[str] = None,
+    ) -> RenameOutcome:
+        attempted = current_prefix
+        last_analysis = explain_filename_violation(attempted)
+        if contextual_reason:
+            last_analysis["reasons"].insert(0, contextual_reason)
+
+        while True:
+            try:
+                user_input = self._ui.show_rename_dialog(attempted, last_analysis)
+            except TclError:
+                sleep(0.05)
+                continue
+
+            if user_input is None:
+                return RenameOutcome(sanitized_prefix=None, cancelled=True)
+
+            analysis = analyze_user_input(user_input)
+            if analysis["valid"]:
+                return RenameOutcome(sanitized_prefix=analysis["sanitized"], cancelled=False)
+
+            attempted = self._compose_attempted_prefix(user_input)
+            last_analysis = analysis
+
+    def send_to_manual_bucket(self, src_path: str, filename_prefix: str, extension: str) -> None:
+        move_to_rename_folder(src_path, filename_prefix, extension)
+        self._ui.show_info(InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME)
+
+    @staticmethod
+    def _compose_attempted_prefix(user_input: dict) -> str:
+        return "-".join(
+            (
+                user_input.get("name", ""),
+                user_input.get("institute", ""),
+                user_input.get("sample_ID", ""),
+            )
+        )
