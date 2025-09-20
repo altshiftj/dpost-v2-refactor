@@ -1,3 +1,5 @@
+"""PC configuration for the TischREM BLB microscope workstation."""
+
 from __future__ import annotations
 
 import re

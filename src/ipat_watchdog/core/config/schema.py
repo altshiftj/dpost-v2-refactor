@@ -1,3 +1,5 @@
+"""Dataclasses that describe all configurable behaviours for PCs and devices."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -59,6 +61,7 @@ def _normalize_segment(value: str) -> str:
 
 @dataclass(slots=True)
 class PathSettings:
+    """Centralizes the filesystem locations the watchdog uses for IO and caching."""
     app_dir: Path = field(default_factory=_default_app_dir)
     desktop_dir: Path = field(default_factory=_default_desktop)
     watch_dir: Path = field(default_factory=lambda: _default_desktop() / "Upload")
@@ -79,6 +82,7 @@ class PathSettings:
 
 @dataclass(slots=True)
 class NamingSettings:
+    """Defines how file and record identifiers are structured across the app."""
     id_separator: str = "-"
     file_separator: str = "_"
     filename_pattern: Pattern[str] = field(default_factory=_default_filename_pattern, repr=False)
@@ -86,6 +90,7 @@ class NamingSettings:
 
 @dataclass(slots=True)
 class StabilityOverride:
+    """Allows devices to override the default file stability rules for specific items."""
     suffixes: tuple[str, ...] = ()
     folders: tuple[str, ...] = ()
     poll_seconds: Optional[float] = None
@@ -114,6 +119,7 @@ class StabilityOverride:
 
 @dataclass(slots=True)
 class WatcherSettings:
+    """Configures how aggressively the watchdog polls and stabilizes discovered files."""
     poll_seconds: float = 1.0
     max_wait_seconds: float = 60.0
     stable_cycles: int = 3
@@ -144,11 +150,13 @@ class WatcherSettings:
 
 @dataclass(slots=True)
 class SessionSettings:
+    """Holds per-device session timing rules such as inactivity timeouts."""
     timeout_seconds: int = -1
 
 
 @dataclass(slots=True)
 class DeviceMetadata:
+    """Captures identifiers and descriptions needed to register device output in Kadi."""
     user_kadi_id: str = "undefined-device-user"
     user_persistent_id: int = -1
     record_kadi_id: str = "udr_01"
@@ -162,6 +170,7 @@ class DeviceMetadata:
 
 @dataclass(slots=True)
 class DeviceFileSelectors:
+    """Filters which files and folders belong to a device when scanning the watch directory."""
     allowed_extensions: frozenset[str] = field(default_factory=frozenset)
     allowed_folder_contents: frozenset[str] = field(default_factory=frozenset)
 
@@ -172,6 +181,7 @@ class DeviceFileSelectors:
 
 @dataclass(slots=True)
 class DeviceConfig:
+    """Aggregates the knobs that tailor the watchdog to a specific instrument."""
     identifier: str
     metadata: DeviceMetadata = field(default_factory=DeviceMetadata)
     files: DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
@@ -199,6 +209,7 @@ class DeviceConfig:
 
 @dataclass(slots=True)
 class PCConfig:
+    """Top-level configuration describing a workstation and its active device plugins."""
     identifier: str
     name: Optional[str] = None
     location: Optional[str] = None

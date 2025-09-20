@@ -1,3 +1,5 @@
+"""Manages LocalRecord lifecycle, persistence, and sync orchestration."""
+
 import datetime
 from typing import Dict, Optional
 

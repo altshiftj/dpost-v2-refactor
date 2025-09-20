@@ -1,3 +1,5 @@
+"""Device plugin registration for the Thermo Phenom XL2 SEM."""
+
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

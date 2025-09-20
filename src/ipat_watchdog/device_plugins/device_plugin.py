@@ -1,3 +1,5 @@
+"""Abstract base for device plugins providing config and file processors."""
+
 from abc import ABC, abstractmethod
 
 from ipat_watchdog.core.config import DeviceConfig

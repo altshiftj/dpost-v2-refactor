@@ -1,4 +1,4 @@
-# ui_abstract.py
+"""Abstract UI contract implemented by concrete frontend adapters."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Any, Callable

@@ -1,3 +1,5 @@
+"""Small Flask app exposing health and log viewing endpoints for operators."""
+
 from flask import Flask, Response, request, render_template_string
 import threading
 import os

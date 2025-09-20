@@ -130,6 +130,8 @@ class DialogPrompts:
 
 
 class ValidationMessages:
+    """Validation feedback shown when filenames or fields break conventions."""
+
     MISSING_SEPARATOR = "Filename must have exactly 3 parts separated by '-'."
     USER_ONLY_LETTERS = "User ID must contain only letters."
     INSTITUTE_ONLY_LETTERS = "Institute must contain only letters."

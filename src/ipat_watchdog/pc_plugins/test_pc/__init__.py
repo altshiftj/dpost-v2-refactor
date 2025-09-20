@@ -2,3 +2,4 @@
 """
 Test PC plugin for testing PC-specific configurations in isolation.
 """
+"""Test PC plugin artifacts used for automated verification."""

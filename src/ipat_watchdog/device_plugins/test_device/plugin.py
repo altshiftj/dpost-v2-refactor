@@ -1,3 +1,5 @@
+"""Test device plugin wiring used for automated verification suites."""
+
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

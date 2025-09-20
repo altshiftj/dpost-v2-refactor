@@ -1,3 +1,5 @@
+"""Device plugin wiring the DSV Horiba dissolver configuration and processor."""
+
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

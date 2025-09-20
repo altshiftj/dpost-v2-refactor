@@ -1,3 +1,5 @@
+"""Abstract interaction contracts that keep UI concerns decoupled."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

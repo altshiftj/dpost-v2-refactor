@@ -1,3 +1,5 @@
+"""PC plugin that configures the Zwick BLB workstation environment."""
+
 from __future__ import annotations
 
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin

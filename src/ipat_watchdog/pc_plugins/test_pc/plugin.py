@@ -1,3 +1,5 @@
+"""Test-only PC plugin to help exercise the configuration plumbing."""
+
 from __future__ import annotations
 
 from typing import Optional

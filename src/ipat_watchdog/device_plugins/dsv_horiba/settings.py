@@ -1,3 +1,5 @@
+"""Declarative configuration for the Horiba DSV dissolver device plugin."""
+
 from __future__ import annotations
 
 from ipat_watchdog.core.config import (

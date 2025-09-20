@@ -1,3 +1,5 @@
+"""Local persistence model capturing record metadata and upload progress."""
+
 from pathlib import Path
 from dataclasses import dataclass, field, fields as dc_fields
 from typing import Dict, List, Optional

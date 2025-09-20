@@ -1,3 +1,5 @@
+"""Services for registering configuration and resolving active device context."""
+
 from __future__ import annotations
 
 from contextlib import AbstractContextManager

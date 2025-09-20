@@ -1,3 +1,5 @@
+"""Configuration factory for the Horiba PSA particle sizing device."""
+
 from __future__ import annotations
 
 import re

@@ -1,3 +1,5 @@
+"""Executable entry point that boots the Watchdog GUI application."""
+
 import os
 import sys
 from pathlib import Path

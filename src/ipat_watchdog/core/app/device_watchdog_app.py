@@ -1,3 +1,5 @@
+"""Main application loop that orchestrates file watching, processing, and UI."""
+
 import sys
 from datetime import datetime
 import queue

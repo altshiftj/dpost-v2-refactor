@@ -1,4 +1,5 @@
-# src/ipat_watchdog/loader.py
+"""Utility functions that resolve registered device and PC plugins."""
+
 from importlib.metadata import entry_points
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

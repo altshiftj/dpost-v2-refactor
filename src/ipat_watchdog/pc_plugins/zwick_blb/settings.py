@@ -1,3 +1,5 @@
+"""PC configuration for the BLB tensile testing workstation."""
+
 from __future__ import annotations
 
 import re

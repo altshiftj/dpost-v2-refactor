@@ -1,4 +1,5 @@
-# logger.py
+"""Logging helpers that emit structured JSON to disk and stdout."""
+
 import logging
 import json
 import sys
@@ -12,6 +13,8 @@ LOG_DIR.mkdir(parents=True, exist_ok=True)
 LOG_FILE = LOG_DIR / "watchdog.log"
 
 class JSONFormatter(logging.Formatter):
+    """Formatter that serializes log records into a JSON payload for ingestion."""
+
     def format(self, record):
         log_record = {
             "timestamp": self.formatTime(record, self.datefmt),

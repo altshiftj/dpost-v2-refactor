@@ -1,3 +1,5 @@
+"""Base interface for PC-level plugins that supply configuration overlays."""
+
 from abc import ABC, abstractmethod
 
 from ipat_watchdog.core.config import PCConfig

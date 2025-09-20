@@ -1,3 +1,5 @@
+"""Device plugin wiring for the Horiba PSA particle sizer."""
+
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin

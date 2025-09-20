@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum, auto
+
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
@@ -12,6 +14,56 @@ class ProcessingOutput:
 
     final_path: str
     datatype: str
+
+
+class ProbeDecision(Enum):
+    """Discrete outcomes returned by FileProcessorABS.probe_file."""
+
+    MATCH = auto()
+    MISMATCH = auto()
+    UNKNOWN = auto()
+
+
+@dataclass(frozen=True)
+class FileProbeResult:
+    """Represents compatibility assessment between a file and a processor."""
+
+    decision: ProbeDecision
+    confidence: float = 0.0
+    reason: str | None = None
+
+    @classmethod
+    def match(cls, confidence: float = 1.0, reason: str | None = None) -> "FileProbeResult":
+        """Return a result indicating the processor positively identified the file."""
+
+        return cls(ProbeDecision.MATCH, confidence, reason)
+
+    @classmethod
+    def mismatch(cls, reason: str | None = None) -> "FileProbeResult":
+        """Return a result indicating the processor determined the file does not belong."""
+
+        return cls(ProbeDecision.MISMATCH, 0.0, reason)
+
+    @classmethod
+    def unknown(cls, reason: str | None = None) -> "FileProbeResult":
+        """Return an inconclusive result, allowing other processors to decide."""
+
+        return cls(ProbeDecision.UNKNOWN, 0.0, reason)
+
+    def is_match(self) -> bool:
+        """True when the probe produced a positive match."""
+
+        return self.decision is ProbeDecision.MATCH
+
+    def is_mismatch(self) -> bool:
+        """True when the probe explicitly rejected the file."""
+
+        return self.decision is ProbeDecision.MISMATCH
+
+    def is_definitive(self) -> bool:
+        """True when the probe has an explicit stance (match or mismatch)."""
+
+        return self.decision is not ProbeDecision.UNKNOWN
 
 
 class FileProcessorABS(ABC):
@@ -24,15 +76,30 @@ class FileProcessorABS(ABC):
         a paired file). Returning a string continues the pipeline using that
         path as the effective artefact.
         """
+
         return src_path
 
     def matches_file(self, filepath: str) -> bool:
         """Optional hint to quickly filter compatible files."""
+
         return True
 
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         """Whether an item may be appended to an existing record."""
+
         return True
+
+    def probe_file(self, filepath: str) -> FileProbeResult:
+        """Inspect a file to confirm it belongs to this processor.
+
+        The default implementation is intentionally conservative and returns
+        FileProbeResult.unknown(), allowing existing processors to rely solely
+        on extension or folder routing. Device-specific processors can override
+        this method to read headers or metadata and return a more definitive
+        outcome.
+        """
+
+        return FileProbeResult.unknown()
 
     @abstractmethod
     def device_specific_processing(

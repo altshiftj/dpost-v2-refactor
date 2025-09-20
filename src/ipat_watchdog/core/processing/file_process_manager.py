@@ -20,6 +20,7 @@ from ipat_watchdog.core.processing.models import (
     RoutingDecision,
 )
 from ipat_watchdog.core.processing.notifications import notify_success
+from ipat_watchdog.core.processing.device_resolver import DeviceResolver
 from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
 from ipat_watchdog.core.processing.record_flow import (
     handle_append_to_synced_record,
@@ -74,6 +75,7 @@ class FileProcessManager:
         self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
         self._processor_factory = FileProcessorFactory()
+        self._device_resolver = DeviceResolver(self.config_service, self._processor_factory)
         self._rename_service = RenameService(interactions)
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
 
@@ -92,9 +94,11 @@ class FileProcessManager:
             logger.debug(message)
             return ProcessingResult(ProcessingStatus.DEFERRED, message)
 
-        device = self.config_service.first_matching_device(src_path)
+        resolution = self._device_resolver.resolve(path)
+        device = resolution.selected
         if device is None:
-            return self._reject_immediately(path, "Invalid file type")
+            reason = resolution.reason or "Invalid file type"
+            return self._reject_immediately(path, reason)
 
         stability_outcome = FileStabilityTracker(path, device).wait()
         if stability_outcome.rejected:
@@ -337,4 +341,8 @@ class FileProcessManager:
             safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)
         self._register_rejection(str(path), str(exc))
         FILES_FAILED.inc()
+
+
+
+
 

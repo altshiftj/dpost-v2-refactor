@@ -1,3 +1,5 @@
+"""Runtime helpers for initialising and accessing the global configuration service."""
+
 from __future__ import annotations
 
 from contextlib import contextmanager

@@ -1,11 +1,9 @@
+"""Shared constants defining filesystem defaults and naming conventions."""
+
 import re
 import os
 from typing import Pattern, List
 from pathlib import Path
-
-"""
-Global constants for IPAT Data Watchdog configuration and ID formatting.
-"""
 
 # --- Directory Paths ---
 APP_DIR: Path = Path("C:\\Watchdog")

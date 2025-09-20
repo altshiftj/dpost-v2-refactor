@@ -1,3 +1,5 @@
+"""Prometheus metric definitions tracked by the Watchdog application."""
+
 from prometheus_client import Counter, Gauge, Histogram
 
 FILES_PROCESSED = Counter("files_processed", "Total files processed by Watchdog")

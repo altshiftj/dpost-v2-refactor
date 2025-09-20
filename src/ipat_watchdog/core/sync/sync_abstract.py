@@ -1,3 +1,5 @@
+"""Abstract interface for syncing LocalRecord data to external stores."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

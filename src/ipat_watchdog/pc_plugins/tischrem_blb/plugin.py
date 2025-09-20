@@ -1,3 +1,5 @@
+"""PC plugin for the Tisch REM workstation setup."""
+
 from __future__ import annotations
 
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin

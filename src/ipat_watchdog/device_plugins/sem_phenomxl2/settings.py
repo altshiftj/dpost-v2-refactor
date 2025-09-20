@@ -1,3 +1,5 @@
+"""Configuration values for the SEM Phenom XL2 instrument plugin."""
+
 from __future__ import annotations
 
 import re
@@ -76,7 +78,7 @@ def build_config() -> DeviceConfig:
                 StabilityOverride(
                     suffixes=(".tiff", ".tif"),
                     poll_seconds=0.1,
-                    stable_cycles=1,
+                    stable_cycles=2,
                     max_wait_seconds=20,
                 ),
                 StabilityOverride(

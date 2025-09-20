@@ -1,3 +1,5 @@
+"""Adapters that translate domain interaction calls into UI implementation calls."""
+
 from __future__ import annotations
 
 from copy import deepcopy

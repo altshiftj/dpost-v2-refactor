@@ -1,3 +1,5 @@
+"""Configuration schemas, services, and runtime helpers."""
+
 from .schema import (
     PathSettings,
     NamingSettings,
@@ -39,3 +41,4 @@ __all__ = [
     'current',
     'activate_device',
 ]
+"""Configuration schemas, services, and runtime helpers."""

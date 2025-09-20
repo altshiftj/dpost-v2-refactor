@@ -1,3 +1,5 @@
+"""Tracks user activity and session timeouts for watchdog processing runs."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional

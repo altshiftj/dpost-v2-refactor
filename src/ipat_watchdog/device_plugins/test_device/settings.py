@@ -1,3 +1,5 @@
+"""Configuration scaffold for the synthetic test device plugin."""
+
 from __future__ import annotations
 
 import re

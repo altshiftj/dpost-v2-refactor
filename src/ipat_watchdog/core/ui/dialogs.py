@@ -104,6 +104,8 @@ class EntryWithPlaceholder(tk.Entry):
 
 
 class RenameDialog(simpledialog.Dialog):
+    """Modal dialog that guides users through repairing an invalid filename."""
+
     def __init__(
         self,
         parent: tk.Tk,

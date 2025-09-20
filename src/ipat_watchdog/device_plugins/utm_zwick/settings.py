@@ -1,3 +1,5 @@
+"""Configuration builder for the Zwick UTM tensile testing device."""
+
 from __future__ import annotations
 
 import re
