@@ -121,7 +121,7 @@ Steps (from `core/processing/file_process_manager.py`):
 
 ```mermaid
 sequenceDiagram
-    title IPAT Watchdog – Processing Pipeline
+    %% Title intentionally omitted for compatibility with older Mermaid renderers
 
     participant FS as Filesystem (watchdog)
     participant App as DeviceWatchdogApp
@@ -140,7 +140,7 @@ sequenceDiagram
     participant Err as error_handling.py
 
     %% Event ingestion
-    FS->>App: created(file|folder)
+    FS->>App: created(file_or_folder)
     App->>FPM: process_item(src_path)
 
     %% Early filter
@@ -168,7 +168,7 @@ sequenceDiagram
 
     %% Stability guard
     FPM->>Stab: wait()
-    alt rejected (timeout/disappeared)
+    alt rejected (timeout or disappeared)
       FPM->>Err: safe_move_to_exception(src_path)
       FPM-->>App: ProcessingResult(REJECTED, reason)
     else stable
@@ -191,8 +191,8 @@ sequenceDiagram
 
     %% Routing
     FPM->>Route: fetch_record_for_prefix(records, prefix, device)
-    Route-->>FPM: (sanitized_prefix, is_valid, record?)
-    FPM->>Route: determine_routing_state(record, is_valid, prefix, extension, Proc)
+    Route-->>FPM: (sanitized_prefix, is_valid, record_opt)
+    FPM->>Route: determine_routing_state(record_opt, is_valid, prefix, extension, Proc)
     Route-->>FPM: decision
 
     alt UNAPPENDABLE
@@ -308,7 +308,7 @@ python -m ipat_watchdog
 ```bash
 pip install ipat-watchdog[tischrem_blb]
 export PC_NAME=tischrem_blb
-pyinstaller --onefile --name wd-tischrem_blb src/ipat_watchdog/__main__.py
+pyinstaller --onefile --name wd_tischrem_blb src/ipat_watchdog/__main__.py
 ```
 
 ---
@@ -350,10 +350,10 @@ python -m ipat_watchdog
 
 ## 📚 Additional Resources
 
-- [Watchdog Library](https://python-watchdog.readthedocs.io/)  
-- [Kadi API](https://kadi.readthedocs.io/)  
-- [Prometheus Client](https://prometheus.github.io/client_python/)  
-- [PyInstaller](https://pyinstaller.readthedocs.io/)  
+- Watchdog Library: https://python-watchdog.readthedocs.io/  
+- Kadi API: https://kadi.readthedocs.io/  
+- Prometheus Client: https://prometheus.github.io/client_python/  
+- PyInstaller: https://pyinstaller.readthedocs.io/  
 
 ---
 
