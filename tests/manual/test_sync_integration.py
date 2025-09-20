@@ -52,15 +52,15 @@ def test_sync_settings_integration():
     SettingsStore.set_manager(settings_manager)
 
     ui = HeadlessUI()
-    sync_manager = KadiSyncManager(ui=ui, settings_manager=settings_manager)
+    sync_manager = KadiSyncManager(interactions=ui, settings_manager=settings_manager)
 
     # Test record sync without device context
     print("4. Testing record sync...")
     from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
     from ipat_watchdog.core.session.session_manager import SessionManager
     
-    session_manager = SessionManager(ui=ui, end_session_callback=lambda: None)
-    file_process_manager = FileProcessManager(ui=ui, sync_manager=sync_manager, session_manager=session_manager)
+    session_manager = SessionManager(interactions=ui, scheduler=ui, end_session_callback=lambda: None)
+    file_process_manager = FileProcessManager(interactions=ui, sync_manager=sync_manager, session_manager=session_manager)
     file_process_manager.sync_records_to_database()
     print("   ✓ Record sync completed")
     

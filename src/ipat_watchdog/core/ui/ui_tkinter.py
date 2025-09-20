@@ -12,7 +12,7 @@ import threading
 
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 from ipat_watchdog.core.ui.dialogs import RenameDialog
-from ipat_watchdog.core.ui.ui_messages import InfoMessages, DialogPrompts
+from ipat_watchdog.core.interactions.messages import InfoMessages, DialogPrompts
 
 
 class TKinterUI(UserInterface):

@@ -1,15 +1,8 @@
 """
-ui_messages.py
-
-This module centralizes all UI messages used throughout the application.
-It organizes messages by category and provides easy access to standardized text
-for warnings, errors, information dialogs, and prompts.
-
-Using a centralized message repository makes it easier to:
-1. Maintain consistent messaging throughout the application
-2. Make application-wide text changes in one place
-3. Support localization/internationalization if needed in the future
+Centralized message catalog for user-facing strings used within interaction flows.
+Grouping them here keeps messaging consistent and simplifies future localization.
 """
+
 
 # ===============================================================================
 # Error Messages
@@ -37,7 +30,7 @@ class ErrorMessages:
     )
 
     PROCESSING_ERROR = "Processing Error"
-    PROCESSING_ERROR_DETAILS = ( 
+    PROCESSING_ERROR_DETAILS = (
         "Failed to process file: {filename}\n"
         "File has been moved to the exception folder.\n"
         "Error: {error}"
@@ -137,7 +130,7 @@ class DialogPrompts:
 
 
 class ValidationMessages:
-    MISSING_SEPARATOR = "Filename must have exactly 3 parts separated by '-'."  
+    MISSING_SEPARATOR = "Filename must have exactly 3 parts separated by '-'."
     USER_ONLY_LETTERS = "User ID must contain only letters."
     INSTITUTE_ONLY_LETTERS = "Institute must contain only letters."
     SAMPLE_TOO_LONG = "Sample name must be 30 characters or fewer."

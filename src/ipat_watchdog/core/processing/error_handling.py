@@ -4,10 +4,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from ipat_watchdog.core.interactions import UserInteractionPort, WarningMessages
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.storage.filesystem_utils import move_to_exception_folder
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.ui_messages import WarningMessages
 
 logger = setup_logger(__name__)
 
@@ -23,7 +22,7 @@ def safe_move_to_exception(path_like: str, prefix: str | None = None, extension:
 
 
 def move_to_exception_and_inform(
-    ui: UserInterface,
+    interactions: UserInteractionPort,
     src_path: str,
     prefix: str,
     extension: str,
@@ -43,15 +42,20 @@ def move_to_exception_and_inform(
 
     severity_lower = severity.lower()
     if severity_lower == "warning":
-        ui.show_warning(severity, message)
+        interactions.show_warning(severity, message)
     else:
-        ui.show_error(severity, message)
+        interactions.show_error(severity, message)
 
 
-def handle_invalid_datatype(ui: UserInterface, src_path: str, filename_prefix: str, extension: str) -> None:
+def handle_invalid_datatype(
+    interactions: UserInteractionPort,
+    src_path: str,
+    filename_prefix: str,
+    extension: str,
+) -> None:
     """Standard path for unsupported datatypes."""
     move_to_exception_and_inform(
-        ui,
+        interactions,
         src_path,
         filename_prefix,
         extension,

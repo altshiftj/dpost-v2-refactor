@@ -1,5 +1,6 @@
 import pytest
 pytest.importorskip('kadi_apy')
+from unittest.mock import MagicMock
 
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -120,7 +121,7 @@ def sync_mgr(fake_ui, tmp_settings, monkeypatch):
                 settings_manager.set_current_device(device)
                 break
     
-    return KadiSyncManager(ui=fake_ui, settings_manager=settings_manager)
+    return KadiSyncManager(interactions=fake_ui, settings_manager=settings_manager)
 
 
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):

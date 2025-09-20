@@ -20,7 +20,7 @@ from ipat_watchdog.core.config.settings_store import SettingsStore
 from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.ui.ui_messages import ValidationMessages
+from ipat_watchdog.core.interactions.messages import ValidationMessages
 
 logger = setup_logger(__name__)
 

@@ -28,7 +28,7 @@ class ErroringProcessor(DummyProcessor):
 @pytest.fixture
 def manager(tmp_settings, monkeypatch) -> FileProcessManager:
     ui = HeadlessUI()
-    sync = DummySyncManager(ui=ui)
+    sync = DummySyncManager(ui)
     session = FakeSessionManager()
     settings_manager = SettingsStore.get_manager()
     settings_manager.set_current_device(tmp_settings)
@@ -42,7 +42,7 @@ def manager(tmp_settings, monkeypatch) -> FileProcessManager:
 
     processor = DummyProcessor()
     mgr = FileProcessManager(
-        ui=ui,
+        interactions=ui,
         sync_manager=sync,
         session_manager=session,
         settings_manager=settings_manager,
@@ -104,7 +104,7 @@ def test_add_item_to_record_failure_raises(manager, tmp_settings):
 
 
 def test_invoke_rename_flow_cancel_moves_to_manual(manager, tmp_settings):
-    manager.ui.show_rename_dialog_return = None
+    manager.interactions.show_rename_dialog_return = None
     settings_manager = SettingsStore.get_manager()
     settings_manager.set_current_device(tmp_settings)
 

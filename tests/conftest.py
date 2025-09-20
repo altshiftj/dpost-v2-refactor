@@ -109,7 +109,7 @@ def fake_ui():
 
 @pytest.fixture
 def fake_sync(fake_ui):
-    return DummySyncManager(ui=fake_ui)
+    return DummySyncManager(fake_ui)
 
 
 @pytest.fixture

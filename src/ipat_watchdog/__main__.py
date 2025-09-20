@@ -13,6 +13,7 @@ from ipat_watchdog.loader import load_device_plugin, load_pc_plugin, get_devices
 from ipat_watchdog.core.config.settings_store import SettingsManager, SettingsStore
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from ipat_watchdog.core.ui.adapters import UiInteractionAdapter
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 
 logger = setup_logger(__name__)
@@ -20,6 +21,7 @@ logger = setup_logger(__name__)
 # ---------------------------
 # Load only the bundled .env
 # ---------------------------
+
 
 def _bundle_dir() -> Path:
     """
@@ -31,14 +33,16 @@ def _bundle_dir() -> Path:
     # dev: src/ipat_watchdog/__main__.py → up 3 → repo root → build/
     return Path(__file__).resolve().parents[3] / "build"
 
+
 def _load_bundled_env() -> None:
     env_path = _bundle_dir() / ".env"
     if env_path.exists():
         load_dotenv(env_path, override=False)
-        logger.info(f"Loaded bundled env: {env_path}")
+        logger.info("Loaded bundled env: %s", env_path)
     else:
-        logger.error(f"Bundled .env not found at {env_path}")
+        logger.error("Bundled .env not found at %s", env_path)
         # keep running; _require_pc_name will enforce PC_NAME presence
+
 
 # Load config before anything reads env vars
 _load_bundled_env()
@@ -47,8 +51,10 @@ _load_bundled_env()
 # Config resolution
 # ---------------------------
 
+
 def _split_list_env(value: str) -> List[str]:
     return [p.strip() for p in value.replace(";", ",").split(",") if p.strip()]
+
 
 def _require_pc_name() -> str:
     pc = os.getenv("PC_NAME", "").strip()
@@ -57,14 +63,16 @@ def _require_pc_name() -> str:
         sys.exit(1)
     return pc
 
+
 def _resolve_device_names(pc_name: str) -> List[str]:
     explicit = _split_list_env(os.getenv("DEVICE_PLUGINS", ""))
     if explicit:
-        logger.info(f"Using devices from DEVICE_PLUGINS: {explicit}")
+        logger.info("Using devices from DEVICE_PLUGINS: %s", explicit)
         return explicit
     inferred = get_devices_for_pc(pc_name)
-    logger.info(f"No DEVICE_PLUGINS set; inferred from PC '{pc_name}': {inferred}")
+    logger.info("No DEVICE_PLUGINS set; inferred from PC '%s': %s", pc_name, inferred)
     return inferred
+
 
 # ---------------------------
 # App entry
@@ -72,6 +80,7 @@ def _resolve_device_names(pc_name: str) -> List[str]:
 
 PROMETHEUS_PORT = 8000
 OBSERVABILITY_PORT = 8001
+
 
 def main() -> None:
     try:
@@ -88,12 +97,12 @@ def main() -> None:
     if not device_names:
         # Hardcoded device names fallback
         device_names = ["psa_horiba", "dsv_horiba"]  # Replace with your actual device names
-        logger.warning(f"No devices found; using hardcoded list: {device_names}")
+        logger.warning("No devices found; using hardcoded list: %s", device_names)
         if not device_names:
             logger.error("At least one device name is required.")
             sys.exit(1)
 
-    logger.info(f"Loading PC plugin: {pc_name} with devices: {device_names}")
+    logger.info("Loading PC plugin: %s with devices: %s", pc_name, device_names)
     pc_plugin = load_pc_plugin(pc_name)
     pc_settings = pc_plugin.get_settings()
 
@@ -111,13 +120,14 @@ def main() -> None:
     init_dirs()
 
     start_http_server(PROMETHEUS_PORT)
-    logger.info(f"Prometheus metrics server started on port {PROMETHEUS_PORT}")
+    logger.info("Prometheus metrics server started on port %d", PROMETHEUS_PORT)
 
     start_observability_server()
-    logger.info(f"Observability server started on port {OBSERVABILITY_PORT}")
+    logger.info("Observability server started on port %d", OBSERVABILITY_PORT)
 
     ui = TKinterUI()
-    sync = KadiSyncManager(ui=ui, settings_manager=settings_manager)
+    interaction_port = UiInteractionAdapter(ui)
+    sync = KadiSyncManager(interactions=interaction_port, settings_manager=settings_manager)
 
     app = DeviceWatchdogApp(
         ui=ui,
@@ -126,9 +136,10 @@ def main() -> None:
     )
     app.run()
 
+
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        logger.exception(f"Application failed to start: {e}")
+    except Exception as exc:
+        logger.exception("Application failed to start: %s", exc)
         sys.exit(1)

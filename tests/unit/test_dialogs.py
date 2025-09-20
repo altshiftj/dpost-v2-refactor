@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from ipat_watchdog.core.ui.dialogs import EntryWithPlaceholder, RenameDialog
-from ipat_watchdog.core.ui.ui_messages import DialogPrompts
+from ipat_watchdog.core.interactions.messages import DialogPrompts
 
 
 # ---------------------------------------------------------------------

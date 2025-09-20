@@ -3,22 +3,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from time import sleep
 from typing import Optional
 
+from ipat_watchdog.core.interactions import (
+    InfoMessages,
+    RenameDecision,
+    RenamePrompt,
+    UserInteractionPort,
+)
 from ipat_watchdog.core.storage.filesystem_utils import (
     analyze_user_input,
     explain_filename_violation,
     move_to_rename_folder,
 )
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.ui_messages import InfoMessages
-
-try:  # pragma: no cover - importing from tkinter is optional in tests
-    from tkinter import TclError  # type: ignore
-except Exception:  # pragma: no cover
-    class TclError(Exception):
-        pass
 
 
 @dataclass
@@ -32,8 +29,8 @@ class RenameOutcome:
 class RenameService:
     """Owns the rename dialog loop and follow-up actions."""
 
-    def __init__(self, ui: UserInterface) -> None:
-        self._ui = ui
+    def __init__(self, interactions: UserInteractionPort) -> None:
+        self._interactions = interactions
 
     def obtain_valid_prefix(
         self,
@@ -41,30 +38,41 @@ class RenameService:
         contextual_reason: Optional[str] = None,
     ) -> RenameOutcome:
         attempted = current_prefix
-        last_analysis = explain_filename_violation(attempted)
-        if contextual_reason:
-            last_analysis["reasons"].insert(0, contextual_reason)
+        analysis = explain_filename_violation(attempted)
+        reason_hint = contextual_reason
 
         while True:
-            try:
-                user_input = self._ui.show_rename_dialog(attempted, last_analysis)
-            except TclError:
-                sleep(0.05)
-                continue
+            decision = self._request_new_prefix(attempted, analysis, reason_hint)
+            reason_hint = None  # contextual hints should only be prepended once
 
-            if user_input is None:
+            if decision.cancelled or not decision.values:
                 return RenameOutcome(sanitized_prefix=None, cancelled=True)
 
-            analysis = analyze_user_input(user_input)
+            analysis = analyze_user_input(decision.values)
             if analysis["valid"]:
                 return RenameOutcome(sanitized_prefix=analysis["sanitized"], cancelled=False)
 
-            attempted = self._compose_attempted_prefix(user_input)
-            last_analysis = analysis
+            attempted = self._compose_attempted_prefix(decision.values)
 
     def send_to_manual_bucket(self, src_path: str, filename_prefix: str, extension: str) -> None:
         move_to_rename_folder(src_path, filename_prefix, extension)
-        self._ui.show_info(InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME)
+        self._interactions.show_info(
+            InfoMessages.OPERATION_CANCELLED,
+            InfoMessages.MOVED_TO_RENAME,
+        )
+
+    def _request_new_prefix(
+        self,
+        attempted: str,
+        analysis: dict,
+        contextual_reason: Optional[str],
+    ) -> RenameDecision:
+        prompt = RenamePrompt(
+            attempted_prefix=attempted,
+            analysis=analysis,
+            contextual_reason=contextual_reason,
+        )
+        return self._interactions.request_rename(prompt)
 
     @staticmethod
     def _compose_attempted_prefix(user_input: dict) -> str:

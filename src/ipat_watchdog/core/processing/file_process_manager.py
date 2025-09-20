@@ -48,8 +48,7 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     parse_filename,
 )
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.ui_messages import ErrorMessages
+from ipat_watchdog.core.interactions import UserInteractionPort
 
 logger = setup_logger(__name__)
 
@@ -61,13 +60,13 @@ class FileProcessManager:
 
     def __init__(
         self,
-        ui: UserInterface,
+        interactions: UserInteractionPort,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
         settings_manager: SettingsManager | None = None,
         file_processor: FileProcessorABS | None = None,
     ) -> None:
-        self.ui = ui
+        self.interactions = interactions
         self.session_manager = session_manager
         if settings_manager is None:
             from ipat_watchdog.core.config.settings_store import SettingsStore
@@ -78,7 +77,7 @@ class FileProcessManager:
         self.file_processor = file_processor
         self.records = RecordManager(sync_manager=sync_manager)
         self._processor_factory = FileProcessorFactory()
-        self._rename_service = RenameService(ui)
+        self._rename_service = RenameService(interactions)
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
 
         if not self.records.all_records_uploaded():
@@ -161,7 +160,7 @@ class FileProcessManager:
 
         record.datatype = output.datatype
         if notify:
-            notify_success(self.ui, src_path, output.final_path)
+            notify_success(self.interactions, src_path, output.final_path)
 
         logger.debug(
             "Processed %s → %s",
@@ -250,11 +249,11 @@ class FileProcessManager:
         )
 
         if context.decision is RoutingDecision.UNAPPENDABLE:
-            return handle_unappendable_record(self.ui, rename_delegate, context)
+            return handle_unappendable_record(self.interactions, rename_delegate, context)
 
         if context.decision is RoutingDecision.APPEND_TO_SYNCED:
             return handle_append_to_synced_record(
-                self.ui,
+                self.interactions,
                 self.add_item_to_record,
                 rename_delegate,
                 context,

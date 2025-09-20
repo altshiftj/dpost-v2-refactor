@@ -9,7 +9,7 @@ def test_start_session(fake_ui, tmp_settings):
     and show the done dialog — but not end the session unless the user says so.
     """
     fake_ui.auto_close_session = False  # Control when session ends
-    session_manager = SessionManager(ui=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
 
     assert not session_manager.session_active
     assert session_manager.timer_id is None
@@ -30,7 +30,7 @@ def test_end_session_calls_callback(fake_ui, tmp_settings):
     def on_done():
         ended.append(True)
 
-    session_manager = SessionManager(ui=fake_ui, end_session_callback=on_done)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, end_session_callback=on_done)
     session_manager.session_active = True
     session_manager.timer_id = 1
 
@@ -51,7 +51,7 @@ def test_reset_timer_reschedules(fake_ui, tmp_settings):
                 settings_manager.set_current_device(device)
                 break
 
-    session_manager = SessionManager(ui=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
     session_manager.session_active = True
     session_manager.timer_id = 1
 
@@ -65,7 +65,7 @@ def test_reset_timer_when_inactive_does_nothing(fake_ui, tmp_settings):
     """
     When reset_timer() is called on an inactive session, it should not schedule anything.
     """
-    session_manager = SessionManager(ui=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
     session_manager.session_active = False
     session_manager.timer_id = None
 
@@ -85,7 +85,7 @@ def test_auto_end_session(fake_ui, tmp_settings):
     def on_done():
         ended.append(True)
 
-    session_manager = SessionManager(ui=fake_ui, end_session_callback=on_done)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, end_session_callback=on_done)
     session_manager.start_session()
 
     assert session_manager.session_active is False

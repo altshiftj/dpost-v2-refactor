@@ -17,7 +17,7 @@ from ipat_watchdog.core.storage.filesystem_utils import (
 from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from ..helpers.fake_sync import DummySyncManager
 from ..helpers.fake_ui import HeadlessUI
-from ipat_watchdog.core.ui.ui_messages import InfoMessages
+from ipat_watchdog.core.interactions.messages import InfoMessages
 
 
 # ───────────────────────── helpers for scheduled tasks ───────────────────────
@@ -52,7 +52,7 @@ def real_processing_app(tmp_settings):
     """
 
     ui = HeadlessUI()
-    sync = DummySyncManager(ui=ui)
+    sync = DummySyncManager(ui)
 
     # Set up SettingsManager with test device plugin for proper test isolation
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager

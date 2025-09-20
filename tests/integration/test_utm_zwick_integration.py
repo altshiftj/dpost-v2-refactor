@@ -51,11 +51,11 @@ def utm_processing_manager(tmp_settings):
     SettingsStore.set_manager(sm)
 
     ui = HeadlessUI()
-    sync = DummySyncManager(ui=ui)
+    sync = DummySyncManager(ui)
     fpm = FileProcessManager(
-        ui=ui,
+        interactions=ui,
         sync_manager=sync,
-        session_manager=FakeSessionManager(ui=ui),
+        session_manager=FakeSessionManager(interactions=ui, scheduler=ui),
         settings_manager=sm,
     )
     return fpm, utm

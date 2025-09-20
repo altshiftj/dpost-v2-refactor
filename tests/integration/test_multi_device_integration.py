@@ -24,7 +24,7 @@ def multi_device_app(tmp_settings):
     """
 
     ui = HeadlessUI()
-    sync = DummySyncManager(ui=ui)
+    sync = DummySyncManager(ui)
 
     # Use the same setup as the main integration tests
     from ipat_watchdog.core.config.settings_store import SettingsStore, SettingsManager

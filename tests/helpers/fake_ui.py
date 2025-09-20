@@ -1,5 +1,7 @@
 # tests/helpers/fake_ui.py
+from ipat_watchdog.core.interactions import RenameDecision, RenamePrompt
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
+
 
 class HeadlessUI(UserInterface):
     def __init__(self):
@@ -15,15 +17,34 @@ class HeadlessUI(UserInterface):
 
         self.auto_close_session = False  # Control session ending in tests
         self.task_counter = 0  # Ensure unique task handles
-        
+
         # For compatibility with existing tests
         self.calls = {
-            "show_warning": [], "show_info": [], "show_error": [],
-            "prompt_rename": [], "prompt_append_record": [], "show_rename_dialog": []
+            "show_warning": [],
+            "show_info": [],
+            "show_error": [],
+            "prompt_rename": [],
+            "prompt_append_record": [],
+            "show_rename_dialog": [],
         }
         self.prompt_rename_return = None
         self.prompt_append_record_return = None
         self.show_rename_dialog_return = None
+
+    # ------------------------------------------------------------------
+    # UserInterface methods
+    # ------------------------------------------------------------------
+    def initialize(self):
+        pass
+
+    def destroy(self):
+        self.destroyed = True
+
+    def get_root(self):
+        return None
+
+    def run_main_loop(self):
+        pass
 
     def show_warning(self, title: str, message: str) -> None:
         self.warnings.append((title, message))
@@ -62,15 +83,6 @@ class HeadlessUI(UserInterface):
         if self.auto_close_session:
             on_done_callback()
 
-    def initialize(self):
-        pass
-
-    def destroy(self):
-        self.destroyed = True
-
-    def get_root(self):
-        return None
-
     def schedule_task(self, interval_ms, callback):
         self.task_counter += 1  # Increment to get a new unique handle
         self.scheduled_tasks.append((interval_ms, callback))
@@ -85,5 +97,31 @@ class HeadlessUI(UserInterface):
     def set_exception_handler(self, callback):
         self.exception_handler = callback
 
-    def run_main_loop(self):
-        pass
+    # ------------------------------------------------------------------
+    # Interaction port compatibility helpers
+    # ------------------------------------------------------------------
+    def request_rename(self, prompt: RenamePrompt) -> RenameDecision:
+        self.calls["show_rename_dialog"].append((prompt.attempted_prefix, prompt.analysis))
+        if prompt.contextual_reason:
+            # record contextual hints so tests can inspect them via rename_inputs side effects
+            self.calls.setdefault("contextual_reason", []).append(prompt.contextual_reason)
+
+        if self.show_rename_dialog_return is not None:
+            result = self.show_rename_dialog_return
+        elif self.rename_inputs:
+            result = self.rename_inputs.pop(0)
+        else:
+            result = None
+
+        if result is None:
+            return RenameDecision(cancelled=True, values=None)
+        return RenameDecision(cancelled=False, values=result)
+
+    def show_done_prompt(self, on_done_callback):
+        self.show_done_dialog(on_done_callback)
+
+    def schedule(self, interval_ms, callback):
+        return self.schedule_task(interval_ms, callback)
+
+    def cancel(self, handle):
+        self.cancel_task(handle)

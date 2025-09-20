@@ -4,20 +4,26 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Optional
 
+from ipat_watchdog.core.interactions import (
+    DialogPrompts,
+    UserInteractionPort,
+    WarningMessages,
+)
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.processing.models import RouteContext, ProcessingResult, ProcessingStatus
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.ui_messages import DialogPrompts, WarningMessages
 
 
 def handle_unappendable_record(
-    ui: UserInterface,
+    interactions: UserInteractionPort,
     rename_delegate: Callable[[str, str, str, str | None], ProcessingResult],
     context: RouteContext,
 ) -> ProcessingResult:
     """Display warning and redirect to rename flow when record cannot be appended."""
     candidate = context.candidate
-    ui.show_warning(WarningMessages.INVALID_RECORD, WarningMessages.INVALID_RECORD_DETAILS)
+    interactions.show_warning(
+        WarningMessages.INVALID_RECORD,
+        WarningMessages.INVALID_RECORD_DETAILS,
+    )
     return rename_delegate(
         str(candidate.effective_path),
         context.sanitized_prefix,
@@ -29,7 +35,7 @@ def handle_unappendable_record(
 
 
 def handle_append_to_synced_record(
-    ui: UserInterface,
+    interactions: UserInteractionPort,
     add_item_delegate: Callable[[object, str, str, str, FileProcessorABS, bool], Optional[str]],
     rename_delegate: Callable[[str, str, str, str | None], ProcessingResult],
     context: RouteContext,
@@ -39,7 +45,7 @@ def handle_append_to_synced_record(
     record = context.existing_record
     prefix = context.sanitized_prefix
 
-    if ui.prompt_append_record(prefix):
+    if interactions.prompt_append_record(prefix):
         final_path = add_item_delegate(
             record,
             str(candidate.effective_path),

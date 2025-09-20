@@ -1,5 +1,5 @@
 class FakeSessionManager:
-    def __init__(self, ui=None, end_session_callback=None):
+    def __init__(self, interactions=None, scheduler=None, end_session_callback=None, **kwargs):
         self.session_active = False
         self.started = False
         self.ended = False
