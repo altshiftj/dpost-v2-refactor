@@ -46,10 +46,6 @@ class FileEventHandler(FileSystemEventHandler):
     def on_created(self, event: FileSystemEvent) -> None:
         path = Path(event.src_path)
 
-        if path.is_file() and not self._is_allowed_file(path):
-            self._reject_immediately(path, f"Unsupported file extension '{path.suffix}'")
-            return
-
         if path.is_dir() and self.settings.TEMP_FOLDER_REGEX.search(path.name):
             logger.debug("Ignoring temp folder: %s", path.name)
             return
@@ -68,9 +64,6 @@ class FileEventHandler(FileSystemEventHandler):
         while not self._rejected.empty():
             items.append(self._rejected.get())
         return items
-
-    def _is_allowed_file(self, path: Path) -> bool:
-        return path.suffix.lower() in self.settings.ALLOWED_EXTENSIONS
 
     def _reject_immediately(self, path: Path, reason: str) -> None:
         logger.warning("Rejected immediately: %s — %s", path.name, reason)
@@ -164,11 +157,8 @@ class FileEventHandler(FileSystemEventHandler):
                 self.stop()
                 return
 
-            if self._h._is_allowed_file(self.path):
-                logger.info("File stable & accepted: %s", self.path.name)
-                self._h.event_queue.put(str(self.path))
-            else:
-                self._reject(f"Unsupported file extension '{self.path.suffix}'")
+            logger.info("File stable & accepted: %s", self.path.name)
+            self._h.event_queue.put(str(self.path))
             self.stop()
 
         def _handle_stable_folder(self):

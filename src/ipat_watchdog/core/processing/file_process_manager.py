@@ -83,16 +83,18 @@ class FileProcessManager:
         Args:
             src_path: Path to the file or folder to process
         """
-        # Allow device-specific preprocessing (e.g., folder consolidation)
-        src_path = self.file_processor.device_specific_preprocessing(src_path)
-        if src_path is None:
-            return
+        # Extract filename prefix and extension before validation
         filename_prefix, extension = parse_filename(src_path)
 
         # Validate that this is a supported data type for the device
         if not self.file_processor.is_valid_datatype(src_path):
             self._handle_invalid_datatype(src_path, filename_prefix, extension)
             FILES_FAILED.inc()
+            return
+        
+        # Allow device-specific preprocessing (e.g., folder consolidation)
+        src_path = self.file_processor.device_specific_preprocessing(src_path)
+        if src_path is None:
             return
 
         try:
