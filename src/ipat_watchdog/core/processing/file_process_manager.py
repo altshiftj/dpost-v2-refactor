@@ -51,7 +51,10 @@ from ipat_watchdog.core.interactions import UserInteractionPort
 
 logger = setup_logger(__name__)
 
-_INTERNAL_STAGING_RE = re.compile(r"\.__staged__(\d+)?$", re.IGNORECASE)
+_INTERNAL_STAGING_SUFFIX_RE = re.compile(
+    r'^(?P<prefix>.*?)(?P<marker>\.__staged__(?P<count>\d+)?)(?P<duplicate>\s*\(\d+\))?(?P<extension>(\.[^.]+)*)$',
+    re.IGNORECASE,
+)
 
 
 class FileProcessManager:
@@ -293,17 +296,21 @@ class FileProcessManager:
     @staticmethod
     def _strip_internal_stage_suffix(path: Path) -> Path:
         name = path.name
-        match = _INTERNAL_STAGING_RE.search(name)
+        match = _INTERNAL_STAGING_SUFFIX_RE.match(name)
         if not match:
             return path
-        stripped = name[: match.start()]
-        return path.with_name(stripped)
+
+        prefix = match.group('prefix')
+        extension = match.group('extension')
+        if not prefix and not extension:
+            return path
+        return path.with_name(f"{prefix}{extension}")
 
     @staticmethod
     def _is_internal_staging_path(path: Path) -> bool:
-        if _INTERNAL_STAGING_RE.search(path.name):
+        if _INTERNAL_STAGING_SUFFIX_RE.match(path.name):
             return True
-        return any(_INTERNAL_STAGING_RE.search(parent.name) for parent in path.parents)
+        return any(_INTERNAL_STAGING_SUFFIX_RE.match(parent.name) for parent in path.parents)
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         move_to_exception_folder(path)

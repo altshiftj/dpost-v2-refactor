@@ -24,6 +24,14 @@ class ErroringProcessor(DummyProcessor):
         raise RuntimeError("boom")
 
 
+class StagedSuffixProcessor(DummyProcessor):
+    def device_specific_preprocessing(self, src_path: str) -> str:
+        path = Path(src_path)
+        staged = path.with_name(f"{path.stem}.__staged__{path.suffix}")
+        staged.write_text("prepared")
+        return str(staged)
+
+
 @pytest.fixture
 def manager_components(config_service, monkeypatch):
     ui = HeadlessUI()
@@ -132,6 +140,9 @@ def test_invoke_rename_flow_cancel_moves_to_manual(manager_components, config_se
     [
         "file.__staged__",
         "file.__staged__1",
+        "file.__staged__.txt",
+        "file.__STAGED__2.tif",
+        "file.__staged__ (1).txt",
         "dir/.__staged__/file.tif",
         "dir/child.__staged__/file.tif",
     ],
@@ -148,11 +159,30 @@ def test_process_item_ignores_internal_staging_paths(manager_components, tmp_set
     assert "internal staging" in result.message
 
 
+
+def test_process_item_preprocessed_stage_suffix_preserves_extension(manager_components, config_service, tmp_settings):
+    manager, _ = manager_components
+    manager.file_processor = StagedSuffixProcessor()
+
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("raw")
+
+    result = manager.process_item(str(src))
+
+    assert result.status is ProcessingStatus.PROCESSED
+    assert result.final_path is not None
+    assert str(result.final_path).endswith('.txt')
+
+
+
 @pytest.mark.parametrize(
     "name, expected",
     [
         ("sample.__staged__", "sample"),
         ("sample.__STAGED__42", "sample"),
+        ("sample.__staged__.txt", "sample.txt"),
+        ("sample.__STAGED__3.tif", "sample.tif"),
+        ("sample.__staged__ (1).txt", "sample.txt"),
         ("sample.txt", "sample.txt"),
     ],
 )
@@ -165,3 +195,10 @@ def test_strip_internal_stage_suffix(name, expected):
 def test_is_internal_staging_path_detects_nested():
     nested = Path("/tmp/Folder.__staged__/child/file.txt")
     assert FileProcessManager._is_internal_staging_path(nested) is True
+
+    suffixed = Path("/tmp/sample.__staged__.tif")
+    suffixed_counter = Path("/tmp/sample.__STAGED__5.tif")
+    duped = Path("/tmp/sample.__staged__ (1).txt")
+    assert FileProcessManager._is_internal_staging_path(suffixed) is True
+    assert FileProcessManager._is_internal_staging_path(suffixed_counter) is True
+    assert FileProcessManager._is_internal_staging_path(duped) is True
