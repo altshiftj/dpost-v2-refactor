@@ -9,6 +9,7 @@ from typing import Any, Dict, List
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
+    FileProbeResult,
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -57,6 +58,48 @@ class FileProcessorDSVHoriba(FileProcessorABS):
 
     def matches_file(self, filepath: str) -> bool:
         return Path(filepath).suffix.lower() in {".wdb", ".wdk", ".wdp", ".txt"}
+
+    # ------------------------------------------------------------------
+    # Probing
+    # ------------------------------------------------------------------
+    def probe_file(self, filepath: str) -> FileProbeResult:
+        """Identify dissolver exports by .txt content; raw WD* are inconclusive.
+
+        Heuristics for .txt:
+        - Look for terms like "dissolution", "release", "rpm", "medium",
+          or vendor cues like "HORIBA" in header lines.
+        """
+        path = Path(filepath)
+        ext = path.suffix.lower()
+
+        if ext in {".wdb", ".wdk", ".wdp"}:
+            return FileProbeResult.unknown("Raw WD* file; probe inconclusive")
+
+        if ext != ".txt":
+            return FileProbeResult.mismatch("Not a dissolver export text file")
+
+        try:
+            snippet = self._read_text_prefix(path)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("DSV probe failed to read '%s': %s", path, exc)
+            return FileProbeResult.unknown(str(exc))
+
+        text = snippet.lower()
+        tokens = [
+            "dissolution",
+            "release",
+            "rpm",
+            "stirring",
+            "medium",
+            "horiba",
+        ]
+
+        score = sum(1 for t in tokens if t in text)
+        if score == 0:
+            return FileProbeResult.unknown("No dissolver markers found in TXT")
+
+        confidence = min(0.55 + 0.1 * score, 0.9)
+        return FileProbeResult.match(confidence=confidence, reason=f"Found dissolver markers (score={score})")
 
     @classmethod
     def get_device_id(cls) -> str:
@@ -128,6 +171,16 @@ class FileProcessorDSVHoriba(FileProcessorABS):
     @staticmethod
     def _key(path: Path) -> str:
         return path.stem
+
+    @staticmethod
+    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
+        raw = path.read_bytes()[:bytes_limit]
+        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+            try:
+                return raw.decode(enc, errors="ignore")
+            except Exception:
+                continue
+        return raw.decode(errors="ignore")
 
     def _purge_orphans(self) -> None:
         now = time.time()

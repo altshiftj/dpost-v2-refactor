@@ -9,6 +9,7 @@ from typing import Dict
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
+    FileProbeResult,
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -53,6 +54,36 @@ class FileProcessorZwickUTM(FileProcessorABS):
         extension: str,
     ) -> bool:
         return True
+
+    # ------------------------------------------------------------------
+    # Probing
+    # ------------------------------------------------------------------
+    def probe_file(self, filepath: str) -> FileProbeResult:
+        """Recognize UTM artefacts by extension and lightweight signature check.
+
+        - .zs2 files: treat as likely match (binary proprietary), moderate confidence.
+        - .xlsx files: check the PK zip header and minimal OOXML markers if available.
+        """
+        path = Path(filepath)
+        ext = path.suffix.lower()
+
+        if ext == ".zs2":
+            return FileProbeResult.match(confidence=0.7, reason="Zwick .zs2 raw file")
+
+        if ext != ".xlsx":
+            return FileProbeResult.mismatch("Not a UTM artefact")
+
+        try:
+            head = path.read_bytes()[:8]
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug("UTM probe failed to read '%s': %s", path, exc)
+            return FileProbeResult.unknown(str(exc))
+
+        # XLSX should start with PK (zip). If not, it's not an OOXML workbook.
+        if not head.startswith(b"PK"):
+            return FileProbeResult.mismatch(".xlsx without PK header")
+
+        return FileProbeResult.match(confidence=0.6, reason="XLSX workbook with ZIP header")
 
     # ------------------------------------------------------------------
     # Core processing

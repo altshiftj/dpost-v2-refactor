@@ -96,7 +96,16 @@ class FileProcessorABS(ABC):
         FileProbeResult.unknown(), allowing existing processors to rely solely
         on extension or folder routing. Device-specific processors can override
         this method to read headers or metadata and return a more definitive
-        outcome.
+                outcome.
+
+                Implementors should follow these guidelines:
+                - Keep reads lightweight: prefer inspecting only the first 4–8KB.
+                - Be robust to encoding issues; ignore undecodable bytes.
+                - Return MATCH with a confidence in [0.5, 1.0] when clear evidence is found.
+                    Calibrate confidence heuristically and document your rationale.
+                - Return MISMATCH when you are confident the file is not yours.
+                - Return UNKNOWN for binary formats or when content is inconclusive to
+                    allow other processors to decide.
         """
 
         return FileProbeResult.unknown()

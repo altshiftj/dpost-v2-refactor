@@ -12,6 +12,7 @@ from ipat_watchdog.core.config import current
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
+    FileProbeResult,
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -92,6 +93,63 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def matches_file(self, filepath: str) -> bool:
         return Path(filepath).suffix.lower() in {".ngb", ".csv"}
 
+    # ------------------------------------------------------------------
+    # Probing
+    # ------------------------------------------------------------------
+    def probe_file(self, filepath: str) -> FileProbeResult:
+        """Inspect CSV headers to confirm PSA origin.
+
+        Heuristics:
+        - For .csv files, read a small prefix and look for device-specific
+          signatures (e.g. "HORIBA", "Partica", "LA-960").
+        - For .ngb files, probing is inconclusive (binary container), return
+          unknown to allow selector-based routing.
+        """
+
+        path = Path(filepath)
+        suffix = path.suffix.lower()
+
+        if suffix == ".ngb":
+            return FileProbeResult.unknown("Binary raw file; probe skipped")
+
+        if suffix != ".csv":
+            return FileProbeResult.mismatch("Unsupported extension for PSA Horiba")
+
+        # Read a small chunk defensively; avoid loading entire file
+        try:
+            snippet = self._read_text_prefix(path)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("PSA probe failed to read '%s': %s", path, exc)
+            return FileProbeResult.unknown(str(exc))
+
+        text = snippet.lower()
+        positive = [
+            "horiba",
+            "partica",
+            "la-960",
+            "psa",
+            "diameter",
+        ]
+        negatives = [
+            "dissolution",
+            "cumulative release",
+        ]
+
+        score = 0
+        for token in positive:
+            if token in text:
+                score += 1
+        for token in negatives:
+            if token in text:
+                score -= 1
+
+        if score <= 0:
+            return FileProbeResult.unknown("CSV content inconclusive for PSA Horiba")
+
+        # Map simple count to a confidence in [0.6, 0.95]
+        confidence = min(0.55 + 0.15 * score, 0.95)
+        return FileProbeResult.match(confidence=confidence, reason=f"Found PSA markers (score={score})")
+
     def is_appendable(
         self,
         record: LocalRecord,
@@ -168,6 +226,16 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+    @staticmethod
+    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
+        """Return the first bytes_limit bytes decoded with fallback encodings."""
+        raw = path.read_bytes()[:bytes_limit]
+        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+            try:
+                return raw.decode(enc, errors="ignore")
+            except Exception:  # pragma: no cover - try next
+                continue
+        return raw.decode(errors="ignore")
     @staticmethod
     def _classify(ext: str) -> Optional[str]:
         if ext == ".ngb":
