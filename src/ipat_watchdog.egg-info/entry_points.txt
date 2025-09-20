@@ -1,6 +1,0 @@
-[console_scripts]
-ipat-watchdog = ipat_watchdog.__main__:main
-
-[ipat_watchdog.device_plugins]
-psa_horibalinks_blb = ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin
-sem_tischrem_blb = ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin

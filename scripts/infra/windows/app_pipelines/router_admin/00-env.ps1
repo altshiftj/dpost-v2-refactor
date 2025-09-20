@@ -5,6 +5,7 @@ Purpose:
 - Collect Git metadata (tag/branch/commit/time)
 - Provide router SSH config and Windows PC target config
 - Support SSH tunneling through Linux router to Windows target PC (plink port forward)
+- NEW: Allow specifying device plugins (e.g., psa_horiba,dsv_horiba) and expose a unified pip-extras string
 =============================================================================================== #>
 
 # ------------------------------
@@ -36,6 +37,32 @@ function Get-ProjectRoot {
     }
 
     throw "Could not locate project root (no pyproject.toml found)."
+}
+
+# Normalize and compose extras for pip installs based on CI job + device plugins.
+function Get-PipExtras {
+    param(
+        [string]$CiJob,
+        [string]$DevPlugins
+    )
+    $items = New-Object System.Collections.Generic.List[string]
+
+    if ($CiJob) {
+        $items.Add($CiJob.Trim()) | Out-Null
+    }
+
+    if ($DevPlugins) {
+        ($DevPlugins -split '[,; ]+' | Where-Object { $_ -and $_.Trim().Length -gt 0 }) |
+            ForEach-Object { $items.Add($_.Trim()) | Out-Null }
+    }
+
+    # de-dup while preserving order
+    $seen = @{}
+    $orderedUnique = foreach ($i in $items) {
+        if (-not $seen.ContainsKey($i)) { $seen[$i] = $true; $i }
+    }
+
+    return ($orderedUnique -join ',')
 }
 
 # ------------------------------
@@ -74,33 +101,45 @@ try {
 # ------------------------------
 # CI-related Defaults
 # ------------------------------
-$env:CI_JOB_NAME = "psa_horibalinks_blb"
+# Default PC/job profile; can be overridden by environment
+if (-not $env:CI_JOB_NAME -or $env:CI_JOB_NAME -eq "") { $env:CI_JOB_NAME = "horiba_blb" }
+
+# Device plugins list (comma/semicolon/space separated). Override per run if needed.
+# Examples: "psa_horiba,dsv_horiba" or "utm_zwick" or ""
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "psa_horiba,dsv_horiba" }
+
+# Build unified pip-extras string (e.g., "ci,horiba_blb,psa_horiba,dsv_horiba")
+$env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
+
+# Also expose as a script-scoped array for callers that dot-source this file
+$script:DEVICE_PLUGIN_LIST = @()
+if ($env:DEVICE_PLUGINS) { $script:DEVICE_PLUGIN_LIST = $env:DEVICE_PLUGINS -split '[,; ]+' | Where-Object { $_ } }
 
 # ------------------------------
 # Router Configuration (Linux Jump Host)
 # ------------------------------
-$env:ROUTER_IP   = "134.169.58.199"
-$env:ROUTER_USER = "ipat"
-$env:ROUTER_PORT = 22
+$env:ROUTER_IP   = if ($env:ROUTER_IP) { $env:ROUTER_IP } else { "134.169.58.199" }
+$env:ROUTER_USER = if ($env:ROUTER_USER) { $env:ROUTER_USER } else { "ipat" }
+$env:ROUTER_PORT = if ($env:ROUTER_PORT) { $env:ROUTER_PORT } else { 22 }
 
 # ------------------------------
 # Windows Target PC Configuration (Behind Router)
 # ------------------------------
-$env:TARGET_IP   = "192.168.1.2"
-$env:TARGET_USER = "horiba"
-$env:TARGET_PORT = 22
+$env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "192.168.1.2" }
+$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "horiba" }
+$env:TARGET_PORT = if ($env:TARGET_PORT) { $env:TARGET_PORT } else { 22 }
 
 # Tunnel endpoint on local machine
-$env:TARGET_TUNNEL_PORT = 2222
+$env:TARGET_TUNNEL_PORT = if ($env:TARGET_TUNNEL_PORT) { $env:TARGET_TUNNEL_PORT } else { 2222 }
 
 # ------------------------------
 # Certificates & Secure Passwords
 # ------------------------------
-$env:SIGNING_CERT_PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
+$env:SIGNING_CERT_PFX = if ($env:SIGNING_CERT_PFX) { $env:SIGNING_CERT_PFX } else { "$env:USERPROFILE\.secure\ipat_wd.pfx" }
 
-$pfxPassPath    = Join-Path $env:USERPROFILE ".secure\pfxpass.txt"
-$routerPassPath = "$env:USERPROFILE\.secure\misch_route.txt"
-$targetPassPath = "$env:USERPROFILE\.secure\$env:CI_JOB_NAME.txt"
+$pfxPassPath    = if ($env:PFX_PASS_PATH) { $env:PFX_PASS_PATH } else { Join-Path $env:USERPROFILE ".secure\pfxpass.txt" }
+$routerPassPath = if ($env:ROUTER_PASS_PATH) { $env:ROUTER_PASS_PATH } else { "$env:USERPROFILE\.secure\misch_route.txt" }
+$targetPassPath = if ($env:TARGET_PASS_PATH) { $env:TARGET_PASS_PATH } else { "$env:USERPROFILE\.secure\$env:CI_JOB_NAME.txt" }
 
 try {
     if (Test-Path -LiteralPath $pfxPassPath) {
@@ -126,12 +165,12 @@ try {
 # SSH Keys and Host Keys
 # ------------------------------
 # SSH private key files for authentication (PuTTY .ppk, same key you tested manually)
-$env:ROUTER_SSH_KEY = "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk"
-$env:TARGET_SSH_KEY = "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk"  # same .ppk as used in manual test
+$env:ROUTER_SSH_KEY = if ($env:ROUTER_SSH_KEY) { $env:ROUTER_SSH_KEY } else { "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk" }
+$env:TARGET_SSH_KEY = if ($env:TARGET_SSH_KEY) { $env:TARGET_SSH_KEY } else { "C:\Users\fitz\.ssh\id_rsa_jamfitz_ppk.ppk" }  # same .ppk as used in manual test
 
 # Host keys in formats that plink accepts (prefer SHA256 fingerprints)
-$env:ROUTER_SSH_HOSTKEY = 'SHA256:uj6kBrFxe0qWj9SC3avJ5PTPCstPJ/Cp33v/VtiiWEk'
-$env:TARGET_SSH_HOSTKEY = 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8'
+$env:ROUTER_SSH_HOSTKEY = if ($env:ROUTER_SSH_HOSTKEY) { $env:ROUTER_SSH_HOSTKEY } else { 'SHA256:uj6kBrFxe0qWj9SC3avJ5PTPCstPJ/Cp33v/VtiiWEk' }
+$env:TARGET_SSH_HOSTKEY = if ($env:TARGET_SSH_HOSTKEY) { $env:TARGET_SSH_HOSTKEY } else { 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8' }
 # (Alternative base64 form if you ever need it:)
 # $env:ROUTER_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIFqvmR5Q0yi8vFlHQmPDmqSfapwMtuAKflpiUA9UpSUY'
 # $env:TARGET_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIDnde8wPsHN7mxhOmEFyH2UFzAdpyBWCtgJ7hO/O1wWq'
@@ -139,8 +178,8 @@ $env:TARGET_SSH_HOSTKEY = 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8'
 # ------------------------------
 # Paths
 # ------------------------------
-$env:REMOTE_PATH = "C:\Watchdog"
-$env:REMOTE_EXE  = "$env:REMOTE_PATH\$env:CI_JOB_NAME.exe"
+$env:REMOTE_PATH = if ($env:REMOTE_PATH) { $env:REMOTE_PATH } else { "C:\Watchdog" }
+$env:REMOTE_EXE  = "$env:REMOTE_PATH\wd-$env:CI_JOB_NAME.exe"
 
 # ------------------------------
 # Tunnel Helpers
@@ -198,10 +237,12 @@ function Copy-FileViaTunnel {
 # Final Echo
 # ------------------------------
 Write-Host "Router-based env loaded:"
-Write-Host "  CI_JOB_NAME='$($env:CI_JOB_NAME)'"
-Write-Host "  ROUTER_IP='$($env:ROUTER_IP)'"
-Write-Host "  TARGET_IP='$($env:TARGET_IP)'"
-Write-Host "  TARGET_TUNNEL_PORT='$($env:TARGET_TUNNEL_PORT)'"
-Write-Host "  REMOTE_EXE='$($env:REMOTE_EXE)'"
+Write-Host "  CI_JOB_NAME        = '$($env:CI_JOB_NAME)'"
+Write-Host "  DEVICE_PLUGINS     = '$($env:DEVICE_PLUGINS)'"
+Write-Host "  PIP_EXTRAS         = '$($env:PIP_EXTRAS)'"
+Write-Host "  ROUTER_IP          = '$($env:ROUTER_IP)'"
+Write-Host "  TARGET_IP          = '$($env:TARGET_IP)'"
+Write-Host "  TARGET_TUNNEL_PORT = '$($env:TARGET_TUNNEL_PORT)'"
+Write-Host "  REMOTE_EXE         = '$($env:REMOTE_EXE)'"
 Write-Host "Using TARGET_SSH_KEY = $env:TARGET_SSH_KEY (exists: $(Test-Path $env:TARGET_SSH_KEY))"
 Write-Host "Using TARGET_SSH_HOSTKEY = $env:TARGET_SSH_HOSTKEY"

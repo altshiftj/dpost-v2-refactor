@@ -8,7 +8,7 @@ It provides reusable dialog components that encapsulate specific UI interactions
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from typing import Optional, Any
-from ipat_watchdog.core.ui.ui_messages import DialogPrompts, WarningMessages 
+from ipat_watchdog.core.interactions.messages import DialogPrompts, WarningMessages 
 
 
 class EntryWithPlaceholder(tk.Entry):
@@ -104,6 +104,8 @@ class EntryWithPlaceholder(tk.Entry):
 
 
 class RenameDialog(simpledialog.Dialog):
+    """Modal dialog that guides users through repairing an invalid filename."""
+
     def __init__(
         self,
         parent: tk.Tk,
@@ -122,6 +124,7 @@ class RenameDialog(simpledialog.Dialog):
     def body(self, master: tk.Frame) -> tk.Widget:
         self.wm_attributes("-topmost", 1)
         self.lift()
+        self.focus_force()
         self.geometry(f"+{self.winfo_screenwidth() // 2 - 200}+0")
         
         tk.Label(
@@ -174,7 +177,15 @@ class RenameDialog(simpledialog.Dialog):
 
         form_frame.grid_columnconfigure(1, weight=1)
 
+        self.after_idle(self._focus_primary_input)
         return self.user_entry
+
+    def _focus_primary_input(self) -> None:
+        try:
+            self.user_entry.focus_force()
+        except Exception:
+            pass
+
 
     def buttonbox(self):
         box = tk.Frame(self)

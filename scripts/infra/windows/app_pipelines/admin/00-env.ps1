@@ -96,9 +96,9 @@ try {
 }
 
 # ------------------------------
-# CI-related Defaults
+# CI-related Defaults (PC-centric)
 # ------------------------------
-$env:CI_JOB_NAME = "sem_tischrem_blb"
+$env:CI_JOB_NAME = "tischrem_blb"     # PC plugin name (was device name)
 $env:TARGET_IP   = "134.169.58.85"   # Router's WAN IP
 $env:TARGET_USER = "TischREM"
 $env:SSH_PORT    = 22                # External SSH port
@@ -144,7 +144,7 @@ $env:SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC
 # Paths (derived where helpful)
 # ------------------------------
 $env:REMOTE_PATH = "C:\Watchdog"
-$env:REMOTE_EXE  = "$env:REMOTE_PATH\$env:CI_JOB_NAME.exe"
+$env:REMOTE_EXE  = "$env:REMOTE_PATH\wd-$env:CI_JOB_NAME.exe"  # Use PC-based naming
 
 # ------------------------------
 # Shared Helpers
@@ -161,4 +161,4 @@ function Get-PipInstallTarget {
 # ------------------------------
 # Final Echo (handy when dot-sourcing)
 # ------------------------------
-Write-Host "Env loaded. CI_JOB_NAME='$($env:CI_JOB_NAME)'  REMOTE_EXE='$($env:REMOTE_EXE)'"
+Write-Host "Env loaded. CI_JOB_NAME='$($env:CI_JOB_NAME)' (PC plugin)  REMOTE_EXE='$($env:REMOTE_EXE)'"

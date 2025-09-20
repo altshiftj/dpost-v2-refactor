@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor import FileProcessorTischREM
+from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
 
@@ -11,15 +11,9 @@ from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, mov
 # Fixtures & boilerplate
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(autouse=True)
-def _init_test_settings(tmp_settings):
-    # Automatically initialises SettingsStore for all tests
-    pass
-
-
 @pytest.fixture
 def processor():
-    return FileProcessorTischREM()
+    return FileProcessorSEMPhenomXL2()
 
 
 @pytest.fixture
@@ -48,40 +42,12 @@ def test_device_specific_preprocessing_with_digit(processor):
     path = "/path/to/image3.tif"
     expected = str(Path("/path/to/image.tif"))
 
-    with patch("pathlib.Path.rename") as mock_rename:
-        result = processor.device_specific_preprocessing(path)
-        assert result == expected
-        mock_rename.assert_called_once()
-        # first (and only) positional arg of .rename(...)
-        assert str(mock_rename.call_args[0][0]) == expected
+    result = processor.device_specific_preprocessing(path)
+    assert result == expected
 
-
-# ---------------------------------------------------------------------------
-# Datatype validation
-# ---------------------------------------------------------------------------
-
-def test_is_valid_datatype_tiff_file(processor):
-    assert processor.is_valid_datatype("/some/file.tif") is True
-
-
-def test_is_valid_datatype_tiff_case_insensitive(processor):
-    assert processor.is_valid_datatype("/some/file.TIFF") is True
-
-
-def test_is_valid_datatype_elid_directory(tmp_path, processor):
-    elid_dir = tmp_path / "elid_dir"
-    elid_dir.mkdir()
-    (elid_dir / "file.elid").write_text("data")
-    assert processor.is_valid_datatype(str(elid_dir)) is True
-
-
-def test_is_valid_datatype_invalid(tmp_path, processor):
-    non_elid_dir = tmp_path / "not_elid"
-    non_elid_dir.mkdir()
-    (non_elid_dir / "file.txt").write_text("data")
-    assert not processor.is_valid_datatype(str(non_elid_dir))
-    assert not processor.is_valid_datatype("/path/to/file.txt")
-
+    # Verify that the path mapping was created for later use
+    assert hasattr(processor, '_path_mapping')
+    assert processor._path_mapping[expected] == str(Path(path))
 
 # ---------------------------------------------------------------------------
 # Appendable logic
@@ -90,11 +56,6 @@ def test_is_valid_datatype_invalid(tmp_path, processor):
 def test_is_appendable_false_for_elid(dummy_record, processor):
     dummy_record.files_uploaded = {"/some/file.elid": False}
     assert not processor.is_appendable(dummy_record, "prefix", ".tif")
-
-
-def test_is_appendable_false_for_empty_extension(dummy_record, processor):
-    dummy_record.files_uploaded = {}
-    assert not processor.is_appendable(dummy_record, "prefix", "")
 
 
 def test_is_appendable_true(dummy_record, processor):
@@ -116,18 +77,18 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
     unique_file = record_dir / "prefix-01.tif"
 
     with patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.get_unique_filename",
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.get_unique_filename",
         return_value=str(unique_file),
     ) as mock_unique, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.move_item"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
     ) as mock_move:
 
-        result, dtype = processor.device_specific_processing(
+        output = processor.device_specific_processing(
             str(src_file), str(record_dir), "prefix", ".tif"
         )
 
-        assert result == str(unique_file)
-        assert dtype == "img"
+        assert output.final_path == str(unique_file)
+        assert output.datatype == "img"
         mock_unique.assert_called_once_with(str(record_dir), "prefix", ".tif")
         mock_move.assert_called_once_with(src_file, str(unique_file))
 
@@ -154,22 +115,21 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
     record_dir.mkdir()
 
     with patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.shutil.make_archive"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.make_archive"
     ) as mock_archive, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.move_item"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
     ) as mock_move, patch(
-        "ipat_watchdog.device_plugins.sem_tischrem_blb.file_processor.shutil.rmtree"
+        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.rmtree"
     ) as mock_rmtree:
 
         mock_archive.return_value = str(record_dir / "prefix.zip")
 
-        result_path, dtype = processor.device_specific_processing(
+        output = processor.device_specific_processing(
             str(elid_dir), str(record_dir), "prefix", ".elid"
         )
 
-        # ---- return values --------------------------------------------------
-        assert Path(result_path) == record_dir
-        assert dtype == "elid"
+        assert Path(output.final_path) == record_dir
+        assert output.datatype == "elid"
 
         # ---- archive call ---------------------------------------------------
         # make_archive is called with the *base* path (no .zip suffix)

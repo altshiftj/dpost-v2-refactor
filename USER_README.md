@@ -42,9 +42,9 @@ IPAT Data Watchdog is an automated data management system for scientific instrum
 ### Step 1: Installation
 
 1. **Download the installer** for your specific device:
-   - **SEM TischREM**: `wd-sem_tischrem_blb.exe`
+   - **SEM TischREM**: `wd-sem_phenomxl2.exe`
    - **PSA HoribaLinks**: `wd-psa_horibalinks_blb.exe`
-   - **UTM Zwick**: `wd-utm_zwick_blb.exe`
+   - **UTM Zwick**: `wd-utm_zwick.exe`
 
 2. **Run the installer** as Administrator
 3. **Follow the installation wizard** (typically installs to `C:\Watchdog\`)
@@ -53,7 +53,7 @@ IPAT Data Watchdog is an automated data management system for scientific instrum
 
 1. **Create your upload folder** (usually on Desktop):
    ```
-   Desktop\Upload_Ordner\
+   Desktop\Upload\
    ```
 
 2. **Configure your device** to save files to this folder
@@ -76,7 +76,7 @@ After installation, you'll see this folder structure on your Desktop:
 
 ```
 Desktop/
-├── Upload_Ordner/           # 📥 DROP FILES HERE
+├── Upload/           # 📥 DROP FILES HERE
 ├── Data/                    # 📊 Processed files appear here
 │   ├── 2025-08-28/         # 📅 Daily folders
 │   │   ├── record-001/     # 📋 Individual measurement records
@@ -91,7 +91,7 @@ Desktop/
 
 | Folder | Purpose | What to Do |
 |--------|---------|------------|
-| `Upload_Ordner` | **Input folder** - Place new files here | Configure your device to save here |
+| `Upload` | **Input folder** - Place new files here | Configure your device to save here |
 | `Data/YYYY-MM-DD/` | **Daily organized data** | Browse completed records |
 | `00_To_Rename` | **Naming issues** | Rename files and move back to Upload |
 | `01_Exceptions` | **Processing errors** | Check error logs, contact support |
@@ -100,7 +100,7 @@ Desktop/
 
 ### Normal Operation
 
-1. **Configure your device** to save files to `Upload_Ordner`
+1. **Configure your device** to save files to `Upload`
 2. **Start your measurement** as usual
 3. **Files are automatically processed** within minutes
 4. **Check the daily Data folder** for organized results
@@ -164,10 +164,10 @@ The system uses a `.env` file for configuration. Common settings:
 
 ```bash
 # Device Selection
-DEVICE_NAME=sem_tischrem_blb
+DEVICE_NAME=sem_phenomxl2
 
 # Directory Paths (usually auto-configured)
-WATCH_DIR=C:\Users\YourName\Desktop\Upload_Ordner
+WATCH_DIR=C:\Users\YourName\Desktop\Upload
 DATA_DIR=C:\Users\YourName\Desktop\Data
 
 # Session Settings

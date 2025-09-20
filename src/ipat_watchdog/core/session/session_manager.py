@@ -1,59 +1,144 @@
-from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
+"""Tracks user activity and session timeouts for watchdog processing runs."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
+from ipat_watchdog.core.config import current
+from ipat_watchdog.core.interactions import SessionPromptDetails, TaskScheduler, UserInteractionPort
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
+
+if TYPE_CHECKING:
+    from ipat_watchdog.core.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
 
 class SessionManager:
-    """
-    Manages the lifecycle of a user session, including timeouts and session state.
-    """
+    """Manages the lifecycle of a user session, including timeouts and session state."""
 
-    def __init__(self, ui: UserInterface, end_session_callback=None):
-        """
-        Initializes a new SessionManager.
-
-        :param ui: A UserInterface implementation for scheduling/canceling tasks and showing dialogs.
-        :param end_session_callback: Optional callback function executed when a session ends.
-        """
-        self.ui = ui
+    def __init__(
+        self,
+        interactions: UserInteractionPort,
+        scheduler: TaskScheduler,
+        end_session_callback=None,
+    ) -> None:
+        """Initialise a new session manager detached from concrete UI concerns."""
+        self._interactions = interactions
+        self._scheduler = scheduler
         self.end_session_callback = end_session_callback
         self.session_active = False
-        self.timer_id = None
-        self.settings: BaseSettings = SettingsStore.get()
+        self.timer_id: Optional[Any] = None
+        self._session_users: list[str] = []
+        self._session_records: list[str] = []
+        self._session_record_counts: dict[str, int] = {}
 
     @property
     def is_active(self) -> bool:
         return self.session_active
 
-    def start_session(self):
+    def note_activity(self, record: "LocalRecord") -> None:
+        """Record session activity for the current item and refresh prompts."""
+        user_tag = self._derive_user_tag(record)
+        record_label = self._derive_sample_label(record)
+
+        if not self.session_active:
+            self._reset_session_activity()
+
+        self._push_unique(self._session_users, user_tag)
+        self._push_unique(self._session_records, record_label)
+        if record_label:
+            self._session_record_counts[record_label] = self._session_record_counts.get(record_label, 0) + 1
+
+        if not self.session_active:
+            self.start_session()
+        else:
+            self.reset_timer()
+            self._refresh_prompt()
+
+    def start_session(self) -> None:
         if not self.session_active:
             logger.debug("Starting a new session.")
             self.session_active = True
             self._schedule_timeout()
-            self.ui.show_done_dialog(self.end_session)
+            self._refresh_prompt()
 
-    def end_session(self):
+    def end_session(self) -> None:
         if self.session_active:
             logger.debug("Ending the current session.")
             self.session_active = False
             self._cancel_timer()
             if self.end_session_callback:
                 self.end_session_callback()
+            self._reset_session_activity()
 
-    def reset_timer(self):
+    def reset_timer(self) -> None:
         if self.session_active:
             logger.debug("Resetting session timeout timer.")
             self._schedule_timeout()
 
-    def _schedule_timeout(self):
+    def _schedule_timeout(self) -> None:
         self._cancel_timer()
-        timeout_ms = self.settings.SESSION_TIMEOUT * 1000  # ✅ pulled from settings
-        self.timer_id = self.ui.schedule_task(timeout_ms, self.end_session)
+        timeout_seconds = current().session_timeout
+        if timeout_seconds < 0:
+            logger.debug("Session timeout disabled (value: %s).", timeout_seconds)
+            return
+        timeout_ms = timeout_seconds * 1000
+        self.timer_id = self._scheduler.schedule(timeout_ms, self.end_session)
 
-    def _cancel_timer(self):
+    def _cancel_timer(self) -> None:
         if self.timer_id is not None:
-            self.ui.cancel_task(self.timer_id)
+            self._scheduler.cancel(self.timer_id)
             self.timer_id = None
+
+    def _refresh_prompt(self) -> None:
+        if not self.session_active:
+            return
+        details = self._current_prompt_details()
+        self._interactions.show_done_prompt(details, self.end_session)
+
+    def _current_prompt_details(self) -> SessionPromptDetails:
+        return SessionPromptDetails(
+            users=tuple(self._session_users),
+            records=tuple(
+                self._format_record_label(label) for label in self._session_records
+            ),
+        )
+
+    def _format_record_label(self, label: Optional[str]) -> str:
+        if not label:
+            return "Unknown Sample (Files: 0)"
+        count = self._session_record_counts.get(label, 0)
+        return f"{label} (Files: {count})"
+
+
+    def _reset_session_activity(self) -> None:
+        self._session_users = []
+        self._session_records = []
+        self._session_record_counts = {}
+
+    @staticmethod
+    def _push_unique(target: list[str], value: Optional[str]) -> None:
+        if value and value not in target:
+            target.append(value)
+
+    def _derive_user_tag(self, record: "LocalRecord") -> Optional[str]:
+        user = getattr(record, "user", None)
+        institute = getattr(record, "institute", None)
+        if not user or user == "null":
+            return None
+        if institute and institute != "null":
+            return f"{user}-{institute}"
+        return user
+
+    def _derive_sample_label(self, record: "LocalRecord") -> Optional[str]:
+        sample = getattr(record, "sample_name", None)
+        if sample and sample != "null":
+            return sample
+        identifier = getattr(record, "identifier", None)
+        if identifier and identifier != "null":
+            parts = identifier.split("-")
+            if len(parts) >= 4:
+                return "-".join(parts[3:])
+            return identifier
+        return None

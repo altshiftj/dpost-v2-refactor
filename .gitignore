@@ -26,8 +26,10 @@ watchdog.log
 Data/*
 !Data/.gitkeep
 
-Upload_Ordner/*
-!Upload_Ordner/.gitkeep
+Upload/*
+!Upload/.gitkeep
 compile*.py
 compile*.ps1
 file_structure*.txt
+/src/ipat_watchdog.egg-info
+/build/

@@ -1,67 +1,127 @@
+"""Abstract contract for device specific file processors."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from enum import Enum, auto
+
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
+@dataclass(frozen=True)
+class ProcessingOutput:
+    """Standardised return value from device_specific_processing."""
+
+    final_path: str
+    datatype: str
+
+
+class ProbeDecision(Enum):
+    """Discrete outcomes returned by FileProcessorABS.probe_file."""
+
+    MATCH = auto()
+    MISMATCH = auto()
+    UNKNOWN = auto()
+
+
+@dataclass(frozen=True)
+class FileProbeResult:
+    """Represents compatibility assessment between a file and a processor."""
+
+    decision: ProbeDecision
+    confidence: float = 0.0
+    reason: str | None = None
+
+    @classmethod
+    def match(cls, confidence: float = 1.0, reason: str | None = None) -> "FileProbeResult":
+        """Return a result indicating the processor positively identified the file."""
+
+        return cls(ProbeDecision.MATCH, confidence, reason)
+
+    @classmethod
+    def mismatch(cls, reason: str | None = None) -> "FileProbeResult":
+        """Return a result indicating the processor determined the file does not belong."""
+
+        return cls(ProbeDecision.MISMATCH, 0.0, reason)
+
+    @classmethod
+    def unknown(cls, reason: str | None = None) -> "FileProbeResult":
+        """Return an inconclusive result, allowing other processors to decide."""
+
+        return cls(ProbeDecision.UNKNOWN, 0.0, reason)
+
+    def is_match(self) -> bool:
+        """True when the probe produced a positive match."""
+
+        return self.decision is ProbeDecision.MATCH
+
+    def is_mismatch(self) -> bool:
+        """True when the probe explicitly rejected the file."""
+
+        return self.decision is ProbeDecision.MISMATCH
+
+    def is_definitive(self) -> bool:
+        """True when the probe has an explicit stance (match or mismatch)."""
+
+        return self.decision is not ProbeDecision.UNKNOWN
+
+
 class FileProcessorABS(ABC):
-    """
-    An abstract base for processors that handle new/modified files or directories
-    and associate them with records in the system.
-    """
+    """Processors transform raw artefacts into organised records."""
 
-    @abstractmethod
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        """
-        Method to implement optional preprocessing steps before routing the item.
-        """
-        pass
+    def device_specific_preprocessing(self, src_path: str) -> str | None:
+        """Give processors a hook to stage or normalise incoming files.
 
-    @abstractmethod
-    def is_valid_datatype(self, path: str) -> bool:
+        Returning `None` keeps the item in a deferred state (e.g. waiting for
+        a paired file). Returning a string continues the pipeline using that
+        path as the effective artefact.
         """
-        Checks if the file/folder at the given path is valid for this processor.
-        """
-        pass
 
-    @abstractmethod
-    def is_appendable(
-        self, record: LocalRecord, filename_prefix: str, extension: str
-    ) -> bool:
-        """
-        Checks if the record can be appended to with this processor's data type.
-        Return: (appendable, message_if_not_appendable)
-        """
-        pass
-
-    @abstractmethod
-    def device_specific_processing(self, source_path, record_path, file_id, extension) -> str:
-        """
-        Allows subclasses to implement custom moves, renames, or metadata extraction.
-        Must return the final path of the processed item.
-        """
-        pass
-
-class FileProcessorBase(FileProcessorABS):
-    """
-    A base class for file processors that provides default implementations for
-    some methods. Subclasses can override these methods as needed.
-    """
-
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        """
-        Default implementation does nothing and returns the source path.
-        """
         return src_path
 
-    def is_valid_datatype(self, path: str) -> tuple[bool, str | None]:
-        """
-        Default implementation always returns None (no validation).
-        """
+    def matches_file(self, filepath: str) -> bool:
+        """Optional hint to quickly filter compatible files."""
+
         return True
 
-    def is_appendable(
-        self, record: LocalRecord, filename_prefix: str, extension: str
-    ) -> bool:
+    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
+        """Whether an item may be appended to an existing record."""
+
+        return True
+
+    def probe_file(self, filepath: str) -> FileProbeResult:
+        """Inspect a file to confirm it belongs to this processor.
+
+        The default implementation is intentionally conservative and returns
+        FileProbeResult.unknown(), allowing existing processors to rely solely
+        on extension or folder routing. Device-specific processors can override
+        this method to read headers or metadata and return a more definitive
+                outcome.
+
+                Implementors should follow these guidelines:
+                - Keep reads lightweight: prefer inspecting only the first 4–8KB.
+                - Be robust to encoding issues; ignore undecodable bytes.
+                - Return MATCH with a confidence in [0.5, 1.0] when clear evidence is found.
+                    Calibrate confidence heuristically and document your rationale.
+                - Return MISMATCH when you are confident the file is not yours.
+                - Return UNKNOWN for binary formats or when content is inconclusive to
+                    allow other processors to decide.
         """
-        Default implementation always returns True (appendable).
-        """
-        return True, ""
+
+        return FileProbeResult.unknown()
+
+    @abstractmethod
+    def device_specific_processing(
+        self,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        """Perform the actual move/rename and return final metadata."""
+
+
+class FileProcessorBase(FileProcessorABS):
+    """Convenience subclass providing permissive defaults."""
+
+    pass

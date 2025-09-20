@@ -1,85 +1,89 @@
 import pytest
+from pathlib import Path
 from unittest.mock import MagicMock
-from ipat_watchdog.core.config.settings_store import SettingsStore
+
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 
 
-@pytest.fixture
-def patched_watchdog_app(watchdog_app, tmp_settings):
-    # Ensure tmp_settings is injected before app usage
-    SettingsStore.set(tmp_settings)
-    return watchdog_app
+def test_initialization_sets_handlers_and_starts_observer(watchdog_app, fake_ui):
+    watchdog_app.initialize()
 
+    close_handler = fake_ui.close_handler
+    exception_handler = fake_ui.exception_handler
 
-def _drain_pending_tasks(ui, max_iterations: int = 10):
-    for _ in range(max_iterations):
-        if not ui.scheduled_tasks:
-            break
-        pending = list(ui.scheduled_tasks)
-        ui.scheduled_tasks.clear()
-        for _, cb in pending:
-            cb()
+    assert close_handler.__self__ is watchdog_app
+    assert close_handler.__func__ is DeviceWatchdogApp.on_closing
+    assert exception_handler.__self__ is watchdog_app
+    assert exception_handler.__func__ is DeviceWatchdogApp.handle_exception
 
-
-def test_initialization(patched_watchdog_app, fake_ui):
-    patched_watchdog_app.initialize()
-    observer = patched_watchdog_app.directory_observer
-
-    interval_ms, callback = fake_ui.scheduled_tasks[0]
-    callback()
-
+    observer = watchdog_app._observer_stub
     observer.schedule.assert_called_once()
     observer.start.assert_called_once()
-
-    assert fake_ui.close_handler is not None
-    assert fake_ui.exception_handler is not None
-    assert (
-        patched_watchdog_app.session_manager.end_session_callback.__func__
-        is patched_watchdog_app.end_session.__func__
-    )
-    assert not fake_ui.errors
-    assert not fake_ui.warnings
+    assert watchdog_app.observer is observer
 
 
-def test_process_events_with_item(patched_watchdog_app):
-    patched_watchdog_app.initialize()
+def test_process_events_with_item(watchdog_app, fake_ui):
+    watchdog_app.initialize()
 
-    sample_path = str(SettingsStore.get().WATCH_DIR / "mus-ipat-sample.tif")
-    patched_watchdog_app.event_queue.put(sample_path)
-    patched_watchdog_app.file_processing.processed = []
+    watch_dir = Path(watchdog_app.watch_dir)
+    watch_dir.mkdir(parents=True, exist_ok=True)
+    sample_path = watch_dir / "mus-ipat-sample.tif"
+    sample_path.write_text("data")
 
-    patched_watchdog_app.process_events()
+    watchdog_app.event_queue.put(str(sample_path))
+    watchdog_app.file_processing.processed.clear()
 
-    assert sample_path in patched_watchdog_app.file_processing.processed
+    watchdog_app.process_events()
+
+    assert watchdog_app.file_processing.processed == [str(sample_path)]
+    assert fake_ui.scheduled_tasks  # rescheduled future poll
 
 
-def test_on_closing(patched_watchdog_app, fake_ui):
-    patched_watchdog_app.session_manager.session_active = True
-    patched_watchdog_app.session_manager.end_session = MagicMock()
+def test_process_events_handles_empty_queue_gracefully(watchdog_app, fake_ui):
+    watchdog_app.process_events()
 
-    observer = patched_watchdog_app.directory_observer
+    assert watchdog_app._event_poll_handle == 1
+    scheduled_callback = fake_ui.scheduled_tasks[-1][1]
+    assert scheduled_callback.__self__ is watchdog_app
+    assert scheduled_callback.__func__ is DeviceWatchdogApp.process_events
 
-    patched_watchdog_app.on_closing()
 
-    patched_watchdog_app.session_manager.end_session.assert_called_once()
+def test_process_events_surfaces_rejections(watchdog_app, fake_ui):
+    watchdog_app.file_processing._rejected = [("/tmp/rejected.tif", "Unsupported extension")]
+
+    watchdog_app.process_events()
+
+    assert fake_ui.errors
+    title, message = fake_ui.errors[-1]
+    assert "Unsupported Input" in title
+    assert "Unsupported extension" in message
+
+
+def test_on_closing_stops_observer_and_destroys_ui(watchdog_app, fake_ui):
+    watchdog_app.initialize()
+    watchdog_app.session_manager.session_active = False
+
+    watchdog_app.on_closing()
+
+    observer = watchdog_app._observer_stub
     observer.stop.assert_called_once()
     observer.join.assert_called_once()
     assert fake_ui.destroyed is True
 
 
-def test_run_handles_keyboard_interrupt(patched_watchdog_app, fake_ui):
-    patched_watchdog_app.on_closing = MagicMock()
-    fake_ui.run_main_loop = MagicMock(side_effect=KeyboardInterrupt)
+@pytest.mark.parametrize(
+    "side_effect", [KeyboardInterrupt, RuntimeError("boom")], ids=["keyboard_interrupt", "generic_exception"]
+)
+def test_run_handles_ui_exceptions(watchdog_app, fake_ui, side_effect):
+    if side_effect is KeyboardInterrupt:
+        watchdog_app.on_closing = MagicMock()
+        expected = watchdog_app.on_closing
+    else:
+        watchdog_app.handle_exception = MagicMock()
+        expected = watchdog_app.handle_exception
 
-    patched_watchdog_app.run()
+    fake_ui.run_main_loop = MagicMock(side_effect=side_effect)
 
-    patched_watchdog_app.on_closing.assert_called_once()
+    watchdog_app.run()
 
-
-def test_run_handles_exception(patched_watchdog_app, fake_ui):
-    patched_watchdog_app.handle_exception = MagicMock()
-    fake_ui.run_main_loop = MagicMock(side_effect=Exception("boom"))
-
-    patched_watchdog_app.run()
-
-    patched_watchdog_app.handle_exception.assert_called_once()
+    expected.assert_called_once()

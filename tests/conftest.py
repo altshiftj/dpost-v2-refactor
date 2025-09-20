@@ -1,13 +1,13 @@
-# tests/conftest.py
 import pytest
 from pathlib import Path
+from dataclasses import replace
+from types import SimpleNamespace
 
-import dotenv
-dotenv.load_dotenv()
-
-from ipat_watchdog.core.config.settings_store import SettingsStore
-from ipat_watchdog.core.config.settings_base import BaseSettings
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from ipat_watchdog.core.config import init_config, reset_service, current
+from ipat_watchdog.core.storage.filesystem_utils import init_dirs
+from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config
+from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 from tests.helpers.fake_ui import HeadlessUI
 from tests.helpers.fake_sync import DummySyncManager
@@ -17,50 +17,74 @@ from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_process_manager import FakeFileProcessManager
 
-# ───────────────────────────────────────── fixtures ──────────────────────────
 
-@pytest.fixture(autouse=True)
-def _reset_settings_store():
-    yield
-    SettingsStore.reset()           # leaves prod global state untouched
+@pytest.fixture
+def config_service(tmp_path) -> init_config.__annotations__["return"]:
+    """Initialise the configuration service with sandboxed paths for tests."""
+    root: Path = tmp_path / "sandbox"
+    overrides = {
+        "app_dir": root / "App",
+        "watch_dir": root / "Upload",
+        "dest_dir": root / "Data",
+        "rename_dir": root / "Data" / "00_To_Rename",
+        "exceptions_dir": root / "Data" / "01_Exceptions",
+        "daily_records_json": root / "records.json",
+    }
+
+    pc_config = build_pc_config(override_paths=overrides)
+    pc_config = replace(pc_config, session=replace(pc_config.session, timeout_seconds=300))
+
+    device_config = build_device_config()
+    device_config = replace(
+        device_config,
+        session=replace(device_config.session, timeout_seconds=300),
+        watcher=replace(
+            device_config.watcher,
+            poll_seconds=0.2,
+            max_wait_seconds=10.0,
+            stable_cycles=1,
+        ),
+    )
+
+    service = init_config(pc_config, [device_config])
+    init_dirs()
+    yield service
+    reset_service()
 
 
 @pytest.fixture
-def tmp_settings(tmp_path) -> BaseSettings:
-    """Return a settings instance whose entire file-tree lives in tmp_path."""
-    root: Path = tmp_path / "sandbox"
+def pc_paths(config_service):
+    return config_service.pc.paths
 
-    class TestSettings(BaseSettings):
-        # ─ snapshot-watcher tweaks ─
-        POLL_SECONDS = 0.2
-        STABLE_CYCLES = 1
-        MAX_WAIT_SECONDS = 10.0
 
-        ALLOWED_EXTENSIONS = {".tif", ".txt"}
-        ALLOWED_FOLDER_CONTENTS = {".odt", ".elid"}
+@pytest.fixture
+def device_config(config_service):
+    return config_service.devices[0]
 
-        # ─ filesystem layout ─
-        APP_DIR       = root / "App"
-        WATCH_DIR     = root / "Upload_Ordner"
-        DEST_DIR      = root / "Data"
-        RENAME_DIR    = DEST_DIR / "00_To_Rename"
-        EXCEPTIONS_DIR = DEST_DIR / "01_Exceptions"
-        DAILY_RECORDS_JSON = root / "records.json"
-        LOG_FILE            = root / "watchdog.log"
 
-        # automatically create dirs when instantiated
-        def __post_init__(self):
-            for d in (
-                self.WATCH_DIR,
-                self.DEST_DIR,
-                self.RENAME_DIR,
-                self.EXCEPTIONS_DIR,
-            ):
-                d.mkdir(parents=True, exist_ok=True)
+@pytest.fixture
+def tmp_settings(config_service, pc_paths, device_config):
+    log_file = pc_paths.app_dir / "watchdog.log"
+    return SimpleNamespace(
+        APP_DIR=pc_paths.app_dir,
+        WATCH_DIR=pc_paths.watch_dir,
+        DEST_DIR=pc_paths.dest_dir,
+        RENAME_DIR=pc_paths.rename_dir,
+        EXCEPTIONS_DIR=pc_paths.exceptions_dir,
+        DAILY_RECORDS_JSON=pc_paths.daily_records_json,
+        LOG_FILE=log_file,
+        POLL_SECONDS=device_config.watcher.poll_seconds,
+        STABLE_CYCLES=device_config.watcher.stable_cycles,
+        MAX_WAIT_SECONDS=device_config.watcher.max_wait_seconds,
+        SESSION_TIMEOUT=device_config.session.timeout_seconds,
+        DEBOUNCE_TIME=0.1,
+        SENTINEL_NAME=device_config.watcher.sentinel_name,
+    )
 
-    settings = TestSettings()
-    SettingsStore.set(settings)      # make the instance discoverable
-    return settings
+
+@pytest.fixture
+def active_config(config_service):
+    return current()
 
 
 @pytest.fixture
@@ -70,7 +94,7 @@ def fake_ui():
 
 @pytest.fixture
 def fake_sync(fake_ui):
-    return DummySyncManager(ui=fake_ui)
+    return DummySyncManager(fake_ui)
 
 
 @pytest.fixture
@@ -99,24 +123,20 @@ def fake_file_process_manager():
 
 
 @pytest.fixture
-def watchdog_app(
-    tmp_settings,
-    fake_ui,
-    fake_sync,
-    dummy_processor,
-    fake_observer,
-    fake_handler,
-    fake_session_manager,
-    fake_file_process_manager
-):
+def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
+    init_dirs()
+    observer_stub = FakeObserver()
+    monkeypatch.setattr(
+        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        lambda: observer_stub,
+    )
+
     app = DeviceWatchdogApp(
         ui=fake_ui,
         sync_manager=fake_sync,
-        file_processor=dummy_processor,
-        observer_cls=lambda: fake_observer,
-        file_event_handler_cls=fake_handler,
-        session_manager_cls=fake_session_manager,
-        file_process_manager_cls=fake_file_process_manager,
+        config_service=config_service,
+        session_manager_cls=FakeSessionManager,
+        file_process_manager_cls=FakeFileProcessManager,
     )
-    app.directory_observer = fake_observer  # for assertions
+    app._observer_stub = observer_stub
     return app

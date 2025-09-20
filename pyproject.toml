@@ -22,12 +22,28 @@ dependencies = [
 ci     = ["pytest", "pyfakefs"]
 build  = ["pyinstaller"]
 dev    = ["black", "mypy", "ruff"]
-sem_tischrem_blb = []
-psa_horibalinks_blb = []
+sem_phenomxl2 = []
+psa_horiba = []
+utm_zwick = []
+dsv_horiba = []
+## PC-specific extras (empty) to allow selecting by PC without warnings
+tischrem_blb = []
+zwick_blb = []
+horiba_blb = []
+test_pc = []
 
 [project.entry-points."ipat_watchdog.device_plugins"]
-sem_tischrem_blb = "ipat_watchdog.device_plugins.sem_tischrem_blb.plugin:TischREMPlugin"
-psa_horibalinks_blb = "ipat_watchdog.device_plugins.psa_horibalinks_blb.plugin:HoribaLinksPlugin"
+sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
+psa_horiba = "ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin"
+utm_zwick = "ipat_watchdog.device_plugins.utm_zwick.plugin:UTMZwickPlugin"
+dsv_horiba = "ipat_watchdog.device_plugins.dsv_horiba.plugin:DSVHoribaPlugin"
+test_device = "ipat_watchdog.device_plugins.test_device.plugin:TestDevicePlugin"
+
+[project.entry-points."ipat_watchdog.pc_plugins"]
+tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
+zwick_blb = "ipat_watchdog.pc_plugins.zwick_blb.plugin:PCZwickPlugin"
+horiba_blb = "ipat_watchdog.pc_plugins.horiba_blb.plugin:PCHoribaPlugin"
+test_pc = "ipat_watchdog.pc_plugins.test_pc.plugin:TestPCPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

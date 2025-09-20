@@ -1,397 +1,348 @@
-"""
-File Process Manager - Core file processing orchestrator for IPAT Data Watchdog.
+"""Coordinated file ingestion pipeline that hands off to device plugins."""
+from __future__ import annotations
 
-This module handles the complete lifecycle of incoming files, from initial validation
-through final placement in organized record structures. It coordinates between the
-UI, session management, record management, and device-specific file processors.
-"""
+from dataclasses import replace
 from pathlib import Path
+import queue
+import re
+from typing import Optional, Tuple
 
 from ipat_watchdog.metrics import FILES_FAILED
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
-from ipat_watchdog.core.storage.filesystem_utils import (
-    parse_filename,
-    move_to_exception_folder,
-    move_to_rename_folder,
-    get_record_path,
-    generate_record_id,
-    generate_file_id,
-    sanitize_and_validate,
-    explain_filename_violation,
-    analyze_user_input,
-)
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.session.session_manager import SessionManager
-from ipat_watchdog.core.records.record_manager import RecordManager
-from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.config import ConfigService, DeviceConfig, get_service
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.ui_messages import WarningMessages, InfoMessages, ErrorMessages, DialogPrompts
+from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
+from ipat_watchdog.core.processing.models import (
+    ProcessingCandidate,
+    ProcessingRequest,
+    ProcessingResult,
+    ProcessingStatus,
+    RouteContext,
+    RoutingDecision,
+)
+from ipat_watchdog.core.processing.notifications import notify_success
+from ipat_watchdog.core.processing.device_resolver import DeviceResolver
+from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
+from ipat_watchdog.core.processing.record_flow import (
+    handle_append_to_synced_record,
+    handle_unappendable_record,
+)
+from ipat_watchdog.core.processing.record_utils import (
+    apply_device_defaults,
+    get_or_create_record,
+    manage_session,
+    update_record,
+)
+from ipat_watchdog.core.processing.rename_flow import RenameService
+from ipat_watchdog.core.processing.routing import (
+    determine_routing_state,
+    fetch_record_for_prefix,
+)
+from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS, ProcessingOutput
+from ipat_watchdog.core.records.record_manager import RecordManager
+from ipat_watchdog.core.session.session_manager import SessionManager
+from ipat_watchdog.core.storage.filesystem_utils import (
+    generate_file_id,
+    get_record_path,
+    move_to_exception_folder,
+    parse_filename,
+)
+from ipat_watchdog.core.sync.sync_abstract import ISyncManager
+from ipat_watchdog.core.interactions import UserInteractionPort
 
 logger = setup_logger(__name__)
 
-# File processing routing states - determines how files are handled based on validation
-UNAPPENDABLE = "unappendable_record"  # File cannot be added to existing record
-APPEND_SYNCED = "append_to_synced"    # File being added to already-synced record
-VALID_NAME = "valid_name"             # File has valid naming convention
-INVALID_NAME = "invalid_name"         # File naming doesn't meet requirements
+_INTERNAL_STAGING_SUFFIX_RE = re.compile(
+    r'^(?P<prefix>.*?)(?P<marker>\.__staged__(?P<count>\d+)?)(?P<duplicate>\s*\(\d+\))?(?P<extension>(\.[^.]+)*)$',
+    re.IGNORECASE,
+)
 
 
 class FileProcessManager:
-    """
-    Central coordinator for file processing workflow.
-    
-    Manages the complete file processing pipeline from initial file detection
-    through final placement in organized records. Handles validation, user
-    interaction for naming issues, session management, and database synchronization.
-    
-    Key responsibilities:
-    - Route files based on naming validation and record state
-    - Handle user interactions for file naming corrections
-    - Coordinate with device-specific file processors
-    - Manage session lifecycle and database synchronization
-    """
-    
+    """Single-threaded pipeline that validates, routes, and persists artefacts."""
+
     def __init__(
         self,
-        ui: UserInterface,
+        interactions: UserInteractionPort,
         sync_manager: ISyncManager,
         session_manager: SessionManager,
-        file_processor: FileProcessorABS,
-    ):
-        """Initialize the file process manager with required dependencies."""
-        self.ui = ui
+        config_service: ConfigService | None = None,
+        file_processor: FileProcessorABS | None = None,
+    ) -> None:
+        self.interactions = interactions
         self.session_manager = session_manager
-        self.records = RecordManager(sync_manager=sync_manager)
+        self.config_service = config_service or get_service()
         self.file_processor = file_processor
+        self.records = RecordManager(sync_manager=sync_manager)
+        self._processor_factory = FileProcessorFactory()
+        self._device_resolver = DeviceResolver(self.config_service, self._processor_factory)
+        self._rename_service = RenameService(interactions)
+        self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
 
-        # Sync any pending records from previous sessions on startup
         if not self.records.all_records_uploaded():
-            logger.debug("Syncing records to database upon startup.")
+            logger.debug("Syncing records to database upon startup")
             self.sync_records_to_database()
 
-    def process_item(self, src_path: str):
-        """
-        Main entry point for processing a new file or folder.
-        
-        Orchestrates the complete processing workflow:
-        1. Device-specific preprocessing
-        2. Filename parsing and validation
-        3. Data type validation
-        4. Routing to appropriate handling logic
-        
-        Args:
-            src_path: Path to the file or folder to process
-        """
-        # Extract filename prefix and extension before validation
-        filename_prefix, extension = parse_filename(src_path)
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+    def process_item(self, src_path: str) -> ProcessingResult:
+        path = Path(src_path)
 
-        # Validate that this is a supported data type for the device
-        if not self.file_processor.is_valid_datatype(src_path):
-            self._handle_invalid_datatype(src_path, filename_prefix, extension)
+        if self._is_internal_staging_path(path):
+            message = f"Ignoring internal staging path: {path}"
+            logger.debug(message)
+            return ProcessingResult(ProcessingStatus.DEFERRED, message)
+
+        resolution = self._device_resolver.resolve(path)
+        device = resolution.selected
+        if device is None:
+            reason = resolution.reason or "Invalid file type"
+            return self._reject_immediately(path, reason)
+
+        stability_outcome = FileStabilityTracker(path, device).wait()
+        if stability_outcome.rejected:
+            reason = stability_outcome.reason or "File rejected by stability guard"
+            self._register_rejection(str(path), reason)
+            safe_move_to_exception(str(path))
             FILES_FAILED.inc()
-            return
-        
-        # Allow device-specific preprocessing (e.g., folder consolidation)
-        src_path = self.file_processor.device_specific_preprocessing(src_path)
-        if src_path is None:
-            return
+            return ProcessingResult(ProcessingStatus.REJECTED, reason)
+
+        request = ProcessingRequest(source=path, device=device)
+        candidate: Optional[ProcessingCandidate] = None
 
         try:
-            # Route the item based on validation and record state
-            self._route_item(src_path, filename_prefix, extension)
-        except Exception as e:
-            logger.exception(f"Error while routing item: {e}")
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity=ErrorMessages.PROCESSING_ERROR,
-                message=ErrorMessages.PROCESSING_ERROR_DETAILS.format(
-                    filename=Path(src_path).name, error=str(e)
-                ),
-            )
+            with self.config_service.activate_device(device):
+                processor = self._resolve_processor(device)
+                item = self._build_candidate(request, processor)
+                if isinstance(item, ProcessingResult):
+                    return item
+                candidate = item
+                context = self._build_route_context(candidate)
+                return self._dispatch_route(context)
+        except Exception as exc:
+            self._handle_processing_failure(path, candidate, exc)
+            raise RuntimeError(f"File processing failed for {src_path}: {exc}") from exc
 
-    def _move_to_exception_and_inform(
-        self, src_path: str, prefix: str, extension: str, severity: str, message: str
-    ):
-        """
-        Move problematic files to exception folder and notify user.
-        
-        Used when files cannot be processed due to validation errors,
-        processing failures, or other issues requiring manual intervention.
-        """
-        move_to_exception_folder(src_path, prefix, extension)
-        if severity.lower() == "warning":
-            self.ui.show_warning(severity, message)
-        else:
-            self.ui.show_error(severity, message)
+    def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
+        rejected: list[Tuple[str, str]] = []
+        while True:
+            try:
+                rejected.append(self._rejected_queue.get_nowait())
+            except queue.Empty:
+                break
+        return rejected
 
-        logger.debug(f"Moved item '{src_path}' to exception folder with severity '{severity}'.")
-
-    def _handle_invalid_datatype(self, src_path: str, filename_prefix: str, extension: str):
-        """Handle files that don't match the device's supported data types."""
-        self._move_to_exception_and_inform(
-            src_path,
-            filename_prefix,
-            extension,
-            severity="Warning",
-            message=WarningMessages.INVALID_DATA_TYPE_DETAILS,
-        )
-        logger.debug(f"Moved invalid item '{src_path}' to exception folder.")
-
-    def _route_item(self, src_path: str, filename_prefix: str, extension: str):
-        """
-        Route files to appropriate handling based on naming validation and record state.
-        
-        Determines the current state of the file and record, then routes to:
-        - Unappendable record handling (file can't be added to existing record)
-        - Append to synced record handling (adding to already-uploaded record)
-        - Valid name handling (standard processing)
-        - Invalid name handling (rename flow)
-        """
-        # Get sanitized filename and check if record exists
-        sanitized_prefix, is_valid_format, record = self._fetch_record_for_prefix(filename_prefix)
-        
-        # Determine routing state based on validation and record status
-        state = self._determine_routing_state(record, is_valid_format, filename_prefix, extension)
-
-        # Route based on determined state
-        if state == UNAPPENDABLE:
-            self._handle_unappendable_record(src_path, sanitized_prefix, extension)
-        elif state == APPEND_SYNCED:
-            self._handle_append_to_synced_record(record, src_path, sanitized_prefix, extension)
-        elif state == VALID_NAME:
-            self.add_item_to_record(record, src_path, sanitized_prefix, extension, notify=False)
-        else:
-            self._rename_flow_controller(src_path, filename_prefix, extension)
-
-    def _fetch_record_for_prefix(self, filename_prefix: str) -> tuple[str, bool, LocalRecord]:
-        """
-        Retrieve or validate record information for a filename prefix.
-        
-        Returns:
-            tuple: (sanitized_prefix, is_valid_format, existing_record)
-                - sanitized_prefix: Cleaned version of the filename prefix
-                - is_valid_format: Whether the prefix follows naming conventions
-                - existing_record: LocalRecord if one exists, None otherwise
-        """
-        sanitized_prefix, is_valid_format = sanitize_and_validate(filename_prefix)
-        record_id = generate_record_id(sanitized_prefix)
-        record = self.records.get_record_by_id(record_id)
-        return sanitized_prefix, is_valid_format, record
-
-    def _determine_routing_state(
-        self, record: LocalRecord, is_valid_format: bool, filename_prefix: str, extension: str
-    ) -> str:
-        """
-        Determine how to route the file based on validation and record state.
-        
-        Logic:
-        1. If record exists but file can't be appended -> UNAPPENDABLE
-        2. If record exists and is fully synced -> APPEND_SYNCED (needs user confirmation)
-        3. If record exists or name is valid -> VALID_NAME (standard processing)
-        4. Otherwise -> INVALID_NAME (requires rename flow)
-        """
-        if record and not self.file_processor.is_appendable(record, filename_prefix, extension):
-            return UNAPPENDABLE
-        if record and record.is_in_db and record.all_files_uploaded():
-            return APPEND_SYNCED
-        if record or is_valid_format:
-            return VALID_NAME
-        return INVALID_NAME
-
-    def _handle_unappendable_record(self, src_path: str, filename_prefix: str, extension: str):
-        """Handle files that cannot be appended to their target record."""
-        self.ui.show_warning(
-            WarningMessages.INVALID_RECORD, WarningMessages.INVALID_RECORD_DETAILS
-        )
-        # Force rename flow with context about why the file can't be appended
-        self._rename_flow_controller(
-            src_path,
-            filename_prefix,
-            extension,
-            contextual_reason=DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
-                record_id=filename_prefix
-            ),
-        )
-
-    def _handle_append_to_synced_record(self, record, src_path, filename_prefix, extension):
-        """
-        Handle files being added to records that have already been synced to database.
-        
-        Requires user confirmation since this will modify an already-uploaded record.
-        """
-        if self.ui.prompt_append_record(filename_prefix):
-            # User confirmed - add the file to the existing record
-            self.add_item_to_record(record, src_path, filename_prefix, extension)
-        else:
-            # User declined - force rename flow
-            self._rename_flow_controller(
-                src_path,
-                filename_prefix,
-                extension,
-                contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(
-                    record_id=filename_prefix
-                ),
-            )
-
-    def _rename_flow_controller(
+    def add_item_to_record(
         self,
+        record,
         src_path: str,
         filename_prefix: str,
         extension: str,
-        contextual_reason: str = None,
-    ):
-        """
-        Manage the interactive rename flow for files with naming issues.
-        
-        Guides user through correcting filename to meet naming conventions.
-        If user cancels or rename fails, moves file to rename folder for manual handling.
-        
-        Args:
-            contextual_reason: Additional context about why rename is needed
-        """
-        # Start interactive rename loop with user
-        new_prefix = self._interactive_rename_loop(
-            filename_prefix, last_attempt=None, contextual_reason=contextual_reason
+        file_processor: Optional[FileProcessorABS] = None,
+        notify: bool = True,
+        device: DeviceConfig | None = None,
+    ) -> Optional[str]:
+        processor = file_processor or self.file_processor
+        if processor is None:
+            move_to_exception_folder(src_path)
+            FILES_FAILED.inc()
+            raise RuntimeError("No file processor available")
+
+        device = device or self.config_service.current_device()
+        record = get_or_create_record(self.records, record, filename_prefix, device)
+        device_abbr = device.metadata.device_abbr if device else None
+        apply_device_defaults(record, device)
+
+        record_path = get_record_path(filename_prefix, device_abbr)
+        file_id = generate_file_id(filename_prefix, device_abbr)
+        output: ProcessingOutput = processor.device_specific_processing(
+            src_path, record_path, file_id, extension
         )
 
-        if new_prefix is not None:
-            # User provided valid new name - retry processing with new name
-            self._route_item(src_path, new_prefix, extension)
+        record.datatype = output.datatype
+        if notify:
+            notify_success(self.interactions, src_path, output.final_path)
+
+        logger.debug("Processed %s -> %s", src_path, output.final_path)
+
+        update_record(self.records, output.final_path, record)
+        manage_session(self.session_manager, record)
+
+        return output.final_path
+
+    def sync_records_to_database(self) -> None:
+        if self.records.all_records_uploaded():
+            logger.debug("All records already uploaded, skipping sync")
             return
-
-        # User cancelled rename - move to rename folder for manual handling
-        move_to_rename_folder(src_path, filename_prefix, extension)
-        self.ui.show_info(
-            InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME
-        )
-
-    def _interactive_rename_loop(
-        self,
-        filename_prefix: str,
-        last_attempt: str = None,
-        contextual_reason: str = None,
-    ) -> str | None:
-        """
-        Interactive loop for getting valid filename from user.
-        
-        Continues until user provides valid name or cancels.
-        Provides feedback on validation failures to guide user.
-        
-        Returns:
-            str: Valid sanitized filename prefix, or None if user cancelled
-        """
-        # Start with original filename or user's last attempt
-        attempted = last_attempt if last_attempt else filename_prefix
-        last_analysis = explain_filename_violation(attempted)
-
-        # Add contextual reason to help user understand why rename is needed
-        if contextual_reason:
-            last_analysis["reasons"].insert(0, contextual_reason)
-
-        while True:
-            # Show rename dialog with current attempt and validation feedback
-            user_input = self.ui.show_rename_dialog(attempted, last_analysis)
-            if user_input is None:
-                return None  # User cancelled
-
-            # Validate user's input
-            analysis = analyze_user_input(user_input)
-            if analysis["valid"]:
-                return analysis["sanitized"]  # Valid input - return sanitized version
-            else:
-                # Invalid input - reconstruct attempted name and continue loop
-                attempted = f"{user_input.get('name', '')}-{user_input.get('institute', '')}-{user_input.get('sample_ID', '')}"
-                last_analysis = analysis
-
-    def add_item_to_record(self, record, src_path, filename_prefix, extension, notify=True):
-        """
-        Add a validated file/folder to a record and organize it properly.
-        
-        This is the final step of successful file processing:
-        1. Get or create the target record
-        2. Determine target path and perform device-specific processing
-        3. Update record metadata
-        4. Manage session state
-        
-        Args:
-            record: Existing LocalRecord or None to create new one
-            src_path: Source path of file/folder to process
-            filename_prefix: Validated filename prefix
-            extension: File extension
-            notify: Whether to show success notification to user
-        """
-        try:
-            # Ensure we have a record to work with
-            record = self._get_or_create_record(record, filename_prefix)
-
-            # Determine target paths and perform device-specific processing
-            record_path = get_record_path(filename_prefix)
-            file_id = generate_file_id(filename_prefix)
-            final_path, datatype = self.file_processor.device_specific_processing(
-                src_path, record_path, file_id, extension
-            )
-
-            # Update record with data type information
-            record.datatype = datatype
-
-            # Notify user of successful processing if requested
-            if notify:
-                self._notify_success(src_path, final_path)
-
-            logger.debug(
-                f"{'Folder' if Path(src_path).is_dir() else 'File'} '{src_path}' moved/renamed to '{final_path}'."
-            )
-
-            # Update record tracking and manage session
-            self._update_record(final_path, record)
-            self._manage_session()
-
-        except Exception as e:
-            # Handle processing failures gracefully
-            self.ui.show_error("Error", ErrorMessages.RENAME_FAILED.format(error=str(e)))
-            self._move_to_exception_and_inform(
-                src_path,
-                filename_prefix,
-                extension,
-                severity="Error",
-                message="Failed to rename.",
-            )
-
-    def _notify_success(self, src_path: str, final_path: str):
-        """Show success notification to user about processed item."""
-        item_type = "Folder" if Path(src_path).is_dir() else "File"
-        self.ui.show_info(
-            InfoMessages.SUCCESS,
-            InfoMessages.ITEM_RENAMED.format(
-                item_type=item_type, filename=Path(final_path).name
-            ),
-        )
-
-    def _update_record(self, final_path: str, record: LocalRecord):
-        """Update record tracking with newly processed item."""
-        self.records.add_item_to_record(final_path, record)
-
-    def _manage_session(self):
-        """
-        Manage session lifecycle based on file processing activity.
-        
-        Starts new session if none active, or resets timer if session ongoing.
-        Sessions group related files and trigger database sync on timeout.
-        """
-        if not self.session_manager.session_active:
-            self.session_manager.start_session()
-            logger.debug("Started a new session.")
-        else:
-            self.session_manager.reset_timer()
-            logger.debug("Session is active. Timer reset.")
-
-    def _get_or_create_record(self, record: LocalRecord, filename_prefix: str) -> LocalRecord:
-        """Get existing record or create new one if none exists."""
-        return record if record else self.records.create_record(filename_prefix)
-
-    def sync_records_to_database(self):
-        """Trigger synchronization of all pending records to external database."""
+        logger.debug("Syncing records to database")
         self.records.sync_records_to_database()
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
+        if self.file_processor is not None:
+            return self.file_processor
+        return self._processor_factory.get_for_device(device.identifier)
+
+    def _build_candidate(
+        self,
+        request: ProcessingRequest,
+        processor: FileProcessorABS,
+    ) -> ProcessingCandidate | ProcessingResult:
+        preprocessed = processor.device_specific_preprocessing(str(request.source))
+        if preprocessed is None:
+            return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefact")
+
+        parse_target = self._strip_internal_stage_suffix(Path(preprocessed))
+        prefix, extension = parse_filename(str(parse_target))
+
+        effective_path = Path(preprocessed)
+        if not effective_path.exists():
+            effective_path = request.source
+
+        preprocessed_path = Path(preprocessed)
+        if preprocessed_path == effective_path:
+            preprocessed_path = None
+
+        return ProcessingCandidate(
+            original_path=request.source,
+            effective_path=effective_path,
+            prefix=prefix,
+            extension=extension,
+            processor=processor,
+            device=request.device,
+            preprocessed_path=preprocessed_path,
+        )
+
+    def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
+        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
+            self.records, candidate.prefix, candidate.device
+        )
+        decision = determine_routing_state(
+            record,
+            is_valid_format,
+            candidate.prefix,
+            candidate.extension,
+            candidate.processor,
+        )
+        return RouteContext(candidate, sanitized_prefix, record, decision)
+
+    def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
+        candidate = context.candidate
+
+        def rename_delegate(path, prefix, ext, contextual_reason=None):
+            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
+
+        if context.decision is RoutingDecision.UNAPPENDABLE:
+            return handle_unappendable_record(self.interactions, rename_delegate, context)
+
+        if context.decision is RoutingDecision.APPEND_TO_SYNCED:
+            return handle_append_to_synced_record(
+                self.interactions,
+                lambda *args, **kwargs: self.add_item_to_record(*args, **kwargs, device=candidate.device),
+                rename_delegate,
+                context,
+            )
+
+        if context.decision is RoutingDecision.ACCEPT:
+            final_path = self.add_item_to_record(
+                context.existing_record,
+                str(candidate.effective_path),
+                context.sanitized_prefix,
+                candidate.extension,
+                candidate.processor,
+                notify=False,
+                device=candidate.device,
+            )
+            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
+
+        return self._invoke_rename_flow(
+            candidate,
+            candidate.prefix,
+            candidate.extension,
+        )
+
+    def _invoke_rename_flow(
+        self,
+        candidate: ProcessingCandidate,
+        current_prefix: str,
+        extension: str,
+        contextual_reason: Optional[str] = None,
+    ) -> ProcessingResult:
+        outcome = self._rename_service.obtain_valid_prefix(current_prefix, contextual_reason)
+        if outcome.cancelled or not outcome.sanitized_prefix:
+            self._rename_service.send_to_manual_bucket(
+                str(candidate.effective_path), current_prefix, extension
+            )
+            return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
+
+        updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
+        return self._route_with_prefix(updated_candidate, outcome.sanitized_prefix)
+
+    def _route_with_prefix(
+        self, candidate: ProcessingCandidate, prefix_override: str
+    ) -> ProcessingResult:
+        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
+            self.records, prefix_override, candidate.device
+        )
+        decision = determine_routing_state(
+            record,
+            is_valid_format,
+            prefix_override,
+            candidate.extension,
+            candidate.processor,
+        )
+        updated = replace(candidate, prefix=prefix_override)
+        return self._dispatch_route(RouteContext(updated, sanitized_prefix, record, decision))
+
+    @staticmethod
+    def _strip_internal_stage_suffix(path: Path) -> Path:
+        name = path.name
+        match = _INTERNAL_STAGING_SUFFIX_RE.match(name)
+        if not match:
+            return path
+
+        prefix = match.group('prefix')
+        extension = match.group('extension')
+        if not prefix and not extension:
+            return path
+        return path.with_name(f"{prefix}{extension}")
+
+    @staticmethod
+    def _is_internal_staging_path(path: Path) -> bool:
+        if _INTERNAL_STAGING_SUFFIX_RE.match(path.name):
+            return True
+        return any(_INTERNAL_STAGING_SUFFIX_RE.match(parent.name) for parent in path.parents)
+
+    def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
+        move_to_exception_folder(path)
+        self._register_rejection(str(path), reason)
+        FILES_FAILED.inc()
+        return ProcessingResult(ProcessingStatus.REJECTED, reason)
+
+    def _register_rejection(self, path: str, reason: str) -> None:
+        logger.warning("Rejected %s: %s", path, reason)
+        self._rejected_queue.put((path, reason))
+
+    def _handle_processing_failure(
+        self,
+        path: Path,
+        candidate: Optional[ProcessingCandidate],
+        exc: Exception,
+    ) -> None:
+        logger.exception("Error processing %s: %s", path, exc)
+        target = str(candidate.effective_path) if candidate else str(path)
+        prefix = candidate.prefix if candidate else path.stem
+        extension = candidate.extension if candidate else path.suffix
+        safe_move_to_exception(target, prefix, extension)
+        if candidate and candidate.preprocessed_path and candidate.preprocessed_path != candidate.effective_path:
+            safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)
+        self._register_rejection(str(path), str(exc))
+        FILES_FAILED.inc()
+
+
+
+
+

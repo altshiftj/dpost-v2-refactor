@@ -1,3 +1,5 @@
+"""Manages LocalRecord lifecycle, persistence, and sync orchestration."""
+
 import datetime
 from typing import Dict, Optional
 
@@ -65,35 +67,38 @@ class RecordManager:
         logger.info("Reloading persisted records from disk...")
         self._persist_records_dict = load_persisted_records()
 
-    def create_record(self, filename_prefix: str) -> LocalRecord:
+    def create_record(self, filename_prefix: str, device=None) -> LocalRecord:
         """
         Creates and stores a new LocalRecord using the filename prefix.
-        
+
         Extracts sample name from prefix and generates unique record ID.
         The new record is immediately stored and persisted.
-        
+
         Args:
-            filename_prefix: Standardized filename prefix (e.g., "usr-ipat-sample123")
-            
+            filename_prefix: Standardized filename prefix (e.g., 'usr-ipat-sample123')
+            device: Optional device configuration providing record identity information
+
         Returns:
             LocalRecord: Newly created record instance
         """
         # Generate unique identifier and extract sample name
-        record_id = generate_record_id(filename_prefix)
-        sample_name = filename_prefix.split("-")[-1]  # Extract last part as sample name
-        
+        record_id = generate_record_id(
+            filename_prefix,
+            dev_kadi_record_id=(device.metadata.record_kadi_id if device else None),
+        )
+        sample_name = filename_prefix.split('-')[-1]  # Extract last part as sample name
+
         # Create new record with current date
         record = LocalRecord(
             identifier=record_id,
             sample_name=sample_name,
-            date=datetime.datetime.now().strftime("%Y%m%d"),
+            date=datetime.datetime.now().strftime('%Y%m%d'),
         )
-        
+
         # Store and persist the new record
         self._store_record(record)
         logger.debug(f"Created new record with id '{record_id}'.")
         return record
-
     def add_item_to_record(self, path: str, record: LocalRecord):
         """
         Adds a file path to a record and updates metrics and persistence.
@@ -128,12 +133,9 @@ class RecordManager:
 
     def save_records(self):
         """
-        Persists all records to disk for crash recovery and state preservation.
-        
-        Called after any record modification to ensure data is not lost.
-        Uses filesystem utilities to handle the actual serialization.
+        Persists all processed records to a dictionary ledger for crash recovery and state preservation.
         """
-        logger.debug(f"Saving {len(self.persist_records_dict)} records to disk.")
+        logger.debug(f"Persisting {len(self.persist_records_dict)} records.")
         save_persisted_records(self.persist_records_dict)
 
     def get_all_records(self) -> Dict[str, LocalRecord]:
@@ -200,9 +202,9 @@ class RecordManager:
         1. Skip non-IPAT records (institute filter)
         2. Skip already fully uploaded records  
         3. Sync remaining records and track progress
-        4. Remove successfully synced records from local storage
         
-        This is typically triggered by session timeout or manual sync request.
+        Records are synced independently of file processors since all files
+        have already been processed and organized by their respective processors.
         """
         logger.info("Starting synchronization of records to the database.")
         synced_count = 0
@@ -247,10 +249,13 @@ class RecordManager:
         # Delegate actual sync logic to the sync manager
         files_remaining = self.sync.sync_record_to_database(record)
 
+        # Save the updated record state immediately after sync (before potential deletion)
+        self.save_records()
+        logger.debug(f"Persisted updated state for record '{record.identifier}' after sync.")
+
         if not files_remaining:
             # All files uploaded successfully - clean up local storage
             logger.info(f"No files left for record '{record.identifier}', removing from local store.")
             del self.persist_records_dict[record.identifier]
-
-        # Persist the updated state (either with updated record or after removal)
-        self.save_records()
+            # Save again after removal
+            self.save_records()
