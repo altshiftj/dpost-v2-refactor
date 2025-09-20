@@ -123,12 +123,20 @@ def fake_file_process_manager():
 
 
 @pytest.fixture
-def watchdog_app(config_service, fake_ui, fake_sync):
+def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
     init_dirs()
-    return DeviceWatchdogApp(
+    observer_stub = FakeObserver()
+    monkeypatch.setattr(
+        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        lambda: observer_stub,
+    )
+
+    app = DeviceWatchdogApp(
         ui=fake_ui,
         sync_manager=fake_sync,
         config_service=config_service,
         session_manager_cls=FakeSessionManager,
         file_process_manager_cls=FakeFileProcessManager,
     )
+    app._observer_stub = observer_stub
+    return app

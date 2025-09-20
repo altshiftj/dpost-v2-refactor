@@ -126,3 +126,42 @@ def test_invoke_rename_flow_cancel_moves_to_manual(manager_components, config_se
     rename_files = list(tmp_settings.RENAME_DIR.glob("badprefix*"))
     assert rename_files
     assert not src.exists()
+
+@pytest.mark.parametrize(
+    "path_name",
+    [
+        "file.__staged__",
+        "file.__staged__1",
+        "dir/.__staged__/file.tif",
+        "dir/child.__staged__/file.tif",
+    ],
+)
+def test_process_item_ignores_internal_staging_paths(manager_components, tmp_settings, path_name):
+    manager, _ = manager_components
+    target = tmp_settings.WATCH_DIR / path_name
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(b"data")
+
+    result = manager.process_item(str(target))
+
+    assert result.status is ProcessingStatus.DEFERRED
+    assert "internal staging" in result.message
+
+
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("sample.__staged__", "sample"),
+        ("sample.__STAGED__42", "sample"),
+        ("sample.txt", "sample.txt"),
+    ],
+)
+def test_strip_internal_stage_suffix(name, expected):
+    original = Path("/tmp") / name
+    stripped = FileProcessManager._strip_internal_stage_suffix(original)
+    assert stripped.name == expected
+
+
+def test_is_internal_staging_path_detects_nested():
+    nested = Path("/tmp/Folder.__staged__/child/file.txt")
+    assert FileProcessManager._is_internal_staging_path(nested) is True

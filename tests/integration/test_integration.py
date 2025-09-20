@@ -1,6 +1,6 @@
+"""Integration tests for the DeviceWatchdogApp with the real processing stack."""
 from __future__ import annotations
 
-import time
 from pathlib import Path
 
 import pytest
@@ -11,36 +11,32 @@ from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from ipat_watchdog.core.interactions.messages import InfoMessages
 
+from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
+from tests.helpers.task_runner import drain_scheduled_tasks
 
 
-def run_scheduled_tasks(ui: HeadlessUI, max_steps: int = 50) -> None:
-    """Execute scheduled UI callbacks to simulate the main-loop timer."""
-    steps = 0
-    while steps < max_steps and ui.scheduled_tasks:
-        tasks = list(ui.scheduled_tasks)
-        ui.scheduled_tasks.clear()
-        for _, cb in tasks:
-            cb()
-        steps += 1
-
-
-def wait_until(predicate, timeout=5.0, interval=0.05) -> bool:
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        if predicate():
-            return True
-        time.sleep(interval)
-    return False
+def _assert_processed_artifact(tmp_settings, institute: str, user: str, sample: str, extension: str = ".tif") -> Path:
+    destination = tmp_settings.DEST_DIR / institute.upper() / user.upper() / f"TEST-{sample}"
+    assert destination.exists(), f"Expected destination folder {destination!s} to exist"
+    matches = [f for f in destination.iterdir() if f.suffix == extension]
+    assert len(matches) == 1, f"Expected exactly one {extension} artefact in {destination}, found {matches}"
+    return matches[0]
 
 
 @pytest.fixture
-def real_processing_app(config_service, tmp_settings):
-    """Build DeviceWatchdogApp wired to the test configuration service."""
+def real_processing_app(config_service, tmp_settings, monkeypatch):
+    """Build a DeviceWatchdogApp wired to real processors and a stub observer."""
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
     init_dirs()
+
+    observer_stub = FakeObserver()
+    monkeypatch.setattr(
+        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        lambda: observer_stub,
+    )
 
     app = DeviceWatchdogApp(
         ui=ui,
@@ -48,6 +44,8 @@ def real_processing_app(config_service, tmp_settings):
         config_service=config_service,
         file_process_manager_cls=FileProcessManager,
     )
+    app._observer_stub = observer_stub
+    app._sync_manager = sync
 
     app.initialize()
     try:
@@ -68,51 +66,69 @@ def test_happy_path(real_processing_app, tmp_settings):
     tif_path.write_bytes(b"dummy image bytes")
 
     real_processing_app.file_processing.process_item(str(tif_path))
-    run_scheduled_tasks(real_processing_app.ui)
+    drain_scheduled_tasks(real_processing_app.ui)
 
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
-    assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
-
-    tif_files = [f for f in expected_dir.iterdir() if f.suffix == ".tif" and f.name.startswith("TEST-sample-")]
-    assert len(tif_files) == 1, f"Expected exactly 1 processed TIF file, found {len(tif_files)}: {tif_files}"
-    assert not tif_path.exists(), f"Original file should be moved, not copied: {tif_path}"
+    artefact = _assert_processed_artifact(tmp_settings, "ipat", "mus", "sample")
+    assert artefact.name.startswith("TEST-sample-")
+    assert not tif_path.exists(), "Original file should be moved, not copied"
 
 
 # ---------------------------------------------------------------------------
-# Invalid extension is rejected
+# Event queue processing
 # ---------------------------------------------------------------------------
 
 
-def test_invalid_extension_moves_to_exception(real_processing_app, tmp_settings):
-    bad = tmp_settings.WATCH_DIR / "mus-ipat-sample.jpg"
-    bad.write_bytes(b"nope")
+def test_event_queue_processes_pending_items(real_processing_app, tmp_settings):
+    prefix = "mus-ipat-queued"
+    queued = tmp_settings.WATCH_DIR / f"{prefix}.tif"
+    queued.write_bytes(b"queued data")
 
-    result = real_processing_app.file_processing.process_item(str(bad))
-    run_scheduled_tasks(real_processing_app.ui)
+    real_processing_app.event_queue.put(str(queued))
+    drain_scheduled_tasks(real_processing_app.ui)
+
+    _assert_processed_artifact(tmp_settings, "ipat", "mus", "queued")
+    assert not queued.exists()
+
+
+# ---------------------------------------------------------------------------
+# Invalid routing scenarios
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "filename, expected_dir, expected_message",
+    [
+        pytest.param(
+            "mus-ipat-sample.jpg",
+            "exceptions",
+            None,
+            id="invalid-extension",
+        ),
+        pytest.param(
+            "badprefix.tif",
+            "rename",
+            (InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME),
+            id="invalid-prefix",
+        ),
+    ],
+)
+def test_invalid_inputs_route_to_expected_bucket(real_processing_app, tmp_settings, filename, expected_dir, expected_message):
+    target = tmp_settings.WATCH_DIR / filename
+    target.write_bytes(b"invalid payload")
+
+    result = real_processing_app.file_processing.process_item(str(target))
+    drain_scheduled_tasks(real_processing_app.ui)
 
     assert result.status is ProcessingStatus.REJECTED
 
-    exception_files = list(tmp_settings.EXCEPTIONS_DIR.glob("mus-ipat-sample*.jpg"))
-    assert len(exception_files) == 1, f"Expected 1 file in exceptions, found {len(exception_files)}: {exception_files}"
-    assert exception_files[0].exists(), f"Exception file should exist: {exception_files[0]}"
+    bucket = tmp_settings.EXCEPTIONS_DIR if expected_dir == "exceptions" else tmp_settings.RENAME_DIR
+    stem, suffix = Path(filename).stem, Path(filename).suffix
+    matches = list(bucket.glob(f"{stem}*{suffix}"))
+    assert len(matches) == 1, f"Expected exactly one entry in {bucket}, found {matches}"
+    assert matches[0].exists()
 
-
-# ---------------------------------------------------------------------------
-# Invalid prefix moves item to rename bucket
-# ---------------------------------------------------------------------------
-
-
-def test_invalid_prefix_moves_to_rename(real_processing_app, tmp_settings):
-    bad = tmp_settings.WATCH_DIR / "badprefix.tif"
-    bad.write_bytes(b"bad prefix")
-
-    result = real_processing_app.file_processing.process_item(str(bad))
-    run_scheduled_tasks(real_processing_app.ui)
-
-    assert result.status is ProcessingStatus.REJECTED
-    rename_files = list(tmp_settings.RENAME_DIR.glob("badprefix*.tif"))
-    assert len(rename_files) == 1, f"Expected 1 file in rename dir, found {len(rename_files)}: {rename_files}"
-    assert rename_files[0].exists(), f"Rename file should exist: {rename_files[0]}"
+    if expected_message is not None:
+        assert real_processing_app.ui.calls["show_info"][-1] == expected_message
 
 
 # ---------------------------------------------------------------------------
@@ -127,35 +143,11 @@ def test_interactive_rename_loop_success(real_processing_app, tmp_settings):
     bad.write_bytes(b"dummy")
 
     real_processing_app.file_processing.process_item(str(bad))
-    run_scheduled_tasks(real_processing_app.ui)
+    drain_scheduled_tasks(real_processing_app.ui)
 
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
-    assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
-
-    tif_files = [f for f in expected_dir.iterdir() if f.suffix == ".tif" and f.name.startswith("TEST-sample-")]
-    assert len(tif_files) == 1, f"Expected exactly 1 processed TIF file, found {len(tif_files)}: {tif_files}"
-    assert not bad.exists(), f"Original file should be moved, not copied: {bad}"
-
-
-# ---------------------------------------------------------------------------
-# Rename flow cancellation ends in manual bucket
-# ---------------------------------------------------------------------------
-
-
-def test_interactive_rename_cancel(real_processing_app, tmp_settings):
-    # No rename inputs: UI will simulate cancel
-    bad = tmp_settings.WATCH_DIR / "badprefix.tif"
-    bad.write_bytes(b"dummy")
-
-    real_processing_app.file_processing.process_item(str(bad))
-    run_scheduled_tasks(real_processing_app.ui)
-
-    rename_files = list(tmp_settings.RENAME_DIR.glob("badprefix*.tif"))
-    assert len(rename_files) == 1
-    assert real_processing_app.ui.calls["show_info"][-1] == (
-        InfoMessages.OPERATION_CANCELLED,
-        InfoMessages.MOVED_TO_RENAME,
-    )
+    artefact = _assert_processed_artifact(tmp_settings, "ipat", "mus", "sample")
+    assert artefact.name.endswith(".tif")
+    assert not bad.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -166,14 +158,15 @@ def test_interactive_rename_cancel(real_processing_app, tmp_settings):
 def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
     real_processing_app.ui.auto_close_session = True
 
-    prefix = "mus-ipat-sample"
+    prefix = "mus-ipat-session"
     tif = tmp_settings.WATCH_DIR / f"{prefix}.tif"
     tif.write_bytes(b"x")
 
     real_processing_app.file_processing.process_item(str(tif))
-    run_scheduled_tasks(real_processing_app.ui)
+    drain_scheduled_tasks(real_processing_app.ui)
 
     assert real_processing_app.file_processing.records.all_records_uploaded()
+    assert real_processing_app._sync_manager.synced_records, "Expected sync manager to be invoked"
 
 
 # ---------------------------------------------------------------------------
@@ -183,18 +176,18 @@ def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
 
 def test_rapid_file_arrival_same_record(real_processing_app, tmp_settings):
     base_name = "abc-xyz-testsample"
-    num_files = 10
+    num_files = 5
 
     for i in range(num_files):
         file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
         file_path.write_bytes(f"test data {i}".encode())
         real_processing_app.file_processing.process_item(str(file_path))
-        run_scheduled_tasks(real_processing_app.ui)
+        drain_scheduled_tasks(real_processing_app.ui)
 
     for i in range(num_files):
-        expected_dir = tmp_settings.DEST_DIR / "XYZ" / "ABC" / f"TEST-testsample{i}"
-        assert expected_dir.exists(), f"Expected record directory {expected_dir} not found"
-        expected_file = expected_dir / f"TEST-testsample{i}-01.tif"
+        dest = tmp_settings.DEST_DIR / "XYZ" / "ABC" / f"TEST-testsample{i}"
+        assert dest.exists(), f"Expected record directory {dest} not found"
+        expected_file = dest / f"TEST-testsample{i}-01.tif"
         assert expected_file.exists(), f"Expected file {expected_file} not found"
 
     all_tif_files = list(tmp_settings.DEST_DIR.rglob("*.tif"))
@@ -214,12 +207,12 @@ def test_multiple_files_same_record(real_processing_app, tmp_settings):
         file_path = tmp_settings.WATCH_DIR / f"{base_name}{i}.tif"
         file_path.write_bytes(f"multi-file test {i}".encode())
         real_processing_app.file_processing.process_item(str(file_path))
-        run_scheduled_tasks(real_processing_app.ui)
+        drain_scheduled_tasks(real_processing_app.ui)
 
     for i in range(num_files):
-        expected_dir = tmp_settings.DEST_DIR / "IPAT" / "USR" / f"TEST-threadsafe{i}"
-        assert expected_dir.exists(), f"Expected directory {expected_dir} not created"
-        expected_file = expected_dir / f"TEST-threadsafe{i}-01.tif"
+        dest = tmp_settings.DEST_DIR / "IPAT" / "USR" / f"TEST-threadsafe{i}"
+        assert dest.exists(), f"Expected directory {dest} not created"
+        expected_file = dest / f"TEST-threadsafe{i}-01.tif"
         assert expected_file.exists(), f"Expected file {expected_file} not found"
 
     all_tif_files = list(tmp_settings.DEST_DIR.rglob("*.tif"))

@@ -5,37 +5,45 @@ from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
 from ipat_watchdog.core.config import PCConfig
 
 
-def test_load_test_pc_plugin():
-    """Test loading the test PC plugin."""
+def _load_plugin_or_skip(name: str) -> PCPlugin:
     try:
-        plugin = load_pc_plugin("test_pc")
+        return load_pc_plugin(name)
     except RuntimeError as exc:
-        pytest.skip(f"PC plugin 'test_pc' not available: {exc}")
-        return
+        pytest.skip(f"PC plugin {name!r} not available: {exc}")
+
+
+@pytest.mark.parametrize(
+    "plugin_name, expectations",
+    [
+        (
+            "test_pc",
+            {
+                "identifier": "test_pc",
+                "devices": ("test_device",),
+                "watch_dir_suffix": "Upload",
+                "dest_dir_suffix": "Data",
+            },
+        ),
+        ("tischrem_blb", {}),
+    ],
+)
+def test_load_pc_plugins(plugin_name: str, expectations: dict[str, object]):
+    plugin = _load_plugin_or_skip(plugin_name)
     assert isinstance(plugin, PCPlugin)
 
     config = plugin.get_config()
     assert isinstance(config, PCConfig)
-    assert config.identifier == "test_pc"
-    assert "test_device" in config.active_device_plugins
-    assert str(config.paths.watch_dir).endswith("Upload")
-    assert str(config.paths.dest_dir).endswith("Data")
 
-
-def test_load_real_pc_plugin():
-    """Test loading a real PC plugin."""
-    try:
-        plugin = load_pc_plugin("tischrem_blb")
-    except RuntimeError as exc:
-        pytest.skip(f"PC plugin 'tischrem_blb' not available: {exc}")
-        return
-    assert isinstance(plugin, PCPlugin)
-
-    config = plugin.get_config()
-    assert isinstance(config, PCConfig)
+    if "identifier" in expectations:
+        assert config.identifier == expectations["identifier"]
+    if "devices" in expectations:
+        assert config.active_device_plugins == expectations["devices"]
+    if "watch_dir_suffix" in expectations:
+        assert str(config.paths.watch_dir).endswith(expectations["watch_dir_suffix"])
+    if "dest_dir_suffix" in expectations:
+        assert str(config.paths.dest_dir).endswith(expectations["dest_dir_suffix"])
 
 
 def test_pc_plugin_not_found():
-    """Test error handling for non-existent PC plugin."""
     with pytest.raises(RuntimeError, match="No PC plugin named 'nonexistent'"):
         load_pc_plugin("nonexistent")

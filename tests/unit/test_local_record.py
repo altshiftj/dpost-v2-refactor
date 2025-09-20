@@ -123,14 +123,17 @@ def test_mark_uploaded_nonexistent(sample_record, caplog):
     assert any("Tried to mark non-existent file" in w for w in warnings)
 
 
-def test_all_files_uploaded_true(sample_record):
-    sample_record.files_uploaded = {"/file/one": True, "/file/two": True}
-    assert sample_record.all_files_uploaded() is True
-
-
-def test_all_files_uploaded_false(sample_record):
-    sample_record.files_uploaded = {"/file/one": True, "/file/two": False}
-    assert sample_record.all_files_uploaded() is False
+@pytest.mark.parametrize(
+    "files, expected",
+    [
+        ({"/file/one": True, "/file/two": True}, True),
+        ({"/file/one": True, "/file/two": False}, False),
+        ({}, True),
+    ],
+)
+def test_all_files_uploaded(sample_record, files, expected):
+    sample_record.files_uploaded = files
+    assert sample_record.all_files_uploaded() is expected
 
 
 def test_to_dict_from_dict_roundtrip():

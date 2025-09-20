@@ -1,25 +1,14 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
+from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
-from tests.helpers.fake_session import FakeSessionManager
-
-
-def run_scheduled_tasks(ui: HeadlessUI, max_steps: int = 50) -> None:
-    steps = 0
-    while steps < max_steps and ui.scheduled_tasks:
-        tasks = list(ui.scheduled_tasks)
-        ui.scheduled_tasks.clear()
-        for _, cb in tasks:
-            cb()
-        steps += 1
+from tests.helpers.task_runner import drain_scheduled_tasks
 
 
 @pytest.fixture
@@ -43,41 +32,32 @@ def processing_components(config_service):
 # ---------------------------------------------------------------------------
 
 
-def test_basic_file_processing_works(processing_components, tmp_settings):
+@pytest.mark.parametrize(
+    "extension, payload",
+    [
+        pytest.param(".tif", b"dummy test image", id="tif"),
+        pytest.param(".txt", b"dummy test data", id="txt"),
+    ],
+)
+def test_basic_file_processing_works(processing_components, tmp_settings, extension, payload):
     fpm, ui = processing_components
     prefix = "mus-ipat-sample"
-    tif_path = tmp_settings.WATCH_DIR / f"{prefix}.tif"
-    tif_path.write_bytes(b"dummy test image")
+    file_path = tmp_settings.WATCH_DIR / f"{prefix}{extension}"
+    file_path.write_bytes(payload)
 
-    fpm.process_item(str(tif_path))
-    run_scheduled_tasks(ui)
+    fpm.process_item(str(file_path))
+    drain_scheduled_tasks(ui)
 
     expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
     assert expected_dir.exists(), f"Expected directory {expected_dir} does not exist"
 
-    tif_files = [f for f in expected_dir.iterdir() if f.suffix == ".tif"]
-    assert len(tif_files) == 1, f"Expected exactly 1 processed file, found {len(tif_files)}: {tif_files}"
-    assert not tif_path.exists(), f"Original file should be moved: {tif_path}"
-
-
-def test_text_file_processing_works(processing_components, tmp_settings):
-    fpm, ui = processing_components
-    prefix = "mus-ipat-sample"
-    txt_path = tmp_settings.WATCH_DIR / f"{prefix}.txt"
-    txt_path.write_bytes(b"dummy test data")
-
-    fpm.process_item(str(txt_path))
-    run_scheduled_tasks(ui)
-
-    expected_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS" / "TEST-sample"
-    assert expected_dir.exists()
-    txt_files = [f for f in expected_dir.iterdir() if f.suffix == ".txt"]
-    assert len(txt_files) == 1, f"Expected 1 processed txt file, found {len(txt_files)}"
-    assert not txt_path.exists()
+    processed = [f for f in expected_dir.iterdir() if f.suffix == extension]
+    assert len(processed) == 1, f"Expected exactly 1 processed file, found {len(processed)}: {processed}"
+    assert not file_path.exists(), f"Original file should be moved: {file_path}"
 
 
 def test_unsupported_file_rejected(processing_components, tmp_settings):
-    fpm, ui = processing_components
+    fpm, _ = processing_components
     unsupported_path = tmp_settings.WATCH_DIR / "mus-ipat-sample.pdf"
     unsupported_path.write_bytes(b"unsupported file type")
 
@@ -97,7 +77,7 @@ def test_multiple_files_same_record(processing_components, tmp_settings):
         file_path = tmp_settings.WATCH_DIR / f"{base_name}.tif"
         file_path.write_bytes(f"dummy test image data {i}".encode())
         fpm.process_item(str(file_path))
-        run_scheduled_tasks(ui)
+        drain_scheduled_tasks(ui)
 
     base_dir = tmp_settings.DEST_DIR / "IPAT" / "MUS"
     assert base_dir.exists()
@@ -123,8 +103,10 @@ def test_different_user_groups_no_collision(processing_components, tmp_settings)
         file_path = tmp_settings.WATCH_DIR / f"{filename}.tif"
         file_path.write_bytes(f"data for {filename}".encode())
         fpm.process_item(str(file_path))
-        run_scheduled_tasks(ui)
-        expected_dirs.append(tmp_settings.DEST_DIR / institute.upper() / user.upper() / f"TEST-{filename.split('-')[2]}")
+        drain_scheduled_tasks(ui)
+        expected_dirs.append(
+            tmp_settings.DEST_DIR / institute.upper() / user.upper() / f"TEST-{filename.split('-')[2]}"
+        )
 
     for expected_dir in expected_dirs:
         assert expected_dir.exists(), f"Expected directory {expected_dir} was not created"
@@ -141,7 +123,7 @@ def test_mixed_file_types_processed_correctly(processing_components, tmp_setting
 
     fpm.process_item(str(tif_path))
     fpm.process_item(str(txt_path))
-    run_scheduled_tasks(ui)
+    drain_scheduled_tasks(ui)
 
     expected_base = tmp_settings.DEST_DIR / "IPAT" / "MUS"
     image_dir = expected_base / "TEST-image"

@@ -68,3 +68,27 @@ def test_auto_end_session(fake_ui, config_service):
 
     assert session_manager.session_active is False
     assert ended == [True]
+
+def test_start_session_noop_when_already_active(fake_ui, config_service):
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager.session_active = True
+    session_manager.timer_id = 5
+
+    session_manager.start_session()
+
+    assert session_manager.session_active is True
+    assert session_manager.timer_id == 5
+    assert fake_ui.scheduled_tasks == []
+
+
+def test_reset_timer_ignores_disabled_timeout(fake_ui, monkeypatch):
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager.session_active = True
+
+    stub = type("StubConfig", (), {"session_timeout": -1})()
+    monkeypatch.setattr("ipat_watchdog.core.session.session_manager.current", lambda: stub)
+
+    session_manager.reset_timer()
+
+    assert session_manager.timer_id is None
+    assert fake_ui.scheduled_tasks == []

@@ -1,17 +1,31 @@
+import pytest
+
 from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
 from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config
 
 
-def test_pc_config_defaults():
+@pytest.mark.parametrize(
+    "extractor, expected",
+    [
+        pytest.param(lambda cfg: cfg.identifier, "test_pc", id="identifier"),
+        pytest.param(lambda cfg: cfg.active_device_plugins, ("test_device",), id="devices"),
+        pytest.param(lambda cfg: cfg.paths.watch_dir.name, "Upload", id="watch-dir"),
+        pytest.param(lambda cfg: cfg.naming.id_separator, "-", id="id-separator"),
+    ],
+)
+def test_pc_config_defaults(extractor, expected):
     config = build_pc_config()
-    assert config.identifier == "test_pc"
-    assert config.active_device_plugins == ("test_device",)
-    assert config.paths.watch_dir.name == "Upload"
-    assert config.naming.id_separator == "-"
+    assert extractor(config) == expected
 
 
-def test_device_config_defaults():
+@pytest.mark.parametrize(
+    "extractor, expected",
+    [
+        pytest.param(lambda cfg: cfg.identifier, "test_device", id="identifier"),
+        pytest.param(lambda cfg: ".tif" in cfg.files.allowed_extensions, True, id="extension"),
+        pytest.param(lambda cfg: cfg.metadata.device_abbr, "TEST", id="abbr"),
+    ],
+)
+def test_device_config_defaults(extractor, expected):
     config = build_device_config()
-    assert config.identifier == "test_device"
-    assert ".tif" in config.files.allowed_extensions
-    assert config.metadata.device_abbr == "TEST"
+    assert extractor(config) == expected
