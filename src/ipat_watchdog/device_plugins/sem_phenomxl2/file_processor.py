@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import shutil
 
+from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
@@ -18,8 +19,8 @@ logger = setup_logger(__name__)
 class FileProcessorSEMPhenomXL2(FileProcessorABS):
     """Normalises TischREM filenames and handles ELID exports."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, device_config: DeviceConfig) -> None:
+        super().__init__(device_config)
         self._path_mapping: dict[str, str] = {}
 
     # ------------------------------------------------------------------
@@ -27,7 +28,8 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
     # ------------------------------------------------------------------
     def device_specific_preprocessing(self, path: str) -> str:
         candidate = Path(path)
-        if candidate.suffix.lower() in {".tiff", ".tif"}:
+        native_exts = self.device_config.files.native_extensions
+        if candidate.suffix.lower() in native_exts:
             new_stem = self._strip_trailing_digit(candidate.stem)
             if new_stem != candidate.stem:
                 normalized = candidate.with_name(f"{new_stem}{candidate.suffix}")
@@ -50,8 +52,9 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         filename_prefix: str,
         extension: str,
     ) -> bool:
+        allowed_suffixes = tuple(self.device_config.files.allowed_folder_contents)
         return not (
-            any(key.endswith(".elid") for key in record.files_uploaded.keys())
+            any(key.endswith(allowed_suffixes) for key in record.files_uploaded.keys())
             or extension == ""
         )
 
@@ -68,7 +71,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         actual_src_path = Path(self._path_mapping.pop(src_path, src_path))
         record_dir = Path(record_path)
 
-        if extension.lower() in {".tif", ".tiff"}:
+        if extension.lower() in {ext.lower() for ext in self.device_config.files.native_extensions}:
             destination = get_unique_filename(record_path, filename_prefix, extension)
             move_item(actual_src_path, destination)
             return ProcessingOutput(final_path=destination, datatype="img")
@@ -95,7 +98,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
 
     def _move_descriptors(self, elid_dir: Path, record_dir: Path, base: str) -> None:
         for descriptor in elid_dir.iterdir():
-            if descriptor.is_file() and descriptor.suffix.lower() in {".odt", ".elid"}:
+            if descriptor.is_file() and descriptor.suffix.lower() in {ext.lower() for ext in self.device_config.files.allowed_folder_contents}:
                 destination = record_dir / f"{base}{descriptor.suffix.lower()}"
                 if destination.exists():
                     destination = Path(get_unique_filename(str(record_dir), base, descriptor.suffix.lower()))

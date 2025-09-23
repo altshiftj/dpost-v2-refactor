@@ -40,7 +40,8 @@ processed results and dissolution curves.
 """,
         ),
         files=DeviceFileSelectors(
-            allowed_extensions={".wdb", ".wdk", ".wdp", ".txt"},
+            native_extensions={".wdb", ".wdk", ".wdp"},
+            exported_extensions={".xls"},
         ),
         session=SessionSettings(timeout_seconds=600),
         watcher=WatcherSettings(),

@@ -9,6 +9,7 @@ from typing import Dict, Optional
 from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.config import current
 from ipat_watchdog.core.config import current
+from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
@@ -34,12 +35,10 @@ def _id_separator() -> str:
 
 class FileProcessorPSAHoriba(FileProcessorABS):
     """Pairs `.ngb` raw files with exported `.csv` results."""
-
-    _TTL_SECONDS = 60 * 10  # Seconds before staged artefacts are discarded
-
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, device_config: DeviceConfig) -> None:
+        super().__init__(device_config)
         self._pending: Dict[str, Dict[str, object]] = {}
+        self.device_config = device_config
 
     # ------------------------------------------------------------------
     # Pre-processing
@@ -47,7 +46,13 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def device_specific_preprocessing(self, path: str) -> Optional[str]:
         element = Path(path)
         ext = element.suffix.lower()
-        kind = self._classify(ext)  # "raw" | "res" | None
+        native_exts = self.device_config.files.native_extensions
+        exported_exts = self.device_config.files.exported_extensions
+        kind = None
+        if ext in native_exts:
+            kind = "raw"
+        elif ext in exported_exts:
+            kind = "res"
 
         if kind is None:
             return path  # Let the orchestrator decide what to do
@@ -90,9 +95,6 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         self._pending.pop(stem, None)
         return str(stage_dir)
 
-    def matches_file(self, filepath: str) -> bool:
-        return Path(filepath).suffix.lower() in {".ngb", ".csv"}
-
     # ------------------------------------------------------------------
     # Probing
     # ------------------------------------------------------------------
@@ -100,19 +102,21 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         """Inspect CSV headers to confirm PSA origin.
 
         Heuristics:
-        - For .csv files, read a small prefix and look for device-specific
+        - For exported files, read a small prefix and look for device-specific
           signatures (e.g. "HORIBA", "Partica", "LA-960").
-        - For .ngb files, probing is inconclusive (binary container), return
+        - For native files, probing is inconclusive (binary container), return
           unknown to allow selector-based routing.
         """
 
         path = Path(filepath)
-        suffix = path.suffix.lower()
+        ext = path.suffix.lower()
+        native_exts = self.device_config.files.native_extensions
+        exported_exts = self.device_config.files.exported_extensions
 
-        if suffix == ".ngb":
+        if ext in native_exts:
             return FileProbeResult.unknown("Binary raw file; probe skipped")
 
-        if suffix != ".csv":
+        if ext not in exported_exts:
             return FileProbeResult.mismatch("Unsupported extension for PSA Horiba")
 
         # Read a small chunk defensively; avoid loading entire file
@@ -295,7 +299,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
 
     def _purge_orphans(self) -> None:
         now = time.time()
-        stale = [key for key, payload in self._pending.items() if now - float(payload.get("t", 0)) > self._TTL_SECONDS]
+        stale = [key for key, payload in self._pending.items() if now - float(payload.get("t", 0)) > self.device_config.batch.ttl_seconds]
         for key in stale:
             payload = self._pending.pop(key, {})
             for label in ("raw", "res"):

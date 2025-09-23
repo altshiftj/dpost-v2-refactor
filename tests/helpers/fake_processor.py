@@ -2,7 +2,8 @@ from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorA
 
 
 class DummyProcessor(FileProcessorABS):
-    def __init__(self, valid_datatype=True, appendable=True):
+    def __init__(self, device_config=None, valid_datatype=True, appendable=True):
+        self.device_config = device_config
         self.valid_datatype = valid_datatype
         self.appendable = appendable
 

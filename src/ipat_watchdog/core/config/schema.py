@@ -82,7 +82,10 @@ class PathSettings:
 
 @dataclass(slots=True)
 class NamingSettings:
-    """Defines how file and record identifiers are structured across the app."""
+    """
+    Defines how file and record identifiers are structured across the app.
+    Needs to be fully resolved as it currently clashes with settings in config/constants.py.
+    """
     id_separator: str = "-"
     file_separator: str = "_"
     filename_pattern: Pattern[str] = field(default_factory=_default_filename_pattern, repr=False)
@@ -151,7 +154,13 @@ class WatcherSettings:
 @dataclass(slots=True)
 class SessionSettings:
     """Holds per-device session timing rules such as inactivity timeouts."""
-    timeout_seconds: int = -1
+    timeout_seconds: int = 300
+
+
+class BatchSettings:
+    """Configures device batch aggregation and timing rules."""
+    ttl_seconds: int = 1800  # Time-to-live for batch aggregation (default: 30 min)
+    max_batch_size: int = 100  # Example: maximum files per batch
 
 
 @dataclass(slots=True)
@@ -171,22 +180,39 @@ class DeviceMetadata:
 @dataclass(slots=True)
 class DeviceFileSelectors:
     """Filters which files and folders belong to a device when scanning the watch directory."""
+    native_extensions: frozenset[str] = field(default_factory=frozenset)
+    exported_extensions: frozenset[str] = field(default_factory=frozenset)
     allowed_extensions: frozenset[str] = field(default_factory=frozenset)
     allowed_folder_contents: frozenset[str] = field(default_factory=frozenset)
+    file_encoding: frozenset[str] = field(default_factory=frozenset)
 
     def __post_init__(self) -> None:
-        self.allowed_extensions = frozenset(ext.lower() for ext in self.allowed_extensions)
-        self.allowed_folder_contents = frozenset(ext.lower() for ext in self.allowed_folder_contents)
+        # Normalize incoming sets to lowercase
+        native = frozenset(ext.lower() for ext in self.native_extensions)
+        exported = frozenset(ext.lower() for ext in self.exported_extensions)
+        allowed = frozenset(ext.lower() for ext in self.allowed_extensions)
+        folder = frozenset(ext.lower() for ext in self.allowed_folder_contents)
+        encoding = frozenset(ext.lower() for ext in self.file_encoding)
+
+        # Persist normalized values back
+        self.native_extensions = native
+        self.exported_extensions = exported
+        # Respect explicitly provided allowed_extensions by unioning
+        self.allowed_extensions = frozenset(native | exported | allowed)
+        self.allowed_folder_contents = folder
+        # Preserve provided encodings; if empty and you intended to mirror folder contents, do that in builder code
+        self.file_encoding = encoding
 
 
 @dataclass(slots=True)
 class DeviceConfig:
     """Aggregates the knobs that tailor the watchdog to a specific instrument."""
     identifier: str
-    metadata: DeviceMetadata = field(default_factory=DeviceMetadata)
-    files: DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
-    session: SessionSettings = field(default_factory=lambda: SessionSettings(timeout_seconds=300))
-    watcher: WatcherSettings = field(default_factory=WatcherSettings)
+    metadata:   DeviceMetadata      = field(default_factory=DeviceMetadata)
+    files:      DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
+    batch:      BatchSettings       = field(default_factory=BatchSettings)
+    session:    SessionSettings     = field(default_factory=SessionSettings)
+    watcher:    WatcherSettings     = field(default_factory=WatcherSettings)
 
     def matches_file(self, path_like: str | Path) -> bool:
         path = Path(path_like)
@@ -202,6 +228,7 @@ class DeviceConfig:
             except FileNotFoundError:
                 return False
             return bool(contents.intersection(self.files.allowed_folder_contents))
+        # If unrestricted (no allowed extensions configured), match any file
         if not self.files.allowed_extensions:
             return True
         return path.suffix.lower() in self.files.allowed_extensions
@@ -209,7 +236,11 @@ class DeviceConfig:
 
 @dataclass(slots=True)
 class PCConfig:
-    """Top-level configuration describing a workstation and its active device plugins."""
+    """
+    Top-level configuration describing a workstation and its active device plugins. 
+    Currently defines the PC identity and which device plugins are active.
+    But may find other uses in future.
+    """
     identifier: str
     name: Optional[str] = None
     location: Optional[str] = None

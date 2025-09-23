@@ -14,7 +14,7 @@ class SEMPhenomXL2Plugin(DevicePlugin):
 
     def __init__(self) -> None:
         self._config = build_config()
-        self._processor = FileProcessorSEMPhenomXL2()
+        self._processor = FileProcessorSEMPhenomXL2(self._config)
 
     def get_config(self) -> DeviceConfig:
         return self._config

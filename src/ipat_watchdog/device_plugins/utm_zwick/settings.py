@@ -48,7 +48,8 @@ information below.
 """,
         ),
         files=DeviceFileSelectors(
-            allowed_extensions={".zs2", ".xlsx"},
+            native_extensions=(".zs2",),
+            exported_extensions=(".xlsx",),
         ),
         session=SessionSettings(timeout_seconds=4 * 3600),
         watcher=WatcherSettings(

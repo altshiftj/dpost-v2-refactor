@@ -6,6 +6,7 @@ import shutil
 import time
 from typing import Dict
 
+from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
@@ -22,13 +23,10 @@ from ipat_watchdog.core.storage.filesystem_utils import (
 logger = setup_logger(__name__)
 
 
-class FileProcessorZwickUTM(FileProcessorABS):
+class FileProcessorUTMZwick(FileProcessorABS):
     """Handles paired `.zs2` and `.xlsx` files produced by the UTM."""
-
-    _TTL_SECONDS = 60 * 10  # Staged orphan lifetime (seconds)
-
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, device_config: DeviceConfig) -> None:
+        super().__init__(device_config)
         self._pending: Dict[str, Dict[str, Path | float]] = {}
 
     # ------------------------------------------------------------------
@@ -37,14 +35,14 @@ class FileProcessorZwickUTM(FileProcessorABS):
     def device_specific_preprocessing(self, path: str) -> str | None:
         p = Path(path)
         prefix = p.stem
-        extension = p.suffix.lower().lstrip(".")
+        extension = p.suffix.lower()
 
         bucket = self._pending.setdefault(prefix, {"t": time.time()})
         bucket[extension] = p
 
         self._purge_orphans()
 
-        required_extensions = {"zs2", "xlsx"}
+        required_extensions = self.device_config.files.allowed_extensions
         return path if required_extensions.issubset(bucket.keys()) else None
 
     def is_appendable(
@@ -100,8 +98,8 @@ class FileProcessorZwickUTM(FileProcessorABS):
         if bucket is None:
             raise KeyError(f"No staged files for '{raw_prefix}'")
 
-        zs2_path = Path(bucket["zs2"])
-        xlsx_path = Path(bucket["xlsx"])
+        zs2_path = Path(bucket[".zs2"])
+        xlsx_path = Path(bucket[".xlsx"])
         record_dir = Path(record_path)
 
         zip_dest = record_dir / f"{file_id}.zs2.zip"
@@ -132,7 +130,7 @@ class FileProcessorZwickUTM(FileProcessorABS):
     # ------------------------------------------------------------------
     def _purge_orphans(self) -> None:
         now = time.time()
-        expired_keys = [key for key, payload in self._pending.items() if now - payload["t"] > self._TTL_SECONDS]
+        expired_keys = [key for key, payload in self._pending.items() if now - payload["t"] > self.device_config.batch.ttl_seconds]
         for key in expired_keys:
             payload = self._pending.pop(key, {})
             for candidate in payload.values():

@@ -14,7 +14,7 @@ class PSAHoribaPlugin(DevicePlugin):
 
     def __init__(self) -> None:
         self._config = build_config()
-        self._processor = FileProcessorPSAHoriba()
+        self._processor = FileProcessorPSAHoriba(self._config)
 
     def get_config(self) -> DeviceConfig:
         return self._config

@@ -63,7 +63,7 @@ def build_config() -> DeviceConfig:
     """,
         ),
         files=DeviceFileSelectors(
-            allowed_extensions={".tiff", ".tif"},
+            native_extensions={".tiff", ".tif"},
             allowed_folder_contents={".odt", ".elid"},
         ),
         session=SessionSettings(timeout_seconds=300),

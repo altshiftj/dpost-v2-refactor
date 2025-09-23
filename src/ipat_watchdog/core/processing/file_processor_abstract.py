@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
 
+from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.records.local_record import LocalRecord
 
 
@@ -69,6 +70,9 @@ class FileProbeResult:
 class FileProcessorABS(ABC):
     """Processors transform raw artefacts into organised records."""
 
+    def __init__(self, device_config: DeviceConfig):
+        self.device_config = device_config
+
     def device_specific_preprocessing(self, src_path: str) -> str | None:
         """Give processors a hook to stage or normalise incoming files.
 
@@ -119,9 +123,3 @@ class FileProcessorABS(ABC):
         extension: str,
     ) -> ProcessingOutput:
         """Perform the actual move/rename and return final metadata."""
-
-
-class FileProcessorBase(FileProcessorABS):
-    """Convenience subclass providing permissive defaults."""
-
-    pass

@@ -35,7 +35,10 @@ def build_config() -> DeviceConfig:
     This record was created by the test suite and contains synthetic test data.
     """,
         ),
-        files=DeviceFileSelectors(allowed_extensions={".tif", ".txt"}),
+            files=DeviceFileSelectors(
+                allowed_extensions={".tif", ".txt"},
+                native_extensions={".tif"},
+            ),
         session=SessionSettings(timeout_seconds=300),
         watcher=WatcherSettings(
             poll_seconds=0.25,

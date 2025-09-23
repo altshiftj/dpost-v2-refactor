@@ -13,7 +13,7 @@ class TestDevicePlugin(DevicePlugin):
 
     def __init__(self) -> None:
         self._config = build_config()
-        self._file_processor = TestFileProcessor()
+        self._file_processor = TestFileProcessor(device_config=self._config)
 
     def get_config(self) -> DeviceConfig:
         return self._config

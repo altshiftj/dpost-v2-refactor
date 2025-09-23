@@ -5,6 +5,7 @@ import pytest
 from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
+from ipat_watchdog.device_plugins.sem_phenomxl2.settings import build_config
 
 
 # ---------------------------------------------------------------------------
@@ -13,7 +14,8 @@ from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, mov
 
 @pytest.fixture
 def processor():
-    return FileProcessorSEMPhenomXL2()
+    config = build_config()
+    return FileProcessorSEMPhenomXL2(device_config=config)
 
 
 @pytest.fixture

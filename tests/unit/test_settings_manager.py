@@ -42,13 +42,13 @@ def service(tmp_path) -> ConfigService:
     device_a = DeviceConfig(
         identifier="device_a",
         metadata=DeviceMetadata(device_abbr="A", default_record_description="A"),
-        files=DeviceFileSelectors(allowed_extensions={".tiff", ".tif"}),
+        files=DeviceFileSelectors(native_extensions={".tiff", ".tif"}, exported_extensions={".jpeg"}),
         session=SessionSettings(timeout_seconds=120),
     )
     device_b = DeviceConfig(
         identifier="device_b",
         metadata=DeviceMetadata(device_abbr="B", default_record_description="B"),
-        files=DeviceFileSelectors(allowed_extensions={".txt", ".csv"}),
+        files=DeviceFileSelectors(native_extensions={".txt"}, exported_extensions={".csv"}),
         session=SessionSettings(timeout_seconds=300),
     )
 

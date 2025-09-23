@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
 from ipat_watchdog.device_plugins.utm_zwick.settings import build_config
-from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorZwickUTM
+from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.config import DeviceConfig
 
@@ -14,7 +14,7 @@ class UTMZwickPlugin(DevicePlugin):
 
     def __init__(self) -> None:
         self._config = build_config()
-        self._processor = FileProcessorZwickUTM()
+        self._processor = FileProcessorUTMZwick(self._config)
 
     def get_config(self) -> DeviceConfig:
         return self._config

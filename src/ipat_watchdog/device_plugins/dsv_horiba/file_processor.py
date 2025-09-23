@@ -12,6 +12,7 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProbeResult,
     ProcessingOutput,
 )
+from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
     get_unique_filename,
@@ -24,11 +25,9 @@ logger = setup_logger(__name__)
 
 class FileProcessorDSVHoriba(FileProcessorABS):
     """Aggregates raw (*.wd*) files and exported *.txt reports."""
-
-    _TTL_SECONDS = 60 * 30  # Wait longer because txt exports are manual
-
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, device_config: DeviceConfig) -> None:
+        super().__init__(device_config)
+        self.device_config = device_config
         self._batches: Dict[str, Dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
@@ -45,19 +44,17 @@ class FileProcessorDSVHoriba(FileProcessorABS):
 
         self._purge_orphans()
 
-        raw_exts = {".wdb", ".wdk", ".wdp"}
         files: List[Path] = bucket["files"]
-        has_raw = any(f.suffix.lower() in raw_exts for f in files)
-        has_txt = any(f.suffix.lower() == ".txt" for f in files)
+        native_exts = self.device_config.files.native_extensions
+        exported_exts = self.device_config.files.exported_extensions
+        has_native = any(f.suffix.lower() in native_exts for f in files)
+        has_exported = any(f.suffix.lower() in exported_exts for f in files)
 
-        if not bucket["ready"] and has_raw and has_txt:
+        if not bucket["ready"] and has_native and has_exported:
             bucket["ready"] = True
             logger.debug("Dissolver batch ready for key '%s': %s", key, [str(f) for f in files])
             return path
         return None
-
-    def matches_file(self, filepath: str) -> bool:
-        return Path(filepath).suffix.lower() in {".wdb", ".wdk", ".wdp", ".txt"}
 
     # ------------------------------------------------------------------
     # Probing
@@ -71,11 +68,13 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         """
         path = Path(filepath)
         ext = path.suffix.lower()
+        native_exts = self.device_config.files.native_extensions
+        exported_exts = self.device_config.files.exported_extensions
 
-        if ext in {".wdb", ".wdk", ".wdp"}:
+        if ext in native_exts:
             return FileProbeResult.unknown("Raw WD* file; probe inconclusive")
 
-        if ext != ".txt":
+        if ext not in exported_exts:
             return FileProbeResult.mismatch("Not a dissolver export text file")
 
         try:
@@ -187,7 +186,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         stale_keys = [
             key
             for key, bucket in self._batches.items()
-            if not bucket.get("ready") and now - bucket.get("t", now) > self._TTL_SECONDS
+            if not bucket.get("ready") and now - bucket.get("t", now) > self.device_config.batch.ttl_seconds
         ]
         for key in stale_keys:
             bucket = self._batches.pop(key, {})

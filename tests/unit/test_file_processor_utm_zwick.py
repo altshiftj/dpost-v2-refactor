@@ -3,8 +3,9 @@ from unittest.mock import patch
 import time
 import pytest
 
-from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorZwickUTM
+from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
 from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.device_plugins.utm_zwick.settings import build_config
 
 
 # ---------------------------------------------------------------------------
@@ -12,7 +13,8 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 # ---------------------------------------------------------------------------
 @pytest.fixture
 def processor():
-    return FileProcessorZwickUTM()
+    config = build_config()
+    return FileProcessorUTMZwick(device_config=config)
 
 
 @pytest.fixture
@@ -134,7 +136,7 @@ def test_purge_orphans_moves_files(tmp_path, processor):
     }
 
     # Force TTL small so entry is considered orphaned
-    processor._TTL_SECONDS = 0
+    processor.device_config.batch.ttl_seconds = 0
 
     with patch(
         "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_to_exception_folder"
