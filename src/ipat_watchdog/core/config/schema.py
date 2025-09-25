@@ -157,10 +157,11 @@ class SessionSettings:
     timeout_seconds: int = 300
 
 
+@dataclass(slots=True)
 class BatchSettings:
     """Configures device batch aggregation and timing rules."""
     ttl_seconds: int = 1800  # Time-to-live for batch aggregation (default: 30 min)
-    max_batch_size: int = 100  # Example: maximum files per batch
+    max_batch_size: int = 100  # Maximum files per batch
 
 
 @dataclass(slots=True)
@@ -213,6 +214,9 @@ class DeviceConfig:
     batch:      BatchSettings       = field(default_factory=BatchSettings)
     session:    SessionSettings     = field(default_factory=SessionSettings)
     watcher:    WatcherSettings     = field(default_factory=WatcherSettings)
+    # Arbitrary plugin-specific settings (kept generic to avoid polluting the
+    # core schema). Device plugins should namespace keys to avoid collisions.
+    extra:      dict[str, object]   = field(default_factory=dict)
 
     def matches_file(self, path_like: str | Path) -> bool:
         path = Path(path_like)

@@ -317,6 +317,10 @@ class FileProcessManager:
         return any(_INTERNAL_STAGING_SUFFIX_RE.match(parent.name) for parent in path.parents)
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
+        if self._is_internal_staging_path(path):
+            logger.info("Internal staging folder ignored: %s", path)
+            self._register_rejection(str(path), reason)
+            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
         move_to_exception_folder(path)
         self._register_rejection(str(path), reason)
         FILES_FAILED.inc()

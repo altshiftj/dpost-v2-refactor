@@ -103,7 +103,7 @@ def main() -> None:
         pc_name = _require_pc_name()
     except SystemExit:
         # Fallback: prompt user for PC name if not set
-        pc_name = "tischrem_blb"
+        pc_name = "zwick_blb"
         if not pc_name:
             logger.error("PC_NAME is required.")
             sys.exit(1)
@@ -112,7 +112,7 @@ def main() -> None:
     device_names = _resolve_device_names(pc_name)
     if not device_names:
         # Hardcoded device names fallback
-        device_names = ["sem_tischrem"]  # Replace with your actual device names
+        device_names = ["utm_zwick"]  # Replace with your actual device names
         logger.warning("No devices found; using hardcoded list: %s", device_names)
         if not device_names:
             logger.error("At least one device name is required.")

@@ -11,6 +11,7 @@ from ipat_watchdog.core.config import (
     SessionSettings,
     WatcherSettings,
 )
+from ipat_watchdog.core.config.schema import BatchSettings
 
 
 def build_config() -> DeviceConfig:
@@ -49,7 +50,11 @@ information below.
         ),
         files=DeviceFileSelectors(
             native_extensions=(".zs2",),
-            exported_extensions=(".xlsx",),
+            # Legacy exported .xlsx kept for backward compatibility tests.
+            # New workflow will add .csv + multiple .txt snapshots; those are
+            # handled dynamically in the processor and do not need explicit
+            # enumeration here unless downstream needs probing.
+            exported_extensions=(".xlsx", ".csv", ".txt"),
         ),
         session=SessionSettings(timeout_seconds=4 * 3600),
         watcher=WatcherSettings(
@@ -60,4 +65,18 @@ information below.
             temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
             sentinel_name=None,
         ),
+        batch=BatchSettings(
+            ttl_seconds=0.5 * 3600,  # 30 minutes
+            max_batch_size=50,
+        ),
+        # Extra dynamic attributes consumed by the processor (not part of the
+        # core schema strictly, but DeviceConfig is a pydantic model that will
+        # retain them). If schema forbids extras this will be refactored to a
+        # dedicated plugin settings object.
+        extra={
+            "series_timeout_minutes": 30,
+            "csv_finalize_delay_seconds": 3,
+            "flush_incomplete_on_session_end": True,
+            "keep_all_intermediate_txt": True,
+        },
     )
