@@ -53,7 +53,7 @@ from ipat_watchdog.core.interactions import UserInteractionPort
 logger = setup_logger(__name__)
 
 _INTERNAL_STAGING_SUFFIX_RE = re.compile(
-    r'^(?P<prefix>.*?)(?P<marker>\.__staged__(?P<count>\d+)?)(?P<duplicate>\s*\(\d+\))?(?P<extension>(\.[^.]+)*)$',
+    r'\.__staged__(\d+)?',
     re.IGNORECASE,
 )
 
@@ -312,9 +312,9 @@ class FileProcessManager:
 
     @staticmethod
     def _is_internal_staging_path(path: Path) -> bool:
-        if _INTERNAL_STAGING_SUFFIX_RE.match(path.name):
+        if _INTERNAL_STAGING_SUFFIX_RE.search(path.name):
             return True
-        return any(_INTERNAL_STAGING_SUFFIX_RE.match(parent.name) for parent in path.parents)
+        return any(_INTERNAL_STAGING_SUFFIX_RE.search(parent.name) for parent in path.parents)
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         if self._is_internal_staging_path(path):

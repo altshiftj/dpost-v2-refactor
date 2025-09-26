@@ -11,6 +11,7 @@ from ipat_watchdog.core.interactions import (
 )
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.processing.models import RouteContext, ProcessingResult, ProcessingStatus
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 def handle_unappendable_record(
@@ -42,10 +43,12 @@ def handle_append_to_synced_record(
 ) -> ProcessingResult:
     """Prompt the user before appending to fully synced records."""
     candidate = context.candidate
-    record = context.existing_record
+    record: LocalRecord = context.existing_record
     prefix = context.sanitized_prefix
 
     if interactions.prompt_append_record(prefix):
+        # set the record and its files to unsynced
+        record.mark_unsynced()
         final_path = add_item_delegate(
             record,
             str(candidate.effective_path),

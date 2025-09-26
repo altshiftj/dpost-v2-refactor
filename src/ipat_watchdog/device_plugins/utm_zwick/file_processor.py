@@ -48,7 +48,7 @@ def _series_snapshot_dir_name(sample: str) -> str:
     skips these transient accumulation folders.
     Pattern contributes to regex: prefix + .__staged__ + (extension-like tail)
     """
-    return f"{sample}{INTERNAL_STAGING_MARKER}series"
+    return f"{sample}{INTERNAL_STAGING_MARKER}tests"
 
 
 @dataclass
@@ -114,10 +114,10 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 # Hidden & ignored aggregation folder for successive txt snapshots
                 snapshot_dir = p.parent / _series_snapshot_dir_name(prefix)
                 snapshot_dir.mkdir(exist_ok=True)
-                snap_name = f"{prefix}_{state.txt_counter:03d}.txt"
+                snap_name = f"{prefix}-{state.txt_counter:02d}.txt"
                 target = snapshot_dir / snap_name
                 try:
-                    shutil.copy2(p, target)
+                    shutil.move(p, target)
                     state.txt_snapshots.append(target)
                 except Exception as exc:  # pragma: no cover - defensive
                     logger.warning("Failed to snapshot txt '%s': %s", p, exc)
@@ -139,12 +139,9 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 bucket[".xlsx"] = state.xlsx
                 return path  # triggers processing with the latest arrived path
 
-            # Series finalize condition: csv present AND stabilization delay elapsed
-            if state.csv and state.csv_received_at:
-                if (datetime.now() - state.csv_received_at).total_seconds() >= self.csv_finalize_delay_seconds:
-                    # Provide csv path as trigger for processing
-                    return str(state.csv)
-                # else: wait for delay
+            # Series finalize condition: csv present triggers processing immediately
+            if state.csv:
+                return str(state.csv)
         return None
 
     def is_appendable(
@@ -231,26 +228,35 @@ class FileProcessorUTMZwick(FileProcessorABS):
         primary = state.csv or state.xlsx
         datatype = "csv" if state.csv else "xlsx"
         if primary and primary.exists():
-            destination_primary = get_unique_filename(record_path, file_id, primary.suffix)
+            file_id_results = f"{file_id}_results"
+            destination_primary = get_unique_filename(record_path, file_id_results, primary.suffix)
             try:
                 move_item(primary, destination_primary)
             except Exception as exc:
                 logger.error("Failed to move '%s' to '%s': %s", primary, destination_primary, exc)
                 raise
 
-        # Persist snapshots (.txt) into a subfolder inside record for traceability
+        # Persist snapshots (.txt) FLATTEN into record root (remove staging folder)
         if state.txt_snapshots:
-            series_folder = record_dir / _series_snapshot_dir_name(file_id)
-            series_folder.mkdir(exist_ok=True)
-            for snap in state.txt_snapshots:
-                if snap.exists():
-                    dest = series_folder / snap.name
-                    try:
-                        if dest.exists():  # avoid overwrite
-                            dest = series_folder / f"{snap.stem}_{int(time.time())}.txt"
-                        shutil.move(str(snap), str(dest))
-                    except Exception as exc:  # pragma: no cover - defensive
-                        logger.warning("Failed moving snapshot '%s': %s", snap, exc)
+            # Sort to enforce deterministic order
+            ordered = sorted(state.txt_snapshots, key=lambda p: p.name)
+            for snap in ordered:
+                if not snap.exists():
+                    continue
+                file_id_tests = f"{file_id}_tests"
+                dest = Path(get_unique_filename(record_path, file_id_tests, snap.suffix))
+                try:
+                    shutil.move(str(snap), str(dest))
+                except Exception as exc:
+                    logger.warning("Failed moving snapshot '%s' to '%s': %s", snap, dest, exc)
+
+            # Attempt to remove the now-empty staging directory
+            staging_parent = ordered[0].parent
+            try:
+                if staging_parent.exists() and not any(staging_parent.iterdir()):
+                    staging_parent.rmdir()
+            except Exception:
+                pass
 
         return ProcessingOutput(final_path=str(record_dir), datatype=datatype)
 

@@ -81,6 +81,13 @@ class LocalRecord:
             f"All files uploaded for record '{self.identifier}': {all_uploaded}"
         )
         return all_uploaded
+    
+    def mark_unsynced(self) -> "LocalRecord":
+        for key in self.files_uploaded.keys():
+            self.files_uploaded[key] = False
+        self.is_in_db = False
+        logger.debug(f"Marked record '{self.identifier}' and its files as unsynced.")
+        return self
 
     def to_dict(self) -> dict:
         # Exclude transient fields from persistence
