@@ -58,6 +58,176 @@ _INTERNAL_STAGING_SUFFIX_RE = re.compile(
 )
 
 
+class _ProcessingPipeline:
+    """Internal helper that orchestrates the multi-stage processing pipeline."""
+
+    def __init__(self, manager: 'FileProcessManager') -> None:
+        self._manager = manager
+
+    def process(self, src_path: Path) -> ProcessingResult:
+        prepared = self._prepare_request(src_path)
+        if isinstance(prepared, ProcessingResult):
+            return prepared
+        return self._execute_pipeline(prepared)
+
+    def _prepare_request(self, path: Path) -> ProcessingRequest | ProcessingResult:
+        manager = self._manager
+
+        if manager._is_internal_staging_path(path):
+            message = f"Ignoring internal staging path: {path}"
+            logger.debug(message)
+            return ProcessingResult(ProcessingStatus.DEFERRED, message)
+
+        resolution = manager._device_resolver.resolve(path)
+        device = resolution.selected
+        if device is None:
+            reason = resolution.reason or "Invalid file type"
+            return self._reject_immediately(path, reason)
+
+        stability_outcome = FileStabilityTracker(path, device).wait()
+        if stability_outcome.rejected:
+            reason = stability_outcome.reason or "File rejected by stability guard"
+            manager._register_rejection(str(path), reason)
+            safe_move_to_exception(str(path))
+            FILES_FAILED.inc()
+            return ProcessingResult(ProcessingStatus.REJECTED, reason)
+
+        return ProcessingRequest(source=path, device=device)
+
+    def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:
+        manager = self._manager
+        candidate: Optional[ProcessingCandidate] = None
+        try:
+            with manager.config_service.activate_device(request.device):
+                processor = manager._resolve_processor(request.device)
+                item = self._build_candidate(request, processor)
+                if isinstance(item, ProcessingResult):
+                    return item
+                candidate = item
+                context = self._build_route_context(candidate)
+                return self._dispatch_route(context)
+        except Exception as exc:
+            manager._handle_processing_failure(request.source, candidate, exc)
+            raise RuntimeError(f"File processing failed for {request.source}: {exc}") from exc
+
+    def _build_candidate(self, request: ProcessingRequest, processor: FileProcessorABS) -> ProcessingCandidate | ProcessingResult:
+        manager = self._manager
+        preprocessed = processor.device_specific_preprocessing(str(request.source))
+        if preprocessed is None:
+            return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefacts")
+
+        parse_target = manager._strip_internal_stage_suffix(Path(preprocessed))
+        prefix, extension = parse_filename(str(parse_target))
+
+        effective_path = Path(preprocessed)
+        if not effective_path.exists():
+            effective_path = request.source
+
+        preprocessed_path = Path(preprocessed)
+        if preprocessed_path == effective_path:
+            preprocessed_path = None
+
+        return ProcessingCandidate(
+            original_path=request.source,
+            effective_path=effective_path,
+            prefix=prefix,
+            extension=extension,
+            processor=processor,
+            device=request.device,
+            preprocessed_path=preprocessed_path,
+        )
+
+    def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
+        manager = self._manager
+        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
+            manager.records, candidate.prefix, candidate.device
+        )
+        decision = determine_routing_state(
+            record,
+            is_valid_format,
+            candidate.prefix,
+            candidate.extension,
+            candidate.processor,
+        )
+        return RouteContext(candidate, sanitized_prefix, record, decision)
+
+    def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
+        manager = self._manager
+        candidate = context.candidate
+
+        def rename_delegate(path, prefix, ext, contextual_reason=None):
+            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
+
+        if context.decision is RoutingDecision.UNAPPENDABLE:
+            return handle_unappendable_record(manager.interactions, rename_delegate, context)
+
+        if context.decision is RoutingDecision.APPEND_TO_SYNCED:
+            return handle_append_to_synced_record(
+                manager.interactions,
+                lambda *args, **kwargs: manager.add_item_to_record(*args, **kwargs, device=candidate.device),
+                rename_delegate,
+                context,
+            )
+
+        if context.decision is RoutingDecision.ACCEPT:
+            final_path = manager.add_item_to_record(
+                context.existing_record,
+                str(candidate.effective_path),
+                context.sanitized_prefix,
+                candidate.extension,
+                candidate.processor,
+                notify=False,
+                device=candidate.device,
+            )
+            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
+
+        return self._invoke_rename_flow(candidate, candidate.prefix, candidate.extension)
+
+    def _invoke_rename_flow(
+        self,
+        candidate: ProcessingCandidate,
+        current_prefix: str,
+        extension: str,
+        contextual_reason: Optional[str] = None,
+    ) -> ProcessingResult:
+        manager = self._manager
+        outcome = manager._rename_service.obtain_valid_prefix(current_prefix, contextual_reason)
+        if outcome.cancelled or not outcome.sanitized_prefix:
+            manager._rename_service.send_to_manual_bucket(
+                str(candidate.effective_path), current_prefix, extension
+            )
+            return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
+
+        updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
+        return self._route_with_prefix(updated_candidate, outcome.sanitized_prefix)
+
+    def _route_with_prefix(self, candidate: ProcessingCandidate, prefix_override: str) -> ProcessingResult:
+        manager = self._manager
+        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
+            manager.records, prefix_override, candidate.device
+        )
+        decision = determine_routing_state(
+            record,
+            is_valid_format,
+            prefix_override,
+            candidate.extension,
+            candidate.processor,
+        )
+        updated = replace(candidate, prefix=prefix_override)
+        return self._dispatch_route(RouteContext(updated, sanitized_prefix, record, decision))
+
+    def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
+        manager = self._manager
+        if manager._is_internal_staging_path(path):
+            logger.info("Internal staging folder ignored: %s", path)
+            manager._register_rejection(str(path), reason)
+            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
+        move_to_exception_folder(path)
+        manager._register_rejection(str(path), reason)
+        FILES_FAILED.inc()
+        return ProcessingResult(ProcessingStatus.REJECTED, reason)
+
+
 class FileProcessManager:
     """Single-threaded pipeline that validates, routes, and persists artefacts."""
 
@@ -78,6 +248,7 @@ class FileProcessManager:
         self._device_resolver = DeviceResolver(self.config_service, self._processor_factory)
         self._rename_service = RenameService(interactions)
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
+        self._pipeline = _ProcessingPipeline(self)
 
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup")
@@ -87,48 +258,7 @@ class FileProcessManager:
     # Public API
     # ------------------------------------------------------------------
     def process_item(self, src_path: str) -> ProcessingResult:
-        path = Path(src_path)
-        prepared = self._prepare_request(path)
-        if isinstance(prepared, ProcessingResult):
-            return prepared
-        return self._execute_pipeline(prepared)
-
-    def _prepare_request(self, path: Path) -> ProcessingRequest | ProcessingResult:
-        if self._is_internal_staging_path(path):
-            message = f"Ignoring internal staging path: {path}"
-            logger.debug(message)
-            return ProcessingResult(ProcessingStatus.DEFERRED, message)
-
-        resolution = self._device_resolver.resolve(path)
-        device = resolution.selected
-        if device is None:
-            reason = resolution.reason or "Invalid file type"
-            return self._reject_immediately(path, reason)
-
-        stability_outcome = FileStabilityTracker(path, device).wait()
-        if stability_outcome.rejected:
-            reason = stability_outcome.reason or "File rejected by stability guard"
-            self._register_rejection(str(path), reason)
-            safe_move_to_exception(str(path))
-            FILES_FAILED.inc()
-            return ProcessingResult(ProcessingStatus.REJECTED, reason)
-
-        return ProcessingRequest(source=path, device=device)
-
-    def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:
-        candidate: Optional[ProcessingCandidate] = None
-        try:
-            with self.config_service.activate_device(request.device):
-                processor = self._resolve_processor(request.device)
-                item = self._build_candidate(request, processor)
-                if isinstance(item, ProcessingResult):
-                    return item
-                candidate = item
-                context = self._build_route_context(candidate)
-                return self._dispatch_route(context)
-        except Exception as exc:
-            self._handle_processing_failure(request.source, candidate, exc)
-            raise RuntimeError(f"File processing failed for {request.source}: {exc}") from exc
+        return self._pipeline.process(Path(src_path))
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         rejected: list[Tuple[str, str]] = []
@@ -192,117 +322,6 @@ class FileProcessManager:
             return self.file_processor
         return self._processor_factory.get_for_device(device.identifier)
 
-    def _build_candidate(
-        self,
-        request: ProcessingRequest,
-        processor: FileProcessorABS,
-    ) -> ProcessingCandidate | ProcessingResult:
-        preprocessed = processor.device_specific_preprocessing(str(request.source))
-        if preprocessed is None:
-            return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefact")
-
-        parse_target = self._strip_internal_stage_suffix(Path(preprocessed))
-        prefix, extension = parse_filename(str(parse_target))
-
-        effective_path = Path(preprocessed)
-        if not effective_path.exists():
-            effective_path = request.source
-
-        preprocessed_path = Path(preprocessed)
-        if preprocessed_path == effective_path:
-            preprocessed_path = None
-
-        return ProcessingCandidate(
-            original_path=request.source,
-            effective_path=effective_path,
-            prefix=prefix,
-            extension=extension,
-            processor=processor,
-            device=request.device,
-            preprocessed_path=preprocessed_path,
-        )
-
-    def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
-        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            self.records, candidate.prefix, candidate.device
-        )
-        decision = determine_routing_state(
-            record,
-            is_valid_format,
-            candidate.prefix,
-            candidate.extension,
-            candidate.processor,
-        )
-        return RouteContext(candidate, sanitized_prefix, record, decision)
-
-    def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
-        candidate = context.candidate
-
-        def rename_delegate(path, prefix, ext, contextual_reason=None):
-            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
-
-        if context.decision is RoutingDecision.UNAPPENDABLE:
-            return handle_unappendable_record(self.interactions, rename_delegate, context)
-
-        if context.decision is RoutingDecision.APPEND_TO_SYNCED:
-            return handle_append_to_synced_record(
-                self.interactions,
-                lambda *args, **kwargs: self.add_item_to_record(*args, **kwargs, device=candidate.device),
-                rename_delegate,
-                context,
-            )
-
-        if context.decision is RoutingDecision.ACCEPT:
-            final_path = self.add_item_to_record(
-                context.existing_record,
-                str(candidate.effective_path),
-                context.sanitized_prefix,
-                candidate.extension,
-                candidate.processor,
-                notify=False,
-                device=candidate.device,
-            )
-            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
-
-        return self._invoke_rename_flow(
-            candidate,
-            candidate.prefix,
-            candidate.extension,
-        )
-
-    def _invoke_rename_flow(
-        self,
-        candidate: ProcessingCandidate,
-        current_prefix: str,
-        extension: str,
-        contextual_reason: Optional[str] = None,
-    ) -> ProcessingResult:
-        outcome = self._rename_service.obtain_valid_prefix(current_prefix, contextual_reason)
-        if outcome.cancelled or not outcome.sanitized_prefix:
-            self._rename_service.send_to_manual_bucket(
-                str(candidate.effective_path), current_prefix, extension
-            )
-            return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
-
-        updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
-        return self._route_with_prefix(updated_candidate, outcome.sanitized_prefix)
-
-    def _route_with_prefix(
-        self, candidate: ProcessingCandidate, prefix_override: str
-    ) -> ProcessingResult:
-        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            self.records, prefix_override, candidate.device
-        )
-        decision = determine_routing_state(
-            record,
-            is_valid_format,
-            prefix_override,
-            candidate.extension,
-            candidate.processor,
-        )
-        updated = replace(candidate, prefix=prefix_override)
-        return self._dispatch_route(RouteContext(updated, sanitized_prefix, record, decision))
-
     @staticmethod
     def _strip_internal_stage_suffix(path: Path) -> Path:
         name = path.name
@@ -321,16 +340,6 @@ class FileProcessManager:
         if _INTERNAL_STAGING_SUFFIX_RE.search(path.name):
             return True
         return any(_INTERNAL_STAGING_SUFFIX_RE.search(parent.name) for parent in path.parents)
-
-    def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
-        if self._is_internal_staging_path(path):
-            logger.info("Internal staging folder ignored: %s", path)
-            self._register_rejection(str(path), reason)
-            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
-        move_to_exception_folder(path)
-        self._register_rejection(str(path), reason)
-        FILES_FAILED.inc()
-        return ProcessingResult(ProcessingStatus.REJECTED, reason)
 
     def _register_rejection(self, path: str, reason: str) -> None:
         logger.warning("Rejected %s: %s", path, reason)
@@ -351,8 +360,5 @@ class FileProcessManager:
             safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)
         self._register_rejection(str(path), str(exc))
         FILES_FAILED.inc()
-
-
-
 
 
