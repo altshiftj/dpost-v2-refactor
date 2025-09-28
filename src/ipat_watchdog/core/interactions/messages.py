@@ -87,7 +87,7 @@ class InfoMessages:
 
     # Session messages
     SESSION_ACTIVE = "Session Active"
-    SESSION_ACTIVE_DETAILS = "A session is in progress. Click 'Done' when finished adding files."
+    SESSION_ACTIVE_DETAILS = "A session is in progress. Click 'Done' when finished with your experiments."
 
 
 # ===============================================================================

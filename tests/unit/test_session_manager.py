@@ -33,7 +33,7 @@ def test_note_activity_starts_session(fake_ui, config_service):
 
     assert session_manager.session_active is True
     assert fake_ui.session_details_history[-1].users == ("mus-ipat",)
-    assert fake_ui.session_details_history[-1].records == (f"{record.sample_name} (Files: 1)",)
+    assert fake_ui.session_details_history[-1].records == (f"{record.sample_name}",)
 
 
 def test_note_activity_refreshes_timer_and_details(fake_ui, config_service):
@@ -48,8 +48,8 @@ def test_note_activity_refreshes_timer_and_details(fake_ui, config_service):
     latest = fake_ui.session_details_history[-1]
     assert latest.users == ("mus-ipat",)
     assert latest.records == (
-        f"{first.sample_name} (Files: 1)",
-        f"{second.sample_name} (Files: 1)",
+        f"{first.sample_name}",
+        f"{second.sample_name}",
     )
     assert fake_ui.scheduled_tasks[-1][0] == current().session_timeout * 1000
 
@@ -65,9 +65,10 @@ def test_note_activity_tracks_multiple_users(fake_ui, config_service):
 
     latest = fake_ui.session_details_history[-1]
     assert latest.users == ("mus-ipat", "jfi-ipat")
+    # Counts removed: each record label appears once
     assert latest.records == (
-        f"{primary.sample_name} (Files: 2)",
-        f"{secondary.sample_name} (Files: 1)",
+        f"{primary.sample_name}",
+        f"{secondary.sample_name}",
     )
 
 
@@ -79,7 +80,8 @@ def test_note_activity_counts_increment(fake_ui, config_service):
     session_manager.note_activity(record)
 
     latest = fake_ui.session_details_history[-1]
-    assert latest.records == (f"{record.sample_name} (Files: 2)",)
+    # Previously showed file count increment; now remains single simple label
+    assert latest.records == (f"{record.sample_name}",)
 
 
 def test_end_session_calls_callback(fake_ui, config_service):

@@ -1,7 +1,14 @@
-"""Tracks user activity and session timeouts for watchdog processing runs."""
+"""Tracks user activity and session timeouts for watchdog processing runs.
+
+Public API additions:
+        - ``SessionManager.get_summary()`` returns a lightweight immutable snapshot
+            for external consumers (logging, UI layers, potential REST exposure)
+            without leaking internal mutable lists.
+"""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional
 
 from ipat_watchdog.core.config import current
@@ -12,6 +19,28 @@ if TYPE_CHECKING:
     from ipat_watchdog.core.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
+
+
+@dataclass(frozen=True)
+class SessionSummary:
+    """Immutable snapshot of current session state.
+
+    Attributes
+    ----------
+    active: bool
+        Whether a session is currently active.
+    users: tuple[str, ...]
+        Distinct user tags observed during the session.
+    records: tuple[str, ...]
+        Distinct record sample labels observed during the session.
+    """
+
+    active: bool
+    users: tuple[str, ...]
+    records: tuple[str, ...]
+
+    def to_dict(self) -> dict[str, object]:  # pragma: no cover - trivial
+        return {"active": self.active, "users": self.users, "records": self.records}
 
 
 class SessionManager:
@@ -31,7 +60,6 @@ class SessionManager:
         self.timer_id: Optional[Any] = None
         self._session_users: list[str] = []
         self._session_records: list[str] = []
-        self._session_record_counts: dict[str, int] = {}
 
     @property
     def is_active(self) -> bool:
@@ -47,8 +75,6 @@ class SessionManager:
 
         self._push_unique(self._session_users, user_tag)
         self._push_unique(self._session_records, record_label)
-        if record_label:
-            self._session_record_counts[record_label] = self._session_record_counts.get(record_label, 0) + 1
 
         if not self.session_active:
             self.start_session()
@@ -107,15 +133,28 @@ class SessionManager:
 
     def _format_record_label(self, label: Optional[str]) -> str:
         if not label:
-            return "Unknown Sample (Files: 0)"
-        count = self._session_record_counts.get(label, 0)
-        return f"{label} (Files: {count})"
-
+            return "Unknown Sample"
+        return label
 
     def _reset_session_activity(self) -> None:
         self._session_users = []
         self._session_records = []
-        self._session_record_counts = {}
+
+    # ------------------------------------------------------------------
+    # Public convenience API
+    # ------------------------------------------------------------------
+    def get_summary(self) -> SessionSummary:
+        """Return a lightweight immutable session snapshot.
+
+        This avoids callers needing to understand internal structures or
+        mutability. The method performs no side effects and is safe to call
+        regardless of session state.
+        """
+        return SessionSummary(
+            active=self.session_active,
+            users=tuple(self._session_users),
+            records=tuple(self._session_records),
+        )
 
     @staticmethod
     def _push_unique(target: list[str], value: Optional[str]) -> None:
