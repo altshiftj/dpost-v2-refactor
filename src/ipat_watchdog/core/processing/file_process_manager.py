@@ -88,7 +88,12 @@ class FileProcessManager:
     # ------------------------------------------------------------------
     def process_item(self, src_path: str) -> ProcessingResult:
         path = Path(src_path)
+        prepared = self._prepare_request(path)
+        if isinstance(prepared, ProcessingResult):
+            return prepared
+        return self._execute_pipeline(prepared)
 
+    def _prepare_request(self, path: Path) -> ProcessingRequest | ProcessingResult:
         if self._is_internal_staging_path(path):
             message = f"Ignoring internal staging path: {path}"
             logger.debug(message)
@@ -108,12 +113,13 @@ class FileProcessManager:
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
 
-        request = ProcessingRequest(source=path, device=device)
-        candidate: Optional[ProcessingCandidate] = None
+        return ProcessingRequest(source=path, device=device)
 
+    def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:
+        candidate: Optional[ProcessingCandidate] = None
         try:
-            with self.config_service.activate_device(device):
-                processor = self._resolve_processor(device)
+            with self.config_service.activate_device(request.device):
+                processor = self._resolve_processor(request.device)
                 item = self._build_candidate(request, processor)
                 if isinstance(item, ProcessingResult):
                     return item
@@ -121,8 +127,8 @@ class FileProcessManager:
                 context = self._build_route_context(candidate)
                 return self._dispatch_route(context)
         except Exception as exc:
-            self._handle_processing_failure(path, candidate, exc)
-            raise RuntimeError(f"File processing failed for {src_path}: {exc}") from exc
+            self._handle_processing_failure(request.source, candidate, exc)
+            raise RuntimeError(f"File processing failed for {request.source}: {exc}") from exc
 
     def get_and_clear_rejected(self) -> list[Tuple[str, str]]:
         rejected: list[Tuple[str, str]] = []

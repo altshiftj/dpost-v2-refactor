@@ -80,10 +80,13 @@ def logs_html():
 
     return render_template_string(html_template, logs=parsed)
 
-def start_observability_server():
+def start_observability_server(host: str = "0.0.0.0", port: int = 8001, threads: int = 4) -> threading.Thread:
+    """Start the Waitress-powered observability server in a background thread."""
     thread = threading.Thread(
         target=serve,
-        kwargs={"app": app, "host": "0.0.0.0", "port": 8001, "threads": 4}
+        kwargs={"app": app, "host": host, "port": port, "threads": threads},
+        name="observability-server",
+        daemon=True,
     )
-    thread.daemon = True
     thread.start()
+    return thread
