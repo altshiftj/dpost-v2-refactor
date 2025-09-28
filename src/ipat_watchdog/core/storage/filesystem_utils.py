@@ -128,6 +128,8 @@ def init_dirs(directories: Optional[list[str]] = None) -> None:
 
     for dir_path in target_dirs:
         dir_path.mkdir(parents=True, exist_ok=True)
+
+
 def get_record_path(filename_prefix: str, device_abbr: str | None = None) -> str:
     """Compute (and create) the destination record folder for a prefix."""
 
@@ -148,6 +150,8 @@ def get_record_path(filename_prefix: str, device_abbr: str | None = None) -> str
     record_path = _dest_dir() / institute.upper() / user_id.upper() / sample_id
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
+
+
 def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
     """Generate a unique filename in the specified directory."""
 
@@ -170,18 +174,24 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     candidate_name = f"{filename_prefix}{sep}{counter:02d}{extension}"
     candidate_path = dir_path / candidate_name
     return str(candidate_path)
+
+
 def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
     """Return a unique path under the rename folder for the given name."""
 
     base = Path(base_dir) if base_dir is not None else _rename_dir()
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(str(base), filename_prefix, extension)
+
+
 def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
     """Return a unique path under the exceptions folder for the given name."""
 
     base = Path(base_dir) if base_dir is not None else _exceptions_dir()
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(str(base), filename_prefix, extension)
+
+
 def remove_directory_if_empty(path: Path) -> None:
     """Attempt to remove a directory; log if not empty or removal fails."""
     try:
@@ -239,6 +249,7 @@ def move_item(src: str, dest: str) -> None:
             logger.error("Failed to move '%s' to '%s' using shutil.move: %s.", src, dest, e_move)
             raise e_move
 
+
 def _move_to_folder(
     src: str,
     filename_prefix: str,
@@ -252,6 +263,7 @@ def _move_to_folder(
     dest = unique_path_func(full_name)
     move_item(src, dest)
     logger.log(log_level, log_message.format(src, dest))
+
 
 def move_to_exception_folder(src_path: str, filename_prefix: str = None, extension: str = None) -> None:
     """Move an item to the exceptions folder (unique path)."""
@@ -268,6 +280,7 @@ def move_to_exception_folder(src_path: str, filename_prefix: str = None, extensi
         log_level=logging.WARNING,
     )
 
+
 def move_to_rename_folder(src: str, filename_prefix: str, extension: str = "") -> None:
     """Move an item to the rename folder (unique path)."""
     _move_to_folder(
@@ -278,6 +291,7 @@ def move_to_rename_folder(src: str, filename_prefix: str, extension: str = "") -
         log_message="Moved '{}' to rename folder at '{}'",
         log_level=logging.INFO,
     )
+
 
 def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -> None:
     """Move an item to the computed record folder (unique filename)."""
@@ -305,6 +319,8 @@ def generate_record_id(filename_prefix: str, dev_kadi_record_id: Optional[str] =
 
     sep = _id_sep()
     return f"{dev_kadi_record_id}{sep}{filename_prefix}".lower()
+
+
 def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) -> str:
     """Generate a file ID combining device abbreviation and sample id from the prefix."""
 
@@ -320,6 +336,8 @@ def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) ->
         raise ValueError(f"Filename prefix '{filename_prefix}' does not contain three segments.")
     sample_id = sep.join(parts[2:])
     return f"{device_abbr}{sep}{sample_id}"
+
+
 def load_persisted_records() -> dict[str, LocalRecord]:
     """Load persisted daily records from JSON into LocalRecord instances."""
 
@@ -334,6 +352,8 @@ def load_persisted_records() -> dict[str, LocalRecord]:
     except Exception as exc:
         logger.exception(f"Failed to read or convert JSON file '{json_path}': {exc}")
         return {}
+    
+
 def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
     """Serialize LocalRecord mapping to JSON for day-level persistence."""
 
@@ -347,6 +367,8 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
         logger.debug(f"JSON data saved to '{json_path}'.")
     except Exception as exc:
         logger.exception(f"Failed to write JSON file '{json_path}': {exc}")
+
+
 def is_valid_prefix(raw_prefix: str) -> bool:
     """Quick validation check for a filename prefix against regex and segments."""
 
@@ -367,11 +389,14 @@ def sanitize_prefix(raw_prefix: str) -> str:
     institute = parts[1].strip()
     sample_id = sep.join(part.strip() for part in parts[2:]).replace(' ', '_')
     return f"{user_id.lower()}{sep}{institute.lower()}{sep}{sample_id}"
+
+
 def sanitize_and_validate(raw_prefix: str) -> tuple[str, bool]:
     """Return (sanitized_prefix, is_valid) for a raw filename prefix."""
     if not is_valid_prefix(raw_prefix):
         return raw_prefix, False
     return sanitize_prefix(raw_prefix), True
+
 
 def explain_filename_violation(filename: str) -> dict:
     """Analyze a filename string and return reasons/highlights when invalid."""
@@ -422,6 +447,8 @@ def explain_filename_violation(filename: str) -> dict:
                     if not re.match(r'[A-Za-z0-9_ ]', char):
                         result['highlight_spans'].append((sample_start + i, sample_start + i + 1))
     return result
+
+
 def analyze_user_input(dialog_result: dict | None) -> dict:
     """Validate and sanitize rename dialog input structure."""
 
