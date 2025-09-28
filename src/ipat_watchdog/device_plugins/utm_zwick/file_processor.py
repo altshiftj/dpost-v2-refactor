@@ -110,6 +110,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             if ext == ".zs2":
                 state.last_zs2 = p
             elif ext == ".txt":
+                logger.debug("Preprocessing .txt: path='%s', prefix='%s', counter=%d", p, prefix, state.txt_counter + 1)
                 state.txt_counter += 1
                 # Hidden & ignored aggregation folder for successive txt snapshots
                 snapshot_dir = p.parent / _series_snapshot_dir_name(prefix)
@@ -119,6 +120,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 try:
                     shutil.move(p, target)
                     state.txt_snapshots.append(target)
+                    logger.debug("Staged txt snapshot '%s' (total now: %d)", target, len(state.txt_snapshots))
                 except Exception as exc:  # pragma: no cover - defensive
                     logger.warning("Failed to snapshot txt '%s': %s", p, exc)
             elif ext == ".csv":
@@ -208,20 +210,14 @@ class FileProcessorUTMZwick(FileProcessorABS):
         if not state:
             raise KeyError(f"No staged series for '{raw_prefix}'")
 
-        # Build archive of latest zs2 if present
         if state.last_zs2 and state.last_zs2.exists():
-            zip_dest = record_dir / f"{file_id}.zs2.zip"
+            zs2_filename = get_unique_filename(record_path, file_id, ".zs2")
             try:
-                shutil.make_archive(
-                    base_name=str(zip_dest.with_suffix("")),
-                    format="zip",
-                    root_dir=str(state.last_zs2.parent),
-                    base_dir=state.last_zs2.name,
-                )
-                logger.debug("Archived '%s' to '%s'", state.last_zs2, zip_dest)
+                move_item(state.last_zs2, zs2_filename)
+                logger.debug("Saved '%s' as '%s'", state.last_zs2, zs2_filename)
                 state.last_zs2.unlink(missing_ok=True)
-            except Exception as exc:  # pragma: no cover - defensive
-                logger.error("Failed to archive '%s': %s", state.last_zs2, exc)
+            except Exception as exc:
+                logger.error("Failed to save '%s': %s", state.last_zs2, exc)
                 raise
 
         # Move csv (preferred) else legacy xlsx as primary exported data
@@ -237,26 +233,30 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 raise
 
         # Persist snapshots (.txt) FLATTEN into record root (remove staging folder)
-        if state.txt_snapshots:
-            # Sort to enforce deterministic order
-            ordered = sorted(state.txt_snapshots, key=lambda p: p.name)
-            for snap in ordered:
-                if not snap.exists():
-                    continue
-                file_id_tests = f"{file_id}_tests"
-                dest = Path(get_unique_filename(record_path, file_id_tests, snap.suffix))
-                try:
-                    shutil.move(str(snap), str(dest))
-                except Exception as exc:
-                    logger.warning("Failed moving snapshot '%s' to '%s': %s", snap, dest, exc)
+            if state.txt_snapshots:
+                logger.debug("Preparing to move %d txt snapshots: %s", len(state.txt_snapshots), [str(p) for p in state.txt_snapshots])
+                # Sort to enforce deterministic order
+                ordered = sorted(state.txt_snapshots, key=lambda p: p.name)
+                for snap in ordered:
+                    logger.debug("Checking snapshot '%s', exists: %s", snap, snap.exists())
+                    if not snap.exists():
+                        continue
+                    file_id_tests = f"{file_id}_tests"
+                    dest = Path(get_unique_filename(record_path, file_id_tests, snap.suffix))
+                    try:
+                        shutil.move(str(snap), str(dest))
+                        logger.debug("Moved snapshot '%s' to '%s'", snap, dest)
+                    except Exception as exc:
+                        logger.warning("Failed moving snapshot '%s' to '%s': %s", snap, dest, exc)
 
-            # Attempt to remove the now-empty staging directory
-            staging_parent = ordered[0].parent
-            try:
-                if staging_parent.exists() and not any(staging_parent.iterdir()):
-                    staging_parent.rmdir()
-            except Exception:
-                pass
+                # Attempt to remove the now-empty staging directory
+                staging_parent = ordered[0].parent
+                try:
+                    if staging_parent.exists() and not any(staging_parent.iterdir()):
+                        staging_parent.rmdir()
+                        logger.debug("Removed empty staging directory '%s'", staging_parent)
+                except Exception as exc:
+                    logger.debug("Failed to remove staging directory '%s': %s", staging_parent, exc)
 
         return ProcessingOutput(final_path=str(record_dir), datatype=datatype)
 

@@ -8,4 +8,7 @@ class DummySyncManager(ISyncManager):
 
     def sync_record_to_database(self, local_record):
         self.synced_records.append(local_record)
-        return False  # Simulate all files uploaded
+        # Mark all files as uploaded
+        for file_path in local_record.files_uploaded.keys():
+            local_record.mark_uploaded(file_path)
+        return True  # Simulate all files uploaded

@@ -1,5 +1,5 @@
 . "$PSScriptRoot/00-env.ps1"
-Set-Location -Path $env:PROJECT_ROOT
+Set-Location -Path (Resolve-Path "$PSScriptRoot/../../../../..")
 
 $remotePath   = $env:REMOTE_DIR
 $ciJobName    = $env:CI_JOB_NAME
@@ -35,18 +35,26 @@ Write-Host "Deploying to $targetIP..."
 
 # Remote prep script
 $prep = @"
+`$ErrorActionPreference = 'Stop'
 `$p      = '$remotePath'
 `$exe    = '$binaryName'
 `$path   = Join-Path `$p `$exe
 
-if (!(Test-Path `$p)) { New-Item `$p -ItemType Directory -Force | Out-Null }
+if (!(Test-Path -LiteralPath `$p)) {
+    New-Item -ItemType Directory -Path `$p -Force -ErrorAction Stop | Out-Null
+}
+
+# Sanity check: ensure target dir exists before proceeding
+if (!(Test-Path -LiteralPath `$p)) {
+    throw "Remote target path not found or not creatable: `$p"
+}
 
 foreach (`$f in @(`$exe,'version.txt')) {
     `$src = Join-Path `$p `$f
-    if (Test-Path `$src) {
+    if (Test-Path -LiteralPath `$src) {
         `$bak = `$src -replace '\.(\w+)$','_backup.`$1'
-        if (Test-Path `$bak) { Remove-Item `$bak -Force }
-        Rename-Item -Path `$src -NewName `$bak -Force
+        if (Test-Path -LiteralPath `$bak) { Remove-Item -LiteralPath `$bak -Force }
+        Rename-Item -LiteralPath `$src -NewName `$bak -Force
     }
 }
 "@
@@ -68,14 +76,19 @@ $scpMap = @{
     'version.txt'   = "$remotePath/version.txt"
 }
 foreach ($pair in $scpMap.GetEnumerator()) {
-    $dst = $pair.Value -replace '\\','/'
+    # Keep a native Windows path and quote it
+    $dstWin = $pair.Value
+
     $scpArgs = @(
         "-batch", "-P", $sshPort, "-pw", $targetPass,
-        $pair.Key, "$targetUser@${targetIP}:`"$dst`""
+        "-hostkey", $sshHostKey,
+        "-scp",                                  # <— force SCP protocol
+        $pair.Key, "$targetUser@${targetIP}:`"$dstWin`""
     )
     & pscp.exe @scpArgs
     if ($LASTEXITCODE) { Write-Error "SCP of $($pair.Key) failed."; exit 1 }
 }
+
 
 $elapsed = (Get-Date) - $start
 Write-Host "Remote deploy complete in $($elapsed.ToString('hh\:mm\:ss'))"

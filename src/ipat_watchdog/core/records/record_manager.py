@@ -240,15 +240,15 @@ class RecordManager:
         """
         Synchronize a single record to the database and handle cleanup.
         
-        Uses the sync manager to upload record data. If all files are successfully
-        uploaded, removes the record from local storage to free memory and disk space.
+        Uses the sync manager to upload record data.
         
         Args:
             record: LocalRecord to synchronize
         """
         # Delegate actual sync logic to the sync manager
         files_remaining = self.sync.sync_record_to_database(record)
+        if not files_remaining:
+            del self._persist_records_dict[record.identifier]
+        self.save_records() 
 
-        # Save the updated record state immediately after sync (before potential deletion)
-        self.save_records()
         logger.debug(f"Persisted updated state for record '{record.identifier}' after sync.")

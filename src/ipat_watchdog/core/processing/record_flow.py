@@ -47,8 +47,6 @@ def handle_append_to_synced_record(
     prefix = context.sanitized_prefix
 
     if interactions.prompt_append_record(prefix):
-        # set the record and its files to unsynced
-        record.mark_unsynced()
         final_path = add_item_delegate(
             record,
             str(candidate.effective_path),

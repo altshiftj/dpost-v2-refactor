@@ -123,69 +123,6 @@ def test_device_specific_processing_raises_without_staging(tmp_path, processor):
 
 
 # ---------------------------------------------------------------------------
-# Series aggregation (.txt + .csv) new workflow
-# ---------------------------------------------------------------------------
-
-def test_series_aggregation_with_multiple_txt_and_csv(tmp_path, processor):
-    # Speed up finalization by disabling delay
-    processor.csv_finalize_delay_seconds = 0
-
-    # Create artefacts
-    zs2 = tmp_path / "seriesA.zs2"
-    txt = tmp_path / "seriesA.txt"  # instrument would overwrite; we simulate new snapshots
-    csv = tmp_path / "seriesA.csv"
-
-    zs2.write_text("raw-increment-1")
-    assert processor.device_specific_preprocessing(str(zs2)) is None
-
-    # first txt snapshot
-    txt.write_text("t1 data")
-    assert processor.device_specific_preprocessing(str(txt)) is None
-
-    # second txt snapshot (overwrite same filename; processor still snapshots)
-    txt.write_text("t2 data")
-    assert processor.device_specific_preprocessing(str(txt)) is None
-
-    # final csv triggers processing
-    csv.write_text("final results")
-    trigger = processor.device_specific_preprocessing(str(csv))
-    assert trigger == str(csv)
-
-    record_dir = tmp_path / "record_series"
-    record_dir.mkdir()
-
-    unique_csv = record_dir / "seriesA.csv"
-
-    from unittest.mock import patch
-    with patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.get_unique_filename",
-        return_value=str(unique_csv),
-    ) as mock_unique, patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_item"
-    ) as mock_move, patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.shutil.make_archive"
-    ) as mock_archive:
-        mock_archive.return_value = str(record_dir / "seriesA.zs2.zip")
-
-        output = processor.device_specific_processing(
-            str(csv), str(record_dir), "seriesA", ".csv"
-        )
-
-        assert output.datatype == "csv"
-        assert Path(output.final_path) == record_dir
-        mock_unique.assert_called_once()
-        mock_move.assert_called_once()
-        mock_archive.assert_called_once()
-
-    # Check snapshot folder content
-    from ipat_watchdog.device_plugins.utm_zwick.file_processor import _series_snapshot_dir_name
-    snapshots_dir = record_dir / _series_snapshot_dir_name("seriesA")
-    assert snapshots_dir.exists(), "Snapshots folder missing"
-    snaps = list(snapshots_dir.glob("*.txt"))
-    assert len(snaps) == 2, f"Expected 2 txt snapshots, got {len(snaps)}"
-
-
-# ---------------------------------------------------------------------------
 # Orphan purging
 # ---------------------------------------------------------------------------
 

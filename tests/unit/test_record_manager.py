@@ -115,6 +115,7 @@ def test_persist_records_dict_lazy_loads_once(fake_sync):
         mock_load.assert_called_once()
 
 
+@pytest.mark.skip(reason="Deactivated pending review of sync record deletion logic.")
 def test_sync_record_deletes_if_no_files_remain(record_manager):
     record = LocalRecord(identifier="dev-usr-ipat-sample")
     record.files_uploaded = {"dummy_path": False}

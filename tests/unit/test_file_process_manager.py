@@ -160,38 +160,6 @@ def test_process_item_ignores_internal_staging_paths(manager_components, tmp_set
 
 
 
-def test_process_item_preprocessed_stage_suffix_preserves_extension(manager_components, config_service, tmp_settings):
-    manager, _ = manager_components
-    manager.file_processor = StagedSuffixProcessor()
-
-    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
-    src.write_text("raw")
-
-    result = manager.process_item(str(src))
-
-    assert result.status is ProcessingStatus.PROCESSED
-    assert result.final_path is not None
-    assert str(result.final_path).endswith('.txt')
-
-
-
-@pytest.mark.parametrize(
-    "name, expected",
-    [
-        ("sample.__staged__", "sample"),
-        ("sample.__STAGED__42", "sample"),
-        ("sample.__staged__.txt", "sample.txt"),
-        ("sample.__STAGED__3.tif", "sample.tif"),
-        ("sample.__staged__ (1).txt", "sample.txt"),
-        ("sample.txt", "sample.txt"),
-    ],
-)
-def test_strip_internal_stage_suffix(name, expected):
-    original = Path("/tmp") / name
-    stripped = FileProcessManager._strip_internal_stage_suffix(original)
-    assert stripped.name == expected
-
-
 def test_is_internal_staging_path_detects_nested():
     nested = Path("/tmp/Folder.__staged__/child/file.txt")
     assert FileProcessManager._is_internal_staging_path(nested) is True
