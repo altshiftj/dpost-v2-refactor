@@ -300,7 +300,7 @@ class FileProcessManager:
     @staticmethod
     def _strip_internal_stage_suffix(path: Path) -> Path:
         name = path.name
-        match = _INTERNAL_STAGING_SUFFIX_RE.match(name)
+        match = _INTERNAL_STAGING_SUFFIX_RE.search(name)
         if not match:
             return path
 
