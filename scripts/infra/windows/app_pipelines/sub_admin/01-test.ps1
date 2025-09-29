@@ -30,7 +30,7 @@ Write-Host "Upgrading pip/setuptools/wheel..."
 # install minimal test deps
 Write-Host "Installing project with test dependencies..."
 
-$extras = @("ci", $env:CI_JOB_NAME)
+$extras = @("ci", $env:CI_JOB_NAME, $env:DEVICE_NAMES)
 $pipTarget = Get-PipInstallTarget -Extras $extras
 Write-Host "pip install target: $pipTarget"
 & $python -m pip install -e $pipTarget

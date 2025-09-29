@@ -27,13 +27,14 @@ $python = ".\.test_buildvenv\Scripts\python.exe"
 Write-Host "`nUpgrading pip/setuptools/wheel..."
 & $python -m pip install --upgrade pip setuptools wheel
 
-# --- Step 3: Derive DEVICE_NAME from CI_JOB_NAME ---
-$DEVICE_NAME = $CI_JOB_NAME
-Write-Host "`nUsing DEVICE_NAME: $DEVICE_NAME"
+# --- Step 3: Derive PC_NAME from CI_JOB_NAME ---
+$PC_NAME = $CI_JOB_NAME
+$DEVICES = $env:DEVICE_NAMES -split ","
+Write-Host "`nUsing PC: $PC_NAME"
 
 # --- Step 4: Install build and device dependencies (no dev) ---
-Write-Host "`nInstalling project with [build,$DEVICE_NAME] extras..."
-& $python -m pip install -e .[build,$DEVICE_NAME]
+Write-Host "`nInstalling project with [build,$PC_NAME,$DEVICES] extras..."
+& $python -m pip install -e .[build,$PC_NAME,$DEVICES]
 
 # --- Step 5: Create environment and version files ---
 Write-Host "`nCreating .env and version files..."
@@ -45,6 +46,35 @@ GIT_BRANCH=$env:GIT_BRANCH
 BUILD_TIME=$env:BUILD_TIME
 "@ | Out-File -Encoding ascii version.txt -Force
 Copy-Item -Force version.txt build/version.txt
+
+# --- Step 5b: Create build/.env with runtime config ---
+try {
+    if (-not (Test-Path build)) {
+        New-Item -ItemType Directory -Path build | Out-Null
+    }
+
+    $pcNameValue = if ($PC_NAME) { $PC_NAME } else { "unknown_pc" }
+    # Prefer DEVICE_NAMES env var; fallback to joined $DEVICES; fallback to placeholder
+    $devicePluginsValue = if ($env:DEVICE_NAMES) {
+        $env:DEVICE_NAMES
+    } elseif ($DEVICES -and $DEVICES.Count -gt 0 -and $DEVICES[0]) {
+        ($DEVICES -join ",")
+    } else {
+        "unknown_device"
+    }
+
+    $buildEnvPath = "build/.env"
+    @"
+PC_NAME = $pcNameValue
+DEVICE_PLUGINS = $devicePluginsValue
+"@ | Out-File -Encoding ascii $buildEnvPath -Force
+
+    Write-Host "Created ${buildEnvPath}:"
+    Get-Content $buildEnvPath | ForEach-Object { "  $_" }
+}
+catch {
+    Write-Warning "Failed to create build/.env: $($_.Exception.Message)"
+}
 
 # --- Step 6: Build Executable ---
 $specFile = "build/specs/$CI_JOB_NAME.spec"

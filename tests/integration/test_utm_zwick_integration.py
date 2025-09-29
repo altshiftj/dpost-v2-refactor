@@ -97,11 +97,11 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
         order=["zs2", "txt-01", "txt-02", "csv"],
     )
 
-    # Expected names reflect versioned unique filenames ("-01" suffix):
+    # Expected names now overwrite deterministically without numeric counters
     _expect_exists(
         record_dir,
-        "UTM-tensileA_raw-01.zs2",
-        "UTM-tensileA_results-01.csv",
+        "UTM-tensileA_raw.zs2",
+        "UTM-tensileA_results.csv",
     )
 
     # Check that at least two *_tests*.txt exist

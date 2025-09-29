@@ -27,9 +27,10 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
-    get_unique_filename,
+    get_unique_filename,  # still used for txt snapshots
     move_item,
 )
+import shutil
 
 logger = setup_logger(__name__)
 
@@ -153,26 +154,35 @@ class FileProcessorUTMZwick(FileProcessorABS):
         if not state:
             raise KeyError(f"No staged series for '{raw_prefix}'")
 
-        # Move latest zs2 as-is if present
-        if state.last_zs2 and state.last_zs2.exists():
+        # Helper to move with overwrite semantics (always replace existing file)
+        def _move_overwrite(src: Path, dest: Path) -> None:
             try:
-                destination_zs2 = get_unique_filename(record_path, f"{file_id}_raw", ".zs2")
-                move_item(state.last_zs2, destination_zs2)
-                logger.debug("Moved raw zs2 '%s' -> '%s'", state.last_zs2, destination_zs2)
-            except Exception as exc:  # pragma: no cover - defensive
-                logger.error("Failed to move raw zs2 '%s': %s", state.last_zs2, exc)
-                raise
+                if dest.exists():
+                    if dest.is_file():
+                        dest.unlink()
+                    else:
+                        shutil.rmtree(dest)
+                # Try fast rename first
+                src.rename(dest)
+            except Exception as e_rename:  # pragma: no cover - defensive
+                try:
+                    shutil.move(str(src), str(dest))
+                except Exception as e_move:  # pragma: no cover - defensive
+                    logger.error("Failed to overwrite-move '%s' -> '%s': %s / %s", src, dest, e_rename, e_move)
+                    raise
 
-        # Move csv as primary exported data
+        # Move latest zs2 as-is if present (deterministic name, overwrite any existing)
+        if state.last_zs2 and state.last_zs2.exists():
+            destination_zs2 = record_dir / f"{file_id}_raw.zs2"
+            _move_overwrite(state.last_zs2, destination_zs2)
+            logger.debug("Moved raw zs2 '%s' -> '%s' (overwrite)", state.last_zs2, destination_zs2)
+
+        # Move csv as primary exported data (deterministic name, overwrite any existing)
         primary = state.csv
         if primary and primary.exists():
-            file_id_results = f"{file_id}_results"
-            destination_primary = get_unique_filename(record_path, file_id_results, primary.suffix)
-            try:
-                move_item(primary, destination_primary)
-            except Exception as exc:
-                logger.error("Failed to move '%s' to '%s': %s", primary, destination_primary, exc)
-                raise
+            destination_primary = record_dir / f"{file_id}_results{primary.suffix}"
+            _move_overwrite(primary, destination_primary)
+            logger.debug("Moved results '%s' -> '%s' (overwrite)", primary, destination_primary)
 
         # Persist snapshots (.txt) into record root
         if state.txt_snapshots:

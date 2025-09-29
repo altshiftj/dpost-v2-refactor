@@ -68,6 +68,7 @@ try {
 # CI-related Defaults
 # ------------------------------
 $env:CI_JOB_NAME = "zwick_blb"
+$env:DEVICE_NAMES= "utm_zwick"
 $env:TARGET_IP   = "134.169.58.118"
 $env:TARGET_USER = "messrechner"
 $env:SSH_PORT    = 22

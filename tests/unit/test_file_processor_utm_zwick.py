@@ -77,45 +77,37 @@ def test_device_specific_processing_happy_path(tmp_path, processor):
     record_dir = tmp_path / "record"
     record_dir.mkdir()
 
-    # get_unique_filename is called for: zs2, csv, txt1, txt2 (in that order)
-    unique_paths = [
-        str(record_dir / "prefix_raw.zs2"),
-        str(record_dir / "prefix_results.csv"),
+    # get_unique_filename is now called only for txt snapshots (2 calls)
+    txt_unique_paths = [
         str(record_dir / "prefix_tests.txt"),
         str(record_dir / "prefix_tests(1).txt"),
     ]
 
     with patch(
         "ipat_watchdog.device_plugins.utm_zwick.file_processor.get_unique_filename",
-        side_effect=unique_paths,
+        side_effect=txt_unique_paths,
     ) as mock_unique, patch(
         "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_item"
     ) as mock_move:
 
-        # Trigger processing (CSV is the trigger/primary)
         output = processor.device_specific_processing(
             str(csv), str(record_dir), "prefix", ".csv"
         )
 
-        # returns folder path and declared datatype
         assert Path(output.final_path) == record_dir
         assert output.datatype == "csv"
 
-        # get_unique_filename calls (zs2, csv, txt1, txt2)
-        assert mock_unique.call_count == 4
+        # Only txt snapshots use unique naming now
+        assert mock_unique.call_count == 2
         assert mock_unique.call_args_list == [
-            call(str(record_dir), "prefix_raw", ".zs2"),
-            call(str(record_dir), "prefix_results", ".csv"),
             call(str(record_dir), "prefix_tests", ".txt"),
             call(str(record_dir), "prefix_tests", ".txt"),
         ]
 
-        # move_item calls in order: zs2 -> csv -> txt1 -> txt2
+        # move_item called only for txt snapshots (raw/results handled via internal overwrite logic)
         assert mock_move.call_args_list == [
-            call(zs2, unique_paths[0]),
-            call(csv, unique_paths[1]),
-            call(str(t1), unique_paths[2]),
-            call(str(t2), unique_paths[3]),
+            call(str(t1), txt_unique_paths[0]),
+            call(str(t2), txt_unique_paths[1]),
         ]
 
 

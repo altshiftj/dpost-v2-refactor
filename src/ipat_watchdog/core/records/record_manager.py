@@ -247,8 +247,6 @@ class RecordManager:
         """
         # Delegate actual sync logic to the sync manager
         files_remaining = self.sync.sync_record_to_database(record)
-        if not files_remaining:
-            del self._persist_records_dict[record.identifier]
         self.save_records() 
 
         logger.debug(f"Persisted updated state for record '{record.identifier}' after sync.")
