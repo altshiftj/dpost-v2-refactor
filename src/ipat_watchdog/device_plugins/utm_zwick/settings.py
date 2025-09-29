@@ -68,15 +68,6 @@ information below.
         batch=BatchSettings(
             ttl_seconds=0.5 * 3600,  # 30 minutes
             max_batch_size=50,
+            flush_on_session_end=True,
         ),
-        # Extra dynamic attributes consumed by the processor (not part of the
-        # core schema strictly, but DeviceConfig is a pydantic model that will
-        # retain them). If schema forbids extras this will be refactored to a
-        # dedicated plugin settings object.
-        extra={
-            "series_timeout_minutes": 30,
-            "csv_finalize_delay_seconds": 3,
-            "flush_incomplete_on_session_end": True,
-            "keep_all_intermediate_txt": True,
-        },
     )

@@ -10,6 +10,7 @@ from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
+from watchdog.observers.api import BaseObserver
 
 from ipat_watchdog.metrics import (
     EVENTS_PROCESSED,
@@ -88,7 +89,7 @@ class DeviceWatchdogApp:
         self._event_poll_handle: int | None = None
         self.event_queue: queue.Queue[str] = queue.Queue()
         self.event_handler: QueueingEventHandler | None = None
-        self.observer: Observer | None = None
+        self.observer: BaseObserver | None = None
 
     # ------------------------------------------------------------------
     # Lifecycle management

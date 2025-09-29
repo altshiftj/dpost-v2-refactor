@@ -162,6 +162,7 @@ class BatchSettings:
     """Configures device batch aggregation and timing rules."""
     ttl_seconds: int = 1800  # Time-to-live for batch aggregation (default: 30 min)
     max_batch_size: int = 100  # Maximum files per batch
+    flush_on_session_end: bool = True  # Whether to flush incomplete batches on session end
 
 
 @dataclass(slots=True)

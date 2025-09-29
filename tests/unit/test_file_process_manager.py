@@ -129,7 +129,7 @@ def test_invoke_rename_flow_cancel_moves_to_manual(manager_components, config_se
         preprocessed_path=None,
     )
 
-    result = manager._invoke_rename_flow(candidate, "badprefix", ".tif")
+    result = manager._pipeline._invoke_rename_flow(candidate, "badprefix", ".tif")
     assert result.status is ProcessingStatus.REJECTED
     rename_files = list(tmp_settings.RENAME_DIR.glob("badprefix*"))
     assert rename_files

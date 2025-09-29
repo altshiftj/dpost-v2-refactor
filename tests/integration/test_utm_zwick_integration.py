@@ -52,39 +52,58 @@ def utm_processing_manager(tmp_path):
         reset_service()
 
 
-def _process_pair(fpm, ui, watch_dir: Path, prefix: str, first: str, second: str) -> Path:
-    first_path = watch_dir / f"{prefix}.{first}"
-    second_path = watch_dir / f"{prefix}.{second}"
-    first_path.write_text("raw-binary")
-    second_path.write_text("excel-sheet")
+def _emit_and_process(fpm, watch_dir: Path, prefix: str, order: list[str]) -> Path:
+    """
+    order items can be:
+      - "zs2"        -> {prefix}.zs2
+      - "csv"        -> {prefix}.csv
+      - "txt-<NN>"   -> {prefix}-<NN>.txt (e.g., "txt-01", "txt-02")
 
-    fpm.process_item(str(first_path))
-    fpm.process_item(str(second_path))
+    Returns the record directory path.
+    """
+    for token in order:
+        if token == "zs2":
+            p = watch_dir / f"{prefix}.zs2"
+            p.write_text("raw-zs2")
+        elif token == "csv":
+            p = watch_dir / f"{prefix}.csv"
+            p.write_text("final-results")
+        elif token.startswith("txt-"):
+            nn = token.split("-", 1)[1]
+            p = watch_dir / f"{prefix}-{nn}.txt"
+            p.write_text(f"snapshot-{nn}")
+        else:
+            raise ValueError(f"Unknown token in order: {token}")
+        fpm.process_item(str(p))
 
     return Path(get_record_path(prefix, "UTM"))
 
 
-def test_end_to_end_pair_processing_utm_zwick(utm_processing_manager, tmp_settings):
+def _expect_exists(record_dir: Path, *names: str) -> None:
+    for name in names:
+        path = record_dir / name
+        assert path.exists(), f"Expected file not found: {path}"
+
+
+def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, tmp_settings):
     fpm, ui = utm_processing_manager
     prefix = "usr-ipat-tensileA"
 
-    record_dir = _process_pair(fpm, ui, tmp_settings.WATCH_DIR, prefix, "zs2", "xlsx")
+    # zs2 and txt snapshots arrive before csv (finalizes on csv)
+    record_dir = _emit_and_process(
+        fpm,
+        tmp_settings.WATCH_DIR,
+        prefix,
+        order=["zs2", "txt-01", "txt-02", "csv"],
+    )
 
-    zip_path = record_dir / "UTM-tensileA.zs2.zip"
-    moved_xlsx = record_dir / "UTM-tensileA-01.xlsx"
+    # Expected names reflect versioned unique filenames ("-01" suffix):
+    _expect_exists(
+        record_dir,
+        "UTM-tensileA_raw-01.zs2",
+        "UTM-tensileA_results-01.csv",
+    )
 
-    assert zip_path.exists(), "Zipped .zs2 not found"
-    assert moved_xlsx.exists(), "Moved .xlsx not found"
-
-
-def test_end_to_end_pair_processing_reverse_order(utm_processing_manager, tmp_settings):
-    fpm, ui = utm_processing_manager
-    prefix = "usr-ipat-tensileB"
-
-    record_dir = _process_pair(fpm, ui, tmp_settings.WATCH_DIR, prefix, "xlsx", "zs2")
-
-    zip_path = record_dir / "UTM-tensileB.zs2.zip"
-    moved_xlsx = record_dir / "UTM-tensileB-01.xlsx"
-
-    assert zip_path.exists(), "Zipped .zs2 not found (reverse order)"
-    assert moved_xlsx.exists(), "Moved .xlsx not found (reverse order)"
+    # Check that at least two *_tests*.txt exist
+    tests = list(record_dir.glob("UTM-tensileA_tests-*.txt"))
+    assert len(tests) >= 2, f"Expected >= 2 text snapshots, found: {len(tests)}"

@@ -1,24 +1,20 @@
 """Processor for Zwick/Roell universal testing machine artefacts.
 
-Extended to support multi-test series aggregation:
-
-Workflow (new): instrument produces iterative `.txt` (force/strain) snapshots
-and rewrites the `.zs2` during a running series. Finalization happens when the
-`.csv` export appears (always last). We keep all `.txt` snapshots (sequence
-numbered) and only retain the latest `.zs2`. On session end or timeout, any
-incomplete series (no `.csv`) can be flushed if configured.
-
-Legacy pair mode (`.zs2` + `.xlsx`) is preserved for existing tests and until
-the new `.csv` pipeline fully replaces it. If a `.xlsx` appears AND no `.csv`
-has been seen for that prefix, we finalize immediately using the legacy path.
+Supported workflow:
+- Instrument produces iterative `.txt` (force/strain) snapshots (already numbered like `prefix-01.txt`)
+  and rewrites the `.zs2` during a running series.
+- Finalization happens when the `.csv` export appears (always last).
+- We keep all `.txt` snapshots (sequence numbered) and move the latest `.zs2` as-is
+  into the record directory (no zip).
+- On session end or timeout, any incomplete series (no `.csv`) can optionally be flushed,
+  promoting the *latest* `.txt` snapshot as the primary if configured.
 """
 from __future__ import annotations
 
 from pathlib import Path
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-import shutil
-import time
+from datetime import datetime
+import re
 from typing import Dict, List, Optional
 import threading
 
@@ -33,22 +29,19 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
     get_unique_filename,
     move_item,
-    move_to_exception_folder,
 )
 
 logger = setup_logger(__name__)
 
-# Internal staging marker recognized & ignored by FileProcessManager regex
-INTERNAL_STAGING_MARKER = ".__staged__"
+# Helper: derive series key by stripping a trailing "-<digits>" from TXT stems
+_TXT_COUNTER_RE = re.compile(r"^(?P<base>.+)-(?P<num>\d+)$")
 
-def _series_snapshot_dir_name(sample: str) -> str:
-    """Return folder name for txt snapshots that the pipeline will ignore.
-
-    We leverage the internal staging marker so the watcher / routing logic
-    skips these transient accumulation folders.
-    Pattern contributes to regex: prefix + .__staged__ + (extension-like tail)
-    """
-    return f"{sample}{INTERNAL_STAGING_MARKER}tests"
+def _series_key_for(stem: str, ext: str) -> str:
+    if ext == ".txt":
+        m = _TXT_COUNTER_RE.match(stem)
+        if m:
+            return m.group("base")
+    return stem
 
 
 @dataclass
@@ -56,7 +49,6 @@ class _SeriesState:
     sample: str
     last_zs2: Optional[Path] = None
     csv: Optional[Path] = None
-    xlsx: Optional[Path] = None  # legacy path
     txt_snapshots: List[Path] = field(default_factory=list)
     txt_counter: int = 0
     created_at: datetime = field(default_factory=datetime.now)
@@ -65,85 +57,50 @@ class _SeriesState:
 
 
 class FileProcessorUTMZwick(FileProcessorABS):
-    """Handles UTM artefacts with support for series aggregation.
-
-    Internal buffers:
-      - _pending_legacy: keeps simple pair (.zs2 + .xlsx) for backward tests
-      - _series: richer state for multi-test (.txt*, .zs2, .csv)
-    """
+    """Handles UTM artefacts with support for series aggregation (zs2/txt/csv)."""
 
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
-        self._pending_legacy: Dict[str, Dict[str, Path | float]] = {}
+        self.device_config = device_config
         self._series: Dict[str, _SeriesState] = {}
         self._lock = threading.Lock()
-
-        # Read extended settings (provided via DeviceConfig.extra in builder)
-        extra = getattr(device_config, "extra", {}) or {}
-        self.series_timeout_minutes = int(extra.get("series_timeout_minutes", 30))
-        self.csv_finalize_delay_seconds = int(extra.get("csv_finalize_delay_seconds", 3))
-        self.flush_incomplete_on_session_end = bool(extra.get("flush_incomplete_on_session_end", True))
-        self.keep_all_intermediate_txt = bool(extra.get("keep_all_intermediate_txt", True))
 
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
     def device_specific_preprocessing(self, path: str) -> str | None:
-        """Stage incoming path.
+        """Stage incoming path (zs2/txt/csv) without moving files.
 
-        New logic:
-          - Track series state in _series for .zs2/.txt/.csv
-          - Still support legacy (.zs2 + .xlsx) immediate finalize path
-          - Return path if ready for processing (legacy) or if .csv series ready
+        - Track series state by *base* prefix (TXT stems are normalized by removing trailing -NN).
+        - Return path if ready for processing (trigger on `.csv`).
         """
         p = Path(path)
-        prefix = p.stem
         ext = p.suffix.lower()
+        stem = p.stem
+        key = _series_key_for(stem, ext)
 
         with self._lock:
-            state = self._series.get(prefix)
+            state = self._series.get(key)
             if not state:
-                state = _SeriesState(sample=prefix)
-                self._series[prefix] = state
+                state = _SeriesState(sample=key)
+                self._series[key] = state
             state.last_update = datetime.now()
 
             if ext == ".zs2":
                 state.last_zs2 = p
             elif ext == ".txt":
-                logger.debug("Preprocessing .txt: path='%s', prefix='%s', counter=%d", p, prefix, state.txt_counter + 1)
                 state.txt_counter += 1
-                # Hidden & ignored aggregation folder for successive txt snapshots
-                snapshot_dir = p.parent / _series_snapshot_dir_name(prefix)
-                snapshot_dir.mkdir(exist_ok=True)
-                snap_name = f"{prefix}-{state.txt_counter:02d}.txt"
-                target = snapshot_dir / snap_name
-                try:
-                    shutil.move(p, target)
-                    state.txt_snapshots.append(target)
-                    logger.debug("Staged txt snapshot '%s' (total now: %d)", target, len(state.txt_snapshots))
-                except Exception as exc:  # pragma: no cover - defensive
-                    logger.warning("Failed to snapshot txt '%s': %s", p, exc)
+                state.txt_snapshots.append(p)
             elif ext == ".csv":
                 state.csv = p
                 state.csv_received_at = datetime.now()
-            elif ext == ".xlsx":  # legacy path
-                state.xlsx = p
             else:
-                # Unknown extension → ignore
                 return None
-
-            # Legacy finalize condition: have zs2 + xlsx and no csv seen
-            if state.xlsx and state.last_zs2 and not state.csv:
-                # Mirror old behaviour using legacy pending map so processing
-                # function can stay mostly unchanged for that case.
-                bucket = self._pending_legacy.setdefault(prefix, {"t": time.time()})
-                bucket[".zs2"] = state.last_zs2
-                bucket[".xlsx"] = state.xlsx
-                return path  # triggers processing with the latest arrived path
 
             # Series finalize condition: csv present triggers processing immediately
             if state.csv:
                 return str(state.csv)
+
         return None
 
     def is_appendable(
@@ -158,31 +115,23 @@ class FileProcessorUTMZwick(FileProcessorABS):
     # Probing
     # ------------------------------------------------------------------
     def probe_file(self, filepath: str) -> FileProbeResult:
-        """Recognize UTM artefacts by extension and lightweight signature check.
+        """Recognize UTM artefacts by extension.
 
-        - .zs2 files: treat as likely match (binary proprietary), moderate confidence.
-        - .xlsx files: check the PK zip header and minimal OOXML markers if available.
+        - .zs2 files: treat as likely match (binary proprietary).
+        - .txt files: iterative snapshots.
+        - .csv files: final export.
         """
         path = Path(filepath)
         ext = path.suffix.lower()
 
         if ext == ".zs2":
             return FileProbeResult.match(confidence=0.7, reason="Zwick .zs2 raw file")
+        if ext == ".txt":
+            return FileProbeResult.match(confidence=0.8, reason="Zwick text snapshot")
+        if ext == ".csv":
+            return FileProbeResult.match(confidence=0.9, reason="Zwick CSV export")
 
-        if ext != ".xlsx":
-            return FileProbeResult.mismatch("Not a UTM artefact")
-
-        try:
-            head = path.read_bytes()[:8]
-        except Exception as exc:  # pragma: no cover - defensive
-            logger.debug("UTM probe failed to read '%s': %s", path, exc)
-            return FileProbeResult.unknown(str(exc))
-
-        # XLSX should start with PK (zip). If not, it's not an OOXML workbook.
-        if not head.startswith(b"PK"):
-            return FileProbeResult.mismatch(".xlsx without PK header")
-
-        return FileProbeResult.match(confidence=0.6, reason="XLSX workbook with ZIP header")
+        return FileProbeResult.mismatch("Not a supported UTM artefact")
 
     # ------------------------------------------------------------------
     # Core processing
@@ -194,15 +143,9 @@ class FileProcessorUTMZwick(FileProcessorABS):
         file_id: str,
         extension: str,
     ) -> ProcessingOutput:
+        # For CSV trigger, the src_path stem is already the base key.
         raw_prefix = Path(src_path).stem
         record_dir = Path(record_path)
-
-        # Determine if this is legacy pair or new series finalization
-        bucket_legacy = self._pending_legacy.pop(raw_prefix, None)
-        if bucket_legacy:
-            zs2_path = Path(bucket_legacy[".zs2"])
-            xlsx_path = Path(bucket_legacy[".xlsx"])
-            return self._process_legacy_pair(zs2_path, xlsx_path, record_dir, file_id)
 
         # Series path
         with self._lock:
@@ -210,19 +153,18 @@ class FileProcessorUTMZwick(FileProcessorABS):
         if not state:
             raise KeyError(f"No staged series for '{raw_prefix}'")
 
+        # Move latest zs2 as-is if present
         if state.last_zs2 and state.last_zs2.exists():
-            zs2_filename = get_unique_filename(record_path, file_id, ".zs2")
             try:
-                move_item(state.last_zs2, zs2_filename)
-                logger.debug("Saved '%s' as '%s'", state.last_zs2, zs2_filename)
-                state.last_zs2.unlink(missing_ok=True)
-            except Exception as exc:
-                logger.error("Failed to save '%s': %s", state.last_zs2, exc)
+                destination_zs2 = get_unique_filename(record_path, f"{file_id}_raw", ".zs2")
+                move_item(state.last_zs2, destination_zs2)
+                logger.debug("Moved raw zs2 '%s' -> '%s'", state.last_zs2, destination_zs2)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.error("Failed to move raw zs2 '%s': %s", state.last_zs2, exc)
                 raise
 
-        # Move csv (preferred) else legacy xlsx as primary exported data
-        primary = state.csv or state.xlsx
-        datatype = "csv" if state.csv else "xlsx"
+        # Move csv as primary exported data
+        primary = state.csv
         if primary and primary.exists():
             file_id_results = f"{file_id}_results"
             destination_primary = get_unique_filename(record_path, file_id_results, primary.suffix)
@@ -232,143 +174,105 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 logger.error("Failed to move '%s' to '%s': %s", primary, destination_primary, exc)
                 raise
 
-        # Persist snapshots (.txt) FLATTEN into record root (remove staging folder)
-            if state.txt_snapshots:
-                logger.debug("Preparing to move %d txt snapshots: %s", len(state.txt_snapshots), [str(p) for p in state.txt_snapshots])
-                # Sort to enforce deterministic order
-                ordered = sorted(state.txt_snapshots, key=lambda p: p.name)
-                for snap in ordered:
-                    logger.debug("Checking snapshot '%s', exists: %s", snap, snap.exists())
-                    if not snap.exists():
-                        continue
-                    file_id_tests = f"{file_id}_tests"
-                    dest = Path(get_unique_filename(record_path, file_id_tests, snap.suffix))
-                    try:
-                        shutil.move(str(snap), str(dest))
-                        logger.debug("Moved snapshot '%s' to '%s'", snap, dest)
-                    except Exception as exc:
-                        logger.warning("Failed moving snapshot '%s' to '%s': %s", snap, dest, exc)
+        # Persist snapshots (.txt) into record root
+        if state.txt_snapshots:
+            # Sort by natural numeric index if present; fallback to name
+            def _txt_order_key(p: Path) -> tuple[int, str]:
+                m = _TXT_COUNTER_RE.match(p.stem)
+                return (int(m.group("num")) if m else -1, p.name)
 
-                # Attempt to remove the now-empty staging directory
-                staging_parent = ordered[0].parent
+            ordered = sorted(state.txt_snapshots, key=_txt_order_key)
+            for snap in ordered:
+                if not snap.exists():
+                    continue
+                file_id_tests = f"{file_id}_tests"
+                dest = Path(get_unique_filename(record_path, file_id_tests, snap.suffix))
                 try:
-                    if staging_parent.exists() and not any(staging_parent.iterdir()):
-                        staging_parent.rmdir()
-                        logger.debug("Removed empty staging directory '%s'", staging_parent)
+                    move_item(str(snap), str(dest))
                 except Exception as exc:
-                    logger.debug("Failed to remove staging directory '%s': %s", staging_parent, exc)
+                    logger.warning("Failed moving snapshot '%s' to '%s': %s", snap, dest, exc)
 
-        return ProcessingOutput(final_path=str(record_dir), datatype=datatype)
-
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-    def _process_legacy_pair(self, zs2_path: Path, xlsx_path: Path, record_dir: Path, file_id: str) -> ProcessingOutput:
-        zip_dest = record_dir / f"{file_id}.zs2.zip"
-        try:
-            shutil.make_archive(
-                base_name=str(zip_dest.with_suffix("")),
-                format="zip",
-                root_dir=str(zs2_path.parent),
-                base_dir=zs2_path.name,
-            )
-            logger.debug("Archived '%s' to '%s' (legacy)", zs2_path, zip_dest)
-            zs2_path.unlink(missing_ok=True)
-        except Exception as exc:  # pragma: no cover
-            logger.error("Failed to archive '%s': %s", zs2_path, exc)
-            raise
-
-        destination_xlsx = get_unique_filename(str(record_dir), file_id, ".xlsx")
-        try:
-            move_item(xlsx_path, destination_xlsx)
-        except Exception as exc:
-            logger.error("Failed to move '%s' to '%s': %s", xlsx_path, destination_xlsx, exc)
-            raise
-        return ProcessingOutput(final_path=str(record_dir), datatype="xlsx")
-
-    def _purge_orphans(self) -> None:
-        """Purge orphaned legacy pairs only (series handled via timeout elsewhere)."""
-        now = time.time()
-        expired_keys = [key for key, payload in self._pending_legacy.items() if now - payload["t"] > self.device_config.batch.ttl_seconds]
-        for key in expired_keys:
-            payload = self._pending_legacy.pop(key, {})
-            for candidate in payload.values():
-                if isinstance(candidate, Path) and candidate.exists():
-                    try:
-                        move_to_exception_folder(candidate)
-                        logger.info("Purged orphan legacy '%s'", candidate)
-                    except Exception as exc:  # pragma: no cover - defensive
-                        logger.warning("Could not purge orphan '%s': %s", candidate, exc)
+        return ProcessingOutput(final_path=str(record_dir), datatype="csv")
 
     # ------------------------------------------------------------------
-    # Backwards compatibility for tests referencing _pending
+    # Session end / flushing
     # ------------------------------------------------------------------
-    @property
-    def _pending(self) -> Dict[str, Dict[str, Path | float]]:  # pragma: no cover - simple accessor
-        return self._pending_legacy
-
-    @_pending.setter  # pragma: no cover
-    def _pending(self, value: Dict[str, Dict[str, Path | float]]):
-        self._pending_legacy = value
-
-    # Session end hook (if invoked externally)
     def flush_series(self) -> None:  # pragma: no cover - integration path
         """Flush incomplete series at session end if configured.
 
-        Incomplete series (no csv) are processed treating latest available
-        primary artefact (.xlsx if present else last .txt) similar to finalization.
+        Incomplete series (no csv) are processed by promoting the latest `.txt`
+        snapshot as the primary. If no snapshots exist, the series is dropped.
         """
-        if not self.flush_incomplete_on_session_end:
+        if not self.device_config.batch.flush_on_session_end:
             return
+
         with self._lock:
             states = list(self._series.values())
             self._series.clear()
+
         for state in states:
-            # Reinsert as legacy pair if conditions match, otherwise treat as series
-            primary = state.csv or state.xlsx
-            if primary and state.last_zs2 and not state.csv and state.xlsx:
-                self._pending_legacy[state.sample] = {".zs2": state.last_zs2, ".xlsx": state.xlsx, "t": time.time()}
-            else:
-                # fabricate csv trigger to reuse processing path
-                if state.csv is None:
-                    state.csv = state.xlsx or (state.txt_snapshots[-1] if state.txt_snapshots else None)
-                if state.csv:
+            if state.csv:
+                # Already complete; put back for normal processing path
+                with self._lock:
                     self._series[state.sample] = state
+                continue
+
+            # Promote latest txt (if any) by fabricating a csv trigger
+            if state.txt_snapshots:
+                # Choose highest numeric index if available
+                latest = max(
+                    state.txt_snapshots,
+                    key=lambda p: int(_TXT_COUNTER_RE.match(p.stem).group("num")) if _TXT_COUNTER_RE.match(p.stem) else -1,
+                )
+                state.csv = latest
+                with self._lock:
+                    self._series[state.sample] = state
+            # else: nothing to do (no primary artefact)
 
     # Public duck-typed hook used by FileProcessManager (optional)
     def flush_incomplete(self) -> list[ProcessingOutput]:  # pragma: no cover - integration path
         """Finalize any remaining series without waiting for a .csv.
 
         Returns a list of ProcessingOutput objects so the caller can treat them
-        like normal processing completions. Series with neither csv/xlsx nor
-        txt snapshots are skipped.
+        like normal processing completions. Series with neither csv nor txt snapshots are skipped.
         """
         outputs: list[ProcessingOutput] = []
         with self._lock:
             states = list(self._series.values())
             self._series.clear()
+
         for state in states:
-            # Promote best available primary
-            primary = state.csv or state.xlsx or (state.txt_snapshots[-1] if state.txt_snapshots else None)
+            # Promote best available primary (csv else last/highest-index txt)
+            if state.csv:
+                primary = state.csv
+            elif state.txt_snapshots:
+                primary = max(
+                    state.txt_snapshots,
+                    key=lambda p: int(_TXT_COUNTER_RE.match(p.stem).group("num")) if _TXT_COUNTER_RE.match(p.stem) else -1,
+                )
+                state.csv = primary
+            else:
+                primary = None
+
             if not primary:
                 continue
-            # Reuse processing logic by re-inserting and calling device_specific_processing
-            # Craft a synthetic trigger path extension
-            ext = primary.suffix
+
             # Put back state so processing path can pop it
             with self._lock:
                 self._series[state.sample] = state
+
             try:
-                out = self.device_specific_processing(str(primary), self._current_record_dir_fallback(primary), state.sample, ext)
+                out = self.device_specific_processing(
+                    str(primary),
+                    self._current_record_dir_fallback(primary),
+                    state.sample,
+                    primary.suffix,
+                )
                 outputs.append(out)
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning("Failed flushing incomplete series '%s': %s", state.sample, exc)
         return outputs
 
     def _current_record_dir_fallback(self, primary: Path) -> str:
-        """Best-effort: choose the parent directory of primary as record dir if no manager provided.
-
-        Real integration should invoke flush before teardown, supplying an actual
-        record directory. This fallback keeps method safe in isolation/testing.
-        """
+        """Best-effort: choose the parent directory of primary as record dir if no manager provided."""
         return str(primary.parent)

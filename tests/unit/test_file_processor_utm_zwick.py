@@ -1,6 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch
-import time
+from unittest.mock import patch, call
 import pytest
 
 from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
@@ -22,126 +21,109 @@ def dummy_record():
     return LocalRecord(
         identifier="utm-zwick-ipat-sample_a",
         sample_name="sample_a",
-        datatype="xlsx",
+        datatype="csv",
         date="20250405",
     )
 
 # ---------------------------------------------------------------------------
-# Pre-processing staging behavior
+# Pre-processing behavior (series keyed by base prefix, CSV triggers finalize)
 # ---------------------------------------------------------------------------
 
-def test_preprocessing_stages_until_pair_complete(tmp_path, processor):
+def test_preprocessing_stages_until_csv(tmp_path, processor):
     # first arrival → hold
     zs2 = tmp_path / "sample_a.zs2"
-    xlsx = tmp_path / "sample_a.xlsx"
+    csv = tmp_path / "sample_a.csv"
     zs2.write_text("raw")
-    xlsx.write_text("sheet")
+    csv.write_text("results")
 
     r1 = processor.device_specific_preprocessing(str(zs2))
     assert r1 is None
 
-    # second arrival with same prefix → release
-    r2 = processor.device_specific_preprocessing(str(xlsx))
-    assert r2 == str(xlsx)
+    # csv arrival with same prefix → release
+    r2 = processor.device_specific_preprocessing(str(csv))
+    assert r2 == str(csv)
 
 
 def test_preprocessing_accepts_either_order(tmp_path, processor):
-    zs2 = tmp_path / "s01.zs2"
-    xlsx = tmp_path / "s01.xlsx"
-    zs2.write_text("raw")
-    xlsx.write_text("sheet")
+    # CSV can arrive first and should trigger immediately
+    csv = tmp_path / "s01.csv"
+    csv.write_text("results")
 
-    r1 = processor.device_specific_preprocessing(str(xlsx))
-    assert r1 is None
-
-    r2 = processor.device_specific_preprocessing(str(zs2))
-    assert r2 == str(zs2)
+    r1 = processor.device_specific_preprocessing(str(csv))
+    assert r1 == str(csv)
 
 # ---------------------------------------------------------------------------
-# Processing flow
+# Processing flow (no zipping, zs2 moved as-is, txt snapshots flattened)
 # ---------------------------------------------------------------------------
 
 def test_device_specific_processing_happy_path(tmp_path, processor):
-    # Stage both artefacts via preprocessing to populate the internal buffer
+    # Stage artefacts via preprocessing to populate internal series buffer
     zs2 = tmp_path / "r123.zs2"
-    xlsx = tmp_path / "r123.xlsx"
-    zs2.write_text("raw-bytes")
-    xlsx.write_text("excel-content")
+    csv = tmp_path / "r123.csv"
+    t1 = tmp_path / "r123-01.txt"
+    t2 = tmp_path / "r123-02.txt"
 
+    zs2.write_text("raw-bytes")
+    csv.write_text("csv-content")
+    t1.write_text("snap-1")
+    t2.write_text("snap-2")
+
+    # Order shouldn't matter; include txt snapshots
     processor.device_specific_preprocessing(str(zs2))
-    processor.device_specific_preprocessing(str(xlsx))
+    processor.device_specific_preprocessing(str(t1))
+    processor.device_specific_preprocessing(str(t2))
+    processor.device_specific_preprocessing(str(csv))  # returns str(csv), but we don't need the value here
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()
 
-    unique_xlsx = record_dir / "prefix.xlsx"
+    # get_unique_filename is called for: zs2, csv, txt1, txt2 (in that order)
+    unique_paths = [
+        str(record_dir / "prefix_raw.zs2"),
+        str(record_dir / "prefix_results.csv"),
+        str(record_dir / "prefix_tests.txt"),
+        str(record_dir / "prefix_tests(1).txt"),
+    ]
 
     with patch(
         "ipat_watchdog.device_plugins.utm_zwick.file_processor.get_unique_filename",
-        return_value=str(unique_xlsx),
+        side_effect=unique_paths,
     ) as mock_unique, patch(
         "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_item"
-    ) as mock_move, patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.shutil.make_archive"
-    ) as mock_archive:
+    ) as mock_move:
 
-        mock_archive.return_value = str(record_dir / "prefix.zs2.zip")
-
-        # Trigger processing once both are present
+        # Trigger processing (CSV is the trigger/primary)
         output = processor.device_specific_processing(
-            str(xlsx), str(record_dir), "prefix", ".xlsx"
+            str(csv), str(record_dir), "prefix", ".csv"
         )
 
         # returns folder path and declared datatype
         assert Path(output.final_path) == record_dir
-        assert output.datatype == "xlsx"
+        assert output.datatype == "csv"
 
-        # archiving call builds from the raw .zs2
-        expected_base = str((record_dir / "prefix.zs2.zip").with_suffix(""))
-        mock_archive.assert_called_once_with(
-            base_name=expected_base,
-            format="zip",
-            root_dir=str(zs2.parent),
-            base_dir=zs2.name,
-        )
+        # get_unique_filename calls (zs2, csv, txt1, txt2)
+        assert mock_unique.call_count == 4
+        assert mock_unique.call_args_list == [
+            call(str(record_dir), "prefix_raw", ".zs2"),
+            call(str(record_dir), "prefix_results", ".csv"),
+            call(str(record_dir), "prefix_tests", ".txt"),
+            call(str(record_dir), "prefix_tests", ".txt"),
+        ]
 
-        # source .zs2 is deleted after archiving
-        assert not zs2.exists()
-
-        # xlsx gets a unique name and is moved into record dir
-        mock_unique.assert_called_once_with(str(record_dir), "prefix", ".xlsx")
-        mock_move.assert_called_once_with(xlsx, str(unique_xlsx))
+        # move_item calls in order: zs2 -> csv -> txt1 -> txt2
+        assert mock_move.call_args_list == [
+            call(zs2, unique_paths[0]),
+            call(csv, unique_paths[1]),
+            call(str(t1), unique_paths[2]),
+            call(str(t2), unique_paths[3]),
+        ]
 
 
 def test_device_specific_processing_raises_without_staging(tmp_path, processor):
     record_dir = tmp_path / "record"
     record_dir.mkdir()
+    # No prior preprocessing for this prefix -> should raise
     with pytest.raises(KeyError):
         processor.device_specific_processing(
-            str(tmp_path / "ghost.xlsx"), str(record_dir), "prefix", ".xlsx"
+            str(tmp_path / "ghost.csv"), str(record_dir), "prefix", ".csv"
         )
-
-
-# ---------------------------------------------------------------------------
-# Orphan purging
-# ---------------------------------------------------------------------------
-
-def test_purge_orphans_moves_files(tmp_path, processor):
-    # Simulate an old staged entry with a real file on disk
-    old = tmp_path / "old.zs2"
-    old.write_text("data")
-
-    processor._pending = {
-        "old": {"t": time.time() - 1000, "zs2": old}
-    }
-
-    # Force TTL small so entry is considered orphaned
-    processor.device_config.batch.ttl_seconds = 0
-
-    with patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_to_exception_folder"
-    ) as mock_exc:
-        processor._purge_orphans()
-        mock_exc.assert_called_once()
-        # buffer cleared
-        assert processor._pending == {}
