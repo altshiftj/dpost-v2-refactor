@@ -42,8 +42,8 @@ def build_config() -> DeviceConfig:
     """,
         ),
         files=DeviceFileSelectors(
-            native_extensions=(".ngb"),
-            exported_extensions=(".csv"),
+            native_extensions=(".ngb",),
+            exported_extensions=(".csv",),
         ),
         session=SessionSettings(timeout_seconds=600),
         watcher=WatcherSettings(
