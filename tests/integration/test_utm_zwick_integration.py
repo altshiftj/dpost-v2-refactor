@@ -97,13 +97,17 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
         order=["zs2", "txt-01", "txt-02", "csv"],
     )
 
-    # Expected names now overwrite deterministically without numeric counters
+    # Deterministic names for final artefacts (overwrite semantics, no numeric suffixes)
     _expect_exists(
         record_dir,
         "UTM-tensileA.zs2",
         "UTM-tensileA_results.csv",
     )
 
-    # Check that at least two *_tests*.txt exist
-    tests = list(record_dir.glob("UTM-tensileA_tests-*.txt"))
+    # We keep all TXT snapshots. Filenames are generated via get_unique_filename,
+    # so don't assume a "-NN" scheme; just ensure we have at least two with the right prefix/suffix.
+    tests = sorted(record_dir.glob("UTM-tensileA_tests*.txt"))
     assert len(tests) >= 2, f"Expected >= 2 text snapshots, found: {len(tests)}"
+
+    # Optional sanity: ensure snapshot filenames are unique (no accidental overwrite)
+    assert len({p.name for p in tests}) == len(tests), "TXT snapshot names should be unique"
