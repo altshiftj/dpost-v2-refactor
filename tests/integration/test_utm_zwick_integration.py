@@ -100,7 +100,7 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
     # Expected names now overwrite deterministically without numeric counters
     _expect_exists(
         record_dir,
-        "UTM-tensileA_raw.zs2",
+        "UTM-tensileA.zs2",
         "UTM-tensileA_results.csv",
     )
 
