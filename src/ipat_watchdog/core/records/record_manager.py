@@ -99,6 +99,7 @@ class RecordManager:
         self._store_record(record)
         logger.debug(f"Created new record with id '{record_id}'.")
         return record
+    
     def add_item_to_record(self, path: str, record: LocalRecord):
         """
         Adds a file path to a record and updates metrics and persistence.

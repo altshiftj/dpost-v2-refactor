@@ -82,12 +82,21 @@ class LocalRecord:
         )
         return all_uploaded
     
-    def mark_unsynced(self) -> "LocalRecord":
+    def mark_record_unsynced(self) -> "LocalRecord":
         for key in self.files_uploaded.keys():
             self.files_uploaded[key] = False
         self.is_in_db = False
         logger.debug(f"Marked record '{self.identifier}' and its files as unsynced.")
         return self
+    
+    def mark_file_as_unsynced(self, filename) -> None:
+        normalized = self._normalized_path(filename)
+        if normalized in self.files_uploaded:
+            self.files_uploaded[normalized] = False
+            logger.debug(f"Marked file as unsynced: {normalized}")
+        else:
+            logger.warning(f"Tried to mark non-existent file as unsynced: {normalized}")
+        self.is_in_db = False
 
     def to_dict(self) -> dict:
         # Exclude transient fields from persistence

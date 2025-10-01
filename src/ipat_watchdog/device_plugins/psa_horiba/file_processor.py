@@ -1,10 +1,25 @@
-"""Processor for Horiba Partica LA-960 exports."""
+"""Processor for Horiba Partica LA-960 exports (no staging; Probenname buckets; sentinel.ngb finalize).
+
+Flow:
+- We collect CSVs + NGBs in memory per watch folder + Probenname.
+- When 'sentinel.ngb' arrives, we DO NOT move files yet. We:
+    * remember the whole bucket under _finalizing[sentinel_path]
+    * return a **synthetic path** whose filename is "<Probenname>.ngb"
+      so the pipeline uses <Probenname> as the record prefix.
+- Later, device_specific_processing() is called with the real sentinel path.
+  We pull the bucket from _finalizing and:
+    * zip all .ngb into "<Probenname>.zip", numbering contiguously and
+      continuing if the zip already exists (append case)
+    * convert TSV->semicolon and move CSVs into the record directory,
+      continuing numbering if files already exist (append case)
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
-import shutil
 import time
 import re
+import zipfile
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List
 
@@ -19,97 +34,88 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
-    get_unique_filename,
     move_item,
     move_to_exception_folder,
+    get_unique_filename
 )
+from ipat_watchdog.core.records.record_manager import RecordManager
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
+# ------------------------------
+# Tunables / constants
+# ------------------------------
 
-# ------------------------------
-# Misc helpers / constants
-# ------------------------------
+# Header key (lowercased) for the user-entered sample name.
+_PROBENAME_KEY = "probenname"
+
+def _is_sentinel_ngb(p: Path) -> bool:
+    """True for an .ngb named exactly 'sentinel.ngb' (case-insensitive stem)."""
+    return p.suffix.lower() == ".ngb" and p.stem.lower() == "sentinel"
+
+_MAX_PREFIX_BYTES = 200_000  # read enough to capture header
+_VALID_NAME_RE = re.compile(r"[A-Za-z0-9._\-+=@()\[\]{} ]+$")
+
+# Convert Horiba TSVs to semicolon (avoid conflict with German decimal commas).
+CONVERT_TSV_TO_SEMICOLON = True
+_TARGET_DELIMITER = ";"
+
 
 def _id_separator() -> str:
-    """Shared ID separator from runtime config, with safe fallback."""
     try:
         return current().id_separator
     except RuntimeError:
         return _CONST.ID_SEP
 
 
-# Horiba header keys (lowercased) used for session grouping and naming.
-# - "Hintergrund ID" appears to be a stable per-run identifier on many Horiba exports.
-# - "Probenname" (Sample Name) is what we want to use for the final filenames.
-_PROBENAME_KEY = "probenname"
-_SESSION_KEY = "hintergrund id"
-
-# Read enough of the file to include the Horiba header block (before numeric table).
-_MAX_PREFIX_BYTES = 200_000
-
-# Allow a broad set of filesystem-safe characters for provisional naming.
-_VALID_NAME_RE = re.compile(r"[A-Za-z0-9._\-+=@()\[\]{} ]+$")
-
+# ------------------------------
+# Session state
+# ------------------------------
 
 @dataclass
 class _SessionBucket:
-    """
-    Tracks one in-flight Horiba session.
-
-    A session consists of:
-      - zero or more CSVs (measurement stages)
-      - exactly one .ngb (arrives after the final stage)
-    We group CSVs by their 'Bezeichnung' if present; otherwise use a time-based fallback.
-    """
-    t: float                    # last activity time (for orphan purging)
-    dir: Path                   # source folder (watch folder)
-    session_key: Optional[str] = None
+    """In-flight Horiba session (per watch folder)."""
+    t: float
+    dir: Path
     probename: Optional[str] = None
     csvs: List[Path] = field(default_factory=list)
-    raw: Optional[Path] = None  # the .ngb
+    ngbs: List[Path] = field(default_factory=list)
     first_arrival_kind: Optional[str] = None  # "res" or "raw"
 
 
+# ------------------------------
+# Processor (no staging)
+# ------------------------------
+
 class FileProcessorPSAHoriba(FileProcessorABS):
-    """Pairs `.ngb` raw files with one-or-more exported `.csv` results, finalizing on `.ngb`."""
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
-        # Pending sessions keyed as "<folder>::<session_key>" or "<folder>::__open__<epoch>"
+        # Pending by "<folder>::<Probenname>" or "<folder>::__open__<epoch>"
         self._pending: Dict[str, _SessionBucket] = {}
+        # Buckets ready to finalize, keyed by REAL sentinel path string.
+        self._finalizing: Dict[str, _SessionBucket] = {}
         self.device_config = device_config
 
     # ------------------------------------------------------------------
-    # Pre-processing (ingest & stage sessions)
+    # Pre-processing
     # ------------------------------------------------------------------
     def device_specific_preprocessing(self, path: str) -> Optional[str]:
-        """
-        Session logic:
-          - On CSV arrival: parse header, attach to a bucket by 'Bezeichnung' (session key),
-            store/refresh 'Probenname'. Return None (not complete).
-          - On .ngb arrival: attach to the newest open bucket in this folder that has CSVs
-            (or create a placeholder if none yet). If the bucket now has csvs + .ngb, we
-            stage the set into a unique temp directory and return its path to the orchestrator.
-        """
         element = Path(path)
         ext = element.suffix.lower()
         native_exts = self.device_config.files.native_extensions
         exported_exts = self.device_config.files.exported_extensions
 
-        # Classify file kind: "raw" (.ngb) vs "res" (.csv). If unsupported, let orchestrator decide.
-        kind = None
         if ext in native_exts:
-            kind = "raw"
+            kind = "raw"   # .ngb
         elif ext in exported_exts:
-            kind = "res"
+            kind = "res"   # .csv / tsv
         else:
-            return path  # Let the orchestrator decide what to do with unrelated file types
+            return path
 
         folder = element.parent
 
-        # ---------------------------
-        # CSV ARRIVAL
-        # ---------------------------
+        # CSV arrival: attach to bucket keyed by Probenname
         if kind == "res":
             meta = {}
             try:
@@ -117,73 +123,51 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             except Exception as e:
                 logger.warning("PSA: failed parsing CSV metadata '%s': %s", element, e)
 
-            session_key = meta.get(_SESSION_KEY)
-            probename = meta.get(_PROBENAME_KEY)
-
-            # Create/obtain a session bucket keyed by folder + session_key (fallback to time-based key).
-            bkey = self._make_bucket_key(folder, session_key, f"__open__{int(time.time())}")
+            probenname = (meta.get(_PROBENAME_KEY) or "").strip() or None
+            bkey = self._make_bucket_key(folder, probenname, f"__open__{int(time.time())}")
             bucket = self._touch_bucket(bkey, folder, first_kind="res")
-            bucket.session_key = bucket.session_key or session_key
-            if probename:
-                # Always keep the latest seen Probename (user might correct between stages).
-                bucket.probename = probename.strip()
+            if probenname:
+                bucket.probename = probenname
             bucket.csvs.append(element)
             bucket.t = time.time()
 
+            logger.debug("PSA: CSV attached: probename=%r, bucket=%s, #csv=%d, #ngb=%d",
+                         bucket.probename, bkey, len(bucket.csvs), len(bucket.ngbs))
             self._purge_orphans()
-            return None  # not complete; wait for .ngb
+            return None
 
-        # ---------------------------
-        # .NGB ARRIVAL
-        # ---------------------------
+        # NGB arrival: attach; finalize only if sentinel
         if kind == "raw":
-            # Try to attach to the newest open bucket in this folder that has CSVs but no raw yet.
-            bkey = self._pick_open_bucket_for_raw(folder)
-            if not bkey:
-                # No CSVs seen yet: create a placeholder bucket; CSVs will attach later.
-                bkey = self._make_bucket_key(folder, None, f"__open__{int(time.time())}")
-            bucket = self._touch_bucket(bkey, folder, first_kind=bucket.first_arrival_kind or "raw")
-            bucket.raw = element
+            bkey = self._pick_bucket_for_ngb(folder) or self._make_bucket_key(folder, None, f"__open__{int(time.time())}")
+            bucket = self._touch_bucket(bkey, folder, first_kind="raw")
+            bucket.ngbs.append(element)
             bucket.t = time.time()
 
-            # If we now have both CSVs and .ngb, stage the session and return the temp dir.
-            if not self._close_ready(bucket):
+            is_sentinel = _is_sentinel_ngb(element)
+            logger.debug("PSA: NGB attached: bucket=%s, #ngb=%d, sentinel=%s",
+                         bkey, len(bucket.ngbs), is_sentinel)
+
+            if not is_sentinel:
                 self._purge_orphans()
                 return None
 
-            # Prefer human-friendly staging dir name using probename if available, else raw stem.
-            primary_stem = (bucket.probename or element.stem or "psa_session").strip()
-            stage_dir = self._unique_stage_dir(folder, primary_stem)
-            stage_dir.mkdir(parents=True, exist_ok=True)
-
-            # Move all session artifacts into the staging directory.
-            for src in [*bucket.csvs, element]:
-                try:
-                    shutil.move(str(src), stage_dir / src.name)
-                except Exception as exc:
-                    logger.error("PSA: failed staging '%s' -> '%s': %s", src, stage_dir, exc)
-                    raise
-
-            # Close this session.
+            # --- FINALIZE trigger
+            self._finalizing[str(element)] = bucket
             self._pending.pop(bkey, None)
-            self._purge_orphans()
-            return str(stage_dir)
 
-        # Unreachable: kind is either "res" or "raw".
+            # Advertise a synthetic path "<Probenname>.ngb" so the pipeline uses Probenname as prefix
+            advertised_prefix = self._choose_probename_for_advertising(bucket) or element.stem or "psa_session"
+            synthetic = element.with_name(f"{advertised_prefix}{element.suffix}")
+
+            self._purge_orphans()
+            return str(synthetic)
+
         return None
 
     # ------------------------------------------------------------------
-    # Probing (to route CSVs to this processor)
+    # Probing (route CSVs here)
     # ------------------------------------------------------------------
     def probe_file(self, filepath: str) -> FileProbeResult:
-        """Inspect CSV headers to confirm PSA origin.
-
-        Heuristics:
-        - For exported files, read a small prefix and look for device-specific
-          signatures (e.g. "HORIBA", "Partica", "LA-960").
-        - For native files, probing is inconclusive (binary container), return
-          unknown to allow selector-based routing.
-        """
         path = Path(filepath)
         ext = path.suffix.lower()
         native_exts = self.device_config.files.native_extensions
@@ -191,43 +175,24 @@ class FileProcessorPSAHoriba(FileProcessorABS):
 
         if ext in native_exts:
             return FileProbeResult.unknown("Binary raw file; probe skipped")
-
         if ext not in exported_exts:
             return FileProbeResult.mismatch("Unsupported extension for PSA Horiba")
 
-        # Read a small chunk defensively; avoid loading entire file
         try:
             snippet = self._read_text_prefix(path)
-        except Exception as exc:  # pragma: no cover - defensive logging
+        except Exception as exc:
             logger.debug("PSA probe failed to read '%s': %s", path, exc)
             return FileProbeResult.unknown(str(exc))
 
         text = snippet.lower()
-        positive = ["horiba", "partica", "la-960", "psa", "diameter"]
-        negatives = ["dissolution", "cumulative release"]
-
-        score = 0
-        for token in positive:
-            if token in text:
-                score += 1
-        for token in negatives:
-            if token in text:
-                score -= 1
-
+        score = sum(tok in text for tok in ["horiba", "partica", "la-960", "psa", "diameter"]) \
+                - sum(tok in text for tok in ["dissolution", "cumulative release"])
         if score <= 0:
             return FileProbeResult.unknown("CSV content inconclusive for PSA Horiba")
-
-        # Map simple count to a confidence in [0.6, 0.95]
         confidence = min(0.55 + 0.15 * score, 0.95)
         return FileProbeResult.match(confidence=confidence, reason=f"Found PSA markers (score={score})")
 
-    def is_appendable(
-        self,
-        record: LocalRecord,
-        filename_prefix: str,
-        extension: str,
-    ) -> bool:
-        # We always accept additional items for the same record (series of CSVs).
+    def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         return True
 
     @classmethod
@@ -235,7 +200,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         return "psa_horiba"
 
     # ------------------------------------------------------------------
-    # Core processing (rename/move artifacts to record dir)
+    # Processing (zip NGBs; convert/move CSVs; append-aware)
     # ------------------------------------------------------------------
     def device_specific_processing(
         self,
@@ -245,94 +210,79 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         extension: str,
     ) -> ProcessingOutput:
         """
-        At this point, src_path is the staging folder containing:
-          - one .ngb file
-          - one or more CSVs from the same run
-        We:
-          1) Parse the LAST CSV for 'Probenname' (Sample Name).
-          2) Use that value as the base stem for all outputs (even if invalid—FPM may reject later).
-          3) Zip the .ngb and move it to the record folder.
-          4) Move all CSVs to the record folder, renaming with a shared base + index when needed.
+        Finalize a PSA Horiba acquisition when the real sentinel.ngb arrives.
+
+        New strategy:
+        - Each NON-sentinel .ngb is zipped into its own archive:
+              <base><sep><NN>.zip  (NN = 01,02,... continuing any existing set)
+        - Inside each zip the file is stored as <base><sep><NN>.ngb
+        - Sentinel .ngb (single) is ALSO zipped (added last in the ordering)
+        - CSV / TSV files are moved (with optional tab->semicolon conversion)
+          using get_unique_filename for collision avoidance.
         """
-        stage_dir = Path(src_path)
+        sentinel = Path(src_path)
+        bucket = self._finalizing.pop(str(sentinel), None)
+        if not bucket:
+            raise RuntimeError("Finalizing bucket not found for sentinel; cannot continue")
+
+        base = filename_prefix
         record_dir = Path(record_path)
-
-        raw_candidates = list(stage_dir.glob("*.ngb"))
-        csv_candidates = [c for c in stage_dir.iterdir() if c.is_file() and c.suffix.lower() != ".ngb"]
-
-        if not raw_candidates or not csv_candidates:
-            raise RuntimeError(f"Stage directory {stage_dir} missing expected files")
-
-        raw_path = raw_candidates[0]
-
-        # Parse the LAST (latest mtime) CSV for Probename. This matches "final measurement sets the name".
-        last_csv = max(csv_candidates, key=lambda p: p.stat().st_mtime)
-        try:
-            meta = self._parse_csv_metadata(last_csv)
-        except Exception as e:
-            logger.warning("PSA: could not parse metadata from '%s': %s", last_csv, e)
-            meta = {}
-
-        probename = (meta.get(_PROBENAME_KEY) or "").strip()
-
-        # Use Probename as base stem if present; otherwise fallback to the orchestrator-provided prefix.
-        # IMPORTANT: We only sanitize enough to avoid immediate FS errors; your FileProcessManager may still reject it.
-        base = probename if probename else filename_prefix
-        if not self._validate_probename(base):
-            base = re.sub(r"[^\w.\-+@()\[\]{} ]+", "_", base)[:240] or filename_prefix
-
-        # Choose extension from the first CSV for uniqueness seeding.
-        first_ext = csv_candidates[0].suffix.lower()
-        base_stem = self._allocate_base_stem(record_dir, base, first_ext)
-
-        # --- 1) Zip the .ngb into "<base_stem>.ngb.zip"
-        zip_stage = stage_dir / f"{base_stem}.ngb.zip"
-        try:
-            shutil.make_archive(
-                base_name=str(zip_stage.with_suffix("")),
-                format="zip",
-                root_dir=str(raw_path.parent),
-                base_dir=raw_path.name,
-            )
-            logger.debug("Archived '%s' to '%s'", raw_path, zip_stage)
-            raw_path.unlink(missing_ok=True)
-        except Exception as exc:
-            logger.error("PSA: failed to archive '%s': %s", raw_path, exc)
-            raise
-
-        # --- 2) Move CSVs, renaming all to the common base.
-        # First CSV takes "<base_stem><ext>", subsequent ones get "<base>__NN<ext>" using the configured separator.
         sep = _id_separator()
-        counter = 1
-        for i, src in enumerate(sorted(csv_candidates, key=lambda p: p.name)):
-            if i == 0:
-                dest_name = f"{base_stem}{src.suffix.lower()}"
-            else:
-                counter += 1
-                dest_name = f"{base}{sep}{counter:02d}{src.suffix.lower()}"
-                # de-dup in case name already exists
-                while (record_dir / dest_name).exists():
-                    counter += 1
-                    dest_name = f"{base}{sep}{counter:02d}{src.suffix.lower()}"
+
+        # --- Prepare NGB list (sentinel last)
+        ngb_regular = [p for p in bucket.ngbs if not _is_sentinel_ngb(p)]
+        ngb_regular.sort(key=lambda p: p.name)
+        sentinel_ngb = next((p for p in bucket.ngbs if _is_sentinel_ngb(p)), None)
+        ngb_all: List[Path] = list(ngb_regular)
+        if sentinel_ngb:
+            # append sentinel explicitly so it's numbered after regular ones
+            ngb_all.append(sentinel_ngb)
+
+        # --- Determine next sequential index from existing per-NGB archives
+        # Pattern: <base><sep>NN.zip
+        import re
+        pat_zip = re.compile(rf"^{re.escape(base)}{re.escape(sep)}(\d{{2}})\.zip$", re.IGNORECASE)
+        max_existing = 0
+        for existing in record_dir.glob(f"{base}{sep}*.zip"):
+            m = pat_zip.match(existing.name)
+            if m:
+                try:
+                    max_existing = max(max_existing, int(m.group(1)))
+                except Exception:
+                    pass
+        next_idx = max_existing + 1
+
+        # --- Zip each raw NGB separately (including sentinel if present at end)
+        for raw_path in ngb_all:
+            zip_name = f"{base}{sep}{next_idx:02d}.zip"
+            zip_path = record_dir / zip_name
+            arcname = f"{base}{sep}{next_idx:02d}.ngb"
             try:
-                move_item(str(src), str(record_dir / dest_name))
+                with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
+                    zf.write(raw_path, arcname=arcname)
+                try:
+                    raw_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                logger.debug("PSA: Created archive '%s' from '%s'", zip_path, raw_path)
             except Exception as exc:
-                logger.error("PSA: failed moving '%s' -> '%s': %s", src, dest_name, exc)
-                raise
+                logger.warning("PSA: Failed to archive '%s': %s", raw_path, exc)
+            next_idx += 1
 
-        # --- 3) Move zipped .ngb
-        try:
-            move_item(str(zip_stage), str(record_dir / f"{base_stem}.ngb.zip"))
-        except Exception as exc:
-            logger.error("PSA: failed moving '%s': %s", zip_stage, exc)
-            raise
+        # (Sentinel already unlinked above if present)
 
-        # Best-effort cleanup for the empty staging dir.
-        try:
-            if not any(stage_dir.iterdir()):
-                stage_dir.rmdir()
-        except Exception:  # pragma: no cover
-            pass
+        # --- Process CSV / TSV outputs
+        csv_candidates = sorted(bucket.csvs, key=lambda p: p.name)
+        for src in csv_candidates:
+            try:
+                dest_path = Path(get_unique_filename(record_path, base, src.suffix))
+                if CONVERT_TSV_TO_SEMICOLON:
+                    self._convert_tsv_to_semicolon(src, dest_path)
+                else:
+                    move_item(str(src), str(dest_path))
+                logger.debug("PSA: Moved result file '%s' -> '%s'", src, dest_path)
+            except Exception as exc:
+                logger.warning("PSA: Failed handling result file '%s': %s", src, exc)
 
         return ProcessingOutput(final_path=str(record_dir), datatype="psa")
 
@@ -341,144 +291,148 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     # ------------------------------------------------------------------
     @staticmethod
     def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-        """Return the first bytes_limit bytes decoded with fallback encodings."""
         raw = path.read_bytes()[:bytes_limit]
         for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
             try:
                 return raw.decode(enc, errors="ignore")
-            except Exception:  # pragma: no cover - try next
+            except Exception:
                 continue
         return raw.decode(errors="ignore")
 
     def _parse_csv_metadata(self, p: Path) -> Dict[str, str]:
         """
-        Parse a small prefix of a Horiba CSV where header lines are 'Key<TAB>Value'.
-        Stop when we reach the numeric data table (e.g., line starting with 'X(' or similar).
-        Returns keys lowercased.
+        Parse Horiba header key/value lines until the real numeric table begins.
+        Accept TAB or ';' in header. (You mentioned you’ve tuned this—feel free to
+        swap in your preferred version; this one is robust by default.)
         """
-        text = self._read_text_prefix(p, bytes_limit=_MAX_PREFIX_BYTES).strip()
+        def _is_table_header_token(token: str) -> bool:
+            t = token.strip().strip('"').strip()
+            if re.match(r'^[xX]\([^)]*\)$', t):  # exactly X(...)
+                return True
+            # numeric-like (incl. German comma decimals)
+            return bool(re.match(r'^[\s]*[0-9]*[.,]?[0-9]+([\sEe][+-]?[0-9]+)?\s*$', t))
+
+        text = self._read_text_prefix(p, bytes_limit=_MAX_PREFIX_BYTES)
+        if not text:
+            return {}
         meta: Dict[str, str] = {}
-        for line in text.splitlines():
-            ls = line.strip()
+        for raw in text.splitlines():
+            ls = raw.strip()
             if not ls:
                 continue
-            # Heuristic: data table typically starts with X(µm) or similar
-            if ls.startswith("X(") or ls.startswith("X(µm)") or ls.lower().startswith("x("):
+            parts = re.split(r"\t+|;", ls)
+            if not parts:
+                continue
+            first = parts[0].strip().strip('"').strip("\ufeff")
+            if _is_table_header_token(first):
                 break
-            parts = re.split(r"\t+", ls)
             if len(parts) >= 2:
-                k = parts[0].strip().lower()
-                v = parts[1].strip()
+                k = first.lower()
+                v = parts[1].strip().strip('"')
                 if k and v:
                     meta[k] = v
         return meta
 
-    @staticmethod
-    def _classify(ext: str) -> Optional[str]:
-        if ext == ".ngb":
-            return "raw"
-        if ext == ".csv":
-            return "res"
+
+    def _choose_probename_for_advertising(self, bucket: _SessionBucket) -> Optional[str]:
+        """Prefer stored bucket.probename; otherwise parse the first CSV if available."""
+        if bucket.probename:
+            return bucket.probename
+        if bucket.csvs:
+            try:
+                meta = self._parse_csv_metadata(sorted(bucket.csvs, key=lambda p: p.name)[0])
+                pn = (meta.get(_PROBENAME_KEY) or "").strip()
+                if pn:
+                    return pn
+            except Exception:
+                pass
         return None
 
-    @staticmethod
-    def _validate_probename(name: Optional[str]) -> bool:
-        """Only prevent immediate filesystem issues; allow FileProcessManager to enforce stricter policy."""
-        if not name:
-            return False
-        return bool(_VALID_NAME_RE.fullmatch(name)) and len(name) <= 240
-
-    def _make_bucket_key(self, folder: Path, session_key: Optional[str], fallback_suffix: str) -> str:
-        """Create a stable pending key for a session within a folder."""
-        if session_key:
-            return f"{folder}::{session_key}"
-        return f"{folder}::{fallback_suffix}"
+    def _make_bucket_key(self, folder: Path, probename: Optional[str], fallback_suffix: str) -> str:
+        return f"{folder}::{probename}" if probename else f"{folder}::{fallback_suffix}"
 
     def _touch_bucket(self, key: str, folder: Path, first_kind: str) -> _SessionBucket:
-        """Get or create a session bucket; also record which kind arrived first (res/raw)."""
         b = self._pending.get(key)
         if b is None:
             b = _SessionBucket(t=time.time(), dir=folder, first_arrival_kind=first_kind)
             self._pending[key] = b
+        elif b.first_arrival_kind is None:
+            b.first_arrival_kind = first_kind
         return b
 
-    def _close_ready(self, b: _SessionBucket) -> bool:
-        """We can stage when we have at least one CSV and the .ngb."""
-        return bool(b.csvs) and b.raw is not None
-
-    def _pick_open_bucket_for_raw(self, folder: Path) -> Optional[str]:
-        """
-        Select the newest bucket in this folder that:
-          - has CSVs (so it’s a real session), and
-          - has not yet received the .ngb.
-        """
-        candidates = [(k, v) for k, v in self._pending.items() if v.dir == folder and v.raw is None and v.csvs]
-        if not candidates:
+    def _pick_bucket_for_ngb(self, folder: Path) -> Optional[str]:
+        choices = [(k, v) for k, v in self._pending.items() if v.dir == folder]
+        if not choices:
             return None
-        candidates.sort(key=lambda kv: kv[1].t, reverse=True)
-        return candidates[0][0]
+        choices.sort(key=lambda kv: (0 if kv[1].csvs else 1, -kv[1].t))
+        return choices[0][0]
 
     def _purge_orphans(self) -> None:
-        """
-        Move very old pending files to the exception folder.
-        Uses device_config.batch.ttl_seconds to decide staleness.
-        """
         now = time.time()
-        # NOTE: requires DeviceConfig.batch.ttl_seconds to be set appropriately in config.
         ttl = getattr(self.device_config, "batch", None)
         ttl_seconds = getattr(ttl, "ttl_seconds", 600) if ttl else 600
-
         stale_keys = [key for key, payload in self._pending.items() if now - float(payload.t) > ttl_seconds]
         for key in stale_keys:
             payload = self._pending.pop(key, None)
             if not payload:
                 continue
-            # Move any orphaned artifacts aside, so the operator can inspect them.
-            for path_obj in [*payload.csvs, payload.raw]:
-                if isinstance(path_obj, Path) and path_obj and path_obj.exists():
+            for p in [*payload.csvs, *payload.ngbs]:
+                if isinstance(p, Path) and p and p.exists():
                     try:
-                        move_to_exception_folder(str(path_obj))
-                        logger.info("PSA: purged orphan '%s'", path_obj)
-                    except Exception as exc:  # pragma: no cover - defensive
-                        logger.warning("PSA: could not purge orphan '%s': %s", path_obj, exc)
+                        move_to_exception_folder(str(p))
+                        logger.info("PSA: purged orphan '%s'", p)
+                    except Exception as exc:
+                        logger.warning("PSA: could not purge orphan '%s': %s", p, exc)
 
-    def _unique_stage_dir(self, parent: Path, stem: str) -> Path:
-        """
-        Generate a unique staging directory name in the watch folder.
-        Example: "<stem>.__staged__", "<stem>.__staged__2", ...
-        """
-        base = parent / f"{stem}.__staged__"
-        if not base.exists():
-            return base
-        counter = 2
-        while True:
-            candidate = parent / f"{stem}.__staged__{counter}"
-            if not candidate.exists():
-                return candidate
-            counter += 1
+    # ------------------------------
+    # Append-awareness helpers
+    # ------------------------------
+    def _max_index_in_zip(self, zf: zipfile.ZipFile, base: str, sep: str) -> int:
+        pat_idx = re.compile(rf"^{re.escape(base)}{re.escape(sep)}(\d{{2}})\.ngb$", re.IGNORECASE)
+        max_idx = 0
+        for info in zf.infolist():
+            fn = info.filename
+            if fn.lower() == f"{base.lower()}.ngb":
+                max_idx = max(max_idx, 1)
+            else:
+                m = pat_idx.match(fn)
+                if m:
+                    try:
+                        max_idx = max(max_idx, int(m.group(1)))
+                    except Exception:
+                        pass
+        return max_idx
 
-    def _allocate_base_stem(self, record_dir: Path, filename_prefix: str, res_ext: str) -> str:
-        """
-        Reserve a unique "<base_stem>" such that:
-          - "<base_stem><res_ext>" does not exist
-          - "<base_stem>.ngb.zip" does not exist
-        We re-use the global filename allocator for the first candidate, then
-        increment using the configured id separator if needed.
-        """
-        seeded_path = Path(get_unique_filename(str(record_dir), filename_prefix, res_ext))
-        base_stem = seeded_path.stem
+    def _max_index_for_existing_csvs(self, record_dir: Path, base: str, ext: str, sep: str) -> int:
+        pattern = re.compile(rf"^{re.escape(base)}{re.escape(sep)}(\d{{2}}){re.escape(ext)}$", re.IGNORECASE)
+        max_idx = 0
+        for p in record_dir.glob(f"{base}*{ext}"):
+            m = pattern.match(p.name)
+            if m:
+                try:
+                    max_idx = max(max_idx, int(m.group(1)))
+                except Exception:
+                    pass
+        return max_idx
 
-        sep = _id_separator()
+    # ------------------------------
+    # CSV conversion helper
+    # ------------------------------
+    def _convert_tsv_to_semicolon(self, src: Path, dest: Path) -> None:
+        data = None
+        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
+            try:
+                data = src.read_text(encoding=enc, errors="ignore")
+                break
+            except Exception:
+                data = None
+        if data is None:
+            raise RuntimeError(f"Unable to read CSV for conversion: {src}")
+
+        converted = data.replace("\t", _TARGET_DELIMITER)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(converted, encoding="utf-8")
         try:
-            stem_no_counter, counter_str = base_stem.rsplit(sep, 1)
-            counter = int(counter_str) if stem_no_counter == filename_prefix else 1
+            src.unlink(missing_ok=True)
         except Exception:
-            counter = 1
-
-        while True:
-            res_candidate = record_dir / f"{base_stem}{res_ext}"
-            zip_candidate = record_dir / f"{base_stem}.ngb.zip"
-            if not res_candidate.exists() and not zip_candidate.exists():
-                return base_stem
-            counter += 1
-            base_stem = f"{filename_prefix}{sep}{counter:02d}"
+            pass
