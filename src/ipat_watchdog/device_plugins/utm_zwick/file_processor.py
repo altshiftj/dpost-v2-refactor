@@ -4,8 +4,7 @@ Supported workflow:
 - Instrument produces iterative `.txt` (force/strain) snapshots (already numbered like `prefix-01.txt`)
   and rewrites the `.zs2` during a running series.
 - Finalization happens when the `.csv` export appears (always last).
-- We keep all `.txt` snapshots (sequence numbered) and move the latest `.zs2` as-is
-  into the record directory (no zip).
+- We keep all `.txt` snapshots (sequence numbered) and move the latest `.zs2`.
 - On session end or timeout, any incomplete series (no `.csv`) can optionally be flushed,
   promoting the *latest* `.txt` snapshot as the primary if configured.
 """
@@ -167,13 +166,16 @@ class FileProcessorUTMZwick(FileProcessorABS):
                         dest.unlink()
                     else:
                         shutil.rmtree(dest)
-                # Try fast rename first
+                # Try fast rename first when possible (same filesystem)
                 src.rename(dest)
             except Exception as e_rename:  # pragma: no cover - defensive
                 try:
                     shutil.move(str(src), str(dest))
                 except Exception as e_move:  # pragma: no cover - defensive
-                    logger.error("Failed to overwrite-move '%s' -> '%s': %s / %s", src, dest, e_rename, e_move)
+                    logger.error(
+                        "Failed to overwrite-move '%s' -> '%s': %s / %s",
+                        src, dest, e_rename, e_move
+                    )
                     raise
 
         # Move latest zs2 as-is if present (deterministic name, overwrite any existing)
@@ -190,7 +192,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             _move_overwrite(primary, destination_primary)
             logger.debug("Moved results '%s' -> '%s' (overwrite)", primary, destination_primary)
 
-        # Persist snapshots (.txt) into record root
+        # Persist snapshots (.txt) into record root (unique/incremented)
         if state.txt_snapshots:
             # Sort by natural numeric index if present; fallback to name
             def _txt_order_key(p: Path) -> tuple[int, str]:
