@@ -105,12 +105,13 @@ class DeviceResolver:
             second = matches[1]
             if top.result.confidence > second.result.confidence:
                 return top.device
-            # Tie: honor original order of candidates
+            # Confidence tie: fall back to selector order for deterministic behaviour.
             first_by_order = next(item for item in ordered if item.result.is_match())
             return first_by_order.device
 
         unknowns = [item for item in ordered if not item.result.is_definitive()]
         if unknowns:
+            # Prefer the first processor that stayed inconclusive so the pipeline can inspect it fully.
             return unknowns[0].device
 
         return None

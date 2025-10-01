@@ -91,6 +91,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         folder_key = str(p.parent.resolve())
 
         if _is_csv_like(p):
+            # Remember CSV metadata so we can rename the eventual NGB using its Probenname.
             pend = self._pending.get(folder_key) or _Pending(t=time.time(), folder=p.parent)
             try:
                 meta = self._parse_csv_metadata(p)
@@ -118,6 +119,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
 
             # we have CSV + NGB: advertise synthetic path using <Probenname>
             advertised = Path(p.parent, f"{pend.probenname}{p.suffix}")
+            # Stash bookkeeping under the real NGB path so processing can zip/move the correct source.
             self._finalizing[str(p)] = pend
             # clear pending for this folder so subsequent runs start fresh
             self._pending.pop(folder_key, None)
@@ -167,6 +169,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     ) -> ProcessingOutput:
         ngb_real = Path(src_path)
         pend = self._finalizing.pop(str(ngb_real), None)
+        # Pairing must have been recorded during preprocessing; otherwise we cannot build the archive.
         if not pend or not pend.csv_path:
             raise RuntimeError("No pending CSV for this NGB; cannot finalize")
 
@@ -237,6 +240,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def _purge_stale(self) -> None:
         now = time.time()
         ttl_seconds = getattr(getattr(self.device_config, "batch", None), "ttl_seconds", 600)
+        # Drop CSVs that never received their NGB companion within the configured TTL.
         to_drop = []
         for k, pend in self._pending.items():
             if now - pend.t > ttl_seconds:

@@ -63,7 +63,9 @@ class FileProcessorUTMZwick(FileProcessorABS):
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
         self.device_config = device_config
+        # Houses per-sample series state until the exporter emits the final CSV.
         self._series: Dict[str, _SeriesState] = {}
+        # Guard the series map because filesystem events race in from a background thread.
         self._lock = threading.Lock()
 
     # ------------------------------------------------------------------
@@ -85,6 +87,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             if not state:
                 state = _SeriesState(sample=key)
                 self._series[key] = state
+                # Fresh series: start collecting artefacts until the CSV finalizer appears.
             state.last_update = datetime.now()
 
             if ext == ".zs2":
@@ -100,6 +103,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
 
             # Series finalize condition: csv present triggers processing immediately
             if state.csv:
+                # Returning the CSV path signals the pipeline to process the entire staged series.
                 return str(state.csv)
 
         return None
@@ -153,6 +157,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             state = self._series.pop(raw_prefix, None)
         if not state:
             raise KeyError(f"No staged series for '{raw_prefix}'")
+        # From here we deterministically move the staged artefacts into the record directory.
 
         # Helper to move with overwrite semantics (always replace existing file)
         def _move_overwrite(src: Path, dest: Path) -> None:
@@ -174,6 +179,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         # Move latest zs2 as-is if present (deterministic name, overwrite any existing)
         if state.last_zs2 and state.last_zs2.exists():
             destination_zs2 = record_dir / f"{file_id}_raw.zs2"
+            # Overwrite existing artefacts so reruns always keep the most recent raw data.
             _move_overwrite(state.last_zs2, destination_zs2)
             logger.debug("Moved raw zs2 '%s' -> '%s' (overwrite)", state.last_zs2, destination_zs2)
 
@@ -219,6 +225,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         with self._lock:
             states = list(self._series.values())
             self._series.clear()
+        # Work on a snapshot outside the lock to keep filesystem event handling snappy.
 
         for state in states:
             if state.csv:

@@ -62,6 +62,7 @@ class KadiSyncManager(ISyncManager):
         device_user_id = f"{local_record.device_type}{ID_SEP}usr".replace("_", "-").lower()
         device_record_id = local_record.device_type
 
+        # Build per-user and per-device scaffolding so ownership metadata stays consistent in Kadi.
         db_user = self._get_db_user_from_local_record(db_manager, local_record)
         user_collection = self._get_or_create_db_user_rawdata_collection(db_manager, local_record, db_user)
         user_group = None
@@ -218,6 +219,7 @@ class KadiSyncManager(ISyncManager):
 
     def _upload_record_files(self, db_record: KadiRecord, local_record: LocalRecord) -> bool:
         """Upload pending files and report whether anything is still outstanding."""
+        # Track files we could not upload so we can clear them from the retry queue later.
         missing_files = []
         for file_path, uploaded in list(local_record.files_uploaded.items()):
             if uploaded:
@@ -234,6 +236,7 @@ class KadiSyncManager(ISyncManager):
                 raise
 
         for file_path in missing_files:
+            # Drop stale entries so future sync attempts do not keep retrying vanished artefacts.
             local_record.files_uploaded.pop(file_path, None)
             logger.debug("Removed missing file '%s' from local record.", os.path.basename(file_path))
 

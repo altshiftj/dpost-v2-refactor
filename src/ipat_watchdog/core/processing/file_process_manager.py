@@ -51,6 +51,7 @@ from ipat_watchdog.core.interactions import UserInteractionPort
 
 logger = setup_logger(__name__)
 
+# Recognises artefacts parked in our hidden staging folders (created during preprocessing retries).
 _INTERNAL_STAGING_SUFFIX_RE = re.compile(
     r'\.__staged__(\d+)?',
     re.IGNORECASE,
@@ -64,6 +65,7 @@ class _ProcessingPipeline:
         self._manager = manager
 
     def process(self, src_path: Path) -> ProcessingResult:
+        # Stage 1: resolve a device and wait for stability; may return early with a ProcessingResult.
         prepared = self._prepare_request(src_path)
         if isinstance(prepared, ProcessingResult):
             return prepared
@@ -77,12 +79,14 @@ class _ProcessingPipeline:
             logger.debug(message)
             return ProcessingResult(ProcessingStatus.DEFERRED, message)
 
+        # Device resolver combines selector rules with lightweight processor probes.
         resolution = manager._device_resolver.resolve(path)
         device = resolution.selected
         if device is None:
             reason = resolution.reason or "Invalid file type"
             return self._reject_immediately(path, reason)
 
+        # Block until the artefact stops changing (device overrides can tweak thresholds).
         stability_outcome = FileStabilityTracker(path, device).wait()
         if stability_outcome.rejected:
             reason = stability_outcome.reason or "File rejected by stability guard"
@@ -98,6 +102,7 @@ class _ProcessingPipeline:
         candidate: Optional[ProcessingCandidate] = None
         try:
             with manager.config_service.activate_device(request.device):
+                # Ensure downstream helpers read the selected device's configuration.
                 processor = manager._resolve_processor(request.device)
                 item = self._build_candidate(request, processor)
                 if isinstance(item, ProcessingResult):
@@ -115,6 +120,7 @@ class _ProcessingPipeline:
         if preprocessed is None:
             return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefacts")
 
+        # Normalise any internal staging suffix before deriving prefix/extension.
         parse_target = manager._strip_internal_stage_suffix(Path(preprocessed))
         prefix, extension = parse_filename(str(parse_target))
 
@@ -174,6 +180,7 @@ class _ProcessingPipeline:
             )
             return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
 
+        # Remaining cases fall back to the rename flow (invalid format, collisions, etc.).
         return self._invoke_rename_flow(candidate, candidate.prefix, candidate.extension)
 
     def _invoke_rename_flow(
@@ -184,6 +191,7 @@ class _ProcessingPipeline:
         contextual_reason: Optional[str] = None,
     ) -> ProcessingResult:
         manager = self._manager
+        # UI-driven rename can either supply a sanitized prefix or bail out to manual processing.
         outcome = manager._rename_service.obtain_valid_prefix(current_prefix, contextual_reason)
         if outcome.cancelled or not outcome.sanitized_prefix:
             manager._rename_service.send_to_manual_bucket(
@@ -365,6 +373,7 @@ class FileProcessManager:
         target = str(candidate.effective_path) if candidate else str(path)
         prefix = candidate.prefix if candidate else path.stem
         extension = candidate.extension if candidate else path.suffix
+        # Move whichever artefact exists (raw or preprocessed) so nothing lingers in watch folders.
         safe_move_to_exception(target, prefix, extension)
         if candidate and candidate.preprocessed_path and candidate.preprocessed_path != candidate.effective_path:
             safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)

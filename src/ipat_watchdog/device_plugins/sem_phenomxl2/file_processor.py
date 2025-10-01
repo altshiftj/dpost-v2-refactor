@@ -21,6 +21,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
 
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
+        # Remember temporary normalised names so we can recover the original source when processing.
         self._path_mapping: dict[str, str] = {}
 
     # ------------------------------------------------------------------
@@ -72,6 +73,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         record_dir = Path(record_path)
 
         if extension.lower() in {ext.lower() for ext in self.device_config.files.native_extensions}:
+            # Native microscope images only need deduplicated moves into the record directory.
             destination = get_unique_filename(record_path, filename_prefix, extension)
             move_item(actual_src_path, destination)
             return ProcessingOutput(final_path=destination, datatype="img")

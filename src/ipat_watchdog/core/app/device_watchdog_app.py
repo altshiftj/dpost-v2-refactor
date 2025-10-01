@@ -91,6 +91,7 @@ class DeviceWatchdogApp:
 
         self._processing_lock = threading.Lock()
         self._event_poll_handle: int | None = None
+        # Observer threads push raw paths here; UI polls via scheduler ticks to keep logic single-threaded.
         self.event_queue: queue.Queue[str] = queue.Queue()
         self.event_handler: QueueingEventHandler | None = None
         self.observer: BaseObserver | None = None
@@ -141,6 +142,7 @@ class DeviceWatchdogApp:
 
     def _schedule_next_event_check(self) -> None:
         if self._event_poll_handle is None:
+            # Drive processing from the UI scheduler so filesystem callbacks never run user logic directly.
             self._event_poll_handle = self.scheduler.schedule(100, self.process_events)
 
     def _cancel_event_poll(self) -> None:
@@ -154,6 +156,7 @@ class DeviceWatchdogApp:
     def process_events(self) -> None:
         """Drain a single queue item, surface rejections, and reschedule."""
         self._event_poll_handle = None
+        # Drain one item per tick to stay responsive while new events arrive.
         self._process_next_event()
         self._handle_rejections()
         self._schedule_next_event_check()
