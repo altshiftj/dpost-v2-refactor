@@ -1,8 +1,14 @@
 import pytest
 from pathlib import Path
+import sys
 from dataclasses import replace
 from types import SimpleNamespace
 
+# Ensure project root is on sys.path so 'tests' package imports resolve during collection.
+TESTS_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = TESTS_ROOT.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import init_config, reset_service, current
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
@@ -140,3 +146,4 @@ def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
     )
     app._observer_stub = observer_stub
     return app
+

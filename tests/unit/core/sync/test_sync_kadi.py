@@ -1,6 +1,6 @@
 import pytest
-pytest.importorskip('kadi_apy')
-from unittest.mock import MagicMock
+pytest.importorskip("kadi_apy")
+from unittest.mock import MagicMock, call
 
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -110,6 +110,7 @@ def sync_mgr(fake_ui, monkeypatch):
 
 # The remaining tests operate on sync_mgr
 
+
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
@@ -202,7 +203,38 @@ def test_upload_record_files_success(sync_mgr):
     sync_mgr._upload_record_files(dummy_record, record)
 
     assert all(record.files_uploaded.values())
-    assert dummy_record.upload_file.call_count == 2
+    dummy_record.upload_file.assert_has_calls(
+        [
+            call("/dummy/path/file1.tif", force=False),
+            call("/dummy/path/file2.tif", force=False),
+        ],
+        any_order=True,
+    )
+
+
+def test_upload_record_files_uses_force_for_overwrites(sync_mgr):
+    record = LocalRecord(
+        identifier="abc-ipat-sample1",
+        sample_name="sample1",
+        datatype="tif",
+        date="20250405",
+    )
+    path_force = "/dummy/path/file1.tif"
+    path_normal = "/dummy/path/file2.tif"
+    record.files_uploaded = {
+        path_force: False,
+        path_normal: False,
+    }
+    record.files_require_force.add(path_force)
+
+    dummy_record = DummyKadiRecord()
+    dummy_record.upload_file = MagicMock()
+
+    sync_mgr._upload_record_files(dummy_record, record)
+
+    dummy_record.upload_file.assert_any_call(path_force, force=True)
+    dummy_record.upload_file.assert_any_call(path_normal, force=False)
+    assert path_force not in record.files_require_force
 
 
 def test_upload_record_files_missing(sync_mgr):
@@ -212,14 +244,18 @@ def test_upload_record_files_missing(sync_mgr):
         datatype="tif",
         date="20250405",
     )
+    path_missing = "/dummy/path/file1.tif"
+    path_ok = "/dummy/path/file2.tif"
     record.files_uploaded = {
-        "/dummy/path/file1.tif": False,
-        "/dummy/path/file2.tif": False,
+        path_missing: False,
+        path_ok: False,
     }
+    record.files_require_force.add(path_missing)
+
     dummy_record = DummyKadiRecord()
 
     def upload_side_effect(path, force=False):
-        if "file1" in path:
+        if path == path_missing:
             raise FileNotFoundError
         dummy_record.uploaded_files.append((path, force))
 
@@ -227,8 +263,9 @@ def test_upload_record_files_missing(sync_mgr):
 
     sync_mgr._upload_record_files(dummy_record, record)
 
-    assert "/dummy/path/file1.tif" not in record.files_uploaded
-    assert record.files_uploaded["/dummy/path/file2.tif"] is True
+    assert path_missing not in record.files_uploaded
+    assert path_missing not in record.files_require_force
+    assert record.files_uploaded[path_ok] is True
 
 
 def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
@@ -237,6 +274,7 @@ def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
         "/dummy/path/missing1.tif": False,
         "/dummy/path/missing2.tif": False,
     }
+    record.files_require_force.update(record.files_uploaded.keys())
     dummy_record = DummyKadiRecord()
     dummy_record.upload_file = MagicMock(side_effect=FileNotFoundError)
 
@@ -244,3 +282,4 @@ def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
 
     assert result is False
     assert record.files_uploaded == {}
+    assert record.files_require_force == set()

@@ -225,8 +225,11 @@ class KadiSyncManager(ISyncManager):
             if uploaded:
                 continue
             try:
-                db_record.upload_file(file_path)
+                requires_force = file_path in local_record.files_require_force
+                db_record.upload_file(file_path, force=requires_force)
                 local_record.files_uploaded[file_path] = True
+                if requires_force:
+                    local_record.files_require_force.discard(file_path)
                 logger.debug("Uploaded file: %s", os.path.basename(file_path))
             except FileNotFoundError:
                 logger.warning("File not found: %s", os.path.basename(file_path))
@@ -238,6 +241,7 @@ class KadiSyncManager(ISyncManager):
         for file_path in missing_files:
             # Drop stale entries so future sync attempts do not keep retrying vanished artefacts.
             local_record.files_uploaded.pop(file_path, None)
+            local_record.files_require_force.discard(file_path)
             logger.debug("Removed missing file '%s' from local record.", os.path.basename(file_path))
 
         return any(not status for status in local_record.files_uploaded.values())
