@@ -52,7 +52,13 @@ def utm_processing_manager(tmp_path):
         reset_service()
 
 
-def _emit_and_process(fpm, watch_dir: Path, prefix: str, order: list[str]) -> Path:
+def _emit_and_process(
+    fpm,
+    watch_dir: Path,
+    prefix: str,
+    order: list[str],
+    payloads: dict[str, str] | None = None,
+) -> Path:
     """
     order items can be:
       - "zs2"        -> {prefix}.zs2
@@ -61,17 +67,18 @@ def _emit_and_process(fpm, watch_dir: Path, prefix: str, order: list[str]) -> Pa
 
     Returns the record directory path.
     """
+    payloads = payloads or {}
     for token in order:
         if token == "zs2":
             p = watch_dir / f"{prefix}.zs2"
-            p.write_text("raw-zs2")
+            p.write_text(payloads.get("zs2", "raw-zs2"))
         elif token == "csv":
             p = watch_dir / f"{prefix}.csv"
-            p.write_text("final-results")
+            p.write_text(payloads.get("csv", "final-results"))
         elif token.startswith("txt-"):
             nn = token.split("-", 1)[1]
             p = watch_dir / f"{prefix}-{nn}.txt"
-            p.write_text(f"snapshot-{nn}")
+            p.write_text(payloads.get(token, f"snapshot-{nn}"))
         else:
             raise ValueError(f"Unknown token in order: {token}")
         fpm.process_item(str(p))
@@ -111,3 +118,53 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
 
     # Optional sanity: ensure snapshot filenames are unique (no accidental overwrite)
     assert len({p.name for p in tests}) == len(tests), "TXT snapshot names should be unique"
+
+
+def test_repeat_series_sets_force_flags_on_overwrite(utm_processing_manager, tmp_settings):
+    fpm, _ui = utm_processing_manager
+    prefix = "usr-ipat-tensileA"
+
+    record_dir = _emit_and_process(
+        fpm,
+        tmp_settings.WATCH_DIR,
+        prefix,
+        order=["zs2", "txt-01", "txt-02", "csv"],
+    )
+
+    record = next(iter(fpm.records.persist_records_dict.values()))
+    preexisting_files = set(record.files_uploaded.keys())
+    assert preexisting_files
+    assert record.files_require_force == set()
+
+    fpm.records.sync_records_to_database()
+    sync_manager = fpm.records.sync
+    assert sync_manager.synced_records
+    assert record.all_files_uploaded()
+
+    second_dir = _emit_and_process(
+        fpm,
+        tmp_settings.WATCH_DIR,
+        prefix,
+        order=["zs2", "txt-03", "csv"],
+        payloads={
+            "zs2": "raw-zs2-second",
+            "txt-03": "snapshot-03-second",
+            "csv": "final-results-second",
+        },
+    )
+    assert second_dir == record_dir
+
+    zs2_path = record_dir / "UTM-tensileA.zs2"
+    csv_path = record_dir / "UTM-tensileA_results.csv"
+
+    assert zs2_path.read_text() == "raw-zs2-second"
+    assert csv_path.read_text() == "final-results-second"
+
+    normalized_zs2 = str(zs2_path.resolve())
+    normalized_csv = str(csv_path.resolve())
+
+    assert record.files_uploaded[normalized_zs2] is False
+    assert record.files_uploaded[normalized_csv] is False
+
+    assert record.files_require_force == preexisting_files
+    assert {normalized_zs2, normalized_csv}.issubset(record.files_require_force)
