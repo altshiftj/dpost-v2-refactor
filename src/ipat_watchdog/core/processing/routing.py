@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.processing.models import RoutingDecision
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.records.record_manager import RecordManager
@@ -35,7 +36,7 @@ def determine_routing_state(
     is_valid_format: bool,
     filename_prefix: str,
     extension: str,
-    processor,
+    processor: FileProcessorABS,
 ) -> RoutingDecision:
     """Determine routing decision based on record state and processor capabilities."""
     if record is None:

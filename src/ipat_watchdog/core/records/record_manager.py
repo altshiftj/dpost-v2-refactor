@@ -100,27 +100,34 @@ class RecordManager:
         logger.debug(f"Created new record with id '{record_id}'.")
         return record
     
-    def add_item_to_record(self, path: str, record: LocalRecord):
+    def add_item_to_record(self, path: str, record: LocalRecord) -> int:
         """
-        Adds a file path to a record and updates metrics and persistence.
-        
+        Adds a file path to a record, updates metrics, and persists state.
+
         This is called when a file is successfully processed and needs to be
-        tracked as part of a record. Updates Prometheus metrics and saves state.
-        
+        tracked as part of a record. Updates Prometheus metrics and saves state,
+        returning how many new artefacts were tracked.
+
         Args:
             path: File path that was processed
             record: LocalRecord to add the file to
+
+        Returns:
+            int: Number of newly tracked files for the record
         """
         logger.debug(f"Adding item '{path}' to record '{record.identifier}'.")
-        
-        # Add file to the record's tracking
+
+        prev_count = len(record.files_uploaded)
+        # Add file or directory contents to the record's tracking (idempotent)
         record.add_item(path)
-        
-        # Update processing metrics for observability
-        FILES_PROCESSED_BY_RECORD.labels(record_id=record.identifier).inc()
-        
+        new_count = len(record.files_uploaded) - prev_count
+
+        if new_count > 0:
+            FILES_PROCESSED_BY_RECORD.labels(record_id=record.identifier).inc(new_count)
+
         # Persist the updated state to disk
         self.save_records()
+        return new_count
 
     def remove_item_from_record(self, path: str, record: LocalRecord):
         """

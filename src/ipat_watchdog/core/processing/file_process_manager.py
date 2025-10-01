@@ -7,7 +7,7 @@ import queue
 import re
 from typing import Optional, Tuple
 
-from ipat_watchdog.metrics import FILES_FAILED
+from ipat_watchdog.metrics import FILES_FAILED, FILES_PROCESSED
 from ipat_watchdog.core.config import ConfigService, DeviceConfig, get_service
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
@@ -189,6 +189,7 @@ class _ProcessingPipeline:
             manager._rename_service.send_to_manual_bucket(
                 str(candidate.effective_path), current_prefix, extension
             )
+            FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
 
         updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
@@ -302,7 +303,9 @@ class FileProcessManager:
 
         logger.debug("Processed %s -> %s", src_path, output.final_path)
 
-        update_record(self.records, output.final_path, record)
+        new_files = update_record(self.records, output.final_path, record)
+        if new_files > 0:
+            FILES_PROCESSED.inc(new_files)
 
         # Immediate sync path (best-effort) — keeps prior startup sync logic.
         if self._immediate_sync:

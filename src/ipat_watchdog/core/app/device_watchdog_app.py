@@ -84,6 +84,7 @@ class DeviceWatchdogApp:
             config_service=self.config_service,
             immediate_sync=True,
         )
+        self._session_failed = False
 
         if hasattr(sync_manager, "interactions"):
             sync_manager.interactions = self.interactions
@@ -187,6 +188,7 @@ class DeviceWatchdogApp:
     def handle_exception(self, exc_type, exc_value, exc_traceback):
         EXCEPTIONS_THROWN.inc()
         FILES_FAILED.inc()
+        self._session_failed = True
         SESSION_EXIT_STATUS.set(1)
         logger.error("An unexpected error occurred", exc_info=(exc_type, exc_value, exc_traceback))
         self.interactions.show_error(
@@ -201,7 +203,8 @@ class DeviceWatchdogApp:
         end_time = datetime.now()
         duration = end_time - self.start_time
         SESSION_DURATION.set(duration.total_seconds())
-        SESSION_EXIT_STATUS.set(0)
+        if not self._session_failed:
+            SESSION_EXIT_STATUS.set(0)
 
         logger.info("WatchdogApp shutdown at %s (uptime: %s)", end_time.isoformat(), duration)
 

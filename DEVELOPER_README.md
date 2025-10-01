@@ -87,8 +87,8 @@ Each PC plugin implements:
 
 Exposed on port `8000` (`metrics.py`):
 
-- `files_processed` (Counter)  
-- `files_processed_by_record{record_id=...}` (Counter)  
+- `files_processed` (Counter): increments by the number of artefacts added to records (zipped bundles, derived outputs, etc.)  
+- `files_processed_by_record{record_id=...}` (Counter): same artefact counts broken down per record  
 - `files_failed` (Counter)  
 - `events_processed` (Counter)  
 - `file_process_time_seconds` (Histogram)  

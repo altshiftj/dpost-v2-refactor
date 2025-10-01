@@ -25,9 +25,9 @@ def apply_device_defaults(record: LocalRecord, device: DeviceConfig | None) -> N
         record.default_tags = list(metadata.record_tags)
 
 
-def update_record(records: RecordManager, final_path: str, record: LocalRecord) -> None:
-    """Update internal tracking that a file was added to a record."""
-    records.add_item_to_record(final_path, record)
+def update_record(records: RecordManager, final_path: str, record: LocalRecord) -> int:
+    """Update tracking for a processed file and return the new count."""
+    return records.add_item_to_record(final_path, record)
 
 
 def manage_session(session_manager: SessionManager, record: LocalRecord) -> None:

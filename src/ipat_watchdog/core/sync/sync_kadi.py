@@ -9,8 +9,6 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 from ipat_watchdog.core.config.constants import ID_SEP
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.metrics import FILES_PROCESSED
-
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
 from kadi_apy.lib.resources.groups import Group as KadiGroup
@@ -227,7 +225,6 @@ class KadiSyncManager(ISyncManager):
             try:
                 db_record.upload_file(file_path)
                 local_record.files_uploaded[file_path] = True
-                FILES_PROCESSED.inc()
                 logger.debug("Uploaded file: %s", os.path.basename(file_path))
             except FileNotFoundError:
                 logger.warning("File not found: %s", os.path.basename(file_path))
