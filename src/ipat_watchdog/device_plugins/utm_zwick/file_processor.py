@@ -180,7 +180,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
 
         # Move latest zs2 as-is if present (deterministic name, overwrite any existing)
         if state.last_zs2 and state.last_zs2.exists():
-            destination_zs2 = record_dir / f"{file_id}_raw.zs2"
+            destination_zs2 = record_dir / f"{file_id}.zs2"
             # Overwrite existing artefacts so reruns always keep the most recent raw data.
             _move_overwrite(state.last_zs2, destination_zs2)
             logger.debug("Moved raw zs2 '%s' -> '%s' (overwrite)", state.last_zs2, destination_zs2)
