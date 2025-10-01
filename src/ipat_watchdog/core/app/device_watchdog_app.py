@@ -70,16 +70,19 @@ class DeviceWatchdogApp:
         self.interactions = interactions or UiInteractionAdapter(ui)
         self.scheduler = scheduler or UiTaskScheduler(ui)
 
+        # Headless session manager (interactive disabled) — end_session_callback removed
         self.session_manager = session_manager_cls(
             interactions=self.interactions,
             scheduler=self.scheduler,
-            end_session_callback=self.end_session,
+            end_session_callback=None,
+            interactive=False,
         )
         self.file_processing = file_process_manager_cls(
             interactions=self.interactions,
             sync_manager=sync_manager,
             session_manager=self.session_manager,
             config_service=self.config_service,
+            immediate_sync=True,
         )
 
         if hasattr(sync_manager, "interactions"):
@@ -192,18 +195,7 @@ class DeviceWatchdogApp:
         )
         self.on_closing()
 
-    def end_session(self) -> None:
-        logger.debug("End session called.")
-        try:
-            self.file_processing.sync_records_to_database()
-        except Exception as exc:  # noqa: BLE001 - surface specific sync issues to UI
-            logger.exception("An error occurred during session end: %s", exc)
-            self.interactions.show_error(
-                ErrorMessages.SESSION_END_ERROR,
-                ErrorMessages.SESSION_END_ERROR_DETAILS.format(error=exc),
-            )
-        finally:
-            logger.debug("End session completed.")
+    # end_session removed: syncing now occurs immediately per processed file.
 
     def on_closing(self) -> None:
         end_time = datetime.now()
@@ -213,8 +205,7 @@ class DeviceWatchdogApp:
 
         logger.info("WatchdogApp shutdown at %s (uptime: %s)", end_time.isoformat(), duration)
 
-        if self.session_manager.session_active:
-            self.session_manager.end_session()
+        # Session manager no-op for activity; explicit end not required.
 
         self._stop_observer()
         self._cancel_event_poll()

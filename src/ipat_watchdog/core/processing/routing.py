@@ -45,8 +45,9 @@ def determine_routing_state(
         return RoutingDecision.REQUIRE_RENAME
 
     if processor.is_appendable(record, filename_prefix, extension):
-        if record.is_in_db:
-            return RoutingDecision.APPEND_TO_SYNCED
+        # In 'it just works' mode we automatically append even if the record
+        # has already been synced (no user prompt). Collapse APPEND_TO_SYNCED
+        # into ACCEPT to unify downstream handling.
         return RoutingDecision.ACCEPT
 
     return RoutingDecision.UNAPPENDABLE

@@ -35,35 +35,6 @@ def handle_unappendable_record(
     )
 
 
-def handle_append_to_synced_record(
-    interactions: UserInteractionPort,
-    add_item_delegate: Callable[[object, str, str, str, FileProcessorABS, bool], Optional[str]],
-    rename_delegate: Callable[[str, str, str, str | None], ProcessingResult],
-    context: RouteContext,
-) -> ProcessingResult:
-    """Prompt the user before appending to fully synced records."""
-    candidate = context.candidate
-    record: LocalRecord = context.existing_record
-    prefix = context.sanitized_prefix
-
-    if interactions.prompt_append_record(prefix):
-        final_path = add_item_delegate(
-            record,
-            str(candidate.effective_path),
-            prefix,
-            candidate.extension,
-            candidate.processor,
-            False,
-        )
-        return ProcessingResult(
-            ProcessingStatus.PROCESSED,
-            "Appended to synced record",
-            None if final_path is None else Path(final_path),
-        )
-
-    return rename_delegate(
-        str(candidate.effective_path),
-        prefix,
-        candidate.extension,
-        contextual_reason=DialogPrompts.APPEND_RECORD_CANCEL_CONTEXT.format(record_id=prefix),
-    )
+# NOTE: The append-to-synced prompt flow has been removed for the
+# 'it just works' mode. Appending to an already-synced record now proceeds
+# automatically via the ACCEPT path with no user interaction.

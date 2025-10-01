@@ -1,9 +1,13 @@
 """Tracks user activity and session timeouts for watchdog processing runs.
 
 Public API additions:
-        - ``SessionManager.get_summary()`` returns a lightweight immutable snapshot
-            for external consumers (logging, UI layers, potential REST exposure)
-            without leaking internal mutable lists.
+    - ``SessionManager.get_summary()`` returns a lightweight immutable snapshot
+      for external consumers (logging, UI layers, potential REST exposure)
+      without leaking internal mutable lists.
+
+Headless / 'it just works' mode:
+    Pass interactive=False to disable all UI prompts while still tracking
+    users, records, and honoring (optional) timeouts.
 """
 
 from __future__ import annotations
@@ -23,36 +27,28 @@ logger = setup_logger(__name__)
 
 @dataclass(frozen=True)
 class SessionSummary:
-    """Immutable snapshot of current session state.
-
-    Attributes
-    ----------
-    active: bool
-        Whether a session is currently active.
-    users: tuple[str, ...]
-        Distinct user tags observed during the session.
-    records: tuple[str, ...]
-        Distinct record sample labels observed during the session.
-    """
-
+    """Immutable snapshot of current session state."""
     active: bool
     users: tuple[str, ...]
     records: tuple[str, ...]
 
-    def to_dict(self) -> dict[str, object]:  # pragma: no cover - trivial
+    def to_dict(self) -> dict[str, object]:  # pragma: no cover
         return {"active": self.active, "users": self.users, "records": self.records}
 
 
 class SessionManager:
-    """Manages the lifecycle of a user session, including timeouts and session state."""
+    """Manages the lifecycle of a user session, including timeouts and session state.
+
+    interactive=False disables UI prompts (headless mode) while still tracking activity.
+    """
 
     def __init__(
         self,
         interactions: UserInteractionPort,
         scheduler: TaskScheduler,
         end_session_callback=None,
+        interactive: bool = True,
     ) -> None:
-        """Initialise a new session manager detached from concrete UI concerns."""
         self._interactions = interactions
         self._scheduler = scheduler
         self.end_session_callback = end_session_callback
@@ -60,13 +56,27 @@ class SessionManager:
         self.timer_id: Optional[Any] = None
         self._session_users: list[str] = []
         self._session_records: list[str] = []
+        self._interactive = interactive
 
     @property
     def is_active(self) -> bool:
         return self.session_active
 
+    @property
+    def interactive(self) -> bool:
+        return self._interactive
+
+    def set_interactive(self, enabled: bool) -> None:
+        if self._interactive == enabled:
+            return
+        prev = self._interactive
+        self._interactive = enabled
+        logger.debug("SessionManager interactive mode changed: %s -> %s", prev, enabled)
+        if enabled and self.session_active:
+            self._refresh_prompt()
+
     def note_activity(self, record: "LocalRecord") -> None:
-        """Record session activity for the current item and refresh prompts."""
+        """Record session activity; in headless mode suppress UI prompts."""
         user_tag = self._derive_user_tag(record)
         record_label = self._derive_sample_label(record)
 
@@ -81,6 +91,13 @@ class SessionManager:
         else:
             self.reset_timer()
             self._refresh_prompt()
+
+        if not self._interactive:
+            logger.debug(
+                "Headless session activity: users=%s records=%s",
+                self._session_users,
+                self._session_records,
+            )
 
     def start_session(self) -> None:
         if not self.session_active:
@@ -118,7 +135,7 @@ class SessionManager:
             self.timer_id = None
 
     def _refresh_prompt(self) -> None:
-        if not self.session_active:
+        if not self.session_active or not self._interactive:
             return
         details = self._current_prompt_details()
         self._interactions.show_done_prompt(details, self.end_session)
@@ -126,9 +143,7 @@ class SessionManager:
     def _current_prompt_details(self) -> SessionPromptDetails:
         return SessionPromptDetails(
             users=tuple(self._session_users),
-            records=tuple(
-                self._format_record_label(label) for label in self._session_records
-            ),
+            records=tuple(self._format_record_label(label) for label in self._session_records),
         )
 
     def _format_record_label(self, label: Optional[str]) -> str:
@@ -140,16 +155,8 @@ class SessionManager:
         self._session_users = []
         self._session_records = []
 
-    # ------------------------------------------------------------------
     # Public convenience API
-    # ------------------------------------------------------------------
     def get_summary(self) -> SessionSummary:
-        """Return a lightweight immutable session snapshot.
-
-        This avoids callers needing to understand internal structures or
-        mutability. The method performs no side effects and is safe to call
-        regardless of session state.
-        """
         return SessionSummary(
             active=self.session_active,
             users=tuple(self._session_users),

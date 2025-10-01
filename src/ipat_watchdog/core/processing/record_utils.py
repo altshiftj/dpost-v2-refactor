@@ -31,5 +31,11 @@ def update_record(records: RecordManager, final_path: str, record: LocalRecord) 
 
 
 def manage_session(session_manager: SessionManager, record: LocalRecord) -> None:
-    """Record activity to start or keep the current session alive."""
-    session_manager.note_activity(record)
+    """No-op session management.
+
+    Previously this recorded activity (session_manager.note_activity(record)) to
+    drive interactive session prompts and timeout handling. In the current
+    'it just works' paradigm we disable session side-effects while keeping the
+    call sites intact for easy reversion.
+    """
+    return

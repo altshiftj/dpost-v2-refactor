@@ -23,7 +23,6 @@ from ipat_watchdog.core.processing.notifications import notify_success
 from ipat_watchdog.core.processing.device_resolver import DeviceResolver
 from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
 from ipat_watchdog.core.processing.record_flow import (
-    handle_append_to_synced_record,
     handle_unappendable_record,
 )
 from ipat_watchdog.core.processing.record_utils import (
@@ -161,13 +160,7 @@ class _ProcessingPipeline:
         if context.decision is RoutingDecision.UNAPPENDABLE:
             return handle_unappendable_record(manager.interactions, rename_delegate, context)
 
-        if context.decision is RoutingDecision.APPEND_TO_SYNCED:
-            return handle_append_to_synced_record(
-                manager.interactions,
-                lambda *args, **kwargs: manager.add_item_to_record(*args, **kwargs, device=candidate.device),
-                rename_delegate,
-                context,
-            )
+        # APPEND_TO_SYNCED collapsed into ACCEPT path (automatic append)
 
         if context.decision is RoutingDecision.ACCEPT:
             final_path = manager.add_item_to_record(
@@ -229,7 +222,12 @@ class _ProcessingPipeline:
 
 
 class FileProcessManager:
-    """Single-threaded pipeline that validates, routes, and persists artefacts."""
+    """Single-threaded pipeline that validates, routes, and persists artefacts.
+
+    immediate_sync: if True, attempt to sync records to the database after each
+    successfully processed item. This bypasses the previous end-of-session
+    batching strategy.
+    """
 
     def __init__(
         self,
@@ -238,6 +236,7 @@ class FileProcessManager:
         session_manager: SessionManager,
         config_service: ConfigService | None = None,
         file_processor: FileProcessorABS | None = None,
+        immediate_sync: bool = False,
     ) -> None:
         self.interactions = interactions
         self.session_manager = session_manager
@@ -249,6 +248,7 @@ class FileProcessManager:
         self._rename_service = RenameService(interactions)
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
         self._pipeline = _ProcessingPipeline(self)
+        self._immediate_sync = immediate_sync
 
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup")
@@ -303,7 +303,14 @@ class FileProcessManager:
         logger.debug("Processed %s -> %s", src_path, output.final_path)
 
         update_record(self.records, output.final_path, record)
-        manage_session(self.session_manager, record)
+
+        # Immediate sync path (best-effort) — keeps prior startup sync logic.
+        if self._immediate_sync:
+            try:
+                if not self.records.all_records_uploaded():
+                    self.records.sync_records_to_database()
+            except Exception as exc:  # noqa: BLE001
+                logger.exception("Immediate sync failed after processing %s: %s", src_path, exc)
 
         return output.final_path
 

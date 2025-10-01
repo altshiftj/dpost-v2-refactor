@@ -15,7 +15,6 @@ class RoutingDecision(Enum):
     """Discrete routing outcomes for an incoming file."""
 
     UNAPPENDABLE = "unappendable_record"
-    APPEND_TO_SYNCED = "append_to_synced"
     ACCEPT = "valid_name"
     REQUIRE_RENAME = "invalid_name"
 
