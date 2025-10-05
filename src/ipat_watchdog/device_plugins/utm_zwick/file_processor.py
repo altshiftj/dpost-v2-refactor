@@ -29,7 +29,6 @@ from ipat_watchdog.core.storage.filesystem_utils import (
     get_unique_filename,  # still used for txt snapshots
     move_item,
 )
-import shutil
 
 logger = setup_logger(__name__)
 
@@ -158,39 +157,46 @@ class FileProcessorUTMZwick(FileProcessorABS):
             raise KeyError(f"No staged series for '{raw_prefix}'")
         # From here we deterministically move the staged artefacts into the record directory.
 
-        # Helper to move with overwrite semantics (always replace existing file)
-        def _move_overwrite(src: Path, dest: Path) -> None:
-            try:
-                if dest.exists():
-                    if dest.is_file():
-                        dest.unlink()
-                    else:
-                        shutil.rmtree(dest)
-                # Try fast rename first when possible (same filesystem)
-                src.rename(dest)
-            except Exception as e_rename:  # pragma: no cover - defensive
-                try:
-                    shutil.move(str(src), str(dest))
-                except Exception as e_move:  # pragma: no cover - defensive
-                    logger.error(
-                        "Failed to overwrite-move '%s' -> '%s': %s / %s",
-                        src, dest, e_rename, e_move
-                    )
-                    raise
+        # NOTE: We intentionally avoid overwriting existing artefacts now.
+        #       Each .zs2 and .csv file is stored with a unique, incremented name
+        #       (same strategy already used for .txt snapshots) to prevent
+        #       accidental data loss when instrument restarts or replays.
 
-        # Move latest zs2 as-is if present (deterministic name, overwrite any existing)
+        # Move latest zs2 (raw) with unique filename if present
         if state.last_zs2 and state.last_zs2.exists():
-            destination_zs2 = record_dir / f"{file_id}.zs2"
-            # Overwrite existing artefacts so reruns always keep the most recent raw data.
-            _move_overwrite(state.last_zs2, destination_zs2)
-            logger.debug("Moved raw zs2 '%s' -> '%s' (overwrite)", state.last_zs2, destination_zs2)
+            unique_zs2_path = Path(
+                get_unique_filename(str(record_dir), file_id, state.last_zs2.suffix)
+            )
+            try:
+                move_item(str(state.last_zs2), str(unique_zs2_path))
+                logger.debug(
+                    "Moved raw zs2 '%s' -> '%s' (unique, no overwrite)",
+                    state.last_zs2,
+                    unique_zs2_path,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed moving zs2 '%s' to '%s': %s", state.last_zs2, unique_zs2_path, exc
+                )
 
-        # Move csv as primary exported data (deterministic name, overwrite any existing)
+        # Move csv as primary exported data with unique filename (no overwrite)
         primary = state.csv
         if primary and primary.exists():
-            destination_primary = record_dir / f"{file_id}_results{primary.suffix}"
-            _move_overwrite(primary, destination_primary)
-            logger.debug("Moved results '%s' -> '%s' (overwrite)", primary, destination_primary)
+            results_prefix = f"{file_id}_results"
+            unique_results_path = Path(
+                get_unique_filename(str(record_dir), results_prefix, primary.suffix)
+            )
+            try:
+                move_item(str(primary), str(unique_results_path))
+                logger.debug(
+                    "Moved results '%s' -> '%s' (unique, no overwrite)",
+                    primary,
+                    unique_results_path,
+                )
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed moving results '%s' to '%s': %s", primary, unique_results_path, exc
+                )
 
         # Persist snapshots (.txt) into record root (unique/incremented)
         if state.txt_snapshots:

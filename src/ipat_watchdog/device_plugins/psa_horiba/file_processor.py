@@ -153,10 +153,6 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         return True
 
-    @classmethod
-    def get_device_id(cls) -> str:
-        return "psa_horiba_atomic"
-
     # -------------------------------
     # Processing
     # -------------------------------

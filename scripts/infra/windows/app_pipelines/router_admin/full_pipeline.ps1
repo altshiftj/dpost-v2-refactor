@@ -38,11 +38,11 @@ function Invoke-Stage {
     )
     
     if ($Skip) {
-        Write-Host "`n🔄 SKIPPING: $Name"
+        Write-Host "`nSKIPPING: $Name"
         return @{ Name = $Name; Status = "Skipped"; Duration = "00:00:00" }
     }
     
-    Write-Host "`n🚀 STARTING: $Name"
+    Write-Host "`nSTARTING: $Name"
     Write-Host "Script: $Script"
     Write-Host ("Time: {0:yyyy-MM-dd HH:mm:ss}" -f (Get-Date))
     Write-Host ("-" * 50)
@@ -57,17 +57,17 @@ function Invoke-Stage {
         
         if ($exitCode -eq 0) {
             Write-Host ("-" * 50)
-            Write-Host ("✅ SUCCESS: $Name (Duration: {0:hh\:mm\:ss})" -f $duration)
+            Write-Host ("SUCCESS: $Name (Duration: {0:hh\:mm\:ss})" -f $duration)
             return @{ Name = $Name; Status = "Success"; Duration = $duration.ToString("hh\:mm\:ss"); ExitCode = $exitCode }
         } else {
             Write-Host ("-" * 50)
-            Write-Host ("❌ FAILED: $Name (Exit Code: $exitCode, Duration: {0:hh\:mm\:ss})" -f $duration)
+            Write-Host ("FAILED: $Name (Exit Code: $exitCode, Duration: {0:hh\:mm\:ss})" -f $duration)
             return @{ Name = $Name; Status = "Failed"; Duration = $duration.ToString("hh\:mm\:ss"); ExitCode = $exitCode }
         }
     } catch {
         $duration = (Get-Date) - $stageStart
         Write-Host ("-" * 50)
-        Write-Host ("💥 ERROR: $Name - $($_.Exception.Message)")
+        Write-Host ("ERROR: $Name - $($_.Exception.Message)")
         Write-Host ("Duration: {0:hh\:mm\:ss}" -f $duration)
         return @{ Name = $Name; Status = "Error"; Duration = $duration.ToString("hh\:mm\:ss"); Error = $_.Exception.Message }
     }
@@ -124,10 +124,10 @@ Write-Host "           PIPELINE SUMMARY"
 Write-Host "========================================="
 Write-Host ("Total Duration: {0:hh\:mm\:ss}" -f $totalDuration)
 Write-Host "Stages: $($stages.Count) total"
-Write-Host "  ✅ Success: $successCount"
-Write-Host "  ❌ Failed: $failedCount"
-Write-Host "  💥 Error: $errorCount"
-Write-Host "  🔄 Skipped: $skippedCount"
+Write-Host "Success: $successCount"
+Write-Host "Failed: $failedCount"
+Write-Host "Error: $errorCount"
+Write-Host "Skipped: $skippedCount"
 Write-Host ""
 
 foreach ($stage in $stages) {
@@ -156,9 +156,9 @@ Write-Host "========================================="
 $overallSuccess = ($failedCount -eq 0) -and ($errorCount -eq 0)
 
 if ($overallSuccess) {
-    Write-Host "🎉 PIPELINE COMPLETED SUCCESSFULLY!"
+    Write-Host "PIPELINE COMPLETED SUCCESSFULLY!"
     exit 0
 } else {
-    Write-Host "⚠️  PIPELINE COMPLETED WITH ISSUES"
+    Write-Host "PIPELINE COMPLETED WITH ISSUES"
     exit 1
 }

@@ -138,7 +138,7 @@ $env:TUN_PORT_0 = 8000     # Local forward to remote 8000
 $env:TUN_PORT_1 = 8001     # Local forward to remote 8001
 
 # Optional: Add SSH host key fingerprint to prevent MITM prompt
-$env:SSH_HOSTKEY = 'ssh-ed25519 SHA256:P03FAAzlTdGcjLmBst8XNZ696VEzT1hq1sB2KDdejF4'
+$env:SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4'
 
 # ------------------------------
 # Paths (derived where helpful)

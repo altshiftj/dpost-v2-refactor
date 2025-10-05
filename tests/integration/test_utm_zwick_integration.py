@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+from ipat_watchdog.core.records.local_record import LocalRecord
 import pytest
 
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
@@ -53,7 +54,7 @@ def utm_processing_manager(tmp_path):
 
 
 def _emit_and_process(
-    fpm,
+    fpm: FileProcessManager,
     watch_dir: Path,
     prefix: str,
     order: list[str],
@@ -104,12 +105,15 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
         order=["zs2", "txt-01", "txt-02", "csv"],
     )
 
-    # Deterministic names for final artefacts (overwrite semantics, no numeric suffixes)
-    _expect_exists(
-        record_dir,
-        "UTM-tensileA.zs2",
-        "UTM-tensileA_results.csv",
-    )
+    # Non-overwriting unique names now expected for final artefacts.
+    # First arrival should still create initial numbered variants (..-01.*)
+    zs2_candidates = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
+    csv_candidates = sorted(record_dir.glob("UTM-tensileA_results-*.csv"))
+    assert zs2_candidates, "Expected at least one unique .zs2 artefact"
+    assert csv_candidates, "Expected at least one unique .csv artefact"
+    # The first ones should end with -01 by convention of get_unique_filename
+    assert any(p.stem.endswith("-01") for p in zs2_candidates), "Missing initial -01 .zs2"
+    assert any(p.stem.endswith("-01") for p in csv_candidates), "Missing initial -01 .csv"
 
     # We keep all TXT snapshots. Filenames are generated via get_unique_filename,
     # so don't assume a "-NN" scheme; just ensure we have at least two with the right prefix/suffix.
@@ -120,7 +124,7 @@ def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, t
     assert len({p.name for p in tests}) == len(tests), "TXT snapshot names should be unique"
 
 
-def test_repeat_series_sets_force_flags_on_overwrite(utm_processing_manager, tmp_settings):
+def test_repeat_series_creates_additional_unique_files(utm_processing_manager, tmp_settings):
     fpm, _ui = utm_processing_manager
     prefix = "usr-ipat-tensileA"
 
@@ -131,7 +135,7 @@ def test_repeat_series_sets_force_flags_on_overwrite(utm_processing_manager, tmp
         order=["zs2", "txt-01", "txt-02", "csv"],
     )
 
-    record = next(iter(fpm.records.persist_records_dict.values()))
+    record: LocalRecord = next(iter(fpm.records.persist_records_dict.values()))
     preexisting_files = set(record.files_uploaded.keys())
     assert preexisting_files
     assert record.files_require_force == set()
@@ -154,17 +158,27 @@ def test_repeat_series_sets_force_flags_on_overwrite(utm_processing_manager, tmp
     )
     assert second_dir == record_dir
 
-    zs2_path = record_dir / "UTM-tensileA.zs2"
-    csv_path = record_dir / "UTM-tensileA_results.csv"
+    # After second series, we expect additional uniquely numbered artefacts, not overwrites.
+    zs2_files = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
+    csv_files = sorted(record_dir.glob("UTM-tensileA_results-*.csv"))
+    assert len(zs2_files) >= 2, "Expected at least two .zs2 versions after repeat series"
+    assert len(csv_files) >= 2, "Expected at least two .csv versions after repeat series"
 
-    assert zs2_path.read_text() == "raw-zs2-second"
-    assert csv_path.read_text() == "final-results-second"
+    # Ensure numbering increments (collect numeric suffixes)
+    import re as _re
+    suffix_pattern = _re.compile(r".*-(\d+)$")
+    zs2_nums = sorted({int(suffix_pattern.match(p.stem).group(1)) for p in zs2_files if suffix_pattern.match(p.stem)})
+    csv_nums = sorted({int(suffix_pattern.match(p.stem).group(1)) for p in csv_files if suffix_pattern.match(p.stem)})
+    assert zs2_nums == list(range(1, len(zs2_nums)+1)), f"Unexpected gap or numbering in zs2 files: {zs2_nums}"
+    assert csv_nums == list(range(1, len(csv_nums)+1)), f"Unexpected gap or numbering in csv files: {csv_nums}"
 
-    normalized_zs2 = str(zs2_path.resolve())
-    normalized_csv = str(csv_path.resolve())
-
-    assert record.files_uploaded[normalized_zs2] is False
-    assert record.files_uploaded[normalized_csv] is False
-
-    assert record.files_require_force == preexisting_files
-    assert {normalized_zs2, normalized_csv}.issubset(record.files_require_force)
+    # Previously we flagged force overwrites; now earlier files remain uploaded, new ones appear as not uploaded yet.
+    # Validate preexisting files still tracked, and new files added with uploaded=False without forcing previous ones.
+    current_files = set(record.files_uploaded.keys())
+    new_files = current_files - preexisting_files
+    assert new_files, "Expected newly created unique artefacts to be tracked"
+    # Previously uploaded files are re-registered, so they require force; new ones should not be in force set yet.
+    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
+    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
+    # New artefacts should have uploaded flag False (pending upload)
+    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"

@@ -51,7 +51,7 @@ BUILD_TIME=$env:BUILD_TIME
 Copy-Item -Force version.txt build/version.txt
 
 # --- Step 6: Build Executable ---
-$specFile = "build/specs/pc_$CI_JOB_NAME.spec"
+$specFile = "build/specs/$CI_JOB_NAME.spec"
 Write-Host "`nRunning PyInstaller using spec file: $specFile"
 $env:PYTHONPATH = "$(Get-Location)\src"
 pyinstaller $specFile --clean --noconfirm
