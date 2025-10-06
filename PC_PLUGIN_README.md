@@ -5,6 +5,7 @@ This document describes the PC plugin system, which defines its compatible devic
 - **tischrem_blb**: TischREM lab environment with SEM TischREM  
 - **zwick_blb**: Zwick testing environment with UTM Zwick machine
 - **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
+- **twinscrew_blb**: Twin-screw extruder workstation with ETR device plugin
 
 Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.gin architecture for customizing application behavior based on the target PC environment.
 
@@ -27,7 +28,11 @@ src/ipat_watchdog/
 │   │   ├── __init__.py
 │   │   ├── plugin.py
 │   │   └── settings.py
-│   └── horiba_blb/               # Horiba lab configuration
+│   ├── horiba_blb/               # Horiba lab configuration
+│   │   ├── __init__.py
+│   │   ├── plugin.py
+│   │   └── settings.py
+│   └── twinscrew_blb/            # Twin-screw extruder configuration
 │       ├── __init__.py
 │       ├── plugin.py
 │       └── settings.py
@@ -44,6 +49,7 @@ Set the `PC_NAME` environment variable to specify which PC plugin to load. The a
 PC_NAME=tischrem_blb       # Loads: sem_phenomxl2
 PC_NAME=zwick_blb          # Loads: utm_zwick
 PC_NAME=horiba_blb         # Loads: psa_horiba, dsv_horiba
+PC_NAME=twinscrew_blb      # Loads: etr_twinscrew
 ```
 
 ## PC-Device Mapping
@@ -53,6 +59,7 @@ Each PC plugin defines its compatible devices through the `get_active_device_plu
 - **tischrem_blb**: TischREM lab environment with SEM TischREM  
 - **zwick_blb**: Zwick testing environment with UTM Zwick machine
 - **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
+- **twinscrew_blb**: Twin-screw extruder workstation with ETR device plugin
 
 Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.
 
@@ -102,6 +109,7 @@ class MyPCPlugin(PCPlugin):
 - **tischrem_blb**: TischREM lab workstation configuration
 - **zwick_blb**: Zwick testing machine configuration  
 - **horiba_blb**: Horiba lab configuration with PSA and DSV devices
+- **twinscrew_blb**: Twin-screw extruder workstation configuration
 - **test_pc**: Test configuration for development
 
 ## Build System Integration
