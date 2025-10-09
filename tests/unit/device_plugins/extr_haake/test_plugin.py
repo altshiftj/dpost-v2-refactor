@@ -3,16 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.device_plugins.etr_twinscrew.file_processor import (
-    ETRTwinScrewFileProcessor,
+from ipat_watchdog.device_plugins.extr_haake.file_processor import (
+    FileProcessorEXTRHaake,
 )
-from ipat_watchdog.device_plugins.etr_twinscrew.settings import build_config
+from ipat_watchdog.device_plugins.extr_haake.settings import build_config
 
 
 def test_build_config_basics():
     config = build_config()
 
-    assert config.identifier == "etr_twinscrew"
+    assert config.identifier == "extr_haake"
     assert ".xlsx" in config.files.allowed_extensions
     assert ".xls" in config.files.allowed_extensions
     assert config.session.timeout_seconds == 900
@@ -21,7 +21,7 @@ def test_build_config_basics():
 
 def test_file_processor_moves_excel(tmp_path):
     config = build_config()
-    processor = ETRTwinScrewFileProcessor(config)
+    processor = FileProcessorEXTRHaake(config)
 
     src = tmp_path / "sample.xlsx"
     src.write_text("sheet data")
@@ -42,5 +42,5 @@ def test_file_processor_moves_excel(tmp_path):
     assert destination.exists()
     assert destination.suffix == ".xlsx"
     assert processor.matches_file(str(destination))
-    assert output.datatype == "etr-excel"
-    assert not processor.is_appendable(LocalRecord(), "user-blb-sample01", ".xlsx")
+    assert output.datatype == "tabular"
+    assert processor.is_appendable(LocalRecord(), "user-blb-sample01", ".xlsx")

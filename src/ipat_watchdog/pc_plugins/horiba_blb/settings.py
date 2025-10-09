@@ -1,9 +1,6 @@
 """PC-level configuration for the Horiba BLB acquisition workstation."""
 
 from __future__ import annotations
-
-import re
-
 from ipat_watchdog.core.config import PCConfig
 
 
