@@ -49,6 +49,8 @@ class _BaseRegistry:
 
     def __post_init__(self) -> None:
         self._factories: Dict[str, Callable[[], object]] = {}
+        # Track names we've already logged about to avoid duplicate log noise
+        self._logged_names: set[str] = set()
 
     def clear(self) -> None:
         self._factories.clear()
@@ -60,7 +62,10 @@ class _BaseRegistry:
         if normalized in self._factories:
             raise ValueError(f"{self.kind} plugin '{normalized}' registered multiple times")
         self._factories[normalized] = factory
-        logger.debug("%s plugin '%s' registered via %s", self.kind.capitalize(), normalized, factory)
+        # Only log the first time this plugin name is observed across refresh cycles
+        if normalized not in self._logged_names:
+            logger.debug("%s plugin '%s' registered via %s", self.kind.capitalize(), normalized, factory)
+            self._logged_names.add(normalized)
 
     def names(self) -> Tuple[str, ...]:
         return tuple(self._factories.keys())
@@ -132,6 +137,24 @@ class PluginLoader:
         self._device_registry.clear()
         self._pc_registry.clear()
         self._pm.hook.register_device_plugins(registry=self._device_registry)
+        self._pm.hook.register_pc_plugins(registry=self._pc_registry)
+
+    def refresh_devices(self) -> None:
+        """Rebuild only the device plugin registry.
+
+        This avoids re-invoking PC plugin registrations when lazily loading a
+        single device plugin, which previously caused duplicate-looking log
+        lines even though registration remained idempotent.
+        """
+        self._device_registry.clear()
+        self._pm.hook.register_device_plugins(registry=self._device_registry)
+
+    def refresh_pcs(self) -> None:
+        """Rebuild only the PC plugin registry.
+
+        Used when lazily loading a PC plugin to avoid re-registering devices.
+        """
+        self._pc_registry.clear()
         self._pm.hook.register_pc_plugins(registry=self._pc_registry)
 
     def available_device_plugins(self) -> Tuple[str, ...]:
@@ -233,10 +256,17 @@ class PluginLoader:
             registration_name=f"lazy:{group}:{name}",
             log_context=f"lazy {group} plugin '{name}'",
         )
-        # After a successful register, refresh to invoke hookimpls
+        # After a successful register, refresh only the relevant registry to invoke hookimpls
         if module_name in self._registered_modules:
-            self.refresh()
-            logger.debug("Lazily loaded %s plugin '%s'", "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc", name)
+            if group == DEVICE_ENTRYPOINT_GROUP:
+                self.refresh_devices()
+            else:
+                self.refresh_pcs()
+            logger.debug(
+                "Lazily loaded %s plugin '%s'",
+                "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
+                name,
+            )
             return True
         return False
 
@@ -255,8 +285,15 @@ class PluginLoader:
                 log_context=f"entry point '{name}'",
             )
             if module_name in self._registered_modules:
-                self.refresh()
-                logger.debug("Lazily loaded %s plugin '%s' via entry point", "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc", name)
+                if group == DEVICE_ENTRYPOINT_GROUP:
+                    self.refresh_devices()
+                else:
+                    self.refresh_pcs()
+                logger.debug(
+                    "Lazily loaded %s plugin '%s' via entry point",
+                    "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
+                    name,
+                )
                 return True
             return False
         return False
@@ -286,6 +323,7 @@ class PluginLoader:
             return
         # Track successfully registered module to prevent duplicate attempts from other discovery paths.
         self._registered_modules.add(module_name)
+
 def _iter_entry_points(group: str) -> Iterable:
     """Return entry points for the given group with cross-version compatibility."""
     if sys.version_info >= (3, 10):

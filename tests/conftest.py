@@ -6,9 +6,14 @@ from typing import Any, cast
 
 import pytest
 
-# Ensure project root is on sys.path so 'tests' package imports resolve during collection.
+# Ensure local source takes precedence so tests exercise workspace code, not installed package.
 TESTS_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = TESTS_ROOT.parent
+SRC_ROOT = PROJECT_ROOT / "src"
+# Prepend src first to ensure `import ipat_watchdog` resolves to local sources
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+# Also add project root for any relative test package imports
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
@@ -28,7 +33,7 @@ from tests.helpers.fake_ui import HeadlessUI
 
 
 @pytest.fixture
-def config_service(tmp_path) -> init_config.__annotations__["return"]:
+def config_service(tmp_path):
     """Initialise the configuration service with sandboxed paths for tests."""
     root: Path = tmp_path / "sandbox"
     overrides = {
@@ -41,7 +46,7 @@ def config_service(tmp_path) -> init_config.__annotations__["return"]:
     }
 
     pc_config = build_pc_config(override_paths=overrides)
-    pc_config = replace(pc_config, session=replace(pc_config.session, timeout_seconds=300))
+    pc_config.session.timeout_seconds = 300
 
     device_config = build_device_config()
     device_config = replace(
@@ -148,12 +153,3 @@ def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
     )
     cast(Any, app)._observer_stub = observer_stub
     return app
-
-    return app
-
-    return app
-
-    return app
-
-    return app
-

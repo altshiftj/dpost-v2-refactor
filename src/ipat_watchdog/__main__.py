@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import sys
 
-from ipat_watchdog.core.app.bootstrap import bootstrap, MissingConfiguration, StartupError
+from ipat_watchdog.core.app.bootstrap import (MissingConfiguration,
+                                              StartupError, bootstrap)
 from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
@@ -30,4 +31,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    sys.exit(main())
+    sys.exit(main())
+    sys.exit(main())
+    sys.exit(main())
     sys.exit(main())
