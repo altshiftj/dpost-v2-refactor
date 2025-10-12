@@ -8,6 +8,7 @@ _EXPECTED_MAPPINGS = [
     ("tischrem_blb", ["sem_phenomxl2"]),
     ("zwick_blb", ["utm_zwick"]),
     ("horiba_blb", ["psa_horiba", "dsv_horiba"]),
+    ("twinscrew_blb", ["etr_twinscrew"]),
 ]
 
 

@@ -31,6 +31,8 @@ utm_zwick = []
 dsv_horiba = []
 
 # PC plugin dependencies
+extr_haake = []
+## PC-specific extras (empty) to allow selecting by PC without warnings
 tischrem_blb = []
 zwick_blb = []
 horiba_blb = []

@@ -24,6 +24,13 @@ def _load_plugin_or_skip(name: str) -> PCPlugin:
                 "dest_dir_suffix": "Data",
             },
         ),
+        (
+            "twinscrew_blb",
+            {
+                "identifier": "twinscrew_blb",
+                "devices": ("etr_twinscrew",),
+            },
+        ),
         ("tischrem_blb", {}),
     ],
 )

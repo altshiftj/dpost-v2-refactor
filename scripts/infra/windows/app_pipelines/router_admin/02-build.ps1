@@ -52,7 +52,7 @@ BUILD_TIME=$env:BUILD_TIME
 "@ | Out-File -Encoding ascii build/version.txt -Force
 
 # --- Step 4: Build executable from spec (spec handles hiddenimports) ---
-$specFile = "build/specs/$CI_JOB_NAME.spec"
+$specFile = "build/specs/gen.spec"
 if (!(Test-Path $specFile)) {
   Write-Error "Spec file not found: $specFile"
   exit 1
