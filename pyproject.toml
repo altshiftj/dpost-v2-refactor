@@ -29,13 +29,13 @@ sem_phenomxl2 = []
 psa_horiba = []
 utm_zwick = []
 dsv_horiba = []
+extr_haake = []
 
 # PC plugin dependencies
-extr_haake = []
-## PC-specific extras (empty) to allow selecting by PC without warnings
 tischrem_blb = []
 zwick_blb = []
 horiba_blb = []
+haake_blb = []
 test_pc = []
 
 [project.scripts]

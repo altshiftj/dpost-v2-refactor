@@ -32,4 +32,9 @@ compile*.py
 compile*.ps1
 file_structure*.txt
 /src/ipat_watchdog.egg-info
-/build/
+# Ignore everything in build/
+build/*
+# But do not ignore these:
+!build/specs/
+!build/.env
+!build/version.txt

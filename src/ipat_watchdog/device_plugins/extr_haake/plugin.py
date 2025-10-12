@@ -9,6 +9,7 @@ from ipat_watchdog.device_plugins.extr_haake.file_processor import (
     FileProcessorEXTRHaake,
 )
 from ipat_watchdog.device_plugins.extr_haake.settings import build_config
+from ipat_watchdog.plugin_system import DevicePluginRegistry, hookimpl
 
 
 class EXTRHaakePlugin(DevicePlugin):
@@ -23,3 +24,7 @@ class EXTRHaakePlugin(DevicePlugin):
 
     def get_file_processor(self) -> FileProcessorABS:
         return self._processor
+
+@hookimpl
+def register_device_plugins(registry: "DevicePluginRegistry") -> None:
+    registry.register("extr_haake", EXTRHaakePlugin)
