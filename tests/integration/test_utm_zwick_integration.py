@@ -2,18 +2,23 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 
-from ipat_watchdog.core.records.local_record import LocalRecord
 import pytest
 
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.storage.filesystem_utils import get_record_path, init_dirs
-from ipat_watchdog.device_plugins.utm_zwick.settings import build_config as build_utm_config
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from ipat_watchdog.core.config import init_config, reset_service
+from ipat_watchdog.core.processing.file_process_manager import \
+    FileProcessManager
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import (get_record_path,
+                                                         init_dirs)
+from ipat_watchdog.device_plugins.utm_zwick.settings import \
+    build_config as build_utm_config
+from ipat_watchdog.pc_plugins.test_pc.settings import \
+    build_config as build_pc_config
+from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
-from tests.helpers.fake_session import FakeSessionManager
-from ipat_watchdog.core.config import init_config, reset_service
 
 
 @pytest.fixture
@@ -44,7 +49,7 @@ def utm_processing_manager(tmp_path):
     fpm = FileProcessManager(
         interactions=ui,
         sync_manager=sync,
-        session_manager=session,
+        session_manager=cast(Any, FakeSessionManager(interactions=ui, scheduler=ui)),
         config_service=service,
     )
     try:
@@ -167,8 +172,16 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
     # Ensure numbering increments (collect numeric suffixes)
     import re as _re
     suffix_pattern = _re.compile(r".*-(\d+)$")
-    zs2_nums = sorted({int(suffix_pattern.match(p.stem).group(1)) for p in zs2_files if suffix_pattern.match(p.stem)})
-    csv_nums = sorted({int(suffix_pattern.match(p.stem).group(1)) for p in csv_files if suffix_pattern.match(p.stem)})
+    zs2_nums = sorted({
+        int(m.group(1))
+        for p in zs2_files
+        if (m := suffix_pattern.match(p.stem)) is not None
+    })
+    csv_nums = sorted({
+        int(m.group(1))
+        for p in csv_files
+        if (m := suffix_pattern.match(p.stem)) is not None
+    })
     assert zs2_nums == list(range(1, len(zs2_nums)+1)), f"Unexpected gap or numbering in zs2 files: {zs2_nums}"
     assert csv_nums == list(range(1, len(csv_nums)+1)), f"Unexpected gap or numbering in csv files: {csv_nums}"
 
@@ -178,6 +191,22 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
     new_files = current_files - preexisting_files
     assert new_files, "Expected newly created unique artefacts to be tracked"
     # Previously uploaded files are re-registered, so they require force; new ones should not be in force set yet.
+    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
+    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
+    # New artefacts should have uploaded flag False (pending upload)
+    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
+    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
+    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
+    # New artefacts should have uploaded flag False (pending upload)
+    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
+    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
+    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
+    # New artefacts should have uploaded flag False (pending upload)
+    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
+    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
+    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
+    # New artefacts should have uploaded flag False (pending upload)
+    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
     assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
     assert not (new_files & record.files_require_force), "New unique files should not require force initially"
     # New artefacts should have uploaded flag False (pending upload)

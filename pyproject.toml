@@ -38,7 +38,9 @@ ipat-watchdog = "ipat_watchdog.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
-packages = ["ipat_watchdog"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
 requires = ["setuptools", "wheel"]

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pytest
 
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.file_process_manager import \
+    FileProcessManager
 from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_session import FakeSessionManager
@@ -17,7 +20,7 @@ def processing_components(config_service):
     init_dirs()
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
-    session = FakeSessionManager(interactions=ui, scheduler=ui)
+    session = cast(Any, FakeSessionManager(interactions=ui, scheduler=ui))
     manager = FileProcessManager(
         interactions=ui,
         sync_manager=sync,
@@ -136,6 +139,18 @@ def test_mixed_file_types_processed_correctly(processing_components, tmp_setting
     data_files = [f for f in data_dir.iterdir() if f.suffix == ".txt"]
 
     assert len(image_files) == 1
+    assert len(data_files) == 1
+    assert not tif_path.exists()
+    assert not txt_path.exists()
+    assert len(data_files) == 1
+    assert not tif_path.exists()
+    assert not txt_path.exists()
+    assert len(data_files) == 1
+    assert not tif_path.exists()
+    assert not txt_path.exists()
+    assert len(data_files) == 1
+    assert not tif_path.exists()
+    assert not txt_path.exists()
     assert len(data_files) == 1
     assert not tif_path.exists()
     assert not txt_path.exists()

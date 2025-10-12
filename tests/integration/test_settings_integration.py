@@ -3,17 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.core.config import activate_device, current, init_config, reset_service
-from ipat_watchdog.core.config.schema import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    NamingSettings,
-    PathSettings,
-    PCConfig,
-    SessionSettings,
-    WatcherSettings,
-)
+from ipat_watchdog.core.config import (activate_device, current, init_config,
+                                       reset_service)
+from ipat_watchdog.core.config.schema import (DeviceConfig,
+                                              DeviceFileSelectors,
+                                              DeviceMetadata, NamingSettings,
+                                              PathSettings, PCConfig,
+                                              SessionSettings, WatcherSettings)
 
 
 @pytest.fixture
@@ -41,7 +37,7 @@ def config(tmp_path):
     device_a = DeviceConfig(
         identifier="device_a",
         metadata=DeviceMetadata(device_abbr="A", default_record_description="desc A", user_kadi_id="a-user"),
-        files=DeviceFileSelectors(allowed_extensions={".tiff", ".tif"}),
+        files=DeviceFileSelectors(allowed_extensions=frozenset({".tiff", ".tif"})),
         session=SessionSettings(timeout_seconds=120),
         watcher=WatcherSettings(poll_seconds=0.1, max_wait_seconds=5.0, stable_cycles=1),
     )
@@ -49,7 +45,7 @@ def config(tmp_path):
     device_b = DeviceConfig(
         identifier="device_b",
         metadata=DeviceMetadata(device_abbr="B", default_record_description="desc B", user_kadi_id="b-user"),
-        files=DeviceFileSelectors(allowed_extensions={".txt", ".csv"}),
+        files=DeviceFileSelectors(allowed_extensions=frozenset({".txt", ".csv"})),
         session=SessionSettings(timeout_seconds=300),
         watcher=WatcherSettings(poll_seconds=0.2, max_wait_seconds=7.0, stable_cycles=2),
     )
@@ -71,9 +67,10 @@ def test_active_config_defaults_to_pc(config):
 def test_device_activation_context(config):
     with activate_device("device_a"):
         active = current()
+        assert active.device is not None
         assert active.device.identifier == "device_a"
         assert active.session_timeout == 120
-        assert active.device_metadata.device_abbr == "A"
+        assert active.device.metadata.device_abbr == "A"
 
     # Context should restore PC-only view
     active = current()

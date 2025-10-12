@@ -3,18 +3,15 @@
 Manual smoke test demonstrating config service wiring with the sync manager.
 """
 import pytest
+
 pytest.importorskip("kadi_apy")
 from pathlib import Path
 
 from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.config.schema import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    PathSettings,
-    PCConfig,
-    SessionSettings,
-)
+from ipat_watchdog.core.config.schema import (DeviceConfig,
+                                              DeviceFileSelectors,
+                                              DeviceMetadata, PathSettings,
+                                              PCConfig, SessionSettings)
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from tests.helpers.fake_ui import HeadlessUI
 
@@ -41,7 +38,7 @@ def test_sync_settings_integration(tmp_path):
     device = DeviceConfig(
         identifier="manual_device",
         metadata=DeviceMetadata(device_abbr="MANUAL", default_record_description="Manual test device"),
-        files=DeviceFileSelectors(allowed_extensions={".tif"}),
+        files=DeviceFileSelectors(allowed_extensions=frozenset({".tif"})),
         session=SessionSettings(timeout_seconds=120),
     )
 

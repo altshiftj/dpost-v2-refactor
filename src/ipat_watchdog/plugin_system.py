@@ -105,9 +105,16 @@ class PCPluginRegistry(_BaseRegistry):
 
 
 class PluginLoader:
-    """Discover and instantiate Watchdog plugins using pluggy."""
+    """Discover and instantiate Watchdog plugins using pluggy.
 
-    def __init__(self, *, load_entrypoints: bool = True, load_builtins: bool = True) -> None:
+    By default, plugins are loaded lazily to avoid importing every available
+    plugin package at startup. Only the plugins explicitly requested by name
+    will be imported and registered. Full discovery of built-ins and entry
+    points can still be enabled via the constructor flags if needed for
+    listing or diagnostics.
+    """
+
+    def __init__(self, *, load_entrypoints: bool = False, load_builtins: bool = False) -> None:
         self._pm = pluggy.PluginManager(_PLUGIN_NAMESPACE)
         self._pm.add_hookspecs(HookSpecifications)
         self._device_registry = DevicePluginRegistry()
@@ -134,10 +141,32 @@ class PluginLoader:
         return self._pc_registry.names()
 
     def load_device(self, name: str) -> DevicePlugin:
-        return self._device_registry.create(name)
+        # Try existing registry first
+        try:
+            return self._device_registry.create(name)
+        except RuntimeError:
+            # Attempt lazy registration via built-in naming convention
+            if self._lazy_load_builtin(DEVICE_ENTRYPOINT_GROUP, name):
+                return self._device_registry.create(name)
+            # Attempt lazy registration via entry points
+            if self._lazy_load_entrypoint(DEVICE_ENTRYPOINT_GROUP, name):
+                return self._device_registry.create(name)
+            # Re-raise with original error message
+            raise
 
     def load_pc(self, name: str) -> PCPlugin:
-        return self._pc_registry.create(name)
+        # Try existing registry first
+        try:
+            return self._pc_registry.create(name)
+        except RuntimeError:
+            # Attempt lazy registration via built-in naming convention
+            if self._lazy_load_builtin(PC_ENTRYPOINT_GROUP, name):
+                return self._pc_registry.create(name)
+            # Attempt lazy registration via entry points
+            if self._lazy_load_entrypoint(PC_ENTRYPOINT_GROUP, name):
+                return self._pc_registry.create(name)
+            # Re-raise with original error message
+            raise
 
     def register_plugin(self, plugin: object, name: str | None = None) -> None:
         """Register an in-memory plugin (primarily for testing) and refresh hooks."""
@@ -155,6 +184,8 @@ class PluginLoader:
                 registration_name=f"{group}:{entry_point.name}",
                 log_context=f"entry point '{entry_point.name}'",
             )
+        # Refresh to collect any newly registered factories
+        self.refresh()
 
     def _load_builtin_plugins(self) -> None:
         packages = (
@@ -179,6 +210,56 @@ class PluginLoader:
                     registration_name=f"builtin:{group}:{module_info.name}",
                     log_context=f"builtin plugin '{module_info.name}'",
                 )
+        # Refresh to collect any newly registered factories
+        self.refresh()
+
+    def _lazy_load_builtin(self, group: str, name: str) -> bool:
+        """Attempt to import a single built-in plugin by naming convention.
+
+        Returns True if the module was imported/registered successfully.
+        """
+        if group == DEVICE_ENTRYPOINT_GROUP:
+            module_name = f"ipat_watchdog.device_plugins.{name}.plugin"
+        elif group == PC_ENTRYPOINT_GROUP:
+            module_name = f"ipat_watchdog.pc_plugins.{name}.plugin"
+        else:
+            return False
+
+        if module_name in self._registered_modules:
+            return False
+
+        self._register_module(
+            module_name=module_name,
+            registration_name=f"lazy:{group}:{name}",
+            log_context=f"lazy {group} plugin '{name}'",
+        )
+        # After a successful register, refresh to invoke hookimpls
+        if module_name in self._registered_modules:
+            self.refresh()
+            logger.debug("Lazily loaded %s plugin '%s'", "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc", name)
+            return True
+        return False
+
+    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
+        """Attempt to import a plugin from entry points by its name only.
+
+        Returns True if a matching entrypoint was found and loaded.
+        """
+        for entry_point in _iter_entry_points(group):
+            if entry_point.name != name:
+                continue
+            module_name, _, _ = entry_point.value.partition(":")
+            self._register_module(
+                module_name=module_name,
+                registration_name=f"entrypoint:{group}:{name}",
+                log_context=f"entry point '{name}'",
+            )
+            if module_name in self._registered_modules:
+                self.refresh()
+                logger.debug("Lazily loaded %s plugin '%s' via entry point", "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc", name)
+                return True
+            return False
+        return False
 
     def _register_module(self, module_name: str, registration_name: str, log_context: str) -> None:
         if module_name in self._registered_modules:
@@ -215,10 +296,13 @@ def _iter_entry_points(group: str) -> Iterable:
     return eps.get(group, [])
 
 def get_plugin_loader() -> PluginLoader:
-    """Return the singleton plugin loader."""
+    """Return the singleton plugin loader.
+
+    Defaults to a lazy loader that only imports requested plugins.
+    """
     global _PLUGIN_LOADER_SINGLETON
     if _PLUGIN_LOADER_SINGLETON is None:
-        _PLUGIN_LOADER_SINGLETON = PluginLoader()
+        _PLUGIN_LOADER_SINGLETON = PluginLoader(load_entrypoints=False, load_builtins=False)
     return _PLUGIN_LOADER_SINGLETON
 
 __all__ = [

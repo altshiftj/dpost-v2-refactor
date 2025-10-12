@@ -1,8 +1,8 @@
 import pytest
 
+from ipat_watchdog.core.config import PCConfig
 from ipat_watchdog.loader import load_pc_plugin
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.core.config import PCConfig
 
 
 def _load_plugin_or_skip(name: str) -> PCPlugin:
@@ -39,9 +39,9 @@ def test_load_pc_plugins(plugin_name: str, expectations: dict[str, object]):
     if "devices" in expectations:
         assert config.active_device_plugins == expectations["devices"]
     if "watch_dir_suffix" in expectations:
-        assert str(config.paths.watch_dir).endswith(expectations["watch_dir_suffix"])
+        assert str(config.paths.watch_dir).endswith(str(expectations["watch_dir_suffix"]))
     if "dest_dir_suffix" in expectations:
-        assert str(config.paths.dest_dir).endswith(expectations["dest_dir_suffix"])
+        assert str(config.paths.dest_dir).endswith(str(expectations["dest_dir_suffix"]))
 
 
 def test_pc_plugin_not_found():

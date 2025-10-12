@@ -1,8 +1,10 @@
-import pytest
-from pathlib import Path
 import sys
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
+
+import pytest
 
 # Ensure project root is on sys.path so 'tests' package imports resolve during collection.
 TESTS_ROOT = Path(__file__).resolve().parent
@@ -10,18 +12,19 @@ PROJECT_ROOT = TESTS_ROOT.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.config import init_config, reset_service, current
+from ipat_watchdog.core.config import current, init_config, reset_service
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
-
-from tests.helpers.fake_ui import HeadlessUI
-from tests.helpers.fake_sync import DummySyncManager
-from tests.helpers.fake_processor import DummyProcessor
+from ipat_watchdog.device_plugins.test_device.settings import \
+    build_config as build_device_config
+from ipat_watchdog.pc_plugins.test_pc.settings import \
+    build_config as build_pc_config
 from tests.helpers.fake_handler import FakeFileEventHandler
 from tests.helpers.fake_observer import FakeObserver
-from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_process_manager import FakeFileProcessManager
+from tests.helpers.fake_processor import DummyProcessor
+from tests.helpers.fake_session import FakeSessionManager
+from tests.helpers.fake_sync import DummySyncManager
+from tests.helpers.fake_ui import HeadlessUI
 
 
 @pytest.fixture
@@ -136,14 +139,21 @@ def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
         "ipat_watchdog.core.app.device_watchdog_app.Observer",
         lambda: observer_stub,
     )
-
     app = DeviceWatchdogApp(
         ui=fake_ui,
         sync_manager=fake_sync,
         config_service=config_service,
-        session_manager_cls=FakeSessionManager,
-        file_process_manager_cls=FakeFileProcessManager,
+        session_manager_cls=cast(Any, FakeSessionManager),
+        file_process_manager_cls=cast(Any, FakeFileProcessManager),
     )
-    app._observer_stub = observer_stub
+    cast(Any, app)._observer_stub = observer_stub
+    return app
+
+    return app
+
+    return app
+
+    return app
+
     return app
 
