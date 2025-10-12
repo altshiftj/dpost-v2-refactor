@@ -10,25 +10,21 @@ Supported workflow:
 """
 from __future__ import annotations
 
-from pathlib import Path
+import re
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
-import re
+from pathlib import Path
 from typing import Dict, List, Optional
-import threading
 
 from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS,
-    FileProbeResult,
-    ProcessingOutput,
-)
+    FileProbeResult, FileProcessorABS, ProcessingOutput)
 from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage.filesystem_utils import (
-    get_unique_filename,  # still used for txt snapshots
-    move_item,
-)
+from ipat_watchdog.core.storage.filesystem_utils import \
+    get_unique_filename  # still used for txt snapshots
+from ipat_watchdog.core.storage.filesystem_utils import move_item
 
 logger = setup_logger(__name__)
 
@@ -247,7 +243,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 # Choose highest numeric index if available
                 latest = max(
                     state.txt_snapshots,
-                    key=lambda p: int(_TXT_COUNTER_RE.match(p.stem).group("num")) if _TXT_COUNTER_RE.match(p.stem) else -1,
+                    key=lambda p: int(m.group("num")) if (m := _TXT_COUNTER_RE.match(p.stem)) else -1,
                 )
                 state.csv = latest
                 with self._lock:
@@ -273,7 +269,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             elif state.txt_snapshots:
                 primary = max(
                     state.txt_snapshots,
-                    key=lambda p: int(_TXT_COUNTER_RE.match(p.stem).group("num")) if _TXT_COUNTER_RE.match(p.stem) else -1,
+                    key=lambda p: int(m.group("num")) if (m := _TXT_COUNTER_RE.match(p.stem)) else -1,
                 )
                 state.csv = primary
             else:

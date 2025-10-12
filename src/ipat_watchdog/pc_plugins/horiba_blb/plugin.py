@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
-from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.pc_plugins.horiba_blb.settings import build_config
+from typing import TYPE_CHECKING
+
 from ipat_watchdog.core.config import PCConfig
+from ipat_watchdog.pc_plugins.horiba_blb.settings import build_config
+from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
+from ipat_watchdog.plugin_system import hookimpl
+
+if TYPE_CHECKING:
+    from ipat_watchdog.plugin_system import PCPluginRegistry
 
 
 class PCHoribaPlugin(PCPlugin):
@@ -15,3 +21,8 @@ class PCHoribaPlugin(PCPlugin):
 
     def get_config(self) -> PCConfig:
         return self._config
+
+
+@hookimpl
+def register_pc_plugins(registry: "PCPluginRegistry") -> None:
+    registry.register("horiba_blb", PCHoribaPlugin)

@@ -1,53 +1,46 @@
 """Coordinated file ingestion pipeline that hands off to device plugins."""
 from __future__ import annotations
 
-from dataclasses import replace
-from pathlib import Path
 import queue
 import re
+from dataclasses import replace
+from pathlib import Path
 from typing import Optional, Tuple
 
-from ipat_watchdog.metrics import FILES_FAILED, FILES_PROCESSED
 from ipat_watchdog.core.config import ConfigService, DeviceConfig, get_service
+from ipat_watchdog.core.interactions import UserInteractionPort
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
-from ipat_watchdog.core.processing.models import (
-    ProcessingCandidate,
-    ProcessingRequest,
-    ProcessingResult,
-    ProcessingStatus,
-    RouteContext,
-    RoutingDecision,
-)
-from ipat_watchdog.core.processing.notifications import notify_success
 from ipat_watchdog.core.processing.device_resolver import DeviceResolver
-from ipat_watchdog.core.processing.processor_factory import FileProcessorFactory
-from ipat_watchdog.core.processing.record_flow import (
-    handle_unappendable_record,
-)
-from ipat_watchdog.core.processing.record_utils import (
-    apply_device_defaults,
-    get_or_create_record,
-    manage_session,
-    update_record,
-)
+from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
+from ipat_watchdog.core.processing.file_processor_abstract import (
+    FileProcessorABS, ProcessingOutput)
+from ipat_watchdog.core.processing.models import (ProcessingCandidate,
+                                                  ProcessingRequest,
+                                                  ProcessingResult,
+                                                  ProcessingStatus,
+                                                  RouteContext,
+                                                  RoutingDecision)
+from ipat_watchdog.core.processing.notifications import notify_success
+from ipat_watchdog.core.processing.processor_factory import \
+    FileProcessorFactory
+from ipat_watchdog.core.processing.record_flow import \
+    handle_unappendable_record
+from ipat_watchdog.core.processing.record_utils import (apply_device_defaults,
+                                                        get_or_create_record,
+                                                        manage_session,
+                                                        update_record)
 from ipat_watchdog.core.processing.rename_flow import RenameService
-from ipat_watchdog.core.processing.routing import (
-    determine_routing_state,
-    fetch_record_for_prefix,
-)
-from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS, ProcessingOutput
+from ipat_watchdog.core.processing.routing import (determine_routing_state,
+                                                   fetch_record_for_prefix)
+from ipat_watchdog.core.processing.stability_tracker import \
+    FileStabilityTracker
 from ipat_watchdog.core.records.record_manager import RecordManager
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.storage.filesystem_utils import (
-    generate_file_id,
-    get_record_path,
-    move_to_exception_folder,
-    parse_filename,
-)
+    generate_file_id, get_record_path, move_to_exception_folder,
+    parse_filename)
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.interactions import UserInteractionPort
+from ipat_watchdog.metrics import FILES_FAILED, FILES_PROCESSED
 
 logger = setup_logger(__name__)
 
@@ -113,12 +106,15 @@ class _ProcessingPipeline:
         except Exception as exc:
             manager._handle_processing_failure(request.source, candidate, exc)
             raise RuntimeError(f"File processing failed for {request.source}: {exc}") from exc
+        # This point should be unreachable because control flow either returns or raises above.
+        raise RuntimeError("Unreachable code in _execute_pipeline")
 
     def _build_candidate(self, request: ProcessingRequest, processor: FileProcessorABS) -> ProcessingCandidate | ProcessingResult:
         manager = self._manager
         preprocessed = processor.device_specific_preprocessing(str(request.source))
         if preprocessed is None:
             return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefacts")
+        assert preprocessed is not None  # type narrowing for Pylance
 
         # Normalise any internal staging suffix before deriving prefix/extension.
         parse_target = manager._strip_internal_stage_suffix(Path(preprocessed))
@@ -178,6 +174,8 @@ class _ProcessingPipeline:
                 notify=False,
                 device=candidate.device,
             )
+            if final_path is None:
+                return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
             return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
 
         # Remaining cases fall back to the rename flow (invalid format, collisions, etc.).
@@ -224,7 +222,7 @@ class _ProcessingPipeline:
             logger.info("Internal staging folder ignored: %s", path)
             manager._register_rejection(str(path), reason)
             return ProcessingResult(ProcessingStatus.DEFERRED, reason)
-        move_to_exception_folder(path)
+        move_to_exception_folder(str(path))
         manager._register_rejection(str(path), reason)
         FILES_FAILED.inc()
         return ProcessingResult(ProcessingStatus.REJECTED, reason)
@@ -338,20 +336,17 @@ class FileProcessManager:
     def _resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
         if self.file_processor is not None:
             return self.file_processor
+        # Fall back to loading a processor via the factory based on the resolved device.
+        # The factory caches instances per device, so repeated calls are inexpensive.
         return self._processor_factory.get_for_device(device.identifier)
-
     @staticmethod
     def _strip_internal_stage_suffix(path: Path) -> Path:
         name = path.name
-        match = _INTERNAL_STAGING_SUFFIX_RE.search(name)
-        if not match:
+        if not _INTERNAL_STAGING_SUFFIX_RE.search(name):
             return path
-
-        prefix = match.group('prefix')
-        extension = match.group('extension')
-        if not prefix and not extension:
-            return path
-        return path.with_name(f"{prefix}{extension}")
+        # Remove internal staging marker from the filename (e.g., "file.__staged__2.csv" -> "file.csv").
+        new_name = _INTERNAL_STAGING_SUFFIX_RE.sub('', name)
+        return path.with_name(new_name)
 
     @staticmethod
     def _is_internal_staging_path(path: Path) -> bool:

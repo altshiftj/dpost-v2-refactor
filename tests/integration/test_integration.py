@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.interactions.messages import InfoMessages
+from ipat_watchdog.core.processing.file_process_manager import \
+    FileProcessManager
 from ipat_watchdog.core.processing.models import ProcessingStatus
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.core.interactions.messages import InfoMessages
-
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
@@ -37,15 +38,14 @@ def real_processing_app(config_service, tmp_settings, monkeypatch):
         "ipat_watchdog.core.app.device_watchdog_app.Observer",
         lambda: observer_stub,
     )
-
     app = DeviceWatchdogApp(
-        ui=ui,
+        ui=cast(Any, ui),  # HeadlessUI implements UserInteractionPort, which is compatible with UserInterface
         sync_manager=sync,
         config_service=config_service,
         file_process_manager_cls=FileProcessManager,
     )
-    app._observer_stub = observer_stub
-    app._sync_manager = sync
+    # Expose sync manager for assertions without mutating DeviceWatchdogApp internals
+    setattr(ui, "sync_manager", sync)
 
     app.initialize()
     try:
@@ -166,7 +166,8 @@ def test_session_end_flushes_on_done(real_processing_app, tmp_settings):
     drain_scheduled_tasks(real_processing_app.ui)
 
     assert real_processing_app.file_processing.records.all_records_uploaded()
-    assert real_processing_app._sync_manager.synced_records, "Expected sync manager to be invoked"
+    sync_mgr = getattr(real_processing_app.ui, "sync_manager", None)
+    assert sync_mgr is not None and sync_mgr.synced_records, "Expected sync manager to be invoked"
 
 
 # ---------------------------------------------------------------------------

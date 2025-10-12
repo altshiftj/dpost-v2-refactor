@@ -3,15 +3,13 @@
 import datetime
 from typing import Dict, Optional
 
-from ipat_watchdog.metrics import FILES_PROCESSED_BY_RECORD
+from ipat_watchdog.core.config.schema import DeviceConfig
+from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
-    load_persisted_records,
-    save_persisted_records,
-    generate_record_id,
-)
+    generate_record_id, load_persisted_records, save_persisted_records)
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.metrics import FILES_PROCESSED_BY_RECORD
 
 logger = setup_logger(__name__)
 
@@ -67,7 +65,7 @@ class RecordManager:
         logger.info("Reloading persisted records from disk...")
         self._persist_records_dict = load_persisted_records()
 
-    def create_record(self, filename_prefix: str, device=None) -> LocalRecord:
+    def create_record(self, filename_prefix: str, device: Optional[DeviceConfig] = None) -> LocalRecord:
         """
         Creates and stores a new LocalRecord using the filename prefix.
 

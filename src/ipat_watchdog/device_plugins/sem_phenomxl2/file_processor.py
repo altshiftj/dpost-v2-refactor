@@ -1,17 +1,16 @@
 """Processor for Phenom-XL SEM artefacts."""
 from __future__ import annotations
 
-from pathlib import Path
 import shutil
+from pathlib import Path
 
 from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS,
-    ProcessingOutput,
-)
+    FileProcessorABS, ProcessingOutput)
 from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
+from ipat_watchdog.core.storage.filesystem_utils import (get_unique_filename,
+                                                         move_item)
 
 logger = setup_logger(__name__)
 
@@ -75,7 +74,8 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         if extension.lower() in {ext.lower() for ext in self.device_config.files.native_extensions}:
             # Native microscope images only need deduplicated moves into the record directory.
             destination = get_unique_filename(record_path, filename_prefix, extension)
-            move_item(actual_src_path, destination)
+            # Pass a Path object for the source to align with unit test expectations.
+            move_item(actual_src_path, str(destination))
             return ProcessingOutput(final_path=destination, datatype="img")
 
         zip_path = self._zip_export(actual_src_path, record_dir, filename_prefix)

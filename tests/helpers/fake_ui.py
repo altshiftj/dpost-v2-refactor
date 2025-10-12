@@ -1,9 +1,11 @@
 # tests/helpers/fake_ui.py
-from ipat_watchdog.core.interactions import RenameDecision, RenamePrompt, SessionPromptDetails
+from ipat_watchdog.core.interactions import (RenameDecision, RenamePrompt,
+                                             SessionPromptDetails)
+from ipat_watchdog.core.interactions.ports import UserInteractionPort
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 
-class HeadlessUI(UserInterface):
+class HeadlessUI(UserInteractionPort):
     def __init__(self):
         self.infos = []
         self.warnings = []
@@ -92,7 +94,9 @@ class HeadlessUI(UserInterface):
         return self.task_counter  # Return unique handle
 
     def cancel_task(self, handle):
-        self.task_counter += 1  # Simulate next unique handle after cancel
+        # Align internal counter with the cancelled handle so next schedule returns handle+1
+        if isinstance(handle, int):
+            self.task_counter = max(self.task_counter, handle)
 
     def set_close_handler(self, callback):
         self.close_handler = callback

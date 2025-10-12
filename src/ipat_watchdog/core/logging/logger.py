@@ -1,10 +1,10 @@
 """Logging helpers that emit structured JSON to disk and stdout."""
 
-import logging
 import json
+import logging
 import sys
-from pathlib import Path
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
 BASE_DIR = Path("C:/Watchdog")
 LOG_DIR = BASE_DIR / "logs"
@@ -24,8 +24,9 @@ class JSONFormatter(logging.Formatter):
             "filename": record.filename,
             "line": record.lineno,
         }
-        if hasattr(record, "session_id"):
-            log_record["session_id"] = record.session_id
+        session_id = getattr(record, "session_id", None)
+        if session_id is not None:
+            log_record["session_id"] = session_id
         if record.exc_info:
             log_record["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_record)

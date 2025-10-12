@@ -1,24 +1,18 @@
 """Processor for Horiba DSV dissolver batches."""
 from __future__ import annotations
 
-from pathlib import Path
 import time
 import zipfile
+from pathlib import Path
 from typing import Any, Dict, List
 
+from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS,
-    FileProbeResult,
-    ProcessingOutput,
-)
-from ipat_watchdog.core.config import DeviceConfig
+    FileProbeResult, FileProcessorABS, ProcessingOutput)
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
-    get_unique_filename,
-    move_item,
-    move_to_exception_folder,
-)
+    get_unique_filename, move_item, move_to_exception_folder)
 
 logger = setup_logger(__name__)
 
@@ -129,7 +123,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         bucket = self._batches.pop(key, None)
         if not bucket:
             destination = get_unique_filename(record_path, filename_prefix, src.suffix.lower())
-            move_item(src, destination)
+            move_item(str(src), destination)
             return ProcessingOutput(final_path=destination, datatype="txt")
 
         files: List[Path] = bucket["files"]
@@ -195,7 +189,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
             for candidate in files:
                 if isinstance(candidate, Path) and candidate.exists():
                     try:
-                        move_to_exception_folder(candidate)
+                        move_to_exception_folder(str(candidate))
                         logger.info("Moved orphan file to exceptions: '%s'", candidate)
                     except Exception as exc:  # pragma: no cover - defensive
                         logger.warning("Could not move orphan file '%s': %s", candidate, exc)

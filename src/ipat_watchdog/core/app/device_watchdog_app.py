@@ -12,24 +12,20 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 
-from ipat_watchdog.metrics import (
-    EVENTS_PROCESSED,
-    EXCEPTIONS_THROWN,
-    FILE_PROCESS_TIME,
-    FILES_FAILED,
-    FILES_PROCESSED,
-    SESSION_DURATION,
-    SESSION_EXIT_STATUS,
-)
-
 from ipat_watchdog.core.config import ConfigService
 from ipat_watchdog.core.interactions import ErrorMessages
 from ipat_watchdog.core.logging.logger import setup_logger
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
+from ipat_watchdog.core.processing.file_process_manager import \
+    FileProcessManager
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.ui.adapters import UiInteractionAdapter, UiTaskScheduler
+from ipat_watchdog.core.ui.adapters import (UiInteractionAdapter,
+                                            UiTaskScheduler)
 from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from ipat_watchdog.metrics import (EVENTS_PROCESSED, EXCEPTIONS_THROWN,
+                                   FILE_PROCESS_TIME, FILES_FAILED,
+                                   FILES_PROCESSED, SESSION_DURATION,
+                                   SESSION_EXIT_STATUS)
 
 logger = setup_logger(__name__)
 
@@ -44,7 +40,7 @@ class QueueingEventHandler(FileSystemEventHandler):
     def on_created(self, event: FileSystemEvent) -> None:
         kind = "Folder" if event.is_directory else "File"
         logger.debug("%s detected: %s", kind, event.src_path)
-        self._event_queue.put(event.src_path)
+        self._event_queue.put(str(event.src_path))
 
 
 class DeviceWatchdogApp:
@@ -230,7 +226,7 @@ class DeviceWatchdogApp:
 
             metric = next(m for m in REGISTRY.collect() if m.name == FILES_PROCESSED._name)
             accumulated = sum(
-                sample.counter.value for sample in metric.samples if sample.name == FILES_PROCESSED._name
+                sample.value for sample in metric.samples if sample.name == FILES_PROCESSED._name
             )
             return int(accumulated)
         except Exception:  # noqa: BLE001 - metrics registry absent during tests/dev

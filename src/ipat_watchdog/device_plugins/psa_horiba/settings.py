@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import re
 
-from ipat_watchdog.core.config import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    SessionSettings,
-    WatcherSettings,
-)
+from ipat_watchdog.core.config import (DeviceConfig, DeviceFileSelectors,
+                                       DeviceMetadata, SessionSettings,
+                                       WatcherSettings)
 
 
 def build_config() -> DeviceConfig:
@@ -42,8 +38,8 @@ def build_config() -> DeviceConfig:
     """,
         ),
         files=DeviceFileSelectors(
-            native_extensions=(".ngb",),
-            exported_extensions=(".csv",),
+            native_extensions=frozenset({".ngb"}),
+            exported_extensions=frozenset({".csv"}),
         ),
         session=SessionSettings(timeout_seconds=600),
         watcher=WatcherSettings(

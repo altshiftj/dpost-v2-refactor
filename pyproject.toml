@@ -16,6 +16,7 @@ dependencies = [
     "PyYAML",
     "flask",
     "waitress",
+    "pluggy",
 ]
 
 [project.optional-dependencies]
@@ -31,19 +32,6 @@ tischrem_blb = []
 zwick_blb = []
 horiba_blb = []
 test_pc = []
-
-[project.entry-points."ipat_watchdog.device_plugins"]
-sem_phenomxl2 = "ipat_watchdog.device_plugins.sem_phenomxl2.plugin:SEMPhenomXL2Plugin"
-psa_horiba = "ipat_watchdog.device_plugins.psa_horiba.plugin:PSAHoribaPlugin"
-utm_zwick = "ipat_watchdog.device_plugins.utm_zwick.plugin:UTMZwickPlugin"
-dsv_horiba = "ipat_watchdog.device_plugins.dsv_horiba.plugin:DSVHoribaPlugin"
-test_device = "ipat_watchdog.device_plugins.test_device.plugin:TestDevicePlugin"
-
-[project.entry-points."ipat_watchdog.pc_plugins"]
-tischrem_blb = "ipat_watchdog.pc_plugins.tischrem_blb.plugin:PCTischREMPlugin"
-zwick_blb = "ipat_watchdog.pc_plugins.zwick_blb.plugin:PCZwickPlugin"
-horiba_blb = "ipat_watchdog.pc_plugins.horiba_blb.plugin:PCHoribaPlugin"
-test_pc = "ipat_watchdog.pc_plugins.test_pc.plugin:TestPCPlugin"
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

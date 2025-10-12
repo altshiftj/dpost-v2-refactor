@@ -9,19 +9,19 @@ day-level continuity.
 Keep functions small and predictable; prefer returning strings/paths and let
 callers handle higher-level orchestration.
 """
-from pathlib import Path
-import shutil
-import logging
 import json
+import logging
 import re
-from typing import Callable, Optional
+import shutil
+from pathlib import Path
+from typing import Callable, Optional, Union
 
 from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.config import current
 from ipat_watchdog.core.config.service import ActiveConfig
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.interactions.messages import ValidationMessages
+from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -205,7 +205,7 @@ def remove_directory_if_empty(path: Path) -> None:
 # FILE MOVEMENT / STORAGE ACTIONS
 # -------------------------------
 
-def move_item(src: str, dest: str) -> None:
+def move_item(src: Union[str, Path], dest: Union[str, Path]) -> None:
     """Move a file or directory to `dest`, retrying with shutil if needed.
 
     Handles pre-existing empty placeholder files at destination by removing
@@ -244,7 +244,7 @@ def move_item(src: str, dest: str) -> None:
                         import shutil
                         shutil.rmtree(dest_path)
             import shutil
-            shutil.move(src, dest)
+            shutil.move(str(src_path), str(dest_path))
         except Exception as e_move:
             logger.error("Failed to move '%s' to '%s' using shutil.move: %s.", src, dest, e_move)
             raise e_move
@@ -265,7 +265,7 @@ def _move_to_folder(
     logger.log(log_level, log_message.format(src, dest))
 
 
-def move_to_exception_folder(src_path: str, filename_prefix: str = None, extension: str = None) -> None:
+def move_to_exception_folder(src_path: str, filename_prefix: str | None = None, extension: str | None = None) -> None:
     """Move an item to the exceptions folder (unique path)."""
     if filename_prefix is None:
         filename_prefix = Path(src_path).stem

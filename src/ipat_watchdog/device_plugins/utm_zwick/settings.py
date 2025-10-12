@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import re
 
-from ipat_watchdog.core.config import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    SessionSettings,
-    WatcherSettings,
-)
+from ipat_watchdog.core.config import (DeviceConfig, DeviceFileSelectors,
+                                       DeviceMetadata, SessionSettings,
+                                       WatcherSettings)
 from ipat_watchdog.core.config.schema import BatchSettings
 
 
@@ -49,12 +45,12 @@ information below.
 """,
         ),
         files=DeviceFileSelectors(
-            native_extensions=(".zs2",),
+            native_extensions=frozenset({".zs2"}),
             # Legacy exported .xlsx kept for backward compatibility tests.
             # New workflow will add .csv + multiple .txt snapshots; those are
             # handled dynamically in the processor and do not need explicit
             # enumeration here unless downstream needs probing.
-            exported_extensions=(".xlsx", ".csv", ".txt"),
+            exported_extensions=frozenset({".xlsx", ".csv", ".txt"}),
         ),
         session=SessionSettings(timeout_seconds=4 * 3600),
         watcher=WatcherSettings(
@@ -66,7 +62,7 @@ information below.
             sentinel_name=None,
         ),
         batch=BatchSettings(
-            ttl_seconds=0.5 * 3600,  # 30 minutes
+            ttl_seconds=int(0.5 * 3600),  # 30 minutes
             max_batch_size=50,
             flush_on_session_end=True,
         ),

@@ -3,13 +3,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS,
-    ProcessingOutput,
-)
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
 from ipat_watchdog.core.logging.logger import setup_logger
+from ipat_watchdog.core.processing.file_processor_abstract import (
+    FileProcessorABS, ProcessingOutput)
+from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import (get_unique_filename,
+                                                         move_item)
 
 logger = setup_logger(__name__)
 
@@ -25,7 +24,7 @@ class TestFileProcessor(FileProcessorABS):
         extension: str,
     ) -> ProcessingOutput:
         destination = get_unique_filename(record_path, filename_prefix, extension)
-        move_item(Path(src_path), destination)
+        move_item(src_path, destination)
         logger.debug("Test processor moved '%s' to '%s'", src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="test")
 

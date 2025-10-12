@@ -4,13 +4,9 @@ from __future__ import annotations
 
 import re
 
-from ipat_watchdog.core.config import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    SessionSettings,
-    WatcherSettings,
-)
+from ipat_watchdog.core.config import (DeviceConfig, DeviceFileSelectors,
+                                       DeviceMetadata, SessionSettings,
+                                       WatcherSettings)
 
 
 def build_config() -> DeviceConfig:
@@ -36,8 +32,8 @@ def build_config() -> DeviceConfig:
     """,
         ),
             files=DeviceFileSelectors(
-                allowed_extensions={".tif", ".txt"},
-                native_extensions={".tif"},
+                allowed_extensions=frozenset({".tif", ".txt"}),
+                native_extensions=frozenset({".tif"}),
             ),
         session=SessionSettings(timeout_seconds=300),
         watcher=WatcherSettings(

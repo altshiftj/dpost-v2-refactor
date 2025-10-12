@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-from ipat_watchdog.core.config import (
-    DeviceConfig,
-    DeviceFileSelectors,
-    DeviceMetadata,
-    SessionSettings,
-    WatcherSettings,
-)
+from ipat_watchdog.core.config import (DeviceConfig, DeviceFileSelectors,
+                                       DeviceMetadata, SessionSettings,
+                                       WatcherSettings)
 
 
 def build_config() -> DeviceConfig:
@@ -40,8 +36,8 @@ processed results and dissolution curves.
 """,
         ),
         files=DeviceFileSelectors(
-            native_extensions={".wdb", ".wdk", ".wdp"},
-            exported_extensions={".xls"},
+            native_extensions=frozenset({".wdb", ".wdk", ".wdp"}),
+            exported_extensions=frozenset({".xls"}),
         ),
         session=SessionSettings(timeout_seconds=600),
         watcher=WatcherSettings(),

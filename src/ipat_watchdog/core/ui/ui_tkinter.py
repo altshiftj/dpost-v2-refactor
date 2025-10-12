@@ -5,15 +5,16 @@ and a concrete implementation (TKinterUI) that displays dialogs, pop-ups, and ot
 UI elements to guide user interactions.
 """
 
+import threading
 import tkinter as tk
 from tkinter import messagebox
-from typing import Dict, Optional, Callable, Any
-import threading
+from typing import Any, Callable, Dict, Optional
 
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
-from ipat_watchdog.core.ui.dialogs import RenameDialog
 from ipat_watchdog.core.interactions import SessionPromptDetails
-from ipat_watchdog.core.interactions.messages import InfoMessages, DialogPrompts
+from ipat_watchdog.core.interactions.messages import (DialogPrompts,
+                                                      InfoMessages)
+from ipat_watchdog.core.ui.dialogs import RenameDialog
+from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 
 class TKinterUI(UserInterface):
@@ -71,7 +72,7 @@ class TKinterUI(UserInterface):
         Display a dialog prompting the user to rename a file or folder.
         Returns a dict with user input if confirmed, or None if canceled.
         """
-        dialog = RenameDialog(self.root, "Rename File")
+        dialog = RenameDialog(self.root, "", {})
         return dialog.result
 
     def show_rename_dialog(
@@ -158,14 +159,14 @@ class TKinterUI(UserInterface):
         if self.root.winfo_exists():
             self.root.destroy()
 
-    def schedule_task(self, interval_ms: int, callback: Callable[[], None]) -> int:
+    def schedule_task(self, interval_ms: int, callback: Callable[[], None]) -> str:
         """
         Schedule a callback to run once after 'interval_ms' milliseconds.
         Returns an ID (string) that can be used to cancel the task.
         """
         return self.root.after(interval_ms, callback)
 
-    def cancel_task(self, handle: int) -> None:
+    def cancel_task(self, handle: Optional[str]) -> None:
         """
         Cancel a previously scheduled task identified by 'handle'.
         """
@@ -266,4 +267,5 @@ class TKinterUI(UserInterface):
         for key, tracked_dialog in list(self._active_dialogs.items()):
             if tracked_dialog == dialog:
                 del self._active_dialogs[key]
+                break
                 break
