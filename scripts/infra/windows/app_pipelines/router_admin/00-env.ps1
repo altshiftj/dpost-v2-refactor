@@ -102,11 +102,11 @@ try {
 # CI-related Defaults
 # ------------------------------
 # Default PC/job profile; can be overridden by environment
-if (-not $env:CI_JOB_NAME -or $env:CI_JOB_NAME -eq "") { $env:CI_JOB_NAME = "twinscrew_blb" }
+if (-not $env:CI_JOB_NAME -or $env:CI_JOB_NAME -eq "") { $env:CI_JOB_NAME = "haake_blb" }
 
 # Device plugins list (comma/semicolon/space separated). Override per run if needed.
 # Examples: "psa_horiba,dsv_horiba" or "utm_zwick" or ""
-$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "etr_twinscrew" }
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "extr_haake" }
 
 # Build unified pip-extras string (e.g., "ci,horiba_blb,psa_horiba,dsv_horiba")
 $env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
