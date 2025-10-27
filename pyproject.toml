@@ -20,23 +20,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ci     = ["pytest", "pyfakefs"]
-build  = ["pyinstaller"]
-dev    = ["black", "mypy", "ruff"]
+ci              = ["pytest", "pyfakefs"]
+build           = ["pyinstaller"]
+dev             = ["black", "mypy", "ruff"]
 
 # Device plugin dependencies
-sem_phenomxl2 = []
-psa_horiba = []
-utm_zwick = []
-dsv_horiba = []
-extr_haake = []
+sem_phenomxl2   = []
+psa_horiba      = []
+utm_zwick       = []
+dsv_horiba      = []
+extr_haake      = []
 
 # PC plugin dependencies
-tischrem_blb = []
-zwick_blb = []
-horiba_blb = []
-haake_blb = []
-test_pc = []
+tischrem_blb    = []
+zwick_blb       = []
+horiba_blb      = []
+haake_blb       = []
+test_pc         = []
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"
