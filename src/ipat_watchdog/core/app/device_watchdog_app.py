@@ -229,5 +229,5 @@ class DeviceWatchdogApp:
                 sample.value for sample in metric.samples if sample.name == FILES_PROCESSED._name
             )
             return int(accumulated)
-        except Exception:  # noqa: BLE001 - metrics registry absent during tests/dev
+        except Exception:
             return 0
