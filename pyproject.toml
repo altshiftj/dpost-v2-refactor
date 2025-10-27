@@ -30,12 +30,14 @@ psa_horiba      = []
 utm_zwick       = []
 dsv_horiba      = []
 extr_haake      = []
+rhe_kinexus     = []
 
 # PC plugin dependencies
 tischrem_blb    = []
 zwick_blb       = []
 horiba_blb      = []
 haake_blb       = []
+kinexus_blb     = []
 test_pc         = []
 
 [project.scripts]
