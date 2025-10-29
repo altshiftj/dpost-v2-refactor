@@ -38,7 +38,7 @@ def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
     ngb_sentinel.write_bytes(b"ngb-second")
 
     advertised = processor.device_specific_preprocessing(str(ngb_sentinel))
-    expected_prefix = "Final_Sample"
+    expected_prefix = "Final Sample"
     assert advertised == str(watch_dir / f"{expected_prefix}{ngb_sentinel.suffix}")
 
     output = processor.device_specific_processing(
@@ -60,8 +60,8 @@ def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
     second_csv = record_dir / f"{expected_prefix}-02.csv"
     second_zip = record_dir / f"{expected_prefix}-02.zip"
 
-    # Tabs replaced with semicolons and originals removed
-    assert "Probenname;Bucket Sample" in first_csv.read_text(encoding="utf-8")
+    # CSV content is preserved (no delimiter conversion) and originals removed
+    assert "Probenname\tBucket Sample" in first_csv.read_text(encoding="utf-8")
     for original in (csv_first, csv_sentinel, ngb_first, ngb_sentinel):
         assert not original.exists()
 
