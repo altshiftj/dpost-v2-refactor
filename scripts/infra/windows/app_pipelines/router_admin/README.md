@@ -9,10 +9,10 @@ The entry point is `full_pipeline.ps1`, which executes the numbered stage script
 | --- | --- | --- | --- |
 | 0 | `00-env.ps1` | Discovers the repo root, preloads Git metadata, prepares Pip extras, and exposes tunnel helpers plus router/PC credentials. | PowerShell, Git, PuTTY (`plink.exe`, `pscp.exe`), credential files under `%USERPROFILE%\.secure`. |
 | 1 | `01-test.ps1` | Creates a disposable venv, installs project extras (CI + device plugins), ensures `build/.env`, and runs `pytest`. | Python ≥3.11, `pytest`, repo tests. |
-| 2 | `02-build.ps1` | Builds the Windows executable with PyInstaller using the device-specific spec file and writes `build/version.txt`. | PyInstaller, `build/specs/<pc>.spec`, `dist/wd-<pc>.exe`. |
+| 2 | `02-build.ps1` | Builds the Windows executable with PyInstaller using the device-specific spec file and writes `build/version-<pc>.txt`. | PyInstaller, `build/specs/<pc>.spec`, `dist/wd-<pc>.exe`. |
 | 3 | `03-sign.ps1` | Signs the freshly built executable with the configured PFX certificate and verifies the signature. | Windows SDK `signtool.exe`, `%USERPROFILE%\.secure\pfxpass.txt`. |
-| 4 | `04-deploy.ps1` | Establishes the SSH tunnel, stops remote tasks, pushes the new binary and `version.txt`, and verifies remote artifacts. | PuTTY (`plink`, `pscp`), Windows Scheduled Tasks, remote `C:\Watchdog`. |
-| 5 | `05-run.ps1` | Registers/starts the `IPAT-Watchdog-<pc>` scheduled task on the target PC through the tunnel. | Remote `register_task.ps1`, Scheduled Tasks API. |
+| 4 | `04-deploy.ps1` | Establishes the SSH tunnel, stops remote tasks, pushes the new binary and `version-<pc>.txt`, and verifies remote artifacts. | PuTTY (`plink`, `pscp`), Windows Scheduled Tasks, remote `C:\Watchdog`. |
+| 5 | `05-run.ps1` | Registers/starts the `IPAT-Watchdog-<pc>` scheduled task on the target PC through the tunnel. | Inline PowerShell (EncodedCommand) using the Scheduled Tasks API. |
 | 6 | `06-health_check.ps1` | Forwards local port → router → target and polls the watchdog HTTP health endpoint until success or timeout. | `Invoke-RestMethod` against `http://127.0.0.1:<localPort>/health`. |
 | 7 | `07-rollback.ps1` | Restores `_backup` artifacts, restarts the scheduled task, and prints the recovered version info via the router hop. | Tunnel helpers, remote backups (`*_backup.*`). |
 
@@ -25,7 +25,7 @@ The entry point is `full_pipeline.ps1`, which executes the numbered stage script
   - `ipat_wd.pfx` signing certificate and `pfxpass.txt` password file.
   - Router/target password files named per `CI_JOB_NAME` (if password auth is used) **or** PuTTY `.ppk` keys plus a note of the matching passphrase.
   - Text files that record the trusted host key fingerprints you collect in the preparation steps below.
-- A valid PyInstaller spec in `build/specs/<CI_JOB_NAME>.spec` and the `register_task.ps1` script sitting in the remote `REMOTE_PATH`.
+- A valid PyInstaller spec in `build/specs/<CI_JOB_NAME>.spec`.
 
 ## Preparing a new router/target pair
 The pipeline assumes password-less SSH with known host fingerprints. Run through these steps once per new deployment device:
@@ -104,10 +104,10 @@ powershell -ExecutionPolicy Bypass -Command ". .\00-env.ps1; .\02-build.ps1; .\0
 
 ### Stage-specific notes
 - **Testing (`01-test.ps1`)** writes a temporary venv named `.test_testvenv` and deletes any pre-existing copy.
-- **Build (`02-build.ps1`)** expects the PyInstaller spec to exist; it writes `build/.env` and `build/version.txt` before invoking PyInstaller.
+- **Build (`02-build.ps1`)** expects the PyInstaller spec to exist; it writes `build/.env` and `build/version-<pc>.txt` before invoking PyInstaller.
 - **Signing (`03-sign.ps1`)** exits early if `signtool.exe` is not available—install the Windows 10/11 SDK if needed.
-- **Deploy (`04-deploy.ps1`)** rotates existing remote files to `_backup` variants and regenerates `version.txt` with deploy metadata.
-- **Run (`05-run.ps1`)** depends on a remote `register_task.ps1` script that knows how to register/start the Windows scheduled task.
+- **Deploy (`04-deploy.ps1`)** rotates existing remote files to `_backup` variants and regenerates a job-aware `version-<pc>.txt` with deploy metadata (legacy `version.txt` is migrated automatically on first deploy).
+- **Run (`05-run.ps1`)** registers/starts the Windows scheduled task via an inline, base64-encoded PowerShell script sent through the tunnel (no remote helper script required).
 - **Health Check (`06-health_check.ps1`)** defaults to forwarding local port `18001` to `target:8001` and retries up to 30 times with a 5-second delay.
 - **Rollback (`07-rollback.ps1`)** uses helper functions `Get-DoubleSSHCommand` and `Get-RouterSSHCommand`; ensure these are imported (for example from your shared router helper module) before invoking the script.
 
@@ -129,7 +129,7 @@ This will install extras as `.[ci,build,tischrem_blb,psa_horiba,dsv_horiba,utm_z
 Run `07-rollback.ps1` when a deployment needs to be reverted. The script:
 
 1. Stops the `IPAT-Watchdog-<CI_JOB_NAME>` scheduled task and kills any running binary.
-2. Copies `_backup` artifacts back into place (`wd-<pc>_backup.exe`, `version_backup.txt`).
+2. Copies `_backup` artifacts back into place (`wd-<pc>_backup.exe`, `version-<pc>_backup.txt`; falls back to legacy `version_backup.txt` if present).
 3. Restarts the scheduled task and prints the restored version metadata.
 
 A verification step lists the deployed files, shows their timestamps, and reports the task state. Review both the rollback and verification logs to confirm success.
@@ -138,7 +138,7 @@ A verification step lists the deployed files, shows their timestamps, and report
 - **Missing PuTTY tools:** Install PuTTY or add the folder containing `plink.exe` and `pscp.exe` to `PATH`.
 - **Git metadata warnings:** Ensure the scripts run within a Git clone; otherwise `00-env.ps1` will still work but omit commit information.
 - **Spec file errors:** Confirm `build/specs/<CI_JOB_NAME>.spec` exists and is kept in sync with new dependencies.
-- **Remote script not found:** `05-run.ps1` assumes `register_task.ps1` lives in the remote `REMOTE_PATH`. Upload it during provisioning.
+- **Remote script not found:** No longer applies; `05-run.ps1` uses an inline registration script. If registration fails, check the remote `REMOTE_PATH` and the executable name.
 - **Certificate load failure:** Check the `.secure` directory paths and that the password files contain Unicode strings convertible via `ConvertTo-SecureString`.
 
 ## Related documentation

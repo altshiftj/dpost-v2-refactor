@@ -35,7 +35,7 @@ Write-Host "`nInstalling project with extras: $pipTarget"
 if ($LASTEXITCODE -ne 0) { Write-Error "pip install failed."; exit $LASTEXITCODE }
 
 # --- Step 3: Create runtime artifacts to bundle (no external overrides) ---
-Write-Host "`nCreating build/.env and build/version.txt..."
+Write-Host "`nCreating build/.env and build/version-$CI_JOB_NAME.txt..."
 if (!(Test-Path "build")) { New-Item -ItemType Directory -Path "build" | Out-Null }
 
 @"
@@ -49,7 +49,7 @@ COMMIT_TAG=$CI_COMMIT_TAG
 COMMIT_HASH=$env:COMMIT_HASH
 GIT_BRANCH=$env:GIT_BRANCH
 BUILD_TIME=$env:BUILD_TIME
-"@ | Out-File -Encoding ascii build/version.txt -Force
+"@ | Out-File -Encoding ascii "build/version-$CI_JOB_NAME.txt" -Force
 
 # --- Step 4: Build executable from spec (spec handles hiddenimports) ---
 $specFile = "build/specs/gen.spec"

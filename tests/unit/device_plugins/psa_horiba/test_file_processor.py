@@ -39,10 +39,13 @@ def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
 
     advertised = processor.device_specific_preprocessing(str(ngb_sentinel))
     expected_prefix = "Final Sample"
-    assert advertised == str(watch_dir / f"{expected_prefix}{ngb_sentinel.suffix}")
+    # Staging approach advertises a folder named '<prefix>.__staged__<n>'
+    assert advertised is not None
+    assert Path(advertised).is_dir()
+    assert Path(advertised).name.startswith(f"{expected_prefix}.__staged__")
 
     output = processor.device_specific_processing(
-        str(ngb_sentinel), str(record_dir), Path(advertised).stem, ngb_sentinel.suffix
+        str(advertised), str(record_dir), Path(advertised).stem, ""
     )
     assert Path(output.final_path) == record_dir
     assert output.datatype == "psa"

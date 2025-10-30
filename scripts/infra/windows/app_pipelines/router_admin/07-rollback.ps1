@@ -17,8 +17,9 @@ $ciJobName  = $env:CI_JOB_NAME
 $taskName   = "IPAT-Watchdog-$ciJobName"
 $exe        = "$env:REMOTE_PATH\wd-$ciJobName.exe"
 $exeBackup  = $exe -replace '\.exe$','_backup.exe'
-$verPath    = "$env:REMOTE_PATH\version.txt"
-$verBackup  = "$env:REMOTE_PATH\version_backup.txt"
+# Adopt job-aware version filenames; keep legacy fallbacks handled in remote script
+$verPath    = "$env:REMOTE_PATH\version-$ciJobName.txt"
+$verBackup  = "$env:REMOTE_PATH\version-$ciJobName`_backup.txt"
 
 $start = Get-Date
 
@@ -33,12 +34,15 @@ Write-Host "Target: $targetIP"
 Write-Host "Rolling back: $ciJobName"
 
 # ── BUILD ROLLBACK SCRIPT ─────────────────────────────────────────────
+
 $rollbackScript = @"
-`$task    = '$taskName'
-`$exe     = '$exe'
-`$bak     = '$exeBackup'
-`$ver     = '$verPath'
-`$verBak  = '$verBackup'
+`$task      = '$taskName'
+`$exe       = '$exe'
+`$bak       = '$exeBackup'
+`$verNew    = '$verPath'              # version-<job>.txt
+`$verOld    = '$($env:REMOTE_PATH)\version.txt'   # legacy
+`$verBakNew = '$verBackup'            # version-<job>_backup.txt
+`$verBakOld = '$($env:REMOTE_PATH)\version_backup.txt'  # legacy
 
 Write-Host "=== Starting Rollback Process ==="
 
@@ -78,16 +82,25 @@ try {
         Write-Host "✗ Executable backup not found: `$bak"
     }
 
-    # Restore version file
+    # Restore version file (prefer job-aware, fallback to legacy)
     Write-Host "Restoring version file..."
-    Write-Host "Backup location: `$verBak"
-    if (Test-Path `$verBak) {
-        Copy-Item -Force `$verBak `$ver
-        Write-Host "✓ Version file restored"
-        Write-Host "Previous version info:"
-        Get-Content `$ver | ForEach-Object { Write-Host "  `$_" }
+    `$chosenBak = `$null
+    if (Test-Path `$verBakNew) {
+        `$chosenBak = `$verBakNew
+    } elseif (Test-Path `$verBakOld) {
+        `$chosenBak = `$verBakOld
+    }
+
+    if (`$chosenBak) {
+        # Always restore into the job-aware name going forward
+        Copy-Item -Force `$chosenBak `$verNew
+        Write-Host "✓ Version file restored -> `$verNew"
+        if (Test-Path `$verNew) {
+            Write-Host "Previous version info:"
+            Get-Content `$verNew | ForEach-Object { Write-Host "  `$_" }
+        }
     } else {
-        Write-Host "✗ Version backup not found: `$verBak"
+        Write-Host "✗ No version backup found (checked:`n  `$verBakNew`n  `$verBakOld)"
     }
 
     # Restart scheduled task
@@ -132,8 +145,9 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "`nVerifying rollback..."
 
 $verifyScript = @"
-`$exe = '$exe'
-`$ver = '$verPath'
+`$exe  = '$exe'
+`$verN = '$verPath'
+`$verO = '$($env:REMOTE_PATH)\version.txt'
 `$task = '$taskName'
 
 Write-Host "=== Rollback Verification ==="
@@ -147,12 +161,13 @@ if (Test-Path `$exe) {
     Write-Host "✗ Executable missing: `$exe"
 }
 
-if (Test-Path `$ver) {
-    Write-Host "✓ Version file exists"
+`$verToShow = if (Test-Path `$verN) { `$verN } elseif (Test-Path `$verO) { `$verO } else { `$null }
+if (`$verToShow) {
+    Write-Host "✓ Version file exists: `$verToShow"
     Write-Host "Current version:"
-    Get-Content `$ver | ForEach-Object { Write-Host "  `$_" }
+    Get-Content `$verToShow | ForEach-Object { Write-Host "  `$_" }
 } else {
-    Write-Host "✗ Version file missing: `$ver"
+    Write-Host "✗ Version file missing: `$verN (and legacy `$verO)"
 }
 
 try {

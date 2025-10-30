@@ -99,11 +99,11 @@ if ($stages[-1].Status -eq "Failed" -and !$ContinueOnError) {
     exit 1
 }
 
-$stages += Invoke-Stage -Name "Run" -Script "05-run.ps1" -Skip:$SkipRun
-if ($stages[-1].Status -eq "Failed" -and !$ContinueOnError) { 
-    Write-Error "Run stage failed. Aborting pipeline."
-    exit 1
-}
+# $stages += Invoke-Stage -Name "Run" -Script "05-run.ps1" -Skip:$SkipRun
+# if ($stages[-1].Status -eq "Failed" -and !$ContinueOnError) { 
+#     Write-Error "Run stage failed. Aborting pipeline."
+#     exit 1
+# }
 
 $stages += Invoke-Stage -Name "Health Check" -Script "06-health_check.ps1" -Skip:$SkipHealth
 if ($stages[-1].Status -eq "Failed" -and !$ContinueOnError) { 

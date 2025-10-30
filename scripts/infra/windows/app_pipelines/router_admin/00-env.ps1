@@ -126,7 +126,10 @@ $env:ROUTER_PORT = if ($env:ROUTER_PORT) { $env:ROUTER_PORT } else { 22 }
 # Windows Target PC Configuration (Behind Router)
 # ------------------------------
 $env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "192.168.1.6" }
+#{ "192.168.1.6" } -- haake_blb
 $env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "extruder" }
+#{ "extruder" } -- haake_blb
+#{ "horiba" } -- horiba_blb
 $env:TARGET_PORT = if ($env:TARGET_PORT) { $env:TARGET_PORT } else { 22 }
 
 # Tunnel endpoint on local machine
@@ -172,6 +175,7 @@ $env:TARGET_SSH_KEY = if ($env:TARGET_SSH_KEY) { $env:TARGET_SSH_KEY } else { "C
 $env:ROUTER_SSH_HOSTKEY = if ($env:ROUTER_SSH_HOSTKEY) { $env:ROUTER_SSH_HOSTKEY } else { 'SHA256:uj6kBrFxe0qWj9SC3avJ5PTPCstPJ/Cp33v/VtiiWEk' }
 $env:TARGET_SSH_HOSTKEY = if ($env:TARGET_SSH_HOSTKEY) { $env:TARGET_SSH_HOSTKEY } else { 'SHA256:NTbRZ+BQbSPmZp5tEtMq7E1p3muNU7kzGmviFX/COgk' }
 #{ 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8' } --horiba_blb
+#{ 'SHA256:NTbRZ+BQbSPmZp5tEtMq7E1p3muNU7kzGmviFX/COgk' } --haake_blb
 
 # (Alternative base64 form if you ever need it:)
 # $env:ROUTER_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIFqvmR5Q0yi8vFlHQmPDmqSfapwMtuAKflpiUA9UpSUY'

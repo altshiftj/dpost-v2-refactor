@@ -26,9 +26,11 @@ metadata_datas = list(copy_metadata("ipat-watchdog"))
 
 datas_extra = []
 env_file = BUILD_DIR / ".env"
-ver_file = BUILD_DIR / "version.txt"
-if env_file.exists(): datas_extra.append((str(env_file), "."))
-if ver_file.exists(): datas_extra.append((str(ver_file), "."))
+ver_job_file = BUILD_DIR / f"version-{pc_name}.txt" if pc_name else None
+if env_file.exists():
+    datas_extra.append((str(env_file), "."))
+if ver_job_file and ver_job_file.exists():
+    datas_extra.append((str(ver_job_file), "."))
 
 a = Analysis(
     [str(MAIN_SCRIPT)],
@@ -59,7 +61,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

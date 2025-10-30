@@ -29,17 +29,34 @@ Write-Host "Executing task registration via SSH tunnel..."
 # ── OPEN TUNNEL ───────────────────────────────────────────────────────
 Start-TargetTunnel
 
-# ── BUILD WINDOWS TASK REGISTRATION COMMAND ───────────────────────────
-$windowsTaskCmd = @(
-    'powershell','-NoProfile','-ExecutionPolicy Bypass',
-    '-File', "$env:REMOTE_PATH\register_task.ps1",
-    '-TaskName', "`"$taskName`"",
-    '-ExePath',  "`"$exePath`"",
-    '-WorkingDir', "`"$env:REMOTE_PATH`""
-) -join ' '
+# ── REGISTER/UPDATE SCHEDULED TASK ON TARGET (INLINE SCRIPT) ─────────
+$registrationScript = @"
+`$taskName   = '$taskName'
+`$exePath    = '$exePath'
+`$workingDir = '$($env:REMOTE_PATH)'
 
-# ── EXECUTE ON TARGET VIA TUNNEL ─────────────────────────────────────
-Invoke-TargetCommand -Command $windowsTaskCmd
+try {
+    Unregister-ScheduledTask -TaskName `$taskName -Confirm:`$false -ErrorAction SilentlyContinue | Out-Null
+} catch {}
+
+if (-not (Test-Path -LiteralPath `$exePath)) {
+    Write-Error "Executable not found: `$exePath"
+    exit 1
+}
+
+`$action    = New-ScheduledTaskAction -Execute `$exePath -WorkingDirectory `$workingDir
+`$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+`$settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -MultipleInstances IgnoreNew
+`$task      = New-ScheduledTask -Action `$action -Principal `$principal -Settings `$settings
+
+Register-ScheduledTask -TaskName `$taskName -InputObject `$task -Force | Out-Null
+Write-Host "Task '`$taskName' registered/updated to run '`$exePath'"
+"@
+
+$encodedReg = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($registrationScript))
+$regCommand = "powershell -NoProfile -EncodedCommand $encodedReg"
+
+Invoke-TargetCommand -Command $regCommand
 $rc = $LASTEXITCODE
 if ($rc -ne 0) {
     Write-Error "Remote task registration failed (exit code $rc)"

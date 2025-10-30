@@ -110,8 +110,10 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         self.device_config = device_config
         # keyed by absolute folder path (str)
         self._state: Dict[str, _FolderState] = {}
-        # sentinel-triggered batches keyed by the real sentinel NGB path (str)
+        # Batches waiting to be processed keyed by the staging folder path (str)
         self._finalizing: Dict[str, _FlushBatch] = {}
+        # Map original sentinel NGB file path -> staging folder path (for idempotent preprocessing)
+        self._ngb_to_stage: Dict[str, str] = {}
 
     # -------------------------------
     # Pre-processing
@@ -119,6 +121,10 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def device_specific_preprocessing(self, path: str) -> Optional[str]:
         p = Path(path)
         logger.debug("PSA: preprocessing path=%s", p)
+        # Idempotency: if this original NGB has already been staged, return the staging folder
+        staged = self._ngb_to_stage.get(str(p))
+        if staged:
+            return staged
         if not p.exists():
             return None
 
@@ -188,28 +194,52 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         return None
 
     def _handle_ngb(self, folder_key: str, state: _FolderState, path: Path) -> Optional[str]:
-        finalizing_batch = self._finalizing.get(str(path))
-        if finalizing_batch is not None:
-            advertised = Path(path.parent, f"{finalizing_batch.prefix}{path.suffix}")
-            return str(advertised)
+        # If this NGB was already staged as part of a batch, do nothing here.
+        # Staging now uses a dedicated folder keyed by prefix; we do not re-advertise the file path.
+        staged = self._ngb_to_stage.get(str(path))
+        if staged:
+            return staged
 
         if self._ngb_tracked(state, path):
             return None
 
         sentinel = state.sentinel
         if sentinel is not None:
+            # Assemble final batch pairs (bucket + sentinel pair)
             batch_pairs = list(state.bucket)
             batch_pairs.append(_Pair(csv_path=sentinel.csv_path, ngb_path=path, created=time.time()))
 
             batch = _FlushBatch(prefix=sentinel.prefix, raw_probenname=sentinel.raw_probenname, pairs=batch_pairs)
-            self._finalizing[str(path)] = batch
 
-            advertised = Path(path.parent, f"{sentinel.prefix}{path.suffix}")
+            # Create a dedicated staging folder named with the prefix and internal marker.
+            stage_dir = self._create_unique_stage_dir(path.parent, sentinel.prefix)
+
+            # Move all artefacts for the batch into the staging folder and update paths in the batch.
+            relocated_pairs: List[_Pair] = []
+            for pair in batch.pairs:
+                new_csv = stage_dir / pair.csv_path.name
+                new_ngb = stage_dir / pair.ngb_path.name
+                try:
+                    if pair.csv_path.exists():
+                        move_item(pair.csv_path, new_csv)
+                    if pair.ngb_path.exists():
+                        move_item(pair.ngb_path, new_ngb)
+                except Exception:
+                    logger.exception("PSA: failed staging pair (%s, %s) into %s", pair.csv_path, pair.ngb_path, stage_dir)
+                    # Best-effort; continue relocating the rest so we don't strand files.
+                relocated_pairs.append(_Pair(csv_path=new_csv, ngb_path=new_ngb, created=pair.created))
+
+            staged_batch = _FlushBatch(prefix=batch.prefix, raw_probenname=batch.raw_probenname, pairs=relocated_pairs)
+            self._finalizing[str(stage_dir)] = staged_batch
+            # Remember mapping from the original sentinel NGB to the staging folder for idempotency
+            self._ngb_to_stage[str(path)] = str(stage_dir)
+
             logger.debug(
-                "PSA: sentinel NGB %s triggered flush of %d pairs using prefix=%r",
+                "PSA: sentinel NGB %s triggered flush; staged %d pairs in %s using prefix=%r",
                 path,
-                len(batch.pairs),
-                sentinel.prefix,
+                len(staged_batch.pairs),
+                stage_dir,
+                staged_batch.prefix,
             )
 
             # reset state for next cycle
@@ -217,7 +247,8 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             state.pending_ngb.clear()
             state.sentinel = None
             self._cleanup_state(folder_key)
-            return str(advertised)
+            # Advertise the staging folder path downstream so any rename moves the whole batch.
+            return str(stage_dir)
 
         state.pending_ngb.append(_PendingNGB(path=path, created=time.time()))
         logger.debug("PSA: remembered NGB %s awaiting CSV", path)
@@ -255,10 +286,18 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         filename_prefix: str,
         extension: str,
     ) -> ProcessingOutput:
-        ngb_real = Path(src_path)
-        batch = self._finalizing.pop(str(ngb_real), None)
-        if batch is None:
-            raise RuntimeError("No pending batch for this NGB; cannot finalize")
+        src = Path(src_path)
+        # New staged flow: src is a directory named '<prefix>.__staged__<n>'
+        if src.is_dir():
+            batch = self._finalizing.pop(str(src), None)
+            if batch is None:
+                # Fallback: reconstruct batch from staged folder by pairing files heuristically.
+                batch = self._reconstruct_batch_from_stage(src)
+        else:
+            # Backward compatibility with pre-staged flow (should not occur after migration).
+            batch = self._finalizing.pop(str(src), None)
+            if batch is None:
+                raise RuntimeError("No pending batch for this item; cannot finalize")
 
         record_dir = Path(record_path)
         record_dir.mkdir(parents=True, exist_ok=True)
@@ -266,7 +305,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         base_prefix = filename_prefix or batch.prefix
         logger.debug(
             "PSA: processing start src=%s record_dir=%s base_prefix=%r pairs=%d",
-            ngb_real,
+            src,
             record_dir,
             base_prefix,
             len(batch.pairs),
@@ -303,6 +342,23 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             base_prefix,
             batch.raw_probenname,
         )
+
+        # Attempt to remove an empty staging folder after successful processing.
+        if src.is_dir():
+            try:
+                # If nothing left inside, remove the staging dir.
+                remaining = list(src.iterdir())
+                if not remaining:
+                    src.rmdir()
+            except Exception:
+                pass
+            # Cleanup any reverse mappings that point to this staging folder
+            try:
+                for k, v in list(self._ngb_to_stage.items()):
+                    if v == str(src):
+                        self._ngb_to_stage.pop(k, None)
+            except Exception:
+                pass
 
         return ProcessingOutput(final_path=str(record_dir), datatype="psa")
 
@@ -482,3 +538,75 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                     moved_pairs,
                     moved_sentinel,
                 )
+
+        # Purge stranded staging folders in any tracked parent directories.
+        for folder_key in list(self._state.keys()):
+            parent = Path(folder_key)
+            try:
+                for child in parent.iterdir():
+                    if child.is_dir() and ".__staged__" in child.name:
+                        if str(child) in self._finalizing:
+                            continue  # currently in-flight
+                        # Consider folder stale if older than TTL by modification time.
+                        try:
+                            age = now - child.stat().st_mtime
+                        except Exception:
+                            age = ttl_seconds + 1
+                        if age > ttl_seconds:
+                            logger.info("PSA: moving stale staging folder '%s' to exception", child)
+                            try:
+                                safe_move_to_exception(str(child))
+                            except Exception:
+                                logger.exception("PSA: failed to move stale staging folder %s to exception", child)
+            except Exception:
+                # Parent may have been removed; ignore.
+                continue
+
+    # -------------------------------
+    # Staging helpers
+    # -------------------------------
+    def _create_unique_stage_dir(self, base_dir: Path, prefix: str) -> Path:
+        """Create a unique staging directory named '<prefix>.__staged__<n>'."""
+        # Favor simple increment; the manager strips the marker when parsing names.
+        for idx in range(1, 1000):  # arbitrary guard
+            name = f"{prefix}.__staged__{idx}"
+            candidate = base_dir / name
+            if not candidate.exists():
+                candidate.mkdir(parents=True, exist_ok=True)
+                return candidate
+        # Fallback without numeric suffix
+        candidate = base_dir / f"{prefix}.__staged__"
+        candidate.mkdir(parents=True, exist_ok=True)
+        return candidate
+
+    def _reconstruct_batch_from_stage(self, stage_dir: Path) -> _FlushBatch:
+        """Best-effort reconstruction when in-memory batch is missing.
+
+        We pair CSV/NGB by base name (without extension) when possible; otherwise
+        we perform a simple chronological pairing.
+        """
+        prefix = stage_dir.name.split(".__staged__")[0]
+        csvs = sorted([p for p in stage_dir.iterdir() if _is_csv_like(p)], key=lambda p: p.stat().st_mtime)
+        ngbs = sorted([p for p in stage_dir.iterdir() if _is_ngb(p)], key=lambda p: p.stat().st_mtime)
+
+        # Map by stem first
+        pairs: List[_Pair] = []
+        unmatched_csv: List[Path] = []
+        used_ngb: set[Path] = set()
+        ngb_by_stem = {p.stem: p for p in ngbs}
+        for c in csvs:
+            n = ngb_by_stem.get(c.stem)
+            if n is not None and n not in used_ngb:
+                pairs.append(_Pair(csv_path=c, ngb_path=n, created=time.time()))
+                used_ngb.add(n)
+            else:
+                unmatched_csv.append(c)
+        # Chronological fallback for remaining
+        remaining_ngb = [p for p in ngbs if p not in used_ngb]
+        for c, n in zip(unmatched_csv, remaining_ngb):
+            pairs.append(_Pair(csv_path=c, ngb_path=n, created=time.time()))
+
+        if not pairs:
+            raise RuntimeError(f"No CSV/NGB pairs found in staging folder {stage_dir}")
+
+        return _FlushBatch(prefix=prefix, raw_probenname=prefix, pairs=pairs)
