@@ -35,9 +35,11 @@ def build_config() -> DeviceConfig:
             timeout_seconds=900
         ),
         watcher=WatcherSettings(
-            poll_seconds=1.0,
-            max_wait_seconds=45.0,
-            stable_cycles=2,
+            # Excel safe-save can flap the target path; be a bit more patient here.
+            poll_seconds=0.5,
+            max_wait_seconds=90.0,
+            stable_cycles=3,
             sentinel_name=None,
+            reappear_window_seconds=6.0,
         ),
     )

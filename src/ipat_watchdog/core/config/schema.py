@@ -129,6 +129,8 @@ class WatcherSettings:
     temp_patterns: tuple[str, ...] = field(default_factory=_default_temp_patterns)
     temp_folder_regex: Pattern[str] = field(default_factory=_default_temp_folder_regex, repr=False)
     sentinel_name: Optional[str] = None
+    # Optional grace period to tolerate disappear/reappear (e.g., Office safe-save) before rejecting
+    reappear_window_seconds: float = 0.0
     stability_overrides: tuple[StabilityOverride, ...] = field(default_factory=tuple, repr=False)
 
     def __post_init__(self) -> None:

@@ -40,9 +40,18 @@ class FileStabilityTracker:
         stable_cycles = 0
 
         poll_seconds = self._poll_seconds()
+        # Optional disappear/reappear grace window (e.g., Office safe-save)
+        reappear_deadline: Optional[dt.datetime] = None
+        reappear_window = self._reappear_window_seconds()
+        if reappear_window > 0:
+            reappear_deadline = dt.datetime.now() + dt.timedelta(seconds=reappear_window)
 
         while True:
             if not self.file_path.exists():
+                # If configured, allow a short window for the path to reappear (safe-save pattern)
+                if reappear_deadline is not None and dt.datetime.now() < reappear_deadline:
+                    self._sleep(poll_seconds)
+                    continue
                 return StabilityOutcome(
                     path=self.file_path,
                     stable=False,
@@ -159,6 +168,17 @@ class FileStabilityTracker:
         if self.device is None:
             return 3
         return int(self.device.watcher.stable_cycles)
+
+    def _reappear_window_seconds(self) -> float:
+        """Return optional disappear/reappear grace period in seconds (0 disables)."""
+        # If an override structure supports this in future, it can be added here similarly to _poll_seconds.
+        if self.device is None:
+            return 0.0
+        try:
+            value = getattr(self.device.watcher, "reappear_window_seconds", 0.0)
+            return float(value) if value else 0.0
+        except Exception:
+            return 0.0
 
     @staticmethod
     def _sleep(seconds: float) -> None:

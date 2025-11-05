@@ -171,7 +171,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         base_stem = self._allocate_base_stem(record_dir, filename_prefix, res_ext)
 
         # Zip native .rdf -> <base>_native.zip (same style as Horiba .ngb.zip)
-        zip_stage = stage_dir / f"{base_stem}_native.zip"
+        zip_stage = stage_dir / f"{base_stem}.zip"
         try:
             shutil.make_archive(
                 base_name=str(zip_stage.with_suffix("")),  # strip .zip for make_archive

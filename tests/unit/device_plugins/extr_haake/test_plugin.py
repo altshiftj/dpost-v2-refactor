@@ -16,7 +16,9 @@ def test_build_config_basics():
     assert ".xlsx" in config.files.allowed_extensions
     assert ".xls" in config.files.allowed_extensions
     assert config.session.timeout_seconds == 900
-    assert config.watcher.stable_cycles == 2
+    # Be a bit more patient for Excel safe-save sequences
+    assert config.watcher.stable_cycles >= 2
+    assert getattr(config.watcher, "reappear_window_seconds", 0.0) >= 5.0
 
 
 def test_file_processor_moves_excel(tmp_path):
