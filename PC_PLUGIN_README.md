@@ -1,119 +1,104 @@
 # PC Plugin System
 
-This document describes the PC plugin system, which defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
+PC plugins provide workstation-level configuration for IPAT Data Watchdog. A PC plugin returns a `PCConfig` object that lists the device plugins to activate and can override filesystem, naming, session, or watcher defaults. `DeviceWatchdogApp` loads exactly one PC plugin at startup, based on the `PC_NAME` environment variable.
 
-- **tischrem_blb**: TischREM lab environment with SEM TischREM  
-- **zwick_blb**: Zwick testing environment with UTM Zwick machine
-- **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
-- **twinscrew_blb**: Twin-screw extruder workstation with ETR device plugin
+Unlike earlier iterations of the documentation, there is **no** `get_active_device_plugins()` helper on a settings class. The active device identifiers live directly in `PCConfig.active_device_plugins`, and the plugin simply returns this configuration through `PCPlugin.get_config()`.
 
-Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.gin architecture for customizing application behavior based on the target PC environment.
-
-## Overview
-
-The PC plugin system allows you to customize application settings and behavior for different PC environments at build time. This complements the existing device plugin system by providing PC-specific configuration.
-
-## Architecture
-
+## Project Layout
 ```
 src/ipat_watchdog/
-├── pc_plugins/
-│   ├── __init__.py
-│   ├── pc_plugin.py              # Base PCPlugin interface
-│   ├── tischrem_blb/             # TischREM lab configuration
-│   │   ├── __init__.py
-│   │   ├── plugin.py
-│   │   └── settings.py
-│   ├── zwick_blb/                # Zwick testing configuration
-│   │   ├── __init__.py
-│   │   ├── plugin.py
-│   │   └── settings.py
-│   ├── horiba_blb/               # Horiba lab configuration
-│   │   ├── __init__.py
-│   │   ├── plugin.py
-│   │   └── settings.py
-│   └── twinscrew_blb/            # Twin-screw extruder configuration
-│       ├── __init__.py
-│       ├── plugin.py
-│       └── settings.py
+|-- pc_plugins/
+|   |-- __init__.py
+|   |-- pc_plugin.py            # Base PCPlugin ABC
+|   |-- tischrem_blb/
+|   |   |-- plugin.py           # Registers PCTischREMPlugin via @hookimpl
+|   |   `-- settings.py         # build_config() -> PCConfig
+|   |-- horiba_blb/
+|   |-- zwick_blb/
+|   |-- haake_blb/
+|   |-- kinexus_blb/
+|   `-- test_pc/
 ```
 
-## Usage
+Each plugin directory contains a `settings.py` that exposes a `build_config()` helper and a `plugin.py` that registers a concrete `PCPlugin` implementation.
 
-### Environment Configuration
+## Startup Behaviour
+`core/app/bootstrap.collect_startup_settings()` reads `PC_NAME`, loads the corresponding plugin via `loader.load_pc_plugin(pc_name)`, and calls `get_config()`. When `DEVICE_PLUGINS` is not set, the device list is taken from `PCConfig.active_device_plugins`. Helper `loader.get_devices_for_pc(pc_name)` reuses the same logic when other tools need to know the active devices.
 
-Set the `PC_NAME` environment variable to specify which PC plugin to load. The associated device plugins are automatically determined by the PC plugin's settings:
+The resulting `PCConfig` is passed into `init_config()`, which seeds the global `ConfigService`. Any overrides you place on `PathSettings`, `NamingSettings`, or `WatcherSettings` are therefore visible throughout the processing pipeline.
 
-```bash
-# In .env file or CI environment
-PC_NAME=tischrem_blb       # Loads: sem_phenomxl2
-PC_NAME=zwick_blb          # Loads: utm_zwick
-PC_NAME=horiba_blb         # Loads: psa_horiba, dsv_horiba
-PC_NAME=twinscrew_blb      # Loads: etr_twinscrew
+## Bundled PC Plugins
+| PC plugin     | Active device plugins                     | Notes                                  |
+|---------------|-------------------------------------------|----------------------------------------|
+| `tischrem_blb`| `sem_phenomxl2`                           | Tisch REM microscope workstation       |
+| `horiba_blb`  | `psa_horiba`, `dsv_horiba`                | Horiba particle analysis setup         |
+| `zwick_blb`   | `utm_zwick`                               | BLB tensile testing workstation        |
+| `haake_blb`   | `extr_haake`                              | Haake twin-screw extruder              |
+| `kinexus_blb` | `rhe_kinexus`                             | Kinexus rheometer workstation          |
+| `test_pc`     | `test_device`                             | Used by automated tests; overrideable paths |
+
+All bundled plugins currently rely on the default `PathSettings`, so they share the same `Desktop\Upload` / `Desktop\Data` layout. Custom plugins can override these settings if the workstation organises data differently.
+
+## Working with `PCConfig`
+`core/config/schema.py` defines the full shape of `PCConfig`:
+
+- `identifier`: canonical plugin name (used in logging/metrics).
+- `name`, `location`: optional metadata for display.
+- `paths`: `PathSettings` (watch directory, destination folders, etc.).
+- `naming`: `NamingSettings` (separators, filename regex).
+- `session`: `SessionSettings` (timeouts and prompts).
+- `watcher`: `WatcherSettings` (poll rates, stability thresholds).
+- `active_device_plugins`: sequence of device plugin identifiers.
+
+Most plugins simply set the identifier and `active_device_plugins`. You can override any of the other fields by instantiating and mutating the relevant dataclasses before returning the `PCConfig`.
+
+### Example Override
+```python
+# src/ipat_watchdog/pc_plugins/my_pc/settings.py
+from pathlib import Path
+from ipat_watchdog.core.config import PCConfig, PathSettings
+
+
+def build_config() -> PCConfig:
+    paths = PathSettings()
+    paths.watch_dir = Path(r"D:\Instruments\Upload")
+    paths.dest_dir = Path(r"D:\Instruments\Data")
+
+    return PCConfig(
+        identifier="my_pc",
+        name="My Lab Workstation",
+        location="BLB Lab 3",
+        paths=paths,
+        active_device_plugins=("sem_phenomxl2", "psa_horiba"),
+    )
 ```
-
-## PC-Device Mapping
-
-Each PC plugin defines its compatible devices through the `get_active_device_plugins()` method in its settings class. The mapping automatically associates each PC type with its compatible devices:
-
-- **tischrem_blb**: TischREM lab environment with SEM TischREM  
-- **zwick_blb**: Zwick testing environment with UTM Zwick machine
-- **horiba_blb**: Horiba lab environment with PSA and DSV Horiba devices
-- **twinscrew_blb**: Twin-screw extruder workstation with ETR device plugin
-
-Simply set `PC_NAME` in your environment - the appropriate devices will be loaded automatically.
-
-### Build Integration
-
-PC plugins are loaded automatically during application startup:
 
 ```python
-# In __main__.py
-pc_name = os.getenv("PC_NAME")
-if not pc_name:
-    pc_name = "tischrem_blb"  # Development fallback
-pc_plugin = load_pc_plugin(pc_name.strip())
-pc_settings = pc_plugin.get_settings()
-```
+# src/ipat_watchdog/pc_plugins/my_pc/plugin.py
+from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
+from ipat_watchdog.plugin_system import hookimpl
+from .settings import build_config
 
-### Creating New PC Plugins
 
-1. Create a new directory in `src/ipat_watchdog/pc_plugins/`
-2. Implement the plugin class extending `PCPlugin`
-3. Create settings class extending `PCSettings`
-4. Register in `pyproject.toml`
-
-Example:
-
-```python
-# settings.py
-class MyPCSettings(PCSettings):
-    WATCH_DIR = Path("C:\\MyCustomPath\\Upload")
-    POLL_SECONDS = 1.0
-    
-    def get_active_device_plugins(self) -> list[str]:
-        """Return list of device plugins for this PC."""
-        return ["my_device"]
-
-# plugin.py
 class MyPCPlugin(PCPlugin):
-    def __init__(self):
-        self._settings = MyPCSettings()
-    
-    def get_settings(self) -> PCSettings:
-        return self._settings
+    def __init__(self) -> None:
+        self._config = build_config()
+
+    def get_config(self):
+        return self._config
+
+
+@hookimpl
+def register_pc_plugins(registry):
+    registry.register("my_pc", MyPCPlugin)
 ```
 
-## Available PC Plugins
+Register the new plugin under `[project.entry-points."ipat_watchdog.pc_plugins"]` in `pyproject.toml` so that Pluggy can discover it when the package is installed.
 
-- **tischrem_blb**: TischREM lab workstation configuration
-- **zwick_blb**: Zwick testing machine configuration  
-- **horiba_blb**: Horiba lab configuration with PSA and DSV devices
-- **twinscrew_blb**: Twin-screw extruder workstation configuration
-- **test_pc**: Test configuration for development
+## Troubleshooting
+- **"No PC plugin named '<value>'"** - confirm `PC_NAME` matches the identifier used in `registry.register()`.
+- **Devices missing at runtime** - ensure `PCConfig.active_device_plugins` lists the correct identifiers, or set `DEVICE_PLUGINS` to override during testing.
+- **Custom paths not respected** - verify your plugin returns a single cached `PCConfig` instance and that it modifies `PathSettings` before caching.
+- **Multiple workstation variants** - create separate PC plugins, each returning a tailored `PCConfig`, and choose the correct one via `PC_NAME`.
 
-## Build System Integration
-
-PC plugins integrate with the existing build system by specifying the PC_NAME in your build environment, similar to how DEVICE_NAME works for device plugins.
-
-The SettingsManager will use PC plugin settings as the global settings, combining them with device-specific settings through the CompositeSettings system.
+For details on the wider architecture, consult `DEVELOPER_README.md`. For operator instructions, see `USER_README.md`.
