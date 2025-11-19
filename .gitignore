@@ -6,7 +6,6 @@
 # ─── Build & Distribution ─────────────────────
 /dist/
 *.exe
-/.env
 .cache/
 build/tischrem_blb
 
