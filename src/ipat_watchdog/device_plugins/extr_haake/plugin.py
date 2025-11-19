@@ -5,9 +5,7 @@ from __future__ import annotations
 from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-from ipat_watchdog.device_plugins.extr_haake.file_processor import (
-    FileProcessorEXTRHaake,
-)
+from ipat_watchdog.device_plugins.extr_haake.file_processor import (FileProcessorEXTRHaake,)
 from ipat_watchdog.device_plugins.extr_haake.settings import build_config
 from ipat_watchdog.plugin_system import DevicePluginRegistry, hookimpl
 

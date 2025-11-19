@@ -1,4 +1,5 @@
 """Device plugin wiring for Hioki analyzer exports."""
+
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
