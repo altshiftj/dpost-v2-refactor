@@ -37,7 +37,7 @@ def build_config() -> DeviceConfig:
         watcher=WatcherSettings(
             poll_seconds=1.0,
             max_wait_seconds=30,
-            stable_cycles=3,
+            stable_cycles=2,
             temp_patterns=(".tmp", ".part", ".crdownload", "~", ".journal"),
             temp_folder_regex=r"(\.~|\.staged|__staged__)",
             sentinel_name=None,
