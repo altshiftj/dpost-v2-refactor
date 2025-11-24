@@ -15,7 +15,6 @@ __pycache__/
 /testing_data/
 
 # ─── VSCode & Editor Files ────────────────────
-.vscode/
 .VSCodeCounter
 
 # ─── Logs ─────────────────────────────────────
