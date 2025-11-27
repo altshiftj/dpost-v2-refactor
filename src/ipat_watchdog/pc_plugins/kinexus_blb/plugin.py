@@ -25,4 +25,4 @@ class PCKinexusPlugin(PCPlugin):
 
 @hookimpl
 def register_pc_plugins(registry: "PCPluginRegistry") -> None:
-    registry.register("kinexus_blb", PCKinexusPlugin())
+    registry.register("kinexus_blb", PCKinexusPlugin)

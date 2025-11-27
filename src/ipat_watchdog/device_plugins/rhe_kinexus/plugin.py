@@ -31,4 +31,4 @@ class RheKinexusPlugin(DevicePlugin):
 
 @hookimpl
 def register_device_plugins(registry: "DevicePluginRegistry") -> None:
-    registry.register("rhe_kinexus", RheKinexusPlugin())
+    registry.register("rhe_kinexus", RheKinexusPlugin)

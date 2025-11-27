@@ -31,6 +31,13 @@ def _load_plugin_or_skip(name: str) -> PCPlugin:
                 "devices": ("etr_twinscrew",),
             },
         ),
+        (
+            "kinexus_blb",
+            {
+                "identifier": "kinexus_blb",
+                "devices": ("rhe_kinexus",),
+            },
+        ),
         ("tischrem_blb", {}),
     ],
 )

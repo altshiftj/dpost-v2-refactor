@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
-from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
-from ipat_watchdog.pc_plugins.hioki_blb.settings import build_config
-from ipat_watchdog.core.config import PCConfig
-from ipat_watchdog.plugin_system import PCPluginRegistry, hookimpl
+from typing import TYPE_CHECKING
 
+from ipat_watchdog.core.config import PCConfig
+from ipat_watchdog.pc_plugins.hioki_blb.settings import build_config
+from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
+from ipat_watchdog.plugin_system import hookimpl
+
+if TYPE_CHECKING:
+    from ipat_watchdog.plugin_system import PCPluginRegistry
 
 class PCHiokiPlugin(PCPlugin):
     """Hioki BLB PC plugin with optimised configuration."""
