@@ -14,10 +14,10 @@ def build_config() -> DeviceConfig:
     return DeviceConfig(
         identifier="rhe_kinexus",
         metadata=DeviceMetadata(
-            user_kadi_id="<tbd>",
-            user_persistent_id="<tbd>",
-            record_kadi_id="<tbd>",
-            record_persistent_id="<tbd>",
+            user_kadi_id="rhe-01-usr",
+            user_persistent_id=49,
+            record_kadi_id="rhe_01",
+            record_persistent_id=849,
             device_abbr="RHE",
             record_tags=("Rheology",),
             default_record_description=r"""

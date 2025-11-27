@@ -36,3 +36,6 @@ build/*
 !build/specs/
 !build/.env
 !build/version.txt
+
+# ─── Markdown Setup Files ────────────────────
+*_setup.md
