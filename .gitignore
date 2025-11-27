@@ -38,3 +38,5 @@ build/*
 !build/specs/
 !build/.env
 !build/version.txt
+
+*_setup.md
