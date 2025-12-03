@@ -142,7 +142,9 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         if sentinel is not None:
             batch_pairs = list(state.bucket)
             batch_pairs.append(_Pair(export_path=sentinel.export_path, raw_path=path, created=time.time()))
-            stage_dir = self._create_unique_stage_dir(path.parent, sentinel.prefix)
+            # Use the native (.rdf) stem as the authoritative batch prefix
+            native_prefix = path.stem
+            stage_dir = self._create_unique_stage_dir(path.parent, native_prefix)
 
             relocated_pairs: List[_Pair] = []
             for pair in batch_pairs:
@@ -167,7 +169,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                 )
                 self._raw_to_stage[str(orig_raw)] = str(stage_dir)
 
-            staged_batch = _FlushBatch(prefix=sentinel.prefix, pairs=relocated_pairs)
+            staged_batch = _FlushBatch(prefix=native_prefix, pairs=relocated_pairs)
             self._finalizing[str(stage_dir)] = staged_batch
 
             logger.debug(

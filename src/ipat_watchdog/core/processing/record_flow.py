@@ -34,9 +34,3 @@ def handle_unappendable_record(
             record_id=context.sanitized_prefix
         ),
     )
-
-
-# NOTE: The append-to-synced prompt flow has been removed for the
-# 'it just works' mode. Appending to an already-synced record now proceeds
-# automatically via the ACCEPT path with no user interaction.
-# automatically via the ACCEPT path with no user interaction.
