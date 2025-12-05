@@ -221,9 +221,26 @@ class DeviceConfig:
     # core schema). Device plugins should namespace keys to avoid collisions.
     extra:      dict[str, object]   = field(default_factory=dict)
 
+    def should_defer_dir(self, path_like: str | Path) -> bool:
+        """Return True when the directory is a temporary staging artefact."""
+        path = Path(path_like)
+        if not path.is_dir():
+            return False
+        temp_regex = getattr(self.watcher, "temp_folder_regex", None)
+        if not temp_regex:
+            return False
+        try:
+            folder_name = path.name
+        except Exception:
+            return False
+        return bool(temp_regex.search(folder_name))
+
     def matches_file(self, path_like: str | Path) -> bool:
         path = Path(path_like)
         if path.is_dir():
+            temp_regex = getattr(self.watcher, "temp_folder_regex", None)
+            if temp_regex and temp_regex.search(path.name):
+                return False
             if not self.files.allowed_folder_contents:
                 return False
             try:

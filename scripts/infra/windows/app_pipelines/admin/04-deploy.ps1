@@ -12,19 +12,23 @@ $sshHostKey   = $env:SSH_HOSTKEY
 
 $binaryName      = "wd-${ciJobName}.exe"
 $distBinaryPath  = "dist\$binaryName"
-$exePath         = "$remotePath\$binaryName"
-$filesToDeploy   = @($binaryName, 'version.txt', 'scripts\infra\windows\utils\register_task.ps1')
+$exePath         = Join-Path $remotePath $binaryName
+$buildVersionPath      = "build\version-$ciJobName.txt"
+$deployVersionFilename = "version-$ciJobName.txt"
+$deployVersionPath     = $deployVersionFilename
+$filesToDeploy   = @($binaryName, $deployVersionFilename, 'scripts\infra\windows\utils\register_task.ps1')
 
 if (!(Test-Path $distBinaryPath)) { Write-Error "$distBinaryPath missing."; exit 1 }
-if (!(Test-Path 'version.txt'))   { Write-Error "version.txt missing.";     exit 1 }
+if (!(Test-Path $buildVersionPath))   { Write-Error "$buildVersionPath missing. Did you run the build?"; exit 1 }
 
-@"
-COMMIT_TAG=$env:COMMIT_TAG
-COMMIT_HASH=$env:COMMIT_HASH
-GIT_BRANCH=$env:GIT_BRANCH
-BUILD_TIME=$env:BUILD_TIME
+$deployMeta = @"
 DEPLOY_TIME=$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')Z
-"@ | Set-Content -Encoding UTF8 version.txt
+CI_JOB_NAME=$env:CI_JOB_NAME
+DEVICE_PLUGINS=$env:DEVICE_PLUGINS
+PIP_EXTRAS=$env:PIP_EXTRAS
+"@
+(Get-Content $buildVersionPath) + $deployMeta | Set-Content -Encoding UTF8 $deployVersionPath
+
 
 $start = Get-Date
 

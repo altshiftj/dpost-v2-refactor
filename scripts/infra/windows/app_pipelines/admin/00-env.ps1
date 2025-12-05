@@ -47,6 +47,32 @@ function Get-ProjectRoot {
     throw "Could not locate project root (no pyproject.toml found; start='$Start', repoTop='$repoTop')."
 }
 
+# Normalize and compose extras for pip installs based on CI job + device plugins.
+function Get-PipExtras {
+    param(
+        [string]$CiJob,
+        [string]$DevPlugins
+    )
+    $items = New-Object System.Collections.Generic.List[string]
+
+    if ($CiJob) {
+        $items.Add($CiJob.Trim()) | Out-Null
+    }
+
+    if ($DevPlugins) {
+        ($DevPlugins -split '[,; ]+' | Where-Object { $_ -and $_.Trim().Length -gt 0 }) |
+            ForEach-Object { $items.Add($_.Trim()) | Out-Null }
+    }
+
+    # de-dup while preserving order
+    $seen = @{}
+    $orderedUnique = foreach ($i in $items) {
+        if (-not $seen.ContainsKey($i)) { $seen[$i] = $true; $i }
+    }
+
+    return ($orderedUnique -join ',')
+}
+
 # ------------------------------
 # Project Root
 # ------------------------------
@@ -99,6 +125,13 @@ try {
 # CI-related Defaults (PC-centric)
 # ------------------------------
 $env:CI_JOB_NAME = "tischrem_blb"     # PC plugin name (was device name)
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "sem_phenomxl2" }
+
+$env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
+
+$script:DEVICE_PLUGIN_LIST = @()
+if ($env:DEVICE_PLUGINS) { $script:DEVICE_PLUGIN_LIST = $env:DEVICE_PLUGINS -split '[,; ]+' | Where-Object { $_ } }
+
 $env:TARGET_IP   = "134.169.58.85"   # Router's WAN IP
 $env:TARGET_USER = "TischREM"
 $env:SSH_PORT    = 22                # External SSH port

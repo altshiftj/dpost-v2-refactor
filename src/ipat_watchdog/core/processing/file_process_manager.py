@@ -77,8 +77,11 @@ class _ProcessingPipeline:
         device = resolution.selected
         if device is None:
             reason = resolution.reason or "Invalid file type"
+            if resolution.deferred:
+                logger.debug("Processing deferred for %s: %s", path, reason)
+                return ProcessingResult(ProcessingStatus.DEFERRED, reason)
             return self._reject_immediately(path, reason)
-
+        
         # Block until the artefact stops changing (device overrides can tweak thresholds).
         stability_outcome = FileStabilityTracker(path, device).wait()
         if stability_outcome.rejected:

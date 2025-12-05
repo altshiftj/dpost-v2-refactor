@@ -29,6 +29,7 @@ class DeviceResolution:
     selected: DeviceConfig | None
     assessments: tuple[ProbeAssessment, ...]
     reason: str
+    deferred: bool = False
 
     @property
     def matched(self) -> bool:
@@ -44,9 +45,28 @@ class DeviceResolver:
 
     def resolve(self, path: Path | str) -> DeviceResolution:
         target = Path(path)
+        if not target.exists():
+            reason = f"Path '{target.name}' disappeared before device resolution"
+            logger.debug("DeviceResolver: %s (%s)", reason, target)
+            return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
+
+        deferred_devices = self._config_service.deferred_devices(target)
         candidates: list[DeviceConfig] = self._config_service.matching_devices(target)
 
+        if not candidates and deferred_devices:
+            reason = self._defer_reason(deferred_devices, target)
+            logger.debug(
+                "DeviceResolver: deferring %s (%s)",
+                target,
+                reason,
+            )
+            return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
+
         if not candidates:
+            if target.is_dir() and self._should_defer_empty_directory(target):
+                reason = f"Deferred until '{target.name}' gains contents"
+                logger.debug("DeviceResolver: deferring %s (%s)", target, reason)
+                return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
             reason = "No device selectors matched the file"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
             return DeviceResolution(selected=None, assessments=tuple(), reason=reason)
@@ -71,6 +91,29 @@ class DeviceResolver:
             logger.debug("DeviceResolver: no processor accepted %s (%s)", target, reason)
 
         return DeviceResolution(selected=selected, assessments=tuple(assessments), reason=reason)
+
+    @staticmethod
+    def _defer_reason(devices: Iterable[DeviceConfig], target: Path) -> str:
+        identifiers = ", ".join(device.identifier for device in devices)
+        return f"Deferred while '{target.name}' stabilizes (devices: {identifiers})"
+
+    @staticmethod
+    def _should_defer_empty_directory(path: Path) -> bool:
+        try:
+            next(path.iterdir())
+            return False
+        except StopIteration:
+            return True
+        except FileNotFoundError:
+            return True
+        except NotADirectoryError:
+            return False
+        except PermissionError:
+            logger.debug("DeviceResolver: lacking permission to inspect %s; deferring", path)
+            return True
+        except OSError as exc:
+            logger.debug("DeviceResolver: os error while inspecting %s: %s; deferring", path, exc)
+            return True
 
     def _probe(self, device: DeviceConfig, target: Path) -> ProbeAssessment:
         processor = self._factory.get_for_device(device.identifier)

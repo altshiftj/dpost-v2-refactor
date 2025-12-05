@@ -67,7 +67,7 @@ def build_config() -> DeviceConfig:
             max_wait_seconds=30,
             stable_cycles=3,
             temp_patterns=(".tmp", ".part", ".crdownload", ".~", "-journal"),
-            temp_folder_regex=re.compile(r"\\.[A-Za-z0-9]{6}$"),
+            temp_folder_regex=re.compile(r"_(old|new)\.[A-Za-z0-9]{6}$", re.IGNORECASE),
             sentinel_name=None,
             stability_overrides=(
                 StabilityOverride(

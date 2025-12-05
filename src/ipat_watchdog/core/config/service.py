@@ -96,7 +96,18 @@ class ConfigService:
             raise DeviceLookupError(identifier) from exc
 
     def matching_devices(self, path_like: str | Path) -> list[DeviceConfig]:
-        return [device for device in self._devices.values() if device.matches_file(path_like)]
+        target = Path(path_like)
+        matches: list[DeviceConfig] = []
+        for device in self._devices.values():
+            if device.should_defer_dir(target):
+                continue
+            if device.matches_file(target):
+                matches.append(device)
+        return matches
+
+    def deferred_devices(self, path_like: str | Path) -> list[DeviceConfig]:
+        target = Path(path_like)
+        return [device for device in self._devices.values() if device.should_defer_dir(target)]
 
     def first_matching_device(self, path_like: str | Path) -> Optional[DeviceConfig]:
         for device in self._devices.values():
