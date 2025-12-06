@@ -65,3 +65,4 @@ class ProcessingResult:
     status: ProcessingStatus
     message: str
     final_path: Optional[Path] = None
+    retry_delay: Optional[float] = None

@@ -6,6 +6,7 @@ import queue
 import sys
 import threading
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
@@ -17,6 +18,7 @@ from ipat_watchdog.core.interactions import ErrorMessages
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_process_manager import \
     FileProcessManager
+from ipat_watchdog.core.processing.models import ProcessingResult, ProcessingStatus
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
 from ipat_watchdog.core.ui.adapters import (UiInteractionAdapter,
@@ -169,9 +171,17 @@ class DeviceWatchdogApp:
         try:
             with self._processing_lock:
                 with FILE_PROCESS_TIME.time():
-                    self.file_processing.process_item(src_path)
+                    result = self.file_processing.process_item(src_path)
+                self._handle_processing_result(src_path, result)
         except Exception as exc:  # noqa: BLE001 - keep broad to surface unexpected errors
             logger.exception("Error processing file: %s", exc)
+
+    def _handle_processing_result(self, src_path: str, result: ProcessingResult | None) -> None:
+        if result is None:
+            return
+        if result.status is ProcessingStatus.DEFERRED:
+            delay = result.retry_delay if result.retry_delay is not None else self._default_retry_delay()
+            self._schedule_retry(src_path, delay)
 
     def _handle_rejections(self) -> None:
         for path_str, reason in self.file_processing.get_and_clear_rejected():
@@ -231,3 +241,24 @@ class DeviceWatchdogApp:
             return int(accumulated)
         except Exception:
             return 0
+
+    # ------------------------------------------------------------------
+    # Retry handling
+    # ------------------------------------------------------------------
+    def _schedule_retry(self, path: str, delay_seconds: float) -> None:
+        safe_delay = max(delay_seconds, 0.1)
+        logger.debug("Re-queuing %s in %.2f seconds", path, safe_delay)
+        milliseconds = int(safe_delay * 1000)
+        self.scheduler.schedule(milliseconds, partial(self._enqueue_if_present, path))
+
+    def _default_retry_delay(self) -> float:
+        try:
+            return float(self.config_service.pc.watcher.retry_delay_seconds)
+        except Exception:
+            return 2.0
+
+    def _enqueue_if_present(self, path: str) -> None:
+        if Path(path).exists():
+            self.event_queue.put(path)
+            return
+        logger.debug("Skipping retry for vanished path: %s", path)

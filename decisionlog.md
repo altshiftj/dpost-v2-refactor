@@ -9,10 +9,20 @@
 - **Impact:** SEM temp folders no longer trigger user-facing rejections; the watcher simply re-polls until the finished folder exists, keeping the stability guard intact for real processing.
 
 ## 2025-12-05 – SEM resolver deferrals
-- **Context:** Empty SEM folders and disappearing `_new` directories were still being rejected before contents stabilized.
-- **Decision:** Updated `DeviceResolver` to defer when the path vanishes mid-resolution or when a directory is empty but expected to gain contents.
   - Added early existence checks and `_should_defer_empty_directory` guard to emit deferred resolutions with clear reasons.
   - `_ProcessingPipeline._prepare_request` already interprets the deferred flag, so the pipeline now waits instead of moving items to exceptions.
   - Hardened the SEM watcher regex to `_ (old|new)
-    ` suffixes (case-insensitive) so only staging folders are deferred.
 - **Impact:** Transient SEM folders are retried automatically until the final artefacts appear, eliminating premature rejections and exception moves.
+## 2025-12-05 – Deferred retry scheduling
+- **Context:** Deferred folders were never re-processed, causing completed SEM exports to linger in the watch directory.
+- **Decision:** Implemented device-configurable retry scheduling for deferred items.
+  - Added `retry_delay_seconds` to `WatcherSettings` and propagate per-device delays through `DeviceResolution` and `ProcessingResult`.
+  - Updated `DeviceWatchdogApp` to re-queue deferred paths using the provided delay, defaulting to the PC watcher setting.
+  - Ensured unit coverage for resolver and processing manager changes.
+- **Impact:** Deferred artefacts are automatically retried at device-appropriate intervals until ready, while temp folders still defer without generating noise.
+
+## 2025-12-06 – Retry guard for vanished paths
+- **Context:** SEM temp folders disappear after export finalization; retries kept cycling stale paths.
+- **Decision:** Added existence check before re-queueing deferred items in `DeviceWatchdogApp`.
+  - Only enqueue if the path still exists; otherwise log `DEBUG` and stop the retry cycle.
+- **Impact:** Eliminates endless retries on removed temp folders; keeps logs clean and processing focused on live artefacts.

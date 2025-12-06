@@ -30,6 +30,7 @@ class DeviceResolution:
     assessments: tuple[ProbeAssessment, ...]
     reason: str
     deferred: bool = False
+    retry_delay: float | None = None
 
     @property
     def matched(self) -> bool:
@@ -48,7 +49,13 @@ class DeviceResolver:
         if not target.exists():
             reason = f"Path '{target.name}' disappeared before device resolution"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
-            return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
+            return DeviceResolution(
+                selected=None,
+                assessments=tuple(),
+                reason=reason,
+                deferred=True,
+                retry_delay=self._default_retry_delay(),
+            )
 
         deferred_devices = self._config_service.deferred_devices(target)
         candidates: list[DeviceConfig] = self._config_service.matching_devices(target)
@@ -60,13 +67,25 @@ class DeviceResolver:
                 target,
                 reason,
             )
-            return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
+            return DeviceResolution(
+                selected=None,
+                assessments=tuple(),
+                reason=reason,
+                deferred=True,
+                retry_delay=self._max_retry_delay(deferred_devices),
+            )
 
         if not candidates:
             if target.is_dir() and self._should_defer_empty_directory(target):
                 reason = f"Deferred until '{target.name}' gains contents"
                 logger.debug("DeviceResolver: deferring %s (%s)", target, reason)
-                return DeviceResolution(selected=None, assessments=tuple(), reason=reason, deferred=True)
+                return DeviceResolution(
+                    selected=None,
+                    assessments=tuple(),
+                    reason=reason,
+                    deferred=True,
+                    retry_delay=self._default_retry_delay(),
+                )
             reason = "No device selectors matched the file"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
             return DeviceResolution(selected=None, assessments=tuple(), reason=reason)
@@ -96,6 +115,20 @@ class DeviceResolver:
     def _defer_reason(devices: Iterable[DeviceConfig], target: Path) -> str:
         identifiers = ", ".join(device.identifier for device in devices)
         return f"Deferred while '{target.name}' stabilizes (devices: {identifiers})"
+
+    def _max_retry_delay(self, devices: Iterable[DeviceConfig]) -> float:
+        delays = [self._device_retry_delay(device) for device in devices]
+        return max(delays) if delays else self._default_retry_delay()
+
+    def _device_retry_delay(self, device: DeviceConfig) -> float:
+        try:
+            return float(device.watcher.retry_delay_seconds)
+        except Exception:
+            return self._default_retry_delay()
+
+    @staticmethod
+    def _default_retry_delay() -> float:
+        return 2.0
 
     @staticmethod
     def _should_defer_empty_directory(path: Path) -> bool:

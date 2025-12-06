@@ -16,7 +16,7 @@ $exePath         = Join-Path $remotePath $binaryName
 $buildVersionPath      = "build\version-$ciJobName.txt"
 $deployVersionFilename = "version-$ciJobName.txt"
 $deployVersionPath     = $deployVersionFilename
-$filesToDeploy   = @($binaryName, $deployVersionFilename, 'scripts\infra\windows\utils\register_task.ps1')
+$filesToDeploy   = @($binaryName, $deployVersionFilename)
 
 if (!(Test-Path $distBinaryPath)) { Write-Error "$distBinaryPath missing."; exit 1 }
 if (!(Test-Path $buildVersionPath))   { Write-Error "$buildVersionPath missing. Did you run the build?"; exit 1 }
@@ -108,8 +108,7 @@ if ($LASTEXITCODE) { Write-Error 'Remote prep failed.'; exit 1 }
 # SCP new files
 $scpMap = @{
     $distBinaryPath                          = "$remotePath/$binaryName"
-    'version.txt'                            = "$remotePath/version.txt"
-    'scripts\infra\windows\utils\register_task.ps1'= "$remotePath/register_task.ps1"
+    $deployVersionFilename                   = "$remotePath/$deployVersionFilename"
 }
 foreach ($pair in $scpMap.GetEnumerator()) {
     $dst = $pair.Value -replace '\\','/'

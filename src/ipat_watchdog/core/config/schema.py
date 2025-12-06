@@ -132,6 +132,7 @@ class WatcherSettings:
     # Optional grace period to tolerate disappear/reappear (e.g., Office safe-save) before rejecting
     reappear_window_seconds: float = 0.0
     stability_overrides: tuple[StabilityOverride, ...] = field(default_factory=tuple, repr=False)
+    retry_delay_seconds: float = 2.0
 
     def __post_init__(self) -> None:
         overrides = self.stability_overrides

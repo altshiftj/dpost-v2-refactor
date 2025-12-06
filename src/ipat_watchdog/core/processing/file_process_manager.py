@@ -79,7 +79,11 @@ class _ProcessingPipeline:
             reason = resolution.reason or "Invalid file type"
             if resolution.deferred:
                 logger.debug("Processing deferred for %s: %s", path, reason)
-                return ProcessingResult(ProcessingStatus.DEFERRED, reason)
+                return ProcessingResult(
+                    ProcessingStatus.DEFERRED,
+                    reason,
+                    retry_delay=resolution.retry_delay,
+                )
             return self._reject_immediately(path, reason)
         
         # Block until the artefact stops changing (device overrides can tweak thresholds).
