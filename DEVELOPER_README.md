@@ -77,6 +77,18 @@ Bundled PC plugins:
 - Metrics (`metrics.py`) expose `files_processed`, `files_processed_by_record`, `files_failed`, `events_processed`, `file_process_time_seconds`, `exceptions_thrown`, `session_exit_status`, and `session_duration_seconds`.
 - `observability.py` serves `GET /health` and `GET /logs?tail=N`, providing a minimal log viewer. Missing Flask/Waitress simply disables the endpoint; the rest of the app continues to run.
 
+## Device Drop Tracing
+`src/ipat_watchdog/tools/device_drop_tracer.py` provides a headless tool that records *every* filesystem mutation while a device is generating data. Typical usage:
+
+```bash
+python -m ipat_watchdog.tools.device_drop_tracer --pc-name tischrem_blb --device sem_phenomxl2
+```
+
+- The tracer bootstraps the same PC/device configs as the main app (or you can point it at an arbitrary folder via `--watch-dir`).
+- A recursive `watchdog` observer captures `created/modified/moved/deleted` events, snapshots file size, and hashes files below `--hash-threshold`.
+- Runs until Ctrl+C (or `--duration` seconds) and emits `trace_<timestamp>.jsonl` plus a burst summary JSON under `<watch_dir>/.watchdog_traces` (override via `--output`).
+- Burst summaries group events separated by `--silence-gap` seconds to highlight upload phases, helping tune `WatcherSettings` or sentinel behaviour for new plugins.
+
 ## Kadi Synchronisation
 `core/sync/sync_kadi.KadiSyncManager` leverages `kadi_apy` to mirror `LocalRecord` artefacts into Kadi. It prepares per-user and per-device collections/groups, uploads new artefacts, and marks records as uploaded. Failures are logged and surfaced via the UI; processing continues so long as other components remain healthy. Ensure runtime credentials consumable by `kadi_apy` (service tokens, config files, etc.) are present.
 

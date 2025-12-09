@@ -21,8 +21,15 @@
   - Ensured unit coverage for resolver and processing manager changes.
 - **Impact:** Deferred artefacts are automatically retried at device-appropriate intervals until ready, while temp folders still defer without generating noise.
 
-## 2025-12-06 – Retry guard for vanished paths
+## 2025-12-06 - Retry guard for vanished paths
 - **Context:** SEM temp folders disappear after export finalization; retries kept cycling stale paths.
 - **Decision:** Added existence check before re-queueing deferred items in `DeviceWatchdogApp`.
   - Only enqueue if the path still exists; otherwise log `DEBUG` and stop the retry cycle.
 - **Impact:** Eliminates endless retries on removed temp folders; keeps logs clean and processing focused on live artefacts.
+
+## 2025-12-06 - Device drop tracing utility
+- **Context:** Onboarding new instruments required insight into which files/folders appear (and when) in watch directories before a plugin exists. Manual observation was error-prone and provided no timing data for `WatcherSettings`.
+- **Decision:** Created `src/ipat_watchdog/tools/device_drop_tracer.py`, a standalone watchdog observer that recursively records create/modify/move/delete events with timestamps, parent/depth info, and lightweight file hashes.
+  - Emits JSONL traces plus burst summaries (gap-based grouping) to `<watch_dir>/.watchdog_traces` and documents usage in `DEVELOPER_README.md`.
+  - Tool currently expects a Python runtime (same dependency stack as developers); production deployment will require bundling/packaging work.
+- **Impact:** Provides repeatable visibility into device IO patterns so new plugins and watcher settings can be tuned confidently before integrating with the main processing pipeline.
