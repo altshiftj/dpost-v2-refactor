@@ -35,7 +35,7 @@ def _default_desktop() -> Path:
 
 
 def _default_filename_pattern() -> Pattern[str]:
-    return re.compile(r"^(?!.*\\.\\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$")
+    return re.compile(r"^(?!.*..)(?!.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}(?<!.)$")
 
 
 def _default_temp_patterns() -> tuple[str, ...]:
