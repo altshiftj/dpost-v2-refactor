@@ -14,10 +14,12 @@ def build_config() -> DeviceConfig:
     return DeviceConfig(
         identifier="hioki_blb",
         metadata=DeviceMetadata(
-            user_kadi_id="<tbd>",
-            record_kadi_id="<tbd>",
+            user_kadi_id="imp-01-user",
+            user_persistent_id= 52,
+            record_kadi_id="imp_01",
+            record_persistent_id= 913,
             device_abbr="HIO",
-            record_tags=("Hioki", "Electrical", "LabExport"),
+            record_tags=("Hioki", "Electrical"),
             default_record_description=(
                 "**Overview**\n\n"
                 "This record contains data exported from a Hioki instrument. "
