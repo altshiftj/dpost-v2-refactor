@@ -32,6 +32,7 @@ dsv_horiba      = []
 extr_haake      = []
 imp_hioki       = []
 rhe_kinexus     = []
+mix_eirich      = []
 
 # PC plugin dependencies
 tischrem_blb    = []
@@ -41,6 +42,7 @@ haake_blb       = []
 kinexus_blb     = []
 hioki_blb       = []
 test_pc         = []
+eirich_blb      = []
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"

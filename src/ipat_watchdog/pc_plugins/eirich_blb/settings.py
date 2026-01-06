@@ -1,0 +1,15 @@
+"""PC configuration for the BLB tensile testing workstation."""
+
+from __future__ import annotations
+
+import re
+
+from ipat_watchdog.core.config import PCConfig, SessionSettings, WatcherSettings
+
+
+def build_config() -> PCConfig:
+    """Return the Eirich BLB PC configuration."""
+    return PCConfig(
+        identifier="eirich_blb",
+        active_device_plugins=("mix_eirich",),
+    )
