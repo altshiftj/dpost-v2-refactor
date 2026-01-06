@@ -16,6 +16,7 @@ __all__ = [
     "SessionSettings",
     "DeviceMetadata",
     "DeviceFileSelectors",
+    "ContentMarkers",
     "DeviceConfig",
     "PCConfig",
 ]
@@ -181,6 +182,16 @@ class DeviceMetadata:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class ContentMarkers:
+    """Content fingerprinting markers for probe_file method."""
+    positive: frozenset[str] = field(default_factory=frozenset)
+    filename_patterns: tuple[str, ...] = ()
+    base_confidence: float = 0.55
+    confidence_per_hit: float = 0.15
+    max_confidence: float = 0.95
+
+
 @dataclass(slots=True)
 class DeviceFileSelectors:
     """Filters which files and folders belong to a device when scanning the watch directory."""
@@ -214,6 +225,7 @@ class DeviceConfig:
     identifier: str
     metadata:   DeviceMetadata      = field(default_factory=DeviceMetadata)
     files:      DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
+    markers:    ContentMarkers      = field(default_factory=ContentMarkers)
     batch:      BatchSettings       = field(default_factory=BatchSettings)
     session:    SessionSettings     = field(default_factory=SessionSettings)
     watcher:    WatcherSettings     = field(default_factory=WatcherSettings)

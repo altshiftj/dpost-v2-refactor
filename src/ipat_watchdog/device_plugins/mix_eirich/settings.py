@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from ipat_watchdog.core.config import (
+    ContentMarkers,
     DeviceConfig,
     DeviceFileSelectors,
     DeviceMetadata,
@@ -30,6 +31,17 @@ It typically includes:\n"
             ),
         files=DeviceFileSelectors(
             exported_extensions=frozenset({".txt"}), # rSpace exports (extend to .txt/.pdf if needed)
+        ),
+        markers=ContentMarkers(
+            positive=frozenset({
+                "rotorrev",
+                "rotorpower",
+                "mixingpanrev",
+                "mixingpanpower",
+                "rotorspeed",
+                "mixingpanspeed",
+            }),
+            filename_patterns=("Eirich_*", "*_TrendFile_*"),
         ),
         session=SessionSettings(
             timeout_seconds=600,  # adjust to typical run completion / copy times

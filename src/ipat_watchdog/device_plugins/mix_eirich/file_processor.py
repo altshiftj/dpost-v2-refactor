@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from fnmatch import fnmatch
 from pathlib import Path
 from typing import Optional
 
@@ -31,20 +32,48 @@ class FileProcessorEirich(FileProcessorABS):
 
     def probe_file(self, filepath: str) -> FileProbeResult:
         """
-        Decide whether this processor should handle the file.
-
-        We rely on the file extension and the device's configured
-        exported_extensions (here: .txt).
+        Identify Eirich mixer files by content fingerprinting.
+        
+        Uses column header markers and filename patterns to compute confidence.
         """
-        suffix = Path(filepath).suffix.lower()
+        path = Path(filepath)
+        ext = path.suffix.lower()
         exported_exts = self.device_config.files.exported_extensions
 
-        if suffix in exported_exts:
-            return FileProbeResult.match(
-                confidence=0.6,
-                reason="Text export for Eirich mixer",
-            )
-        return FileProbeResult.mismatch("Unsupported extension for Eirich mixer (TXT expected)")
+        if ext not in exported_exts:
+            return FileProbeResult.mismatch(f"Unsupported extension for Eirich mixer: {ext}")
+
+        # Try reading file content
+        try:
+            snippet = self._read_text_prefix(path)
+        except Exception as exc:
+            logger.debug("Eirich probe failed to read '%s': %s", path, exc)
+            return FileProbeResult.unknown(str(exc))
+
+        # Count positive marker hits (case-insensitive)
+        text = snippet.lower()
+        markers = self.device_config.markers
+        positive_hits = sum(1 for marker in markers.positive if marker in text)
+
+        # Check filename pattern bonus
+        filename_bonus = 1 if self._matches_filename_pattern(filepath) else 0
+
+        # Compute total score
+        score = positive_hits + filename_bonus
+
+        if score <= 0:
+            return FileProbeResult.unknown("No Eirich markers found")
+
+        # Calculate confidence: base + (per_hit * score), capped at max
+        confidence = min(
+            markers.base_confidence + markers.confidence_per_hit * score,
+            markers.max_confidence
+        )
+
+        return FileProbeResult.match(
+            confidence=confidence,
+            reason=f"Found {positive_hits} Eirich markers + {filename_bonus} filename match"
+        )
 
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         # Allow multiple .txt exports within the same record
@@ -76,3 +105,21 @@ class FileProcessorEirich(FileProcessorABS):
         # You can change 'datatype' to something more specific if you like,
         # e.g. 'mix_eirich'; for now it's fine to keep 'tabular' or 'text'.
         return ProcessingOutput(final_path=destination, datatype="tabular")
+
+    @staticmethod
+    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
+        """Read and decode the first bytes of a text export safely."""
+        raw = Path(path).read_bytes()[:bytes_limit]
+        for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+            try:
+                return raw.decode(encoding)
+            except UnicodeDecodeError:
+                continue
+        return raw.decode("latin-1", errors="ignore")
+
+    def _matches_filename_pattern(self, filepath: str) -> bool:
+        """Check if filename matches any configured Eirich naming patterns."""
+        filename = Path(filepath).name.lower()
+        patterns = self.device_config.markers.filename_patterns
+        
+        return any(fnmatch(filename, pattern.lower()) for pattern in patterns)
