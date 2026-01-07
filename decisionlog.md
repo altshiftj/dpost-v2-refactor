@@ -1,6 +1,16 @@
 # Decision Log
 
-## 2025-12-03 – SEM temp-folder deferral
+## 2026-01-07 - Forced uploads for cumulative Hioki files
+- **Context:** Hioki exports cumulative CC and aggregate files that must be overwritten in the record and re-uploaded without forcing every other artefact.
+- **Decision:** Added `ProcessingOutput.force_paths` so processors can request forced uploads for specific paths, with `FileProcessManager` registering and marking those paths unsynced (relative paths resolve against the record directory).
+- **Impact:** CC and aggregate files can overwrite in place and re-upload with `force=True` while leaving other record files untouched.
+
+## 2026-01-07 - Safe-save reappearance resolution
+- **Context:** Excel safe-save can delete the original path before it reappears, causing device resolution to defer indefinitely without stability checks.
+- **Decision:** When a path is missing, `DeviceResolver` selects a candidate device that advertises a non-zero `reappear_window_seconds` so `FileStabilityTracker` can wait for the file to return.
+- **Impact:** Safe-save sequences complete successfully without sending artefacts to exceptions.
+
+## 2025-12-03 - SEM temp-folder deferral
 - **Context:** SEM Phenom XL2 exports build ELID folders via `_old/_new_<suffix>` temp directories that appear in the watch path before the final folder exists. These triggered `Invalid file type` rejections because routing inspected them too early.
 - **Decision:** Introduced a defer path so temp directories are ignored until their final name appears.
   - Added `DeviceConfig.should_defer_dir` to detect staging folders via `watcher.temp_folder_regex`.

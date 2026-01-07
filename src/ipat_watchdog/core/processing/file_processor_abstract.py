@@ -15,6 +15,8 @@ class ProcessingOutput:
 
     final_path: str
     datatype: str
+    # Optional file or directory paths to force-upload on this processing pass.
+    force_paths: tuple[str, ...] = ()
 
 
 class ProbeDecision(Enum):

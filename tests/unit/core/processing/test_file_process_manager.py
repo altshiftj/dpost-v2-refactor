@@ -8,6 +8,11 @@ from ipat_watchdog.core.processing.models import ProcessingCandidate, Processing
 from ipat_watchdog.core.processing.stability_tracker import StabilityOutcome, FileStabilityTracker
 from ipat_watchdog.core.processing.file_processor_abstract import ProcessingOutput
 from ipat_watchdog.core.processing.models import ProcessingResult
+from ipat_watchdog.core.storage.filesystem_utils import (
+    generate_file_id,
+    generate_record_id,
+    get_record_path,
+)
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
@@ -110,6 +115,62 @@ def test_add_item_to_record_failure_raises(manager_components, config_service, t
                 notify=False,
             )
 
+
+def test_add_item_to_record_force_paths_marked(manager_components, config_service, tmp_settings):
+    manager, _ = manager_components
+
+    class ForcePathsProcessor(DummyProcessor):
+        def device_specific_processing(
+            self,
+            src_path: str,
+            record_path: str,
+            file_id: str,
+            extension: str,
+        ) -> ProcessingOutput:
+            record_dir = Path(record_path)
+            record_dir.mkdir(parents=True, exist_ok=True)
+            final_path = record_dir / f"{file_id}_meas{extension}"
+            final_path.write_text("measurement")
+            force_path = record_dir / f"{file_id}_cc.csv"
+            force_path.write_text("cc")
+            return ProcessingOutput(
+                str(final_path),
+                "dummy_type",
+                force_paths=(str(force_path),),
+            )
+
+    manager.file_processor = ForcePathsProcessor()
+    prefix = "abc-ipat-sample"
+    src = tmp_settings.WATCH_DIR / f"{prefix}.txt"
+    src.write_text("data")
+    device = config_service.devices[0]
+
+    with activate_device(device):
+        manager.add_item_to_record(
+            record=None,
+            src_path=str(src),
+            filename_prefix=prefix,
+            extension=".txt",
+            file_processor=manager.file_processor,
+            notify=False,
+        )
+
+    record_id = generate_record_id(prefix, dev_kadi_record_id=device.metadata.record_kadi_id)
+    record = manager.records.get_record_by_id(record_id)
+    assert record is not None
+
+    device_abbr = device.metadata.device_abbr
+    record_path = get_record_path(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr)
+    force_path = Path(record_path) / f"{file_id}_cc.csv"
+    meas_path = Path(record_path) / f"{file_id}_meas.txt"
+
+    resolved_force = str(force_path.resolve())
+    resolved_meas = str(meas_path.resolve())
+    assert resolved_force in record.files_uploaded
+    assert resolved_force in record.files_require_force
+    assert resolved_meas in record.files_uploaded
+    assert resolved_meas not in record.files_require_force
 
 def test_invoke_rename_flow_cancel_moves_to_manual(manager_components, config_service, tmp_settings):
     manager, ui = manager_components

@@ -317,6 +317,23 @@ class FileProcessManager:
         logger.debug("Processed %s -> %s", src_path, output.final_path)
 
         new_files = update_record(self.records, output.final_path, record)
+        if output.force_paths:
+            for force_path in output.force_paths:
+                if not force_path:
+                    continue
+                path_obj = Path(force_path)
+                if not path_obj.is_absolute():
+                    path_obj = Path(record_path) / path_obj
+                if not path_obj.exists():
+                    logger.debug("Skipping missing force path for record: %s", force_path)
+                    continue
+                new_files += update_record(self.records, str(path_obj), record)
+                if path_obj.is_dir():
+                    for child in path_obj.rglob("*"):
+                        if child.is_file():
+                            record.mark_file_as_unsynced(str(child))
+                else:
+                    record.mark_file_as_unsynced(str(path_obj))
         if new_files > 0:
             FILES_PROCESSED.inc(new_files)
 

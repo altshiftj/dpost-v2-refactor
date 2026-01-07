@@ -12,14 +12,14 @@ from ipat_watchdog.core.config import (
 def build_config() -> DeviceConfig:
     """Return the Hioki device configuration."""
     return DeviceConfig(
-        identifier="imp_hioki",
+        identifier="erm_hioki",
         metadata=DeviceMetadata(
-            user_kadi_id="imp-01-user",
-            user_persistent_id= 52,
-            record_kadi_id="imp_01",
-            record_persistent_id= 913,
-            device_abbr="HIO",
-            record_tags=("Hioki", "Electrical"),
+            user_kadi_id="erm-01-user",
+            user_persistent_id=53,
+            record_kadi_id="erm_01",
+            record_persistent_id=913,
+            device_abbr="ERM",
+            record_tags=("Electrode Resistance Measurement"),
             default_record_description=(
                 "**Overview**\n\n"
                 "This record contains data exported from a Hioki instrument. "

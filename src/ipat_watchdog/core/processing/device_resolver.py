@@ -47,6 +47,16 @@ class DeviceResolver:
     def resolve(self, path: Path | str) -> DeviceResolution:
         target = Path(path)
         if not target.exists():
+            candidates = self._config_service.matching_devices(target)
+            selected = self._select_reappear_device(candidates)
+            if selected is not None:
+                reason = f"Path '{target.name}' missing; waiting for reappearance"
+                logger.debug("DeviceResolver: %s (%s -> %s)", reason, target, selected.identifier)
+                return DeviceResolution(
+                    selected=selected,
+                    assessments=tuple(),
+                    reason=reason,
+                )
             reason = f"Path '{target.name}' disappeared before device resolution"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
             return DeviceResolution(
@@ -190,6 +200,16 @@ class DeviceResolver:
             # Prefer the first processor that stayed inconclusive so the pipeline can inspect it fully.
             return unknowns[0].device
 
+        return None
+
+    @staticmethod
+    def _select_reappear_device(candidates: Iterable[DeviceConfig]) -> DeviceConfig | None:
+        for device in candidates:
+            try:
+                if float(getattr(device.watcher, "reappear_window_seconds", 0.0)) > 0.0:
+                    return device
+            except Exception:
+                continue
         return None
 
     @staticmethod

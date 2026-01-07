@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-from ipat_watchdog.device_plugins.imp_hioki.settings import build_config
-from ipat_watchdog.device_plugins.imp_hioki.file_processor import FileProcessorHioki
+from ipat_watchdog.device_plugins.erm_hioki.settings import build_config
+from ipat_watchdog.device_plugins.erm_hioki.file_processor import FileProcessorHioki
 from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS
 from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.plugin_system import DevicePluginRegistry, hookimpl
@@ -25,4 +25,4 @@ class HiokiAnalyzerPlugin(DevicePlugin):
 
 @hookimpl
 def register_device_plugins(registry: "DevicePluginRegistry") -> None:
-    registry.register("imp_hioki", HiokiAnalyzerPlugin)
+    registry.register("erm_hioki", HiokiAnalyzerPlugin)

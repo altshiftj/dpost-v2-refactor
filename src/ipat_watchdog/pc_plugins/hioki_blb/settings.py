@@ -10,5 +10,5 @@ def build_config() -> PCConfig:
     """Return the Hioki BLB PC configuration."""
     return PCConfig(
         identifier="hioki_blb",
-        active_device_plugins=("imp_hioki",),
+        active_device_plugins=("erm_hioki",),
     )
