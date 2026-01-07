@@ -29,5 +29,5 @@ FILE_SEP: str = "_"
 
 # --- Filename Pattern ---
 FILENAME_PATTERN: Pattern[str] = re.compile(
-r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$"
+r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}(?<!\.)$"
 )

@@ -8,6 +8,7 @@ from .schema import (
     SessionSettings,
     DeviceMetadata,
     DeviceFileSelectors,
+    ContentMarkers,
     DeviceConfig,
     PCConfig,
 )
@@ -29,6 +30,7 @@ __all__ = [
     'SessionSettings',
     'DeviceMetadata',
     'DeviceFileSelectors',
+    'ContentMarkers',
     'DeviceConfig',
     'PCConfig',
     'ActiveConfig',

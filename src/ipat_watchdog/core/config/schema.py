@@ -16,6 +16,7 @@ __all__ = [
     "SessionSettings",
     "DeviceMetadata",
     "DeviceFileSelectors",
+    "ContentMarkers",
     "DeviceConfig",
     "PCConfig",
 ]
@@ -35,7 +36,7 @@ def _default_desktop() -> Path:
 
 
 def _default_filename_pattern() -> Pattern[str]:
-    return re.compile(r"^(?!.*\\.\\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}+(?<!\.)$")
+    return re.compile(r"^(?!.*\.\.)(?!\.)([A-Za-z]+)-[A-Za-z]+-[A-Za-z0-9_ ]{1,30}(?<!\.)$")
 
 
 def _default_temp_patterns() -> tuple[str, ...]:
@@ -182,6 +183,16 @@ class DeviceMetadata:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class ContentMarkers:
+    """Content fingerprinting markers for probe_file method."""
+    positive: frozenset[str] = field(default_factory=frozenset)
+    filename_patterns: tuple[str, ...] = ()
+    base_confidence: float = 0.55
+    confidence_per_hit: float = 0.15
+    max_confidence: float = 0.95
+
+
 @dataclass(slots=True)
 class DeviceFileSelectors:
     """Filters which files and folders belong to a device when scanning the watch directory."""
@@ -215,6 +226,7 @@ class DeviceConfig:
     identifier: str
     metadata:   DeviceMetadata      = field(default_factory=DeviceMetadata)
     files:      DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
+    markers:    ContentMarkers      = field(default_factory=ContentMarkers)
     batch:      BatchSettings       = field(default_factory=BatchSettings)
     session:    SessionSettings     = field(default_factory=SessionSettings)
     watcher:    WatcherSettings     = field(default_factory=WatcherSettings)

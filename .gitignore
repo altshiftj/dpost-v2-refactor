@@ -6,7 +6,6 @@
 # ─── Build & Distribution ─────────────────────
 /dist/
 *.exe
-/.env
 .cache/
 build/tischrem_blb
 
@@ -16,7 +15,6 @@ __pycache__/
 /testing_data/
 
 # ─── VSCode & Editor Files ────────────────────
-.vscode/
 .VSCodeCounter
 
 # ─── Logs ─────────────────────────────────────
@@ -39,4 +37,5 @@ build/*
 !build/.env
 !build/version.txt
 
+# ─── Markdown Setup Files ────────────────────
 *_setup.md
