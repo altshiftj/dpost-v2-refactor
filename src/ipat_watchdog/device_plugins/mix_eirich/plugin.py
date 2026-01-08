@@ -16,10 +16,10 @@ if TYPE_CHECKING:
 
 
 class EirichMixerPlugin(DevicePlugin):
-    """Registers the Eirich mixer device with the Watchdog app."""
+    """Registers a specific Eirich mixer variant with the Watchdog app."""
 
-    def __init__(self) -> None:
-        self._config = build_config()
+    def __init__(self, variant: str) -> None:
+        self._config = build_config(variant)
         self._processor = FileProcessorEirich(self._config)
 
     def get_config(self) -> DeviceConfig:
@@ -29,7 +29,18 @@ class EirichMixerPlugin(DevicePlugin):
         return self._processor
 
 
+class EirichMixerEL1Plugin(EirichMixerPlugin):
+    def __init__(self) -> None:
+        super().__init__("EL1")
+
+
+class EirichMixerR01Plugin(EirichMixerPlugin):
+    def __init__(self) -> None:
+        super().__init__("R01")
+
+
 @hookimpl
 def register_device_plugins(registry: "DevicePluginRegistry") -> None:
     # IMPORTANT: register the class (factory), not an instance
-    registry.register("mix_eirich", EirichMixerPlugin)
+    registry.register("rmx_eirich_el1", EirichMixerEL1Plugin)
+    registry.register("rmx_eirich_r01", EirichMixerR01Plugin)

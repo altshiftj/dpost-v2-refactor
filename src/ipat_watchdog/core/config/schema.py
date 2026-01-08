@@ -16,7 +16,6 @@ __all__ = [
     "SessionSettings",
     "DeviceMetadata",
     "DeviceFileSelectors",
-    "ContentMarkers",
     "DeviceConfig",
     "PCConfig",
 ]
@@ -183,16 +182,6 @@ class DeviceMetadata:
     )
 
 
-@dataclass(frozen=True, slots=True)
-class ContentMarkers:
-    """Content fingerprinting markers for probe_file method."""
-    positive: frozenset[str] = field(default_factory=frozenset)
-    filename_patterns: tuple[str, ...] = ()
-    base_confidence: float = 0.55
-    confidence_per_hit: float = 0.15
-    max_confidence: float = 0.95
-
-
 @dataclass(slots=True)
 class DeviceFileSelectors:
     """Filters which files and folders belong to a device when scanning the watch directory."""
@@ -201,6 +190,7 @@ class DeviceFileSelectors:
     allowed_extensions: frozenset[str] = field(default_factory=frozenset)
     allowed_folder_contents: frozenset[str] = field(default_factory=frozenset)
     file_encoding: frozenset[str] = field(default_factory=frozenset)
+    filename_patterns: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         # Normalize incoming sets to lowercase
@@ -209,6 +199,7 @@ class DeviceFileSelectors:
         allowed = frozenset(ext.lower() for ext in self.allowed_extensions)
         folder = frozenset(ext.lower() for ext in self.allowed_folder_contents)
         encoding = frozenset(ext.lower() for ext in self.file_encoding)
+        patterns = tuple(pattern.strip() for pattern in self.filename_patterns if pattern.strip())
 
         # Persist normalized values back
         self.native_extensions = native
@@ -218,6 +209,7 @@ class DeviceFileSelectors:
         self.allowed_folder_contents = folder
         # Preserve provided encodings; if empty and you intended to mirror folder contents, do that in builder code
         self.file_encoding = encoding
+        self.filename_patterns = patterns
 
 
 @dataclass(slots=True)
@@ -226,7 +218,6 @@ class DeviceConfig:
     identifier: str
     metadata:   DeviceMetadata      = field(default_factory=DeviceMetadata)
     files:      DeviceFileSelectors = field(default_factory=DeviceFileSelectors)
-    markers:    ContentMarkers      = field(default_factory=ContentMarkers)
     batch:      BatchSettings       = field(default_factory=BatchSettings)
     session:    SessionSettings     = field(default_factory=SessionSettings)
     watcher:    WatcherSettings     = field(default_factory=WatcherSettings)

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from ipat_watchdog.core.config import (
-    ContentMarkers,
     DeviceConfig,
     DeviceFileSelectors,
     DeviceMetadata,
@@ -10,16 +9,35 @@ from ipat_watchdog.core.config import (
     WatcherSettings,
 )
 
-def build_config() -> DeviceConfig:
-    """Return the Eirich device configuration (mirrors Horiba style)."""
+_EIRICH_VARIANTS = {
+    "EL1": {
+        "device_abbr": "RMX_01",
+        "identifier_suffix": "el1",
+        "filename_patterns": ("Eirich_EL1_TrendFile_*",),
+    },
+    "R01": {
+        "device_abbr": "RMX_02",
+        "identifier_suffix": "r01",
+        "filename_patterns": ("Eirich_R01_TrendFile_*",),
+    },
+}
+
+
+def build_config(variant: str) -> DeviceConfig:
+    """Return the Eirich device configuration for the requested variant."""
+    key = variant.strip().upper()
+    if key not in _EIRICH_VARIANTS:
+        raise ValueError(f"Unknown Eirich variant '{variant}'")
+    variant_info = _EIRICH_VARIANTS[key]
+    identifier = f"rmx_eirich_{variant_info['identifier_suffix']}"
     return DeviceConfig(
-        identifier="mix_eirich",
+        identifier=identifier,
         metadata=DeviceMetadata(
             user_kadi_id="<tbd>",
             user_persistent_id="<tbd>",
             record_kadi_id="<tbd>",
             record_persistent_id="<tbd>",
-            device_abbr="MIX",
+            device_abbr=variant_info["device_abbr"],
             record_tags=("Mixing",),
             default_record_description=r"""
 **Overview**\n\n"
@@ -31,17 +49,7 @@ It typically includes:\n"
             ),
         files=DeviceFileSelectors(
             exported_extensions=frozenset({".txt"}), # rSpace exports (extend to .txt/.pdf if needed)
-        ),
-        markers=ContentMarkers(
-            positive=frozenset({
-                "rotorrev",
-                "rotorpower",
-                "mixingpanrev",
-                "mixingpanpower",
-                "rotorspeed",
-                "mixingpanspeed",
-            }),
-            filename_patterns=("Eirich_*", "*_TrendFile_*"),
+            filename_patterns=variant_info["filename_patterns"],
         ),
         session=SessionSettings(
             timeout_seconds=600,  # adjust to typical run completion / copy times

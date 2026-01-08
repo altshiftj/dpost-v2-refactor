@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 from ipat_watchdog.core.config.schema import DeviceConfig
-from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
@@ -16,9 +15,6 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
 
-logger = setup_logger(__name__)
-
-
 class FileProcessorEirich(FileProcessorABS):
     """Moves .txt exports from the Eirich mixer into the record folder."""
 
@@ -26,15 +22,15 @@ class FileProcessorEirich(FileProcessorABS):
         super().__init__(device_config)
         self.device_config = device_config
 
-    # No staging/pairing needed for simple text exports
     def device_specific_preprocessing(self, path: str) -> Optional[str]:
         return path
 
     def probe_file(self, filepath: str) -> FileProbeResult:
         """
-        Identify Eirich mixer files by content fingerprinting.
-        
-        Uses column header markers and filename patterns to compute confidence.
+        Identify Eirich mixer files by filename pattern.
+
+        Variant selection is encoded in the filename (e.g. Eirich_EL1_TrendFile_*),
+        so a direct match is sufficient to route the file.
         """
         path = Path(filepath)
         ext = path.suffix.lower()
@@ -43,36 +39,12 @@ class FileProcessorEirich(FileProcessorABS):
         if ext not in exported_exts:
             return FileProbeResult.mismatch(f"Unsupported extension for Eirich mixer: {ext}")
 
-        # Try reading file content
-        try:
-            snippet = self._read_text_prefix(path)
-        except Exception as exc:
-            logger.debug("Eirich probe failed to read '%s': %s", path, exc)
-            return FileProbeResult.unknown(str(exc))
-
-        # Count positive marker hits (case-insensitive)
-        text = snippet.lower()
-        markers = self.device_config.markers
-        positive_hits = sum(1 for marker in markers.positive if marker in text)
-
-        # Check filename pattern bonus
-        filename_bonus = 1 if self._matches_filename_pattern(filepath) else 0
-
-        # Compute total score
-        score = positive_hits + filename_bonus
-
-        if score <= 0:
-            return FileProbeResult.unknown("No Eirich markers found")
-
-        # Calculate confidence: base + (per_hit * score), capped at max
-        confidence = min(
-            markers.base_confidence + markers.confidence_per_hit * score,
-            markers.max_confidence
-        )
+        if not self._matches_filename_pattern(filepath):
+            return FileProbeResult.mismatch("Filename did not match Eirich pattern")
 
         return FileProbeResult.match(
-            confidence=confidence,
-            reason=f"Found {positive_hits} Eirich markers + {filename_bonus} filename match"
+            confidence=0.95,
+            reason="Matched Eirich filename pattern",
         )
 
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
@@ -105,17 +77,6 @@ class FileProcessorEirich(FileProcessorABS):
         # You can change 'datatype' to something more specific if you like,
         # e.g. 'mix_eirich'; for now it's fine to keep 'tabular' or 'text'.
         return ProcessingOutput(final_path=destination, datatype="tabular")
-
-    @staticmethod
-    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-        """Read and decode the first bytes of a text export safely."""
-        raw = Path(path).read_bytes()[:bytes_limit]
-        for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
-            try:
-                return raw.decode(encoding)
-            except UnicodeDecodeError:
-                continue
-        return raw.decode("latin-1", errors="ignore")
 
     def _matches_filename_pattern(self, filepath: str) -> bool:
         """Check if filename matches any configured Eirich naming patterns."""

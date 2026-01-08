@@ -1,139 +1,105 @@
-# Eirich File Processor: Content-Based Fingerprinting
+# Eirich File Processor: Filename Routing via Upload Folder
 
 ## Problem Statement
 
-The Eirich mixer exports `.txt` files to USB sticks, which are then processed on PCs that also handle other devices outputting `.txt` files (e.g., DSV dissolver, connected to the Horiba PC). The current `probe_file` implementation returns a fixed confidence of 0.6 for *any* `.txt` file, which loses to content-based probes from other processors and causes misrouting.
+Eirich exports are plain `.txt` files that sit alongside other device outputs. The previous plan used content fingerprinting to identify Eirich files, but that approach feels heavier than needed. We want a simpler, more explicit flow: users drop the raw Eirich file into an upload folder and the system routes it based on the filename.
 
-## Solution Overview
+This plan replaces the earlier content-based fingerprinting approach.
 
-Implement content-based fingerprinting that inspects file headers and filename patterns to reliably identify Eirich exports. This follows the established pattern used by `psa_horiba`, `rhe_kinexus`, and `dsv_horiba` processors.
+## Proposed Approach
 
----
+- Users drop raw Eirich exports into the standard upload folder.
+- Device selection is based on filename patterns, not content parsing.
+- The file resolver (or `FileProcessManager`) picks the processor whose config declares a matching pattern.
+- If no pattern matches, fall back to existing probe logic.
+ - Once the Eirich processor is selected, it identifies the specific device variant
+   (R01 vs EL1) from the filename prefix.
+ - After device variant selection, prompt the user for initials, institute, and sample name.
+ - Rename output to `RMX-{sample_name}` (Rotary Mixer abbreviation + sample name).
+
+## Assumptions
+
+- Eirich export filenames remain stable (examples: `Eirich_*`, `*_TrendFile_*`).
+- A shared upload folder is acceptable unless we decide to split by device.
+
+## Open Questions
+
+- Do we want only Eirich-prefixed patterns, or do we also accept generic `*_TrendFile_*`?
+- What is the expected behavior if multiple processors claim the same filename?
+- Should we introduce a dedicated per-device upload folder instead of a shared one?
+- How should we model multiple Eirich devices with near-identical file formats?
+- Should the prompt happen before or after any preprocessing/record routing?
+- How should we handle name collisions for `RMX-{sample_name}`?
+
+## Multi-Device Options (R01 + EL1)
+
+We currently have two Eirich devices with stable filename prefixes:
+
+- `Eirich_R01_TrendFile_YYYYMMDD_HHMMSS`
+- `Eirich_EL1_TrendFile_YYYYMMDD_HHMMSS`
+
+This creates a clean routing signal for device selection. There are two viable approaches:
+
+### Option A: Two device configs, one processor
+
+- Keep a single `FileProcessorEirich`.
+- Define two device configs (`mix_eirich_r01`, `mix_eirich_el1`) that:
+  - Share the same processor class.
+  - Provide distinct filename patterns (e.g., `Eirich_R01_*`, `Eirich_EL1_*`).
+  - Carry per-device metadata (device name, record routing, storage target, etc.).
+
+**Pros:** minimal code duplication, one implementation to maintain, easy to add more Eirich devices later.  
+**Cons:** requires resolver to support multiple configs mapping to the same processor.
+
+### Option B: Two processors (thin wrappers)
+
+- Create two processors that subclass or wrap the shared Eirich logic.
+- Each processor hardcodes its device identity and filename pattern.
+
+**Pros:** simple resolver logic (one processor per device).  
+**Cons:** code duplication or thin indirection; more moving parts for tests and config.
+
+### Recommendation (plan-level)
+
+Prefer Option A unless the resolver architecture cannot associate multiple device configs with a single processor. The filename prefix already encodes device identity, so config-only separation provides clean routing without multiplying code.
+
+## Proposed Flow (based on filename -> device -> rename)
+
+1. Resolver selects the Eirich processor when filename contains `Eirich_*`.
+2. Processor inspects the second prefix token to map to device variant:
+   - `Eirich_R01_*` -> device variant `R01`
+   - `Eirich_EL1_*` -> device variant `EL1`
+3. Map device variant to record identifier prefix:
+   - `EL1` -> `RMX_01`
+   - `R01` -> `RMX_02`
+4. Prompt user for:
+   - initials
+   - institute
+   - sample name
+5. Output filename: `RMX-{sample_name}`.
+6. Continue with normal routing and record creation using the chosen device variant.
 
 ## Implementation Checklist
 
-### 1. Add `_read_text_prefix` helper method
+### 1. Define filename patterns in config
 
-- [x] Add static method to safely read first ~4KB of file
-- [x] Handle encoding fallback chain: `utf-8-sig` → `utf-8` → `cp1252` → `latin-1`
-- [x] Return decoded text snippet for content inspection
+- [ ] Add Eirich filename patterns to `mix_eirich/settings.py` (or a shared device config).
+- [ ] Ensure pattern matching is case-insensitive.
+- [ ] Document accepted patterns for operators.
 
-**Status:** `_read_text_prefix` now lives on `FileProcessorEirich` with the full encoding fallback chain and is covered by tests that assert truncation to the byte limit and proper decoding of CP1252 bytes (e.g., `°C`).
+### 2. Routing logic in resolver / `FileProcessManager`
 
-**Justification:** Eirich files may contain special characters (e.g., `°C`). A robust encoding fallback prevents probe failures on non-UTF8 files. Reading only 4KB keeps probing lightweight.
+- [ ] Load filename patterns from each device config.
+- [ ] If a filename matches, route directly to that processor with high confidence.
+- [ ] If no match, fall back to existing probe logic.
+- [ ] If multiple matches occur, enforce a deterministic tie-breaker and log it.
 
----
+### 3. Tests
 
-### 2. Define Eirich-specific positive markers
+- [ ] Filename-only routing selects the Eirich processor.
+- [ ] Non-Eirich `.txt` files do not route to Eirich.
+- [ ] Collision behavior is deterministic and visible in logs.
 
-- [x] Add list of unique column header tokens:
-  - `rotorrev` — Rotor revolution speed (1/min)
-  - `rotorpower` — Rotor power consumption (W)
-  - `mixingpanrev` — Mixing pan revolution (1/min)
-  - `mixingpanpower` — Mixing pan power (W)
-  - `rotorspeed` — Rotor tip speed (m/s)
-  - `mixingpanspeed` — Pan circumferential speed (m/s)
+### 4. Documentation
 
-**Status:** Defined `EIRICH_POSITIVE_MARKERS` as a frozenset containing the six highly specific column names found in Eirich exports. Tests verify the marker set contents and ensure all tokens are lowercase for case-insensitive matching.
-
-**Justification:** These column names are highly specific to Eirich intensive mixers and do not appear in exports from other lab devices. Finding 2+ markers provides strong identification confidence.
-
----
-
-### 3. Define negative markers for exclusion
-
-- [ ] ~~Add list of tokens indicating other devices~~
-  - ~~`dissolution`, `release`, `medium` — DSV Horiba dissolver~~
-  - ~~`horiba`, `partica`, `la-960`, `diameter` — PSA Horiba~~
-  - ~~`kinexus`, `rspace`, `viscosity` — Kinexus rheometer~~
-  - ~~`zwick`, `tensile`, `strain` — Zwick UTM~~
-
-**Status:** Decision made to drop negative marker heuristics entirely. Instead, we will design Eirich positives (header columns + filename patterns) strong enough that the resolver can simply pick the highest-confidence `MATCH`. This keeps probing localized inside each processor and avoids the complexity of synchronizing exclusion lists across devices.
-
-**Justification (superseded):** Negative markers prevent false positives when a generic `.txt` file happens to contain some Eirich-like numeric columns. If a file contains dissolver-specific terms, it's clearly not an Eirich export.
-
----
-
-### 4. Store markers in `DeviceConfig`
-
-- [x] Extend `mix_eirich/settings.py` so the device's `DeviceConfig` carries a `markers` structure (positive tokens + filename patterns)
-- [x] Update the processor to read markers from config instead of module-level constants
-
-**Status:** Added `ContentMarkers` dataclass to `core/config/schema.py` with fields for positive markers, filename patterns, and scoring parameters. Updated `mix_eirich/settings.py` to populate markers in the config. Added tests verifying config structure and marker content.
-
-**Justification:** Persisting markers in the config keeps all device-specific fingerprints in one place and mirrors how other selectors (extensions, native formats) are declared. It also makes future factory/resolver refactors easier because metadata lives with the config rather than scattered through processors.
-
----
-
-### 5. Add filename prefix detection
-
-- [x] Check if filename matches Eirich naming pattern: `Eirich_*` or `*_TrendFile_*`
-- [x] Add bonus score (+1) when filename pattern matches
-
-**Status:** Implemented `_matches_filename_pattern()` helper that uses `fnmatch` to check if the filename (case-insensitive) matches any configured pattern from `device_config.markers.filename_patterns`. Tests cover positive matches, non-matches, and case insensitivity.
-
-**Justification:** Eirich exports use predictable naming like `Eirich_EL1_TrendFile_20250924_095653.txt`. This provides a secondary confidence signal that works even if header parsing fails. The bonus is additive rather than exclusive—content markers remain the primary identifier.
-
----
-
-### 6. Implement scoring algorithm in `probe_file`
-
-- [x] Calculate: `score = positive_hits + filename_bonus`
-- [x] Return `FileProbeResult.unknown()` when `score <= 0`
-- [x] Return `FileProbeResult.match(confidence=min(base + per_hit * score, max))` when `score > 0`
-
-**Status:** Rewrote `probe_file()` to use content fingerprinting. Reads file prefix, counts positive marker hits in lowercase text, adds filename bonus, computes confidence using config-driven formula. Tests cover all scenarios: extension mismatch, unreadable files, no markers, filename-only match, full Eirich file, and partial markers.
-
-**Justification:** The scoring formula matches existing processors (PSA Horiba, Kinexus). A score of 2+ yields confidence ≥0.85, which beats extension-only probes (0.6) and ties/beats most content probes.
-
----
-
-### 7. Handle edge cases
-
-- [x] Return `FileProbeResult.mismatch()` for non-`.txt` extensions
-- [x] Return `FileProbeResult.unknown()` when file cannot be read (with exception message)
-- [x] Ensure case-insensitive matching for all markers
-
-**Status:** All edge cases are already implemented and tested as part of step 6. Extension check happens first in `probe_file()`, file read errors are caught with try/except and return `unknown` with the exception message, and marker matching uses `.lower()` on both the text content and stored markers (which are pre-normalized to lowercase).
-
-**Justification:** Robust error handling prevents crashes on corrupted files. Case-insensitive matching handles variations in export software versions.
-
----
-
-### 8. Add unit tests
-
-- [x] Test: valid Eirich file → high confidence match (≥0.85)
-- [x] Test: Eirich filename pattern alone → modest match (~0.70)
-- [x] Test: DSV Horiba `.txt` file → unknown (no positive markers)
-- [x] Test: unreadable file → unknown with error reason
-- [x] Test: non-`.txt` extension → mismatch
-
-**Status:** All required test scenarios are covered:
-- `test_probe_file_full_eirich_file_high_confidence` - validates full file with 6 markers + filename → 0.95
-- `test_probe_file_content_only_high_confidence` - validates 6 markers without filename → 0.95
-- `test_probe_file_filename_only_gives_modest_confidence` - validates filename bonus only → 0.70
-- `test_probe_file_partial_markers_moderate_confidence` - validates 2 markers → 0.85
-- `test_probe_file_unknown_when_no_markers_found` - validates generic `.txt` → unknown
-- `test_probe_file_unknown_when_file_unreadable` - validates missing file → unknown with error
-- `test_probe_file_rejects_non_txt_extension` - validates `.csv` rejection → mismatch
-
-**Justification:** Tests ensure the fingerprinting logic works correctly and doesn't regress when other processors are modified.
-
----
-
-## Expected Confidence Scores
-
-| Scenario | Positive Hits | Filename Bonus | Score | Confidence |
-|----------|----------------|----------------|-------|------------|
-| Full Eirich file | 6 | +1 | 7 | 0.95 |
-| Eirich file (no filename match) | 6 | 0 | 6 | 0.95 |
-| Filename only (empty content) | 0 | +1 | 1 | 0.70 |
-| DSV Horiba `.txt` | 0 | 0 | 0 | unknown |
-| Generic `.txt` | 0 | 0 | 0 | unknown |
-
----
-
-## Files to Modify
-
-- `src/ipat_watchdog/device_plugins/mix_eirich/file_processor.py` — Main implementation
-- `tests/unit/test_eirich_file_processor.py` — Unit tests (create new)
+- [ ] Update `decisionlog.md` after implementation.
