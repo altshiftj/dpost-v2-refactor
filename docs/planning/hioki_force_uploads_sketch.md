@@ -1,10 +1,13 @@
 # Hioki CC/Aggregate Forced Uploads (Checklist)
 
 ## Scope and assumptions
-- [ ] Confirm Hioki outputs: cumulative CC, cumulative aggregate, per-measurement files.
-- [ ] Confirm CC/aggregate should overwrite in record and be force-uploaded each measurement.
-- [ ] Decide aggregate handling: force overwrite vs snapshot per measurement.
-- [ ] Decide overwrite strategy: in-place replace vs copy-then-rename.
+- [x] Confirm Hioki outputs: cumulative CC, cumulative aggregate, per-measurement files.
+- [x] Confirm CC/aggregate should overwrite in record and be force-uploaded each measurement.
+- [x] Decide aggregate handling: force overwrite vs snapshot per measurement.
+- [x] Decide overwrite strategy: in-place replace vs copy-then-rename.
+Notes:
+- Processor expects measurement CSVs plus CC/aggregate CSVs, with deterministic overwrite names.
+- Overwrite is implemented via copy-overwrite and force upload paths.
 
 ## Design choice
 - [x] Use `ProcessingOutput.force_paths` to signal forced uploads.
@@ -30,4 +33,6 @@
 - [x] Verify Kadi sync uses `force=True` for forced paths.
 
 ## Documentation
-- [ ] Update `decisionlog.md` after implementation.
+- [x] Update `decisionlog.md` after implementation.
+Notes:
+- Decision recorded in `decisionlog.md` under forced uploads entry.

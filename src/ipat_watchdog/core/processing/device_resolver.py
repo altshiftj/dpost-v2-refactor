@@ -193,6 +193,18 @@ class DeviceResolver:
                 return top.device
             # Confidence tie: fall back to selector order for deterministic behaviour.
             first_by_order = next(item for item in ordered if item.result.is_match())
+            top_confidence = top.result.confidence
+            tied_devices = [
+                item.device.identifier
+                for item in matches
+                if item.result.confidence == top_confidence
+            ]
+            if len(tied_devices) > 1:
+                logger.debug(
+                    "DeviceResolver: confidence tie between %s; selecting '%s' by selector order",
+                    ", ".join(tied_devices),
+                    first_by_order.device.identifier,
+                )
             return first_by_order.device
 
         unknowns = [item for item in ordered if not item.result.is_definitive()]

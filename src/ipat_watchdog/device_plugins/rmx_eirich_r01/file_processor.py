@@ -1,4 +1,4 @@
-"""File processor for Eirich mixer text exports."""
+"""File processor for Eirich mixer R01 text exports."""
 
 from __future__ import annotations
 
@@ -15,8 +15,9 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
 
+
 class FileProcessorEirich(FileProcessorABS):
-    """Moves .txt exports from the Eirich mixer into the record folder."""
+    """Moves .txt exports from the Eirich R01 mixer into the record folder."""
 
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
@@ -29,7 +30,7 @@ class FileProcessorEirich(FileProcessorABS):
         """
         Identify Eirich mixer files by filename pattern.
 
-        Variant selection is encoded in the filename (e.g. Eirich_EL1_TrendFile_*),
+        Variant selection is encoded in the filename (e.g. Eirich_R01_TrendFile_*),
         so a direct match is sufficient to route the file.
         """
         path = Path(filepath)
@@ -53,12 +54,8 @@ class FileProcessorEirich(FileProcessorABS):
 
     @classmethod
     def get_device_id(cls) -> str:
-        """
-        Device ID used by the processor factory.
-
-        This should match the identifier you use in the config, e.g. 'mix_eirich'.
-        """
-        return "mix_eirich"
+        """Device ID used by the processor factory."""
+        return "rmx_eirich_r01"
 
     def device_specific_processing(
         self,
@@ -75,12 +72,12 @@ class FileProcessorEirich(FileProcessorABS):
         move_item(src_path, destination)
 
         # You can change 'datatype' to something more specific if you like,
-        # e.g. 'mix_eirich'; for now it's fine to keep 'tabular' or 'text'.
+        # e.g. 'rmx_eirich_r01'; for now it's fine to keep 'tabular' or 'text'.
         return ProcessingOutput(final_path=destination, datatype="tabular")
 
     def _matches_filename_pattern(self, filepath: str) -> bool:
         """Check if filename matches any configured Eirich naming patterns."""
         filename = Path(filepath).name.lower()
-        patterns = self.device_config.markers.filename_patterns
-        
+        patterns = self.device_config.files.filename_patterns
+
         return any(fnmatch(filename, pattern.lower()) for pattern in patterns)

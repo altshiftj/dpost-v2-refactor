@@ -169,8 +169,6 @@ class _ProcessingPipeline:
         if context.decision is RoutingDecision.UNAPPENDABLE:
             return handle_unappendable_record(manager.interactions, rename_delegate, context)
 
-        # APPEND_TO_SYNCED collapsed into ACCEPT path (automatic append)
-
         if context.decision is RoutingDecision.ACCEPT:
             final_path = manager.add_item_to_record(
                 context.existing_record,

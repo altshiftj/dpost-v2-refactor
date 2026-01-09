@@ -1,5 +1,10 @@
 # Decision Log
 
+## 2026-01-08 - Split Eirich mixer plugins by device
+- **Context:** The shared `mix_eirich` plugin bundled multiple device variants, which made registration and routing harder to reason about.
+- **Decision:** Created distinct plugins/configs/processors for `rmx_eirich_el1` and `rmx_eirich_r01`, removed the `mix_eirich` shim and extras, and updated tests/docs accordingly.
+- **Impact:** Each Eirich device now has a dedicated plugin with clear identifiers and filename patterns; plugin loading and routing are explicit per device.
+
 ## 2026-01-07 - Forced uploads for cumulative Hioki files
 - **Context:** Hioki exports cumulative CC and aggregate files that must be overwritten in the record and re-uploaded without forcing every other artefact.
 - **Decision:** Added `ProcessingOutput.force_paths` so processors can request forced uploads for specific paths, with `FileProcessManager` registering and marking those paths unsynced (relative paths resolve against the record directory).

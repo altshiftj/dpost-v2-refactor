@@ -32,7 +32,8 @@ dsv_horiba      = []
 extr_haake      = []
 erm_hioki       = []
 rhe_kinexus     = []
-mix_eirich      = []
+rmx_eirich_el1  = []
+rmx_eirich_r01  = []
 
 # PC plugin dependencies
 tischrem_blb    = []
