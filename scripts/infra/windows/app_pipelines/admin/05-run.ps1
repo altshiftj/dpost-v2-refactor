@@ -12,6 +12,7 @@ $ciJobName   = $env:CI_JOB_NAME
 $targetIP    = $env:TARGET_IP
 $targetUser  = $env:TARGET_USER
 $targetPass  = $env:TARGET_PASS
+$targetKey   = $env:TARGET_SSH_KEY
 $sshPort     = $env:SSH_PORT
 $sshHostKey  = $env:SSH_HOSTKEY
 
@@ -41,12 +42,11 @@ $remoteCmd = @(
 # ── EXECUTE OVER SSH ──────────────────────────────────────────────────
 $plinkArgs = @(
     '-batch',
-    '-P', $sshPort,
-    '-pw', $targetPass,
-    '-hostkey', $sshHostKey,
-    "$targetUser@$targetIP",
-    $remoteCmd
+    '-P', $sshPort
 )
+$plinkArgs += Get-SSHAuthArgs -KeyPath $targetKey -HostKey $sshHostKey -Password $targetPass
+$plinkArgs += "$targetUser@$targetIP"
+$plinkArgs += $remoteCmd
 & plink.exe @plinkArgs
 
 if ($LASTEXITCODE -ne 0) {

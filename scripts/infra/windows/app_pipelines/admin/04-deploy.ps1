@@ -7,6 +7,7 @@ $ciJobName    = $env:CI_JOB_NAME
 $targetIP     = $env:TARGET_IP
 $targetUser   = $env:TARGET_USER
 $targetPass   = $env:TARGET_PASS
+$targetKey    = $env:TARGET_SSH_KEY
 $sshPort      = $env:SSH_PORT
 $sshHostKey   = $env:SSH_HOSTKEY
 
@@ -97,11 +98,11 @@ foreach (`$f in @(`$exe,'version.txt')) {
 # Encode and invoke via SSH
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($prep))
 $plinkArgs = @(
-    "-batch", "-P", $sshPort, "-pw", $targetPass,
-    "-hostkey", $sshHostKey,
-    "$targetUser@$targetIP",
-    "powershell -NoProfile -EncodedCommand $encoded"
+    "-batch", "-P", $sshPort
 )
+$plinkArgs += Get-SSHAuthArgs -KeyPath $targetKey -HostKey $sshHostKey -Password $targetPass
+$plinkArgs += "$targetUser@$targetIP"
+$plinkArgs += "powershell -NoProfile -EncodedCommand $encoded"
 & plink.exe @plinkArgs
 if ($LASTEXITCODE) { Write-Error 'Remote prep failed.'; exit 1 }
 
@@ -113,9 +114,11 @@ $scpMap = @{
 foreach ($pair in $scpMap.GetEnumerator()) {
     $dst = $pair.Value -replace '\\','/'
     $scpArgs = @(
-        "-batch", "-P", $sshPort, "-pw", $targetPass,
-        $pair.Key, "$targetUser@${targetIP}:`"$dst`""
+        "-batch", "-P", $sshPort
     )
+    $scpArgs += Get-SSHAuthArgs -KeyPath $targetKey -HostKey $sshHostKey -Password $targetPass
+    $scpArgs += $pair.Key
+    $scpArgs += "$targetUser@${targetIP}:`"$dst`""
     & pscp.exe @scpArgs
     if ($LASTEXITCODE) { Write-Error "SCP of $($pair.Key) failed."; exit 1 }
 }

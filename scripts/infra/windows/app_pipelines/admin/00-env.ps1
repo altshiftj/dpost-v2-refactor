@@ -124,17 +124,29 @@ try {
 # ------------------------------
 # CI-related Defaults (PC-centric)
 # ------------------------------
-$env:CI_JOB_NAME = "tischrem_blb"     # PC plugin name (was device name)
-$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "sem_phenomxl2" }
+# Hioki direct-connect defaults (override via env vars).
+$env:CI_JOB_NAME = if ($env:CI_JOB_NAME -and $env:CI_JOB_NAME -ne "") { $env:CI_JOB_NAME } else { "hioki_blb" }
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "erm_hioki" }
+
+# tischrem_blb breadcrumbs:
+# $env:CI_JOB_NAME = "tischrem_blb"
+# $env:DEVICE_PLUGINS = "sem_phenomxl2"
 
 $env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
 
 $script:DEVICE_PLUGIN_LIST = @()
 if ($env:DEVICE_PLUGINS) { $script:DEVICE_PLUGIN_LIST = $env:DEVICE_PLUGINS -split '[,; ]+' | Where-Object { $_ } }
 
-$env:TARGET_IP   = "134.169.58.85"   # Router's WAN IP
-$env:TARGET_USER = "TischREM"
-$env:SSH_PORT    = 22                # External SSH port
+$env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "134.169.58.151" }
+$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "Hioki" }
+$env:SSH_PORT    = if ($env:SSH_PORT) { $env:SSH_PORT } else { 22 }
+
+# tischrem_blb breadcrumbs:
+# $env:TARGET_IP   = "134.169.58.85"
+# $env:TARGET_USER = "TischREM"
+
+# SSH key for key-based auth (OpenSSH or PuTTY .ppk). Convert to .ppk if needed.
+$env:TARGET_SSH_KEY = if ($env:TARGET_SSH_KEY) { $env:TARGET_SSH_KEY } else { "$env:USERPROFILE\.ssh\deploy_ed25519" }
 
 # ------------------------------
 # Certificates & Secure Passwords
@@ -158,7 +170,13 @@ try {
         $bstr2 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureTargetPass)
         $env:TARGET_PASS = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr2)
     } else {
-        Write-Warning "Target password file not found: $targetPassPath"
+        $hasKey = $false
+        if ($env:TARGET_SSH_KEY -and (Test-Path -LiteralPath $env:TARGET_SSH_KEY)) { $hasKey = $true }
+        if (-not $hasKey) {
+            Write-Warning "Target password file not found: $targetPassPath"
+        } else {
+            Write-Host "Target password file not found; using SSH key auth from TARGET_SSH_KEY."
+        }
     }
 } catch {
     Write-Warning "Failed to load encrypted passwords. Check your .secure folder. ($($_.Exception.Message))"
@@ -171,7 +189,9 @@ $env:TUN_PORT_0 = 8000     # Local forward to remote 8000
 $env:TUN_PORT_1 = 8001     # Local forward to remote 8001
 
 # Optional: Add SSH host key fingerprint to prevent MITM prompt
-$env:SSH_HOSTKEY = 'AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4'
+$env:SSH_HOSTKEY = if ($env:SSH_HOSTKEY) { $env:SSH_HOSTKEY } else { "SHA256:EpVP1GeyVqdvnkePT3KWZvL0YoMYUqcFbTR5pSr5JLo" }
+# tischrem_blb hostkey: AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4
+# hioki_blb hostkey: SHA256:EpVP1GeyVqdvnkePT3KWZvL0YoMYUqcFbTR5pSr5JLo
 
 # ------------------------------
 # Paths (derived where helpful)
@@ -189,6 +209,35 @@ function Get-PipInstallTarget {
     if (-not $Extras -or $Extras.Count -eq 0) { return "." }
     $joined = ($Extras -join ",")
     return ".[$joined]"
+}
+
+function Get-SSHAuthArgs {
+    param(
+        [string] $KeyPath = $env:TARGET_SSH_KEY,
+        [string] $HostKey = $env:SSH_HOSTKEY,
+        [string] $Password = $env:TARGET_PASS
+    )
+    $args = @()
+    $useKey = $false
+
+    if ($KeyPath) { $KeyPath = $KeyPath.Trim() }
+    if ($KeyPath -and (Test-Path -LiteralPath $KeyPath)) {
+        $args += "-i"
+        $args += $KeyPath
+        $useKey = $true
+    }
+
+    if ($HostKey) {
+        $args += "-hostkey"
+        $args += $HostKey
+    }
+
+    if (-not $useKey -and $Password) {
+        $args += "-pw"
+        $args += $Password
+    }
+
+    return ,$args
 }
 
 # ------------------------------
