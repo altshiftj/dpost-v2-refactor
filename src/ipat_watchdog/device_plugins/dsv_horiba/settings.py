@@ -37,7 +37,7 @@ processed results and dissolution curves.
         ),
         files=DeviceFileSelectors(
             native_extensions=frozenset({".wdb", ".wdk", ".wdp"}),
-            exported_extensions=frozenset({".xls"}),
+            exported_extensions=frozenset({".txt"}),
         ),
         session=SessionSettings(timeout_seconds=600),
         watcher=WatcherSettings(),
