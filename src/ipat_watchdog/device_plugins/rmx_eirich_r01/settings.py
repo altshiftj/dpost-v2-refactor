@@ -15,10 +15,10 @@ def build_config() -> DeviceConfig:
     return DeviceConfig(
         identifier="rmx_eirich_r01",
         metadata=DeviceMetadata(
-            user_kadi_id="<tbd>",
-            user_persistent_id="<tbd>",
-            record_kadi_id="<tbd>",
-            record_persistent_id="<tbd>",
+            user_kadi_id="rmx-02-usr",
+            user_persistent_id=176,
+            record_kadi_id="rmx_02",
+            record_persistent_id=941,
             device_abbr="RMX_02",
             record_tags=("Mixing",),
             default_record_description=r"""
