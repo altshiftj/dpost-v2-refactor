@@ -81,4 +81,4 @@ if (Test-Path $outputPath) {
 
 # --- Done ---
 $duration = (Get-Date) - $startTime
-Write-Host "`nBuild complete. Elapsed time: {0:hh\:mm\:ss}" -f $duration
+Write-Host ("`nBuild complete. Elapsed time: {0:hh\:mm\:ss}" -f $duration)

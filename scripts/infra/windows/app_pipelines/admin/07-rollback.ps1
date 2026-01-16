@@ -11,6 +11,9 @@ Set-Location -Path $env:PROJECT_ROOT
 $targetIP   = $env:TARGET_IP
 $targetUser = $env:TARGET_USER
 $targetPass = $env:TARGET_PASS
+$targetKey  = $env:TARGET_SSH_KEY
+$sshPort    = $env:SSH_PORT
+$sshHostKey = $env:SSH_HOSTKEY
 $ciJobName  = $env:CI_JOB_NAME
 
 $taskName   = "IPAT-Watchdog-$ciJobName"
@@ -110,7 +113,14 @@ try {
 $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($rollbackScript))
 $command = "powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand $encoded"
 
-& plink -batch -pw "$targetPass" "$targetUser@$targetIP" $command
+$plinkArgs = @(
+    "-batch",
+    "-P", $sshPort
+)
+$plinkArgs += Get-SSHAuthArgs -KeyPath $targetKey -HostKey $sshHostKey -Password $targetPass
+$plinkArgs += "$targetUser@$targetIP"
+$plinkArgs += $command
+& plink.exe @plinkArgs
 
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Remote rollback failed."

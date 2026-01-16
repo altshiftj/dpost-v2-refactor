@@ -11,6 +11,7 @@ Set-Location -Path $env:PROJECT_ROOT
 $targetIP     = $env:TARGET_IP
 $targetUser   = $env:TARGET_USER
 $targetPass   = $env:TARGET_PASS
+$targetKey    = $env:TARGET_SSH_KEY
 $sshPort      = $env:SSH_PORT
 $sshHostKey   = $env:SSH_HOSTKEY
 $remotePort   = 8001
@@ -29,10 +30,10 @@ Write-Host "Opening SSH tunnel to ${targetIP}:$remotePort -> 127.0.0.1:$localPor
 
 $tunnelArgs = @(
     "-batch", "-N", "-L", "${localPort}:127.0.0.1:$remotePort",
-    "-P", $sshPort, "-pw", $targetPass,
-    "-hostkey", $sshHostKey,
-    "$targetUser@$targetIP"
+    "-P", $sshPort
 )
+$tunnelArgs += Get-SSHAuthArgs -KeyPath $targetKey -HostKey $sshHostKey -Password $targetPass
+$tunnelArgs += "$targetUser@$targetIP"
 
 # Launch tunnel as background process
 $tunnelProc = Start-Process -FilePath plink.exe -ArgumentList $tunnelArgs -NoNewWindow -PassThru
