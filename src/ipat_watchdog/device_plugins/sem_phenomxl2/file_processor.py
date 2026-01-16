@@ -7,7 +7,10 @@ from pathlib import Path
 from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS, ProcessingOutput)
+    FileProcessorABS,
+    PreprocessingResult,
+    ProcessingOutput,
+)
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (get_unique_filename,
                                                          move_item)
@@ -20,27 +23,23 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
 
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
-        # Remember temporary normalised names so we can recover the original source when processing.
-        self._path_mapping: dict[str, str] = {}
 
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
-    def device_specific_preprocessing(self, path: str) -> str:
+    def device_specific_preprocessing(self, path: str) -> PreprocessingResult:
         candidate = Path(path)
         native_exts = self.device_config.files.native_extensions
         if candidate.suffix.lower() in native_exts:
             new_stem = self._strip_trailing_digit(candidate.stem)
             if new_stem != candidate.stem:
-                normalized = candidate.with_name(f"{new_stem}{candidate.suffix}")
-                self._path_mapping[str(normalized)] = str(candidate)
                 logger.debug(
                     "Normalised TischREM filename from '%s' to '%s'",
                     candidate.name,
-                    normalized.name,
+                    f"{new_stem}{candidate.suffix}",
                 )
-                return str(normalized)
-        return path
+                return PreprocessingResult.with_prefix(path, new_stem)
+        return PreprocessingResult.passthrough(path)
 
     @staticmethod
     def _strip_trailing_digit(filename: str) -> str:
@@ -68,7 +67,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         filename_prefix: str,
         extension: str,
     ) -> ProcessingOutput:
-        actual_src_path = Path(self._path_mapping.pop(src_path, src_path))
+        actual_src_path = Path(src_path)
         record_dir = Path(record_path)
 
         if extension.lower() in {ext.lower() for ext in self.device_config.files.native_extensions}:

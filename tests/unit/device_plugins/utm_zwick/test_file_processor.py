@@ -41,7 +41,8 @@ def test_preprocessing_stages_until_csv(tmp_path, processor):
 
     # csv arrival with same prefix → release
     r2 = processor.device_specific_preprocessing(str(csv))
-    assert r2 == str(csv)
+    assert r2 is not None
+    assert r2.effective_path == str(csv)
 
 
 def test_preprocessing_accepts_either_order(tmp_path, processor):
@@ -50,7 +51,8 @@ def test_preprocessing_accepts_either_order(tmp_path, processor):
     csv.write_text("results")
 
     r1 = processor.device_specific_preprocessing(str(csv))
-    assert r1 == str(csv)
+    assert r1 is not None
+    assert r1.effective_path == str(csv)
 
 # ---------------------------------------------------------------------------
 # Processing flow (no zipping, zs2 moved as-is, txt snapshots flattened)
@@ -72,7 +74,7 @@ def test_device_specific_processing_happy_path(tmp_path, processor):
     processor.device_specific_preprocessing(str(zs2))
     processor.device_specific_preprocessing(str(t1))
     processor.device_specific_preprocessing(str(t2))
-    processor.device_specific_preprocessing(str(csv))  # returns str(csv), but we don't need the value here
+    processor.device_specific_preprocessing(str(csv))  # triggers finalization
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()

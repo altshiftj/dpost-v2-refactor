@@ -33,15 +33,34 @@ logger = setup_logger(__name__)
 
 
 class QueueingEventHandler(FileSystemEventHandler):
-    """Minimal handler that forwards created paths into a queue."""
+    """Minimal handler that forwards created/modified paths into a queue."""
 
-    def __init__(self, event_queue: queue.Queue[str]):
+    def __init__(
+        self,
+        event_queue: queue.Queue[str],
+        should_queue_modified=None,
+    ) -> None:
         super().__init__()
         self._event_queue = event_queue
+        self._should_queue_modified = should_queue_modified
 
     def on_created(self, event: FileSystemEvent) -> None:
         kind = "Folder" if event.is_directory else "File"
         logger.debug("%s detected: %s", kind, event.src_path)
+        self._event_queue.put(str(event.src_path))
+
+    def on_modified(self, event: FileSystemEvent) -> None:
+        if event.is_directory:
+            return
+        if self._should_queue_modified is None:
+            return
+        try:
+            if not self._should_queue_modified(event.src_path):
+                return
+        except Exception as exc:  # noqa: BLE001
+            logger.debug("Modified event skipped for %s: %s", event.src_path, exc)
+            return
+        logger.debug("File modified: %s", event.src_path)
         self._event_queue.put(str(event.src_path))
 
 
@@ -119,7 +138,10 @@ class DeviceWatchdogApp:
         if self.observer is not None:
             return
 
-        handler = QueueingEventHandler(self.event_queue)
+        handler = QueueingEventHandler(
+            self.event_queue,
+            should_queue_modified=self.file_processing.should_queue_modified,
+        )
         observer = Observer()
         observer.schedule(handler, path=str(self.watch_dir), recursive=False)
         observer.start()

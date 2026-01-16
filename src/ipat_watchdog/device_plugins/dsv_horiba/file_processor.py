@@ -9,7 +9,12 @@ from typing import Any, Dict, List
 from ipat_watchdog.core.config import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProbeResult, FileProcessorABS, ProcessingOutput)
+    FileProbeResult,
+    FileProcessorABS,
+    PreprocessingResult,
+    ProcessingOutput,
+)
+from ipat_watchdog.core.processing.text_utils import read_text_prefix
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
     get_unique_filename, move_item, move_to_exception_folder)
@@ -27,7 +32,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
-    def device_specific_preprocessing(self, path: str) -> str | None:
+    def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
         candidate = Path(path)
         key = self._key(candidate)
         bucket = self._batches.setdefault(key, {"files": [], "t": time.time(), "ready": False})
@@ -47,7 +52,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         if not bucket["ready"] and has_native and has_exported:
             bucket["ready"] = True
             logger.debug("Dissolver batch ready for key '%s': %s", key, [str(f) for f in files])
-            return path
+            return PreprocessingResult.passthrough(path)
         return None
 
     # ------------------------------------------------------------------
@@ -72,7 +77,11 @@ class FileProcessorDSVHoriba(FileProcessorABS):
             return FileProbeResult.mismatch("Not a dissolver export text file")
 
         try:
-            snippet = self._read_text_prefix(path)
+            snippet = read_text_prefix(
+                path,
+                encodings=("utf-8-sig", "utf-8", "latin-1", "cp1252"),
+                errors="ignore",
+            )
         except Exception as exc:  # pragma: no cover - defensive
             logger.debug("DSV probe failed to read '%s': %s", path, exc)
             return FileProbeResult.unknown(str(exc))
@@ -164,16 +173,6 @@ class FileProcessorDSVHoriba(FileProcessorABS):
     @staticmethod
     def _key(path: Path) -> str:
         return path.stem
-
-    @staticmethod
-    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-        raw = path.read_bytes()[:bytes_limit]
-        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
-            try:
-                return raw.decode(enc, errors="ignore")
-            except Exception:
-                continue
-        return raw.decode(errors="ignore")
 
     def _purge_orphans(self) -> None:
         now = time.time()

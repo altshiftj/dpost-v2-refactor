@@ -17,6 +17,9 @@ class FakeFileProcessManager:
         rejected, self._rejected = self._rejected, []
         return rejected
 
+    def should_queue_modified(self, path: str) -> bool:
+        return False
+
     def shutdown(self):
         pass
 

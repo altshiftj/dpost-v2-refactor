@@ -15,8 +15,20 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
+    PreprocessingResult,
     ProcessingOutput,
 )
+from ipat_watchdog.core.processing.batch_models import (
+    CsvNgbPair as _Pair,
+    FlushBatch as _FlushBatch,
+    PendingPath as _PendingNGB,
+)
+from ipat_watchdog.core.processing.staging_utils import (
+    create_unique_stage_dir,
+    find_stale_stage_dirs,
+    reconstruct_pairs_from_stage,
+)
+from ipat_watchdog.core.processing.text_utils import read_text_prefix
 from ipat_watchdog.core.storage.filesystem_utils import move_item
 from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -47,19 +59,6 @@ def _is_csv_like(p: Path) -> bool:
 
 
 @dataclass
-class _PendingNGB:
-    path: Path
-    created: float
-
-
-@dataclass
-class _Pair:
-    csv_path: Path
-    ngb_path: Path
-    created: float
-
-
-@dataclass
 class _Sentinel:
     csv_path: Path
     prefix: str
@@ -75,13 +74,6 @@ class _FolderState:
 
     def is_idle(self) -> bool:
         return not self.pending_ngb and not self.bucket and self.sentinel is None
-
-
-@dataclass
-class _FlushBatch:
-    prefix: str
-    raw_probenname: str
-    pairs: List[_Pair]
 
 
 class FileProcessorPSAHoriba(FileProcessorABS):
@@ -118,13 +110,13 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     # -------------------------------
     # Pre-processing
     # -------------------------------
-    def device_specific_preprocessing(self, path: str) -> Optional[str]:
+    def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         p = Path(path)
         logger.debug("PSA: preprocessing path=%s", p)
         # Idempotency: if this original NGB has already been staged, return the staging folder
         staged = self._ngb_to_stage.get(str(p))
         if staged:
-            return staged
+            return PreprocessingResult.passthrough(staged)
         if not p.exists():
             return None
 
@@ -148,7 +140,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         logger.debug("PSA: ignoring non CSV/NGB file %s", p)
         return None
 
-    def _handle_csv(self, folder_key: str, state: _FolderState, path: Path) -> Optional[str]:
+    def _handle_csv(self, folder_key: str, state: _FolderState, path: Path) -> Optional[PreprocessingResult]:
         if self._is_csv_finalizing(path):
             return None
 
@@ -193,12 +185,12 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         logger.debug("PSA: remembered sentinel CSV %s with prefix=%r", path, prefix)
         return None
 
-    def _handle_ngb(self, folder_key: str, state: _FolderState, path: Path) -> Optional[str]:
+    def _handle_ngb(self, folder_key: str, state: _FolderState, path: Path) -> Optional[PreprocessingResult]:
         # If this NGB was already staged as part of a batch, do nothing here.
         # Staging now uses a dedicated folder keyed by prefix; we do not re-advertise the file path.
         staged = self._ngb_to_stage.get(str(path))
         if staged:
-            return staged
+            return PreprocessingResult.passthrough(staged)
 
         if self._ngb_tracked(state, path):
             return None
@@ -248,7 +240,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             state.sentinel = None
             self._cleanup_state(folder_key)
             # Advertise the staging folder path downstream so any rename moves the whole batch.
-            return str(stage_dir)
+            return PreprocessingResult.passthrough(str(stage_dir))
 
         state.pending_ngb.append(_PendingNGB(path=path, created=time.time()))
         logger.debug("PSA: remembered NGB %s awaiting CSV", path)
@@ -262,7 +254,15 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         if not _is_csv_like(p):
             return FileProbeResult.mismatch("Not a CSV/TSV for PSA Horiba")
         try:
-            text = self._read_text_prefix(p)
+            text = read_text_prefix(
+                p,
+                encodings=("utf-8-sig", "utf-8", "cp1252", "latin-1"),
+                errors=None,
+                fallback_encoding="latin-1",
+                fallback_errors="ignore",
+                logger=logger,
+                log_label="PSA",
+            )
         except Exception as exc:
             return FileProbeResult.unknown(str(exc))
         t = text.lower()
@@ -422,26 +422,6 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         except Exception:
             pass
 
-    @staticmethod
-    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-        raw = path.read_bytes()[:bytes_limit]
-        # Try strict decoding to avoid silent character loss, logging the first success.
-        for enc in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
-            try:
-                text = raw.decode(enc)
-                logger.debug("PSA: read_text_prefix used encoding=%s for %s", enc, path)
-                return text
-            except UnicodeDecodeError:
-                continue
-            except Exception:
-                continue
-        # Fallback that never fails but preserves bytes 1:1
-        text = raw.decode("latin-1", errors="ignore")
-        logger.debug("PSA: read_text_prefix fallback encoding=latin-1(ignore) for %s", path)
-        return text
-
-    
-
     def _parse_csv_metadata(self, p: Path) -> Dict[str, str]:
         """Parse Horiba header until numeric table begins; accept TAB or ';'."""
         def _looks_like_table_header(token: str) -> bool:
@@ -450,7 +430,16 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                 return True
             return bool(re.match(r'^[\s]*[0-9]*[.,]?[0-9]+([\sEe][+-]?[0-9]+)?\s*$', t))
 
-        text = self._read_text_prefix(p, bytes_limit=_MAX_PREFIX_BYTES)
+        text = read_text_prefix(
+            p,
+            bytes_limit=_MAX_PREFIX_BYTES,
+            encodings=("utf-8-sig", "utf-8", "cp1252", "latin-1"),
+            errors=None,
+            fallback_encoding="latin-1",
+            fallback_errors="ignore",
+            logger=logger,
+            log_label="PSA",
+        )
         if not text:
             return {}
         meta: Dict[str, str] = {}
@@ -543,21 +532,19 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         for folder_key in list(self._state.keys()):
             parent = Path(folder_key)
             try:
-                for child in parent.iterdir():
-                    if child.is_dir() and ".__staged__" in child.name:
-                        if str(child) in self._finalizing:
-                            continue  # currently in-flight
-                        # Consider folder stale if older than TTL by modification time.
-                        try:
-                            age = now - child.stat().st_mtime
-                        except Exception:
-                            age = ttl_seconds + 1
-                        if age > ttl_seconds:
-                            logger.info("PSA: moving stale staging folder '%s' to exception", child)
-                            try:
-                                safe_move_to_exception(str(child))
-                            except Exception:
-                                logger.exception("PSA: failed to move stale staging folder %s to exception", child)
+                stale_dirs = find_stale_stage_dirs(
+                    parent,
+                    marker=".__staged__",
+                    ttl_seconds=ttl_seconds,
+                    now=now,
+                    active=self._finalizing.keys(),
+                )
+                for child in stale_dirs:
+                    logger.info("PSA: moving stale staging folder '%s' to exception", child)
+                    try:
+                        safe_move_to_exception(str(child))
+                    except Exception:
+                        logger.exception("PSA: failed to move stale staging folder %s to exception", child)
             except Exception:
                 # Parent may have been removed; ignore.
                 continue
@@ -568,16 +555,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def _create_unique_stage_dir(self, base_dir: Path, prefix: str) -> Path:
         """Create a unique staging directory named '<prefix>.__staged__<n>'."""
         # Favor simple increment; the manager strips the marker when parsing names.
-        for idx in range(1, 1000):  # arbitrary guard
-            name = f"{prefix}.__staged__{idx}"
-            candidate = base_dir / name
-            if not candidate.exists():
-                candidate.mkdir(parents=True, exist_ok=True)
-                return candidate
-        # Fallback without numeric suffix
-        candidate = base_dir / f"{prefix}.__staged__"
-        candidate.mkdir(parents=True, exist_ok=True)
-        return candidate
+        return create_unique_stage_dir(base_dir, prefix, marker=".__staged__", max_index=1000)
 
     def _reconstruct_batch_from_stage(self, stage_dir: Path) -> _FlushBatch:
         """Best-effort reconstruction when in-memory batch is missing.
@@ -585,28 +563,15 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         We pair CSV/NGB by base name (without extension) when possible; otherwise
         we perform a simple chronological pairing.
         """
-        prefix = stage_dir.name.split(".__staged__")[0]
-        csvs = sorted([p for p in stage_dir.iterdir() if _is_csv_like(p)], key=lambda p: p.stat().st_mtime)
-        ngbs = sorted([p for p in stage_dir.iterdir() if _is_ngb(p)], key=lambda p: p.stat().st_mtime)
-
-        # Map by stem first
-        pairs: List[_Pair] = []
-        unmatched_csv: List[Path] = []
-        used_ngb: set[Path] = set()
-        ngb_by_stem = {p.stem: p for p in ngbs}
-        for c in csvs:
-            n = ngb_by_stem.get(c.stem)
-            if n is not None and n not in used_ngb:
-                pairs.append(_Pair(csv_path=c, ngb_path=n, created=time.time()))
-                used_ngb.add(n)
-            else:
-                unmatched_csv.append(c)
-        # Chronological fallback for remaining
-        remaining_ngb = [p for p in ngbs if p not in used_ngb]
-        for c, n in zip(unmatched_csv, remaining_ngb):
-            pairs.append(_Pair(csv_path=c, ngb_path=n, created=time.time()))
-
-        if not pairs:
-            raise RuntimeError(f"No CSV/NGB pairs found in staging folder {stage_dir}")
-
-        return _FlushBatch(prefix=prefix, raw_probenname=prefix, pairs=pairs)
+        prefix, pairs = reconstruct_pairs_from_stage(
+            stage_dir,
+            _is_csv_like,
+            _is_ngb,
+            marker=".__staged__",
+            left_label="CSV",
+            right_label="NGB",
+        )
+        staged_pairs: List[_Pair] = []
+        for csv_path, ngb_path in pairs:
+            staged_pairs.append(_Pair(csv_path=csv_path, ngb_path=ngb_path, created=time.time()))
+        return _FlushBatch(prefix=prefix, raw_probenname=prefix, pairs=staged_pairs)

@@ -20,7 +20,11 @@ from typing import Dict, List, Optional
 from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProbeResult, FileProcessorABS, ProcessingOutput)
+    FileProbeResult,
+    FileProcessorABS,
+    PreprocessingResult,
+    ProcessingOutput,
+)
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import \
     get_unique_filename  # still used for txt snapshots
@@ -65,7 +69,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
-    def device_specific_preprocessing(self, path: str) -> str | None:
+    def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
         """Stage incoming path (zs2/txt/csv) without moving files.
 
         - Track series state by *base* prefix (TXT stems are normalized by removing trailing -NN).
@@ -98,7 +102,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             # Series finalize condition: csv present triggers processing immediately
             if state.csv:
                 # Returning the CSV path signals the pipeline to process the entire staged series.
-                return str(state.csv)
+                return PreprocessingResult.passthrough(str(state.csv))
 
         return None
 

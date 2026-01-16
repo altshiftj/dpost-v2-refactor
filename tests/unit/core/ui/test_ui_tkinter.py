@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 
 import tkinter.messagebox as messagebox
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from ipat_watchdog.core.interactions import SessionPromptDetails
 from ipat_watchdog.core.interactions.messages import DialogPrompts, InfoMessages
 
 
@@ -101,3 +102,66 @@ def test_destroy(ui_instance):
     mock_dialog.destroy.assert_called_once()
     ui_instance.dialog_parent.destroy.assert_called_once()
     ui_instance.root.destroy.assert_called_once()
+
+
+def test_compose_session_message_includes_users_and_records(ui_instance):
+    details = SessionPromptDetails(users=["alice", "bob"], records=["rec1"])
+
+    message = ui_instance._compose_session_message(details)
+
+    assert "Users in session" in message
+    assert "alice" in message
+    assert "Records processed in this session" in message
+    assert "rec1" in message
+
+
+def test_run_on_ui_sync_executes_via_after(ui_instance, monkeypatch):
+    ui_instance._ui_thread_id = 999
+    monkeypatch.setattr("ipat_watchdog.core.ui.ui_tkinter.threading.get_ident", lambda: 1)
+
+    def run_after(delay, callback):
+        callback()
+
+    ui_instance.root.after.side_effect = run_after
+
+    result = ui_instance.run_on_ui_sync(lambda: "ok")
+
+    assert result == "ok"
+
+
+def test_run_on_ui_sync_propagates_exception(ui_instance, monkeypatch):
+    ui_instance._ui_thread_id = 999
+    monkeypatch.setattr("ipat_watchdog.core.ui.ui_tkinter.threading.get_ident", lambda: 1)
+
+    def run_after(delay, callback):
+        callback()
+
+    ui_instance.root.after.side_effect = run_after
+
+    with pytest.raises(ValueError):
+        ui_instance.run_on_ui_sync(lambda: (_ for _ in ()).throw(ValueError("boom")))
+
+
+def test_show_done_dialog_requires_callable(ui_instance):
+    details = SessionPromptDetails(users=[], records=[])
+
+    with patch("ipat_watchdog.core.ui.ui_tkinter.tk.Toplevel"), patch(
+        "ipat_watchdog.core.ui.ui_tkinter.tk.Label"
+    ), patch("ipat_watchdog.core.ui.ui_tkinter.tk.Button"):
+        with pytest.raises(TypeError):
+            ui_instance.show_done_dialog(details, on_done_callback=None)
+
+
+def test_handle_done_clicked_invokes_callback(ui_instance):
+    dialog = MagicMock()
+    dialog.winfo_exists.return_value = True
+    ui_instance._active_dialogs["done_dialog"] = dialog
+    called = {"count": 0}
+
+    def callback():
+        called["count"] += 1
+
+    ui_instance._handle_done_clicked(dialog, callback)
+
+    assert called["count"] == 1
+    assert "done_dialog" not in ui_instance._active_dialogs

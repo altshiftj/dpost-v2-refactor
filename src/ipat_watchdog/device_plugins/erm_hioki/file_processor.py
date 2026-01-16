@@ -11,10 +11,15 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
+    PreprocessingResult,
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename, move_item
+from ipat_watchdog.core.storage.filesystem_utils import (
+    get_unique_filename,
+    is_valid_prefix,
+    move_item,
+)
 
 logger = setup_logger(__name__)
 
@@ -30,15 +35,15 @@ class FileProcessorHioki(FileProcessorABS):
         self.device_config = device_config
 
     # No staging/pairing needed
-    def device_specific_preprocessing(self, path: str) -> Optional[str]:
+    def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         candidate = Path(path)
         if candidate.suffix.lower() != ".csv":
-            return path
+            return PreprocessingResult.passthrough(path)
 
         normalized = self._normalize_stem(candidate.stem)
         if normalized != candidate.stem:
-            return str(candidate.with_name(f"{normalized}{candidate.suffix}"))
-        return path
+            return PreprocessingResult.with_prefix(path, normalized)
+        return PreprocessingResult.passthrough(path)
 
     # Probe: rely on extension
     def probe_file(self, filepath: str) -> FileProbeResult:
@@ -52,6 +57,17 @@ class FileProcessorHioki(FileProcessorABS):
                 reason="Excel export for Hioki analyzer",
             )
         return FileProbeResult.mismatch("Unsupported extension for Hioki (Excel expected)")
+
+    def should_queue_modified(self, path: str) -> bool:
+        target = Path(path)
+        if target.suffix.lower() != ".csv":
+            return False
+        stem = target.stem
+        if self._is_measurement(stem):
+            return False
+        if self._is_cc(stem):
+            return is_valid_prefix(self._normalize_stem(stem))
+        return is_valid_prefix(stem)
 
     def is_appendable(self, record: LocalRecord, filename_prefix: str, extension: str) -> bool:
         # allow multiple exports in the same record
@@ -77,62 +93,128 @@ class FileProcessorHioki(FileProcessorABS):
         src = Path(src_path)
         record_dir = Path(record_path)
         record_dir.mkdir(parents=True, exist_ok=True)
-        ext = src.suffix.lower() or extension.lower()
+        ext = self._resolve_extension(src, extension)
+        file_id = filename_prefix
 
         if ext in {".xlsx", ".xls"}:
-            destination = get_unique_filename(record_path, filename_prefix, ext)
-            move_item(src_path, destination)
-            return ProcessingOutput(final_path=destination, datatype="hioki")
+            return self._process_excel(src_path, record_path, file_id, ext)
 
         if ext != ".csv":
-            destination = get_unique_filename(record_path, filename_prefix, ext)
-            move_item(src_path, destination)
-            return ProcessingOutput(final_path=destination, datatype="hioki")
+            return self._process_generic(src_path, record_path, file_id, ext)
 
         stem = src.stem
-        base = self._normalize_stem(stem)
-        force_paths: list[str] = []
 
         if self._is_measurement(stem):
-            destination = get_unique_filename(record_path, filename_prefix, ext)
-            move_item(src_path, destination)
-
-            cc_src = src.parent / f"CC_{base}.csv"
-            cc_dest = record_dir / f"{filename_prefix}-cc.csv"
-            if cc_src.exists():
-                self._copy_overwrite(cc_src, cc_dest)
-                force_paths.append(str(cc_dest))
-
-            agg_src = src.parent / f"{base}.csv"
-            agg_dest = record_dir / f"{filename_prefix}-results.csv"
-            if agg_src.exists():
-                self._copy_overwrite(agg_src, agg_dest)
-                force_paths.append(str(agg_dest))
-
-            return ProcessingOutput(
-                final_path=destination,
-                datatype="hioki",
-                force_paths=tuple(force_paths),
-            )
+            return self._process_measurement_csv(src, record_dir, file_id, ext)
 
         if self._is_cc(stem):
-            cc_dest = record_dir / f"{filename_prefix}-cc.csv"
-            self._copy_overwrite(src, cc_dest)
-            force_paths.append(str(cc_dest))
-            return ProcessingOutput(
-                final_path=str(cc_dest),
-                datatype="hioki",
-                force_paths=tuple(force_paths),
-            )
+            return self._process_cc_csv(src, record_dir, file_id)
 
-        agg_dest = record_dir / f"{filename_prefix}-results.csv"
-        self._copy_overwrite(src, agg_dest)
-        force_paths.append(str(agg_dest))
+        return self._process_aggregate_csv(src, record_dir, file_id)
+
+    def _process_excel(
+        self,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        destination = get_unique_filename(record_path, file_id, extension)
+        move_item(src_path, destination)
+        return ProcessingOutput(final_path=destination, datatype="hioki")
+
+    def _process_generic(
+        self,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        destination = get_unique_filename(record_path, file_id, extension)
+        move_item(src_path, destination)
+        return ProcessingOutput(final_path=destination, datatype="hioki")
+
+    def _process_measurement_csv(
+        self,
+        src: Path,
+        record_dir: Path,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        destination = get_unique_filename(str(record_dir), file_id, extension)
+        move_item(src, destination)
+
+        base = self._normalize_stem(src.stem)
+        force_paths: list[str] = []
+
+        self._maybe_copy_force(
+            src.parent / f"CC_{base}.csv",
+            self._cc_dest(record_dir, file_id),
+            force_paths,
+        )
+        self._maybe_copy_force(
+            src.parent / f"{base}.csv",
+            self._results_dest(record_dir, file_id),
+            force_paths,
+        )
+
         return ProcessingOutput(
-            final_path=str(agg_dest),
+            final_path=destination,
             datatype="hioki",
             force_paths=tuple(force_paths),
         )
+
+    def _process_cc_csv(
+        self,
+        src: Path,
+        record_dir: Path,
+        file_id: str,
+    ) -> ProcessingOutput:
+        cc_dest = self._cc_dest(record_dir, file_id)
+        self._copy_overwrite(src, cc_dest)
+        return ProcessingOutput(
+            final_path=str(cc_dest),
+            datatype="hioki",
+            force_paths=(str(cc_dest),),
+        )
+
+    def _process_aggregate_csv(
+        self,
+        src: Path,
+        record_dir: Path,
+        file_id: str,
+    ) -> ProcessingOutput:
+        agg_dest = self._results_dest(record_dir, file_id)
+        self._copy_overwrite(src, agg_dest)
+        return ProcessingOutput(
+            final_path=str(agg_dest),
+            datatype="hioki",
+            force_paths=(str(agg_dest),),
+        )
+
+    @staticmethod
+    def _resolve_extension(src: Path, extension: str) -> str:
+        ext = src.suffix.lower()
+        return ext if ext else extension.lower()
+
+    @staticmethod
+    def _cc_dest(record_dir: Path, file_id: str) -> Path:
+        return record_dir / f"{file_id}-cc.csv"
+
+    @staticmethod
+    def _results_dest(record_dir: Path, file_id: str) -> Path:
+        return record_dir / f"{file_id}-results.csv"
+
+    def _maybe_copy_force(
+        self,
+        src: Path,
+        dest: Path,
+        force_paths: list[str],
+    ) -> None:
+        if not src.exists():
+            return
+        self._copy_overwrite(src, dest)
+        force_paths.append(str(dest))
 
     @staticmethod
     def _normalize_stem(stem: str) -> str:

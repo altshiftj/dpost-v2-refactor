@@ -1,8 +1,10 @@
-import pytest
+import queue
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+import pytest
+
+from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp, QueueingEventHandler
 
 
 def test_initialization_sets_handlers_and_starts_observer(watchdog_app, fake_ui):
@@ -87,3 +89,22 @@ def test_run_handles_ui_exceptions(watchdog_app, fake_ui, side_effect):
     watchdog_app.run()
 
     expected.assert_called_once()
+
+
+def test_modified_events_queue_only_when_callback_allows():
+    event_queue = queue.Queue()
+    handler = QueueingEventHandler(
+        event_queue,
+        should_queue_modified=lambda path: path.endswith(".csv"),
+    )
+
+    class DummyEvent:
+        def __init__(self, src_path: str):
+            self.src_path = src_path
+            self.is_directory = False
+
+    handler.on_modified(DummyEvent("C:/tmp/changed.csv"))
+    assert event_queue.get_nowait() == "C:/tmp/changed.csv"
+
+    handler.on_modified(DummyEvent("C:/tmp/changed.txt"))
+    assert event_queue.empty()

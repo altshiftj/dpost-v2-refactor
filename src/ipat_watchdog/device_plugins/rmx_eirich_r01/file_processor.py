@@ -10,6 +10,7 @@ from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
+    PreprocessingResult,
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
@@ -23,8 +24,8 @@ class FileProcessorEirich(FileProcessorABS):
         super().__init__(device_config)
         self.device_config = device_config
 
-    def device_specific_preprocessing(self, path: str) -> Optional[str]:
-        return path
+    def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
+        return PreprocessingResult.passthrough(path)
 
     def probe_file(self, filepath: str) -> FileProbeResult:
         """

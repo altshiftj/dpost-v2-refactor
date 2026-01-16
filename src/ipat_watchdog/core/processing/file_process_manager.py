@@ -13,7 +13,11 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.device_resolver import DeviceResolver
 from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
 from ipat_watchdog.core.processing.file_processor_abstract import (
-    FileProcessorABS, ProcessingOutput)
+    FileProcessorABS,
+    PreprocessingResult,
+    ProcessingOutput,
+)
+from ipat_watchdog.core.processing.modified_event_gate import ModifiedEventGate
 from ipat_watchdog.core.processing.models import (ProcessingCandidate,
                                                   ProcessingRequest,
                                                   ProcessingResult,
@@ -121,19 +125,24 @@ class _ProcessingPipeline:
         preprocessed = processor.device_specific_preprocessing(str(request.source))
         if preprocessed is None:
             return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefacts")
-        assert preprocessed is not None  # type narrowing for Pylance
+        assert isinstance(preprocessed, PreprocessingResult)  # type narrowing for Pylance
 
         # Normalise any internal staging suffix before deriving prefix/extension.
-        parse_target = manager._strip_internal_stage_suffix(Path(preprocessed))
+        parse_target = manager._strip_internal_stage_suffix(Path(preprocessed.effective_path))
         prefix, extension = parse_filename(str(parse_target))
+        if preprocessed.prefix_override:
+            prefix = preprocessed.prefix_override
+        if preprocessed.extension_override:
+            extension = preprocessed.extension_override
 
-        effective_path = Path(preprocessed)
+        effective_path = Path(preprocessed.effective_path)
         if not effective_path.exists():
             effective_path = request.source
 
-        preprocessed_path = Path(preprocessed)
-        if preprocessed_path == effective_path:
-            preprocessed_path = None
+        preprocessed_path = None
+        explicit_path = Path(preprocessed.effective_path)
+        if explicit_path != effective_path and explicit_path.exists():
+            preprocessed_path = explicit_path
 
         return ProcessingCandidate(
             original_path=request.source,
@@ -261,6 +270,10 @@ class FileProcessManager:
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
         self._pipeline = _ProcessingPipeline(self)
         self._immediate_sync = immediate_sync
+        self._modified_event_gate = ModifiedEventGate(
+            self.config_service,
+            self._resolve_processor,
+        )
 
         if not self.records.all_records_uploaded():
             logger.debug("Syncing records to database upon startup")
@@ -280,6 +293,10 @@ class FileProcessManager:
             except queue.Empty:
                 break
         return rejected
+
+    def should_queue_modified(self, path: str) -> bool:
+        """Return True when a modified event should be queued for processing."""
+        return self._modified_event_gate.should_queue(path)
 
     def add_item_to_record(
         self,
@@ -396,5 +413,3 @@ class FileProcessManager:
             safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)
         self._register_rejection(str(path), str(exc))
         FILES_FAILED.inc()
-
-

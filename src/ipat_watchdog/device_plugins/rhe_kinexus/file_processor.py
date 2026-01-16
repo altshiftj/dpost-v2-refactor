@@ -15,8 +15,20 @@ from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
+    PreprocessingResult,
     ProcessingOutput,
 )
+from ipat_watchdog.core.processing.batch_models import (
+    ExportRawPair as _Pair,
+    FlushBatch as _FlushBatch,
+    PendingPath as _PendingRaw,
+)
+from ipat_watchdog.core.processing.staging_utils import (
+    create_unique_stage_dir,
+    find_stale_stage_dirs,
+    reconstruct_pairs_from_stage,
+)
+from ipat_watchdog.core.processing.text_utils import read_text_prefix
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.storage.filesystem_utils import (
     move_item,
@@ -32,19 +44,6 @@ def _id_separator() -> str:
         return current().id_separator
     except RuntimeError:
         return _CONST.ID_SEP
-
-
-@dataclass
-class _PendingRaw:
-    path: Path
-    created: float
-
-
-@dataclass
-class _Pair:
-    export_path: Path
-    raw_path: Path
-    created: float
 
 
 @dataclass
@@ -64,12 +63,6 @@ class _FolderState:
         return not self.pending_raw and not self.bucket and self.sentinel is None
 
 
-@dataclass
-class _FlushBatch:
-    prefix: str
-    pairs: List[_Pair]
-
-
 class FileProcessorRHEKinexus(FileProcessorABS):
     """Sentinel-driven pairing of Kinexus native `.rdf` files and exports."""
 
@@ -83,20 +76,20 @@ class FileProcessorRHEKinexus(FileProcessorABS):
     # ------------------------------------------------------------------
     # Pre-processing (sentinel sequencing + staging)
     # ------------------------------------------------------------------
-    def device_specific_preprocessing(self, path: str) -> Optional[str]:
+    def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         element = Path(path)
         logger.debug("Kinexus: preprocessing path=%s", element)
 
         staged = self._raw_to_stage.get(str(element))
         if staged:
-            return staged
+            return PreprocessingResult.passthrough(staged)
         if not element.exists():
             return None
 
         folder_key = str(element.parent.resolve())
         state = self._state.setdefault(folder_key, _FolderState())
 
-        result: Optional[str] = None
+        result: Optional[PreprocessingResult] = None
         if self._is_export(element):
             result = self._handle_export(folder_key, state, element)
         elif self._is_native(element):
@@ -107,7 +100,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         self._purge_stale()
         return result
 
-    def _handle_export(self, folder_key: str, state: _FolderState, path: Path) -> Optional[str]:
+    def _handle_export(self, folder_key: str, state: _FolderState, path: Path) -> Optional[PreprocessingResult]:
         if self._is_export_finalizing(path):
             return None
         if self._export_tracked(state, path):
@@ -131,10 +124,10 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         logger.debug("Kinexus: remembered sentinel export %s with prefix=%r", path, prefix)
         return None
 
-    def _handle_native(self, folder_key: str, state: _FolderState, path: Path) -> Optional[str]:
+    def _handle_native(self, folder_key: str, state: _FolderState, path: Path) -> Optional[PreprocessingResult]:
         staged = self._raw_to_stage.get(str(path))
         if staged:
-            return staged
+            return PreprocessingResult.passthrough(staged)
         if self._raw_tracked(state, path):
             return None
 
@@ -184,7 +177,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
             state.pending_raw.clear()
             state.sentinel = None
             self._cleanup_state(folder_key)
-            return str(stage_dir)
+            return PreprocessingResult.passthrough(str(stage_dir))
 
         state.pending_raw.append(_PendingRaw(path=path, created=time.time()))
         logger.debug("Kinexus: remembered native %s awaiting export", path)
@@ -206,7 +199,11 @@ class FileProcessorRHEKinexus(FileProcessorABS):
             return FileProbeResult.mismatch("Unsupported extension for Kinexus")
 
         try:
-            snippet = self._read_text_prefix(path)
+            snippet = read_text_prefix(
+                path,
+                encodings=("utf-8-sig", "utf-8", "latin-1", "cp1252"),
+                errors="ignore",
+            )
         except Exception as exc:  # pragma: no cover
             logger.debug("Kinexus probe read failed '%s': %s", path, exc)
             return FileProbeResult.unknown(str(exc))
@@ -361,16 +358,6 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         except Exception:
             pass
 
-    @staticmethod
-    def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-        raw = path.read_bytes()[:bytes_limit]
-        for enc in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
-            try:
-                return raw.decode(enc, errors="ignore")
-            except Exception:
-                continue
-        return raw.decode(errors="ignore")
-
     def _purge_stale(self) -> None:
         now = time.time()
         ttl = getattr(getattr(self.device_config, "batch", None), "ttl_seconds", 600)
@@ -440,75 +427,44 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         for folder_key in folder_keys:
             parent = Path(folder_key)
             try:
-                for child in parent.iterdir():
-                    if child.is_dir() and ".__staged__" in child.name:
-                        if str(child) in self._finalizing:
-                            continue
-                        try:
-                            age = now - child.stat().st_mtime
-                        except Exception:
-                            age = ttl + 1
-                        if age > ttl:
-                            try:
-                                move_to_exception_folder(str(child))
-                                logger.info(
-                                    "Kinexus: moved stale staging folder '%s' to exception",
-                                    child,
-                                )
-                                for key, value in list(self._raw_to_stage.items()):
-                                    if value == str(child):
-                                        self._raw_to_stage.pop(key, None)
-                            except Exception:
-                                logger.exception(
-                                    "Kinexus: failed moving stale staging folder %s",
-                                    child,
-                                )
+                stale_dirs = find_stale_stage_dirs(
+                    parent,
+                    marker=".__staged__",
+                    ttl_seconds=ttl,
+                    now=now,
+                    active=self._finalizing.keys(),
+                )
+                for child in stale_dirs:
+                    try:
+                        move_to_exception_folder(str(child))
+                        logger.info(
+                            "Kinexus: moved stale staging folder '%s' to exception",
+                            child,
+                        )
+                        for key, value in list(self._raw_to_stage.items()):
+                            if value == str(child):
+                                self._raw_to_stage.pop(key, None)
+                    except Exception:
+                        logger.exception(
+                            "Kinexus: failed moving stale staging folder %s",
+                            child,
+                        )
             except Exception:
                 continue
 
     def _create_unique_stage_dir(self, base_dir: Path, prefix: str) -> Path:
-        for idx in range(1, 1000):
-            name = f"{prefix}.__staged__{idx}"
-            candidate = base_dir / name
-            if not candidate.exists():
-                candidate.mkdir(parents=True, exist_ok=True)
-                return candidate
-        candidate = base_dir / f"{prefix}.__staged__"
-        candidate.mkdir(parents=True, exist_ok=True)
-        return candidate
+        return create_unique_stage_dir(base_dir, prefix, marker=".__staged__", max_index=1000)
 
     def _reconstruct_batch_from_stage(self, stage_dir: Path) -> _FlushBatch:
-        prefix = stage_dir.name.split(".__staged__")[0]
-        exports = sorted(
-            [p for p in stage_dir.iterdir() if self._is_export(p)],
-            key=lambda p: p.stat().st_mtime,
+        prefix, pairs = reconstruct_pairs_from_stage(
+            stage_dir,
+            self._is_export,
+            self._is_native,
+            marker=".__staged__",
+            left_label="export",
+            right_label="native",
         )
-        natives = sorted(
-            [p for p in stage_dir.iterdir() if self._is_native(p)],
-            key=lambda p: p.stat().st_mtime,
-        )
-
-        if not exports or not natives:
-            raise RuntimeError(f"Stage directory {stage_dir} missing expected files")
-
-        pairs: List[_Pair] = []
-        native_by_stem = {p.stem: p for p in natives}
-        used_native: set[Path] = set()
-        unmatched_exports: List[Path] = []
-
-        for export in exports:
-            candidate = native_by_stem.get(export.stem)
-            if candidate and candidate not in used_native:
-                pairs.append(_Pair(export_path=export, raw_path=candidate, created=time.time()))
-                used_native.add(candidate)
-            else:
-                unmatched_exports.append(export)
-
-        remaining_natives = [p for p in natives if p not in used_native]
-        for export, native in zip(unmatched_exports, remaining_natives):
-            pairs.append(_Pair(export_path=export, raw_path=native, created=time.time()))
-
-        if not pairs:
-            raise RuntimeError(f"No export/native pairs found in staging folder {stage_dir}")
-
-        return _FlushBatch(prefix=prefix, pairs=pairs)
+        staged_pairs: List[_Pair] = []
+        for export_path, raw_path in pairs:
+            staged_pairs.append(_Pair(export_path=export_path, raw_path=raw_path, created=time.time()))
+        return _FlushBatch(prefix=prefix, pairs=staged_pairs)

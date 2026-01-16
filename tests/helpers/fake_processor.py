@@ -1,4 +1,8 @@
-from ipat_watchdog.core.processing.file_processor_abstract import FileProcessorABS, ProcessingOutput
+from ipat_watchdog.core.processing.file_processor_abstract import (
+    FileProcessorABS,
+    PreprocessingResult,
+    ProcessingOutput,
+)
 
 
 class DummyProcessor(FileProcessorABS):
@@ -7,8 +11,8 @@ class DummyProcessor(FileProcessorABS):
         self.valid_datatype = valid_datatype
         self.appendable = appendable
 
-    def device_specific_preprocessing(self, src_path: str) -> str:
-        return src_path
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult:
+        return PreprocessingResult.passthrough(src_path)
 
     def is_appendable(self, record, filename_prefix: str, extension: str) -> bool:
         return self.appendable

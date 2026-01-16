@@ -41,11 +41,12 @@ def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
     expected_prefix = "Final Sample"
     # Staging approach advertises a folder named '<prefix>.__staged__<n>'
     assert advertised is not None
-    assert Path(advertised).is_dir()
-    assert Path(advertised).name.startswith(f"{expected_prefix}.__staged__")
+    advertised_path = Path(advertised.effective_path)
+    assert advertised_path.is_dir()
+    assert advertised_path.name.startswith(f"{expected_prefix}.__staged__")
 
     output = processor.device_specific_processing(
-        str(advertised), str(record_dir), Path(advertised).stem, ""
+        str(advertised_path), str(record_dir), advertised_path.stem, ""
     )
     assert Path(output.final_path) == record_dir
     assert output.datatype == "psa"
@@ -91,4 +92,6 @@ def test_preprocessing_is_idempotent_for_sentinel(tmp_path, processor):
     advertised_first = processor.device_specific_preprocessing(str(ngb_sentinel))
     advertised_second = processor.device_specific_preprocessing(str(ngb_sentinel))
 
-    assert advertised_first == advertised_second
+    assert advertised_first is not None
+    assert advertised_second is not None
+    assert advertised_first.effective_path == advertised_second.effective_path

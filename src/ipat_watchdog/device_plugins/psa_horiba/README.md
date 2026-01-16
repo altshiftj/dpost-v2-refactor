@@ -23,6 +23,7 @@ Per source folder, the processor tracks transient state:
 - `finalizing` (internal): batches keyed by a staging folder path created when the sentinel NGB arrives (details below).
 
 Arrival logic:
+Preprocessing returns a `PreprocessingResult`; when a batch is staged its `effective_path` points at the staging folder.
 
 - CSV arrives while there is a queued `pending_ngb` → pair them and add to `bucket`.
 - CSV arrives with no pending NGB → remember it as `sentinel` and wait for the next NGB.
@@ -33,10 +34,10 @@ A TTL guard purges stale items (moves files to the exception area) if they linge
 
 ### Why staging?
 
-- On a naming issue (invalid prefix, collision, or user-cancelled rename), the pipeline moves the advertised artefact to the rename bucket. By advertising the staging directory, the entire batch moves together, not just the last-arrived file.
+- On a naming issue (invalid prefix, collision, or user-cancelled rename), the pipeline moves the advertised artefact to the rename bucket. By advertising the staging directory via `PreprocessingResult.effective_path`, the entire batch moves together, not just the last-arrived file.
 - The pipeline automatically ignores internal staging markers when deriving the filename prefix, so downstream routing works as before.
 
-Idempotency: If the sentinel NGB is observed again by the watcher (e.g., re-scan), preprocessing returns the same staging directory path without creating a new one.
+Idempotency: If the sentinel NGB is observed again by the watcher (e.g., re-scan), preprocessing returns a `PreprocessingResult` with the same `effective_path` without creating a new folder.
 
 ## Filenames and numbering
 

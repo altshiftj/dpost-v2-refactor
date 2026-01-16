@@ -55,3 +55,6 @@ Watchdog log (`watchdog.log`):
 - Ensure a timestamped measurement is still processed as a measurement even when the aggregate file exists.
 - Ensure `{file_id}-02.csv` / `{file_id}-03.csv` are created for later measurement events.
 - Decide whether CC/aggregate should be reprocessed on file change events or only via explicit measurement/CC arrivals, then test for that behavior.
+
+## Update (after preprocessing API change)
+- Preprocessing now returns a `PreprocessingResult` with `prefix_override` for Hioki measurements, so the effective path remains the timestamped file even when an aggregate exists.

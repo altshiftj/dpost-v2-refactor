@@ -19,6 +19,27 @@ class ProcessingOutput:
     force_paths: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class PreprocessingResult:
+    """Return value for device_specific_preprocessing hooks."""
+
+    effective_path: str
+    prefix_override: str | None = None
+    extension_override: str | None = None
+
+    @classmethod
+    def passthrough(cls, path: str) -> "PreprocessingResult":
+        return cls(effective_path=path)
+
+    @classmethod
+    def with_prefix(cls, path: str, prefix: str) -> "PreprocessingResult":
+        return cls(effective_path=path, prefix_override=prefix)
+
+    @classmethod
+    def with_extension(cls, path: str, extension: str) -> "PreprocessingResult":
+        return cls(effective_path=path, extension_override=extension)
+
+
 class ProbeDecision(Enum):
     """Discrete outcomes returned by FileProcessorABS.probe_file."""
 
@@ -75,15 +96,15 @@ class FileProcessorABS(ABC):
     def __init__(self, device_config: DeviceConfig):
         self.device_config = device_config
 
-    def device_specific_preprocessing(self, src_path: str) -> str | None:
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult | None:
         """Give processors a hook to stage or normalise incoming files.
 
         Returning `None` keeps the item in a deferred state (e.g. waiting for
-        a paired file). Returning a string continues the pipeline using that
-        path as the effective artefact.
+        a paired file). Returning a PreprocessingResult continues the pipeline
+        using the declared effective path and optional prefix/extension overrides.
         """
 
-        return src_path
+        return PreprocessingResult.passthrough(src_path)
 
     def matches_file(self, filepath: str) -> bool:
         """Optional hint to quickly filter compatible files."""
@@ -115,6 +136,11 @@ class FileProcessorABS(ABC):
         """
 
         return FileProbeResult.unknown()
+
+    def should_queue_modified(self, path: str) -> bool:
+        """Return True when modified events should be queued for this path."""
+
+        return False
 
     @abstractmethod
     def device_specific_processing(

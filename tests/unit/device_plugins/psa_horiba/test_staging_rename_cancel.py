@@ -44,7 +44,7 @@ def test_staged_folder_moves_as_one_on_rename_cancel(tmp_settings):
 
     staged = proc.device_specific_preprocessing(str(sentinel_ngb))
     assert staged is not None, "Expected a staging folder path to be advertised"
-    stage_dir = Path(staged)
+    stage_dir = Path(staged.effective_path)
     assert stage_dir.is_dir()
     assert stage_dir.name.startswith("FINAL.__staged__")
 

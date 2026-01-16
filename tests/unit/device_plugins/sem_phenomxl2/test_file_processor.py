@@ -36,20 +36,16 @@ def test_device_specific_preprocessing_no_digit(processor):
     path = "/path/to/image.tif"
     with patch("pathlib.Path.rename") as mock_rename:
         result = processor.device_specific_preprocessing(path)
-        assert result == path
+        assert result.effective_path == path
+        assert result.prefix_override is None
         mock_rename.assert_not_called()
 
 
 def test_device_specific_preprocessing_with_digit(processor):
     path = "/path/to/image3.tif"
-    expected = str(Path("/path/to/image.tif"))
-
     result = processor.device_specific_preprocessing(path)
-    assert result == expected
-
-    # Verify that the path mapping was created for later use
-    assert hasattr(processor, '_path_mapping')
-    assert processor._path_mapping[expected] == str(Path(path))
+    assert result.effective_path == path
+    assert result.prefix_override == "image"
 
 # ---------------------------------------------------------------------------
 # Appendable logic

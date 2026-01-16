@@ -16,9 +16,9 @@ def test_preprocessing_normalizes_measurement_name(tmp_path: Path) -> None:
 
     normalized = processor.device_specific_preprocessing(str(measurement))
     assert normalized is not None
-    normalized_path = Path(normalized)
 
-    assert normalized_path.name == "usr-ipat-sample.csv"
+    assert normalized.effective_path == str(measurement)
+    assert normalized.prefix_override == "usr-ipat-sample"
 
 
 def test_processing_moves_measurement_and_forces_cc_aggregate(tmp_path: Path) -> None:
@@ -58,3 +58,15 @@ def test_processing_moves_measurement_and_forces_cc_aggregate(tmp_path: Path) ->
     assert aggregate.exists()
 
     assert set(output.force_paths) == {str(cc_dest), str(agg_dest)}
+
+
+def test_should_queue_modified_only_for_cc_and_aggregate() -> None:
+    config = build_config()
+    processor = FileProcessorHioki(config)
+
+    assert processor.should_queue_modified("CC_usr-ipat-sample.csv") is True
+    assert processor.should_queue_modified("usr-ipat-sample.csv") is True
+    assert processor.should_queue_modified("usr-ipat-sample_20251222132219.csv") is False
+    assert processor.should_queue_modified("usr-ipat-sample.xlsx") is False
+    assert processor.should_queue_modified("random.csv") is False
+    assert processor.should_queue_modified("CC_random.csv") is False

@@ -6,7 +6,7 @@ Pairs Kinexus Pro+ native project files (.rdf) with exported results (.csv), sta
 - Detects candidate files via `probe_file()`:
   - Native `.rdf` → marked unknown (binary; skip content probe)
   - Export `.csv` → text prefix scan for Kinexus markers (e.g., "kinexus", "rspace").
-- Preprocessing waits until raw+export are both present (same basename) and stages them in a `.__staged__` directory for atomic processing.
+- Preprocessing waits until raw+export are both present (same basename) and stages them in a `.__staged__` directory for atomic processing. The preprocessing hook returns a `PreprocessingResult` with `effective_path` set to the staging directory.
 - Processing:
   - Archives the native `.rdf` to `<base>.zip`.
   - Moves the export to `<base>.csv` in the record directory.
@@ -15,8 +15,9 @@ Pairs Kinexus Pro+ native project files (.rdf) with exported results (.csv), sta
 Main class: `FileProcessorRHEKinexus` (see `file_processor.py`). Device wiring: `RheKinexusPlugin` (see `plugin.py`).
 
 ## Contract (summary)
-- Input: `src_path` (staged dir), `record_path`, `filename_prefix`, `extension` (ignored for staged processing)
+- Input: `src_path` (staged dir from preprocessing `effective_path`), `record_path`, `filename_prefix`, `extension` (ignored for staged processing)
 - Behavior:
+  - `device_specific_preprocessing(...)` returns a `PreprocessingResult` with `effective_path` pointing at the staged dir.
   - `device_specific_preprocessing(path)` → pair `.rdf` + `.csv` sharing the same stem; auto-rename cross-stem arrivals; stage together.
   - `probe_file(path)` → for `.csv`, content-heuristic match; for `.rdf`, unknown.
   - `is_appendable(...)` → Always `True` (exports append to an existing record series).

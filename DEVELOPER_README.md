@@ -72,6 +72,12 @@ Bundled PC plugins:
 9. Metrics are updated and success notifications displayed; rejected items increment failure counters and are moved to `01_Exceptions`.
 10. Records are persisted to disk and, with `immediate_sync=True`, marked for upload to Kadi.
 
+### Preprocessing/Processing Contract
+- `FileProcessorABS.device_specific_preprocessing` returns `None` to defer (waiting for paired artefacts) or a `PreprocessingResult` to continue the pipeline.
+- `PreprocessingResult.effective_path` is the path used for prefix/extension parsing; use `PreprocessingResult.passthrough(...)` when no staging or overrides are required.
+- Use `PreprocessingResult.with_prefix(...)` or `PreprocessingResult.with_extension(...)` when preprocessing needs to override the parsed filename components.
+- `device_specific_processing` receives the resolved `file_id` and `extension` and must return a `ProcessingOutput` describing the final path and datatype.
+
 ## Logging, Observability, and Metrics
 - Logging (`core/logging/logger.py`) writes JSON lines to `C:\Watchdog\logs\watchdog.log` with a rotating file handler plus stdout mirroring.
 - Metrics (`metrics.py`) expose `files_processed`, `files_processed_by_record`, `files_failed`, `events_processed`, `file_process_time_seconds`, `exceptions_thrown`, `session_exit_status`, and `session_duration_seconds`.

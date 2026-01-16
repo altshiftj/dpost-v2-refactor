@@ -6,7 +6,10 @@ from ipat_watchdog.core.config import activate_device
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.processing.models import ProcessingCandidate, ProcessingStatus
 from ipat_watchdog.core.processing.stability_tracker import StabilityOutcome, FileStabilityTracker
-from ipat_watchdog.core.processing.file_processor_abstract import ProcessingOutput
+from ipat_watchdog.core.processing.file_processor_abstract import (
+    PreprocessingResult,
+    ProcessingOutput,
+)
 from ipat_watchdog.core.processing.models import ProcessingResult
 from ipat_watchdog.core.storage.filesystem_utils import (
     generate_file_id,
@@ -20,7 +23,7 @@ from tests.helpers.fake_processor import DummyProcessor
 
 
 class DeferredProcessor(DummyProcessor):
-    def device_specific_preprocessing(self, src_path: str) -> str | None:
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult | None:
         return None
 
 
@@ -30,11 +33,11 @@ class ErroringProcessor(DummyProcessor):
 
 
 class StagedSuffixProcessor(DummyProcessor):
-    def device_specific_preprocessing(self, src_path: str) -> str:
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult:
         path = Path(src_path)
         staged = path.with_name(f"{path.stem}.__staged__{path.suffix}")
         staged.write_text("prepared")
-        return str(staged)
+        return PreprocessingResult.passthrough(str(staged))
 
 
 @pytest.fixture
