@@ -102,11 +102,11 @@ try {
 # CI-related Defaults
 # ------------------------------
 # Default PC/job profile; can be overridden by environment
-if (-not $env:CI_JOB_NAME -or $env:CI_JOB_NAME -eq "") { $env:CI_JOB_NAME = "horiba_blb" }
+if (-not $env:CI_JOB_NAME -or $env:CI_JOB_NAME -eq "") { $env:CI_JOB_NAME = "kinexus_blb" }
 
 # Device plugins list (comma/semicolon/space separated). Override per run if needed.
 # Examples: "psa_horiba,dsv_horiba" or "utm_zwick" or ""
-$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "psa_horiba,rmx_eirich_el1,rmx_eirich_r01" }
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "rhe_kinexus" }
 
 # Build unified pip-extras string (e.g., "ci,horiba_blb,psa_horiba,dsv_horiba")
 $env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
@@ -125,12 +125,12 @@ $env:ROUTER_PORT = if ($env:ROUTER_PORT) { $env:ROUTER_PORT } else { 22 }
 # ------------------------------
 # Windows Target PC Configuration (Behind Router)
 # ------------------------------
-$env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "192.168.1.2" }
+$env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "192.168.1.5" } # kinexus_blb
 #{ "192.168.1.2" } # horiba_blb
 #{ "192.168.1.5" } # kinexus_blb
 #{ "192.168.1.6" } # haake_blb
 
-$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "horiba" }
+$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "messrechner" }
 #{ "horiba" } # horiba_blb
 #{ "extruder" } # haake_blb
 #{ "messrechner" } # kinexus_blb
@@ -178,14 +178,10 @@ $env:TARGET_SSH_KEY = if ($env:TARGET_SSH_KEY) { $env:TARGET_SSH_KEY } else { "C
 
 # Host keys in formats that plink accepts (prefer SHA256 fingerprints)
 $env:ROUTER_SSH_HOSTKEY = if ($env:ROUTER_SSH_HOSTKEY) { $env:ROUTER_SSH_HOSTKEY } else { 'SHA256:uj6kBrFxe0qWj9SC3avJ5PTPCstPJ/Cp33v/VtiiWEk' }
-$env:TARGET_SSH_HOSTKEY = if ($env:TARGET_SSH_HOSTKEY) { $env:TARGET_SSH_HOSTKEY } else { 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8' } # horiba_blb
+$env:TARGET_SSH_HOSTKEY = if ($env:TARGET_SSH_HOSTKEY) { $env:TARGET_SSH_HOSTKEY } else { 'SHA256:i6nnK2fA8KvuY7EaepsdwnvghKFqDXlBd6e0g9zV6Tw' } # kinexus_blb
 #{ 'SHA256:e1Aj6OvJNCXlNPv/asJo/jnuFKLkjEObTDi38g73Nt8' } # horiba_blb
 #{ 'SHA256:NTbRZ+BQbSPmZp5tEtMq7E1p3muNU7kzGmviFX/COgk' } # haake_blb
 #{ 'SHA256:i6nnK2fA8KvuY7EaepsdwnvghKFqDXlBd6e0g9zV6Tw' } # kinexus_blb
-
-# (Alternative base64 form if you ever need it:)
-# $env:ROUTER_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIFqvmR5Q0yi8vFlHQmPDmqSfapwMtuAKflpiUA9UpSUY'
-# $env:TARGET_SSH_HOSTKEY = 'ssh-ed25519:AAAAC3NzaC1lZDI1NTE5AAAAIDnde8wPsHN7mxhOmEFyH2UFzAdpyBWCtgJ7hO/O1wWq'
 
 # ------------------------------
 # Paths
