@@ -3,7 +3,6 @@ from unittest.mock import patch, call
 import pytest
 
 from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
-from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.device_plugins.utm_zwick.settings import build_config
 
 
@@ -16,75 +15,65 @@ def processor():
     return FileProcessorUTMZwick(device_config=config)
 
 
-@pytest.fixture
-def dummy_record():
-    return LocalRecord(
-        identifier="utm-zwick-ipat-sample_a",
-        sample_name="sample_a",
-        datatype="csv",
-        date="20250405",
-    )
-
 # ---------------------------------------------------------------------------
-# Pre-processing behavior (series keyed by base prefix, CSV triggers finalize)
+# Pre-processing behavior (zs2 staged, sentinel xlsx triggers finalize)
 # ---------------------------------------------------------------------------
 
-def test_preprocessing_stages_until_csv(tmp_path, processor):
-    # first arrival → hold
-    zs2 = tmp_path / "sample_a.zs2"
-    csv = tmp_path / "sample_a.csv"
+def test_preprocessing_stages_until_sentinel_xlsx(tmp_path, processor):
+    zs2 = tmp_path / "usr-inst-sample_a.zs2"
+    xlsx = tmp_path / "usr-inst-sample_a.xlsx"
     zs2.write_text("raw")
-    csv.write_text("results")
+    xlsx.write_text("results")
 
     r1 = processor.device_specific_preprocessing(str(zs2))
     assert r1 is None
 
-    # csv arrival with same prefix → release
-    r2 = processor.device_specific_preprocessing(str(csv))
+    r2 = processor.device_specific_preprocessing(str(xlsx))
     assert r2 is not None
-    assert r2.effective_path == str(csv)
+    assert r2.effective_path == str(xlsx)
 
 
-def test_preprocessing_accepts_either_order(tmp_path, processor):
-    # CSV can arrive first and should trigger immediately
-    csv = tmp_path / "s01.csv"
+def test_preprocessing_rejects_or_ignores_non_sentinel(tmp_path, processor):
+    csv = tmp_path / "usr-inst-sample_a.csv"
+    txt = tmp_path / "usr-inst-sample_a-01.txt"
     csv.write_text("results")
+    txt.write_text("snap")
 
     r1 = processor.device_specific_preprocessing(str(csv))
-    assert r1 is not None
-    assert r1.effective_path == str(csv)
+    r2 = processor.device_specific_preprocessing(str(txt))
+
+    assert r1 is None
+    assert r2 is None
+
+
+def test_preprocessing_ignores_sentinel_without_zs2(tmp_path, processor):
+    xlsx = tmp_path / "usr-inst-sample_a.xlsx"
+    xlsx.write_text("results")
+
+    r1 = processor.device_specific_preprocessing(str(xlsx))
+    assert r1 is None
 
 # ---------------------------------------------------------------------------
-# Processing flow (no zipping, zs2 moved as-is, txt snapshots flattened)
+# Processing flow (zs2 + sentinel xlsx)
 # ---------------------------------------------------------------------------
 
 def test_device_specific_processing_happy_path(tmp_path, processor):
-    # Stage artefacts via preprocessing to populate internal series buffer
-    zs2 = tmp_path / "r123.zs2"
-    csv = tmp_path / "r123.csv"
-    t1 = tmp_path / "r123-01.txt"
-    t2 = tmp_path / "r123-02.txt"
+    zs2 = tmp_path / "usr-inst-sample_a.zs2"
+    xlsx = tmp_path / "usr-inst-sample_a.xlsx"
 
     zs2.write_text("raw-bytes")
-    csv.write_text("csv-content")
-    t1.write_text("snap-1")
-    t2.write_text("snap-2")
+    xlsx.write_text("xlsx-content")
 
-    # Order shouldn't matter; include txt snapshots
     processor.device_specific_preprocessing(str(zs2))
-    processor.device_specific_preprocessing(str(t1))
-    processor.device_specific_preprocessing(str(t2))
-    processor.device_specific_preprocessing(str(csv))  # triggers finalization
+    processor.device_specific_preprocessing(str(xlsx))
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()
 
-    # get_unique_filename now called for zs2, csv, and each txt snapshot (4 calls total)
+    # get_unique_filename now called for zs2 and xlsx (2 calls total)
     unique_paths = [
         str(record_dir / "prefix-01.zs2"),
-        str(record_dir / "prefix_results-01.csv"),
-        str(record_dir / "prefix_tests-01.txt"),
-        str(record_dir / "prefix_tests-02.txt"),
+        str(record_dir / "prefix_results-01.xlsx"),
     ]
 
     with patch(
@@ -95,27 +84,23 @@ def test_device_specific_processing_happy_path(tmp_path, processor):
     ) as mock_move:
 
         output = processor.device_specific_processing(
-            str(csv), str(record_dir), "prefix", ".csv"
+            str(xlsx), str(record_dir), "prefix", ".xlsx"
         )
 
         assert Path(output.final_path) == record_dir
-        assert output.datatype == "csv"
+        assert output.datatype == "xlsx"
 
-        # Unique naming invoked for zs2, csv, and two txt snapshots
-        assert mock_unique.call_count == 4
+        # Unique naming invoked for zs2 and sentinel xlsx
+        assert mock_unique.call_count == 2
         assert mock_unique.call_args_list == [
             call(str(record_dir), "prefix", ".zs2"),
-            call(str(record_dir), "prefix_results", ".csv"),
-            call(str(record_dir), "prefix_tests", ".txt"),
-            call(str(record_dir), "prefix_tests", ".txt"),
+            call(str(record_dir), "prefix_results", ".xlsx"),
         ]
 
-        # move_item called for all artefacts in order of processing
+        # move_item called for zs2 and sentinel xlsx
         assert mock_move.call_args_list == [
             call(str(zs2), unique_paths[0]),
-            call(str(csv), unique_paths[1]),
-            call(str(t1), unique_paths[2]),
-            call(str(t2), unique_paths[3]),
+            call(str(xlsx), unique_paths[1]),
         ]
 
 
@@ -125,5 +110,5 @@ def test_device_specific_processing_raises_without_staging(tmp_path, processor):
     # No prior preprocessing for this prefix -> should raise
     with pytest.raises(KeyError):
         processor.device_specific_processing(
-            str(tmp_path / "ghost.csv"), str(record_dir), "prefix", ".csv"
+            str(tmp_path / "ghost.xlsx"), str(record_dir), "prefix", ".xlsx"
         )

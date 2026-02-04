@@ -145,19 +145,15 @@ def test_multi_processor_app_flow(multi_processor_app):
 
     prefix = "usr-ipat-tensileA"
     zs2_path = watch_dir / f"{prefix}.zs2"
-    txt1_path = watch_dir / f"{prefix}-01.txt"
-    txt2_path = watch_dir / f"{prefix}-02.txt"
-    csv_path = watch_dir / f"{prefix}.csv"
+    xlsx_path = watch_dir / f"{prefix}.xlsx"
     zs2_path.write_text("zs2 payload", encoding="utf-8")
-    txt1_path.write_text("snapshot 1", encoding="utf-8")
-    txt2_path.write_text("snapshot 2", encoding="utf-8")
-    csv_path.write_text("results", encoding="utf-8")
+    xlsx_path.write_bytes(b"xlsx payload")
 
     # Seed the UTM series without scheduling deferred retries through the app queue.
-    for path in (zs2_path, txt1_path, txt2_path):
+    for path in (zs2_path,):
         app.file_processing.process_item(str(path))
 
-    for path in (*eirich_paths, csv_path):
+    for path in (*eirich_paths, xlsx_path):
         app.event_queue.put(str(path))
 
     drain_scheduled_tasks(ui)
@@ -170,11 +166,9 @@ def test_multi_processor_app_flow(multi_processor_app):
     utm_dir = paths.DEST_DIR / "IPAT" / "USR" / "UTM-tensileA"
     assert utm_dir.exists()
     assert list(utm_dir.glob("UTM-tensileA-*.zs2"))
-    assert list(utm_dir.glob("UTM-tensileA_results-*.csv"))
-    txt_snapshots = list(utm_dir.glob("UTM-tensileA_tests*.txt"))
-    assert len(txt_snapshots) >= 2
+    assert list(utm_dir.glob("UTM-tensileA_results-*.xlsx"))
 
-    for path in (*eirich_paths, zs2_path, txt1_path, txt2_path, csv_path):
+    for path in (*eirich_paths, zs2_path, xlsx_path):
         assert not path.exists()
 
     assert len(ui.calls["show_rename_dialog"]) == 2

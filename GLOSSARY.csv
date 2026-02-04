@@ -1,0 +1,3 @@
+term,type,purpose,usage
+usr-inst-sample_name,naming convention,Defines the expected filename prefix format for Zwick UTM artefacts,Used to validate `.zs2` filenames before accepting a series
+sentinel workbook,workflow marker,Signals that staged Zwick UTM artefacts are ready for processing,The `.xlsx` file that triggers final processing of a `.zs2` series

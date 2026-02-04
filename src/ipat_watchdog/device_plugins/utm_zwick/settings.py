@@ -46,11 +46,7 @@ information below.
         ),
         files=DeviceFileSelectors(
             native_extensions=frozenset({".zs2"}),
-            # Legacy exported .xlsx kept for backward compatibility tests.
-            # New workflow will add .csv + multiple .txt snapshots; those are
-            # handled dynamically in the processor and do not need explicit
-            # enumeration here unless downstream needs probing.
-            exported_extensions=frozenset({".xlsx", ".csv", ".txt"}),
+            exported_extensions=frozenset({".xlsx"}),
         ),
         session=SessionSettings(timeout_seconds=4 * 3600),
         watcher=WatcherSettings(

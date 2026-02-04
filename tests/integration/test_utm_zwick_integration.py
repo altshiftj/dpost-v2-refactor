@@ -68,8 +68,7 @@ def _emit_and_process(
     """
     order items can be:
       - "zs2"        -> {prefix}.zs2
-      - "csv"        -> {prefix}.csv
-      - "txt-<NN>"   -> {prefix}-<NN>.txt (e.g., "txt-01", "txt-02")
+      - "xlsx"       -> {prefix}.xlsx
 
     Returns the record directory path.
     """
@@ -78,13 +77,9 @@ def _emit_and_process(
         if token == "zs2":
             p = watch_dir / f"{prefix}.zs2"
             p.write_text(payloads.get("zs2", "raw-zs2"))
-        elif token == "csv":
-            p = watch_dir / f"{prefix}.csv"
-            p.write_text(payloads.get("csv", "final-results"))
-        elif token.startswith("txt-"):
-            nn = token.split("-", 1)[1]
-            p = watch_dir / f"{prefix}-{nn}.txt"
-            p.write_text(payloads.get(token, f"snapshot-{nn}"))
+        elif token == "xlsx":
+            p = watch_dir / f"{prefix}.xlsx"
+            p.write_bytes(payloads.get("xlsx", "final-results").encode("utf-8"))
         else:
             raise ValueError(f"Unknown token in order: {token}")
         fpm.process_item(str(p))
@@ -98,35 +93,27 @@ def _expect_exists(record_dir: Path, *names: str) -> None:
         assert path.exists(), f"Expected file not found: {path}"
 
 
-def test_end_to_end_series_processing_with_txt_and_csv(utm_processing_manager, tmp_settings):
+def test_end_to_end_series_processing_with_xlsx(utm_processing_manager, tmp_settings):
     fpm, ui = utm_processing_manager
     prefix = "usr-ipat-tensileA"
 
-    # zs2 and txt snapshots arrive before csv (finalizes on csv)
+    # zs2 arrives before xlsx (finalizes on xlsx)
     record_dir = _emit_and_process(
         fpm,
         tmp_settings.WATCH_DIR,
         prefix,
-        order=["zs2", "txt-01", "txt-02", "csv"],
+        order=["zs2", "xlsx"],
     )
 
     # Non-overwriting unique names now expected for final artefacts.
     # First arrival should still create initial numbered variants (..-01.*)
     zs2_candidates = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
-    csv_candidates = sorted(record_dir.glob("UTM-tensileA_results-*.csv"))
+    xlsx_candidates = sorted(record_dir.glob("UTM-tensileA_results-*.xlsx"))
     assert zs2_candidates, "Expected at least one unique .zs2 artefact"
-    assert csv_candidates, "Expected at least one unique .csv artefact"
+    assert xlsx_candidates, "Expected at least one unique .xlsx artefact"
     # The first ones should end with -01 by convention of get_unique_filename
     assert any(p.stem.endswith("-01") for p in zs2_candidates), "Missing initial -01 .zs2"
-    assert any(p.stem.endswith("-01") for p in csv_candidates), "Missing initial -01 .csv"
-
-    # We keep all TXT snapshots. Filenames are generated via get_unique_filename,
-    # so don't assume a "-NN" scheme; just ensure we have at least two with the right prefix/suffix.
-    tests = sorted(record_dir.glob("UTM-tensileA_tests*.txt"))
-    assert len(tests) >= 2, f"Expected >= 2 text snapshots, found: {len(tests)}"
-
-    # Optional sanity: ensure snapshot filenames are unique (no accidental overwrite)
-    assert len({p.name for p in tests}) == len(tests), "TXT snapshot names should be unique"
+    assert any(p.stem.endswith("-01") for p in xlsx_candidates), "Missing initial -01 .xlsx"
 
 
 def test_repeat_series_creates_additional_unique_files(utm_processing_manager, tmp_settings):
@@ -137,7 +124,7 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
         fpm,
         tmp_settings.WATCH_DIR,
         prefix,
-        order=["zs2", "txt-01", "txt-02", "csv"],
+        order=["zs2", "xlsx"],
     )
 
     record: LocalRecord = next(iter(fpm.records.persist_records_dict.values()))
@@ -154,20 +141,19 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
         fpm,
         tmp_settings.WATCH_DIR,
         prefix,
-        order=["zs2", "txt-03", "csv"],
+        order=["zs2", "xlsx"],
         payloads={
             "zs2": "raw-zs2-second",
-            "txt-03": "snapshot-03-second",
-            "csv": "final-results-second",
+            "xlsx": "final-results-second",
         },
     )
     assert second_dir == record_dir
 
     # After second series, we expect additional uniquely numbered artefacts, not overwrites.
     zs2_files = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
-    csv_files = sorted(record_dir.glob("UTM-tensileA_results-*.csv"))
+    xlsx_files = sorted(record_dir.glob("UTM-tensileA_results-*.xlsx"))
     assert len(zs2_files) >= 2, "Expected at least two .zs2 versions after repeat series"
-    assert len(csv_files) >= 2, "Expected at least two .csv versions after repeat series"
+    assert len(xlsx_files) >= 2, "Expected at least two .xlsx versions after repeat series"
 
     # Ensure numbering increments (collect numeric suffixes)
     import re as _re
@@ -177,13 +163,13 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
         for p in zs2_files
         if (m := suffix_pattern.match(p.stem)) is not None
     })
-    csv_nums = sorted({
+    xlsx_nums = sorted({
         int(m.group(1))
-        for p in csv_files
+        for p in xlsx_files
         if (m := suffix_pattern.match(p.stem)) is not None
     })
     assert zs2_nums == list(range(1, len(zs2_nums)+1)), f"Unexpected gap or numbering in zs2 files: {zs2_nums}"
-    assert csv_nums == list(range(1, len(csv_nums)+1)), f"Unexpected gap or numbering in csv files: {csv_nums}"
+    assert xlsx_nums == list(range(1, len(xlsx_nums)+1)), f"Unexpected gap or numbering in xlsx files: {xlsx_nums}"
 
     # Previously we flagged force overwrites; now earlier files remain uploaded, new ones appear as not uploaded yet.
     # Validate preexisting files still tracked, and new files added with uploaded=False without forcing previous ones.
@@ -191,22 +177,6 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
     new_files = current_files - preexisting_files
     assert new_files, "Expected newly created unique artefacts to be tracked"
     # Previously uploaded files are re-registered, so they require force; new ones should not be in force set yet.
-    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
-    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
-    # New artefacts should have uploaded flag False (pending upload)
-    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
-    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
-    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
-    # New artefacts should have uploaded flag False (pending upload)
-    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
-    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
-    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
-    # New artefacts should have uploaded flag False (pending upload)
-    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
-    assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
-    assert not (new_files & record.files_require_force), "New unique files should not require force initially"
-    # New artefacts should have uploaded flag False (pending upload)
-    assert all(record.files_uploaded[f] is False for f in new_files), "New unique files should be pending upload"
     assert preexisting_files.issubset(record.files_require_force), "Previously uploaded files should now require force"
     assert not (new_files & record.files_require_force), "New unique files should not require force initially"
     # New artefacts should have uploaded flag False (pending upload)

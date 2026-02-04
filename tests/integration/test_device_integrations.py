@@ -282,22 +282,17 @@ def _assert_sem(dest_dir: Path) -> None:
 
 def _seed_utm(watch_dir: Path) -> SeededInputs:
     zs2 = watch_dir / "usr-ipat-utm1.zs2"
-    txt1 = watch_dir / "usr-ipat-utm1-01.txt"
-    txt2 = watch_dir / "usr-ipat-utm1-02.txt"
-    csv = watch_dir / "usr-ipat-utm1.csv"
+    xlsx = watch_dir / "usr-ipat-utm1.xlsx"
     zs2.write_bytes(b"zs2")
-    txt1.write_text("snapshot 1", encoding="utf-8")
-    txt2.write_text("snapshot 2", encoding="utf-8")
-    csv.write_text("utm results", encoding="utf-8")
-    return SeededInputs(staged=(zs2, txt1, txt2), queued=(csv,))
+    xlsx.write_bytes(b"xlsx")
+    return SeededInputs(staged=(zs2,), queued=(xlsx,))
 
 
 def _assert_utm(dest_dir: Path) -> None:
     record_dir = _record_dir(dest_dir, "ipat", "usr", "UTM", "utm1")
     assert record_dir.exists()
-    _assert_min_suffix(record_dir, ".txt", 2)
-    _assert_min_suffix(record_dir, ".csv", 1)
     _assert_min_suffix(record_dir, ".zs2", 1)
+    _assert_min_suffix(record_dir, ".xlsx", 1)
 
 
 DEVICE_SPECS = (
