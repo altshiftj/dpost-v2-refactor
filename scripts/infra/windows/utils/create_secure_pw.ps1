@@ -1,7 +1,7 @@
 # create-secure-password.ps1
 # Prompts for a password, encrypts it, and saves it to a specified file
 param (
-    [string]$OutputPath = "$env:USERPROFILE\.secure\hioki_blb.txt"
+    [string]$OutputPath = "$env:USERPROFILE\.secure\zwick_blb.txt"
 )
 
 # Ensure the folder exists

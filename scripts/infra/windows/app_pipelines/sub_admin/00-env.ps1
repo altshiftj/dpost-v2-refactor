@@ -28,6 +28,32 @@ function Get-ProjectRoot {
     throw "Could not locate project root (no pyproject.toml found)."
 }
 
+# Normalize and compose extras for pip installs based on CI job + device plugins.
+function Get-PipExtras {
+    param(
+        [string]$CiJob,
+        [string]$DevPlugins
+    )
+    $items = New-Object System.Collections.Generic.List[string]
+
+    if ($CiJob) {
+        $items.Add($CiJob.Trim()) | Out-Null
+    }
+
+    if ($DevPlugins) {
+        ($DevPlugins -split '[,; ]+' | Where-Object { $_ -and $_.Trim().Length -gt 0 }) |
+        ForEach-Object { $items.Add($_.Trim()) | Out-Null }
+    }
+
+    # de-dup while preserving order
+    $seen = @{}
+    $orderedUnique = foreach ($i in $items) {
+        if (-not $seen.ContainsKey($i)) { $seen[$i] = $true; $i }
+    }
+
+    return ($orderedUnique -join ',')
+}
+
 # ------------------------------
 # Project Root
 # ------------------------------
@@ -69,8 +95,10 @@ try {
 # ------------------------------
 $env:CI_JOB_NAME = "zwick_blb"
 $env:DEVICE_NAMES= "utm_zwick"
-$env:TARGET_IP   = "134.169.58.118"
-$env:TARGET_USER = "messrechner"
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { $env:DEVICE_NAMES }
+$env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
+$env:TARGET_IP   = "134.169.58.210"
+$env:TARGET_USER = "admin"
 $env:SSH_PORT    = 22
 
 # ------------------------------
