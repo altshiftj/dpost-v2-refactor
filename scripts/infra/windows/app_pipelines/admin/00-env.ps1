@@ -22,7 +22,8 @@ function Get-ProjectRoot {
         if ($LASTEXITCODE -eq 0 -and $gitTop) {
             $repoTop = (Resolve-Path -LiteralPath $gitTop).Path
         }
-    } catch {}
+    }
+    catch {}
 
     # Walk upward starting at $Start, but do not go above $repoTop (if known)
     $dir = Get-Item -LiteralPath $Start
@@ -61,7 +62,7 @@ function Get-PipExtras {
 
     if ($DevPlugins) {
         ($DevPlugins -split '[,; ]+' | Where-Object { $_ -and $_.Trim().Length -gt 0 }) |
-            ForEach-Object { $items.Add($_.Trim()) | Out-Null }
+        ForEach-Object { $items.Add($_.Trim()) | Out-Null }
     }
 
     # de-dup while preserving order
@@ -82,7 +83,8 @@ if ($env:PROJECT_ROOT) {
     $pp = Join-Path $env:PROJECT_ROOT 'pyproject.toml'
     if ((Test-Path -LiteralPath $env:PROJECT_ROOT) -and (Test-Path -LiteralPath $pp)) {
         $needDetect = $false
-    } else {
+    }
+    else {
         Write-Warning "Ignoring preset PROJECT_ROOT '$($env:PROJECT_ROOT)' (no pyproject.toml found there)."
     }
 }
@@ -90,7 +92,8 @@ if ($env:PROJECT_ROOT) {
 if ($needDetect) {
     try {
         $env:PROJECT_ROOT = Get-ProjectRoot
-    } catch {
+    }
+    catch {
         Write-Warning $_.Exception.Message
         throw  # Fail fast instead of silently picking a wrong parent like D:\Repos
     }
@@ -103,21 +106,22 @@ Write-Host "Project Root: $env:PROJECT_ROOT"
 # Git Metadata (best-effort)
 # ------------------------------
 try {
-    $commitTag  = git describe --tags --always
+    $commitTag = git describe --tags --always
     $branchName = git rev-parse --abbrev-ref HEAD
     $commitHash = git rev-parse HEAD
-    $buildTime  = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+    $buildTime = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
 
-    $env:COMMIT_TAG  = $commitTag
-    $env:GIT_BRANCH  = $branchName
+    $env:COMMIT_TAG = $commitTag
+    $env:GIT_BRANCH = $branchName
     $env:COMMIT_HASH = $commitHash
-    $env:BUILD_TIME  = $buildTime
+    $env:BUILD_TIME = $buildTime
 
     Write-Host "Using Commit Tag: $commitTag"
     Write-Host "Branch: $branchName"
     Write-Host "Commit Hash: $commitHash"
     Write-Host "Build Time: $buildTime"
-} catch {
+}
+catch {
     Write-Warning "Git not found or not a Git repository."
 }
 
@@ -125,8 +129,8 @@ try {
 # CI-related Defaults (PC-centric)
 # ------------------------------
 # Hioki direct-connect defaults (override via env vars).
-$env:CI_JOB_NAME = if ($env:CI_JOB_NAME -and $env:CI_JOB_NAME -ne "") { $env:CI_JOB_NAME } else { "hioki_blb" }
-$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "erm_hioki" }
+$env:CI_JOB_NAME = if ($env:CI_JOB_NAME -and $env:CI_JOB_NAME -ne "") { $env:CI_JOB_NAME } else { "tischrem_blb" }
+$env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { "sem_phenomxl2" }
 
 # tischrem_blb breadcrumbs:
 # $env:CI_JOB_NAME = "tischrem_blb"
@@ -137,9 +141,9 @@ $env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_
 $script:DEVICE_PLUGIN_LIST = @()
 if ($env:DEVICE_PLUGINS) { $script:DEVICE_PLUGIN_LIST = $env:DEVICE_PLUGINS -split '[,; ]+' | Where-Object { $_ } }
 
-$env:TARGET_IP   = if ($env:TARGET_IP) { $env:TARGET_IP } else { "134.169.58.151" }
-$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "Hioki" }
-$env:SSH_PORT    = if ($env:SSH_PORT) { $env:SSH_PORT } else { 22 }
+$env:TARGET_IP = if ($env:TARGET_IP) { $env:TARGET_IP } else { "134.169.58.85" }
+$env:TARGET_USER = if ($env:TARGET_USER) { $env:TARGET_USER } else { "TischREM" }
+$env:SSH_PORT = if ($env:SSH_PORT) { $env:SSH_PORT } else { 22 }
 
 # tischrem_blb breadcrumbs:
 # $env:TARGET_IP   = "134.169.58.85"
@@ -153,15 +157,16 @@ $env:TARGET_SSH_KEY = if ($env:TARGET_SSH_KEY) { $env:TARGET_SSH_KEY } else { "$
 # ------------------------------
 $env:SIGNING_CERT_PFX = "$env:USERPROFILE\.secure\ipat_wd.pfx"
 
-$pfxPassPath    = Join-Path $env:USERPROFILE ".secure\pfxpass.txt"
-$targetPassPath  = "$env:USERPROFILE\.secure\$env:CI_JOB_NAME.txt"
+$pfxPassPath = Join-Path $env:USERPROFILE ".secure\pfxpass.txt"
+$targetPassPath = "$env:USERPROFILE\.secure\$env:CI_JOB_NAME.txt"
 
 try {
     if (Test-Path -LiteralPath $pfxPassPath) {
         $securePfxPass = Get-Content $pfxPassPath | ConvertTo-SecureString
         $bstr1 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePfxPass)
         $env:SIGNING_CERT_PASS = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr1)
-    } else {
+    }
+    else {
         Write-Warning "PFX password file not found: $pfxPassPath"
     }
 
@@ -169,16 +174,19 @@ try {
         $secureTargetPass = Get-Content $targetPassPath | ConvertTo-SecureString
         $bstr2 = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secureTargetPass)
         $env:TARGET_PASS = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr2)
-    } else {
+    }
+    else {
         $hasKey = $false
         if ($env:TARGET_SSH_KEY -and (Test-Path -LiteralPath $env:TARGET_SSH_KEY)) { $hasKey = $true }
         if (-not $hasKey) {
             Write-Warning "Target password file not found: $targetPassPath"
-        } else {
+        }
+        else {
             Write-Host "Target password file not found; using SSH key auth from TARGET_SSH_KEY."
         }
     }
-} catch {
+}
+catch {
     Write-Warning "Failed to load encrypted passwords. Check your .secure folder. ($($_.Exception.Message))"
 }
 
@@ -189,7 +197,7 @@ $env:TUN_PORT_0 = 8000     # Local forward to remote 8000
 $env:TUN_PORT_1 = 8001     # Local forward to remote 8001
 
 # Optional: Add SSH host key fingerprint to prevent MITM prompt
-$env:SSH_HOSTKEY = if ($env:SSH_HOSTKEY) { $env:SSH_HOSTKEY } else { "SHA256:EpVP1GeyVqdvnkePT3KWZvL0YoMYUqcFbTR5pSr5JLo" }
+$env:SSH_HOSTKEY = if ($env:SSH_HOSTKEY) { $env:SSH_HOSTKEY } else { "AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4" }
 # tischrem_blb hostkey: AAAAC3NzaC1lZDI1NTE5AAAAID/Hjy2IPejhgLVP20MPFUGjiSBaBSAPdSuC2jZDKcv4
 # hioki_blb hostkey: SHA256:EpVP1GeyVqdvnkePT3KWZvL0YoMYUqcFbTR5pSr5JLo
 
@@ -197,7 +205,7 @@ $env:SSH_HOSTKEY = if ($env:SSH_HOSTKEY) { $env:SSH_HOSTKEY } else { "SHA256:EpV
 # Paths (derived where helpful)
 # ------------------------------
 $env:REMOTE_PATH = "C:\Watchdog"
-$env:REMOTE_EXE  = "$env:REMOTE_PATH\wd-$env:CI_JOB_NAME.exe"  # Use PC-based naming
+$env:REMOTE_EXE = "$env:REMOTE_PATH\wd-$env:CI_JOB_NAME.exe"  # Use PC-based naming
 
 # ------------------------------
 # Shared Helpers
@@ -237,7 +245,7 @@ function Get-SSHAuthArgs {
         $args += $Password
     }
 
-    return ,$args
+    return , $args
 }
 
 # ------------------------------

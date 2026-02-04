@@ -58,7 +58,7 @@ def build_config() -> DeviceConfig:
     """,
         ),
         files=DeviceFileSelectors(
-            native_extensions=frozenset({".tiff", ".tif"}),
+            native_extensions=frozenset({".tiff", ".tif", ".jpeg", ".jpg"}),
             allowed_folder_contents=frozenset({".odt", ".elid"}),
         ),
         session=SessionSettings(timeout_seconds=300),
