@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 
 from ipat_watchdog.core.processing.modified_event_gate import ModifiedEventGate
 

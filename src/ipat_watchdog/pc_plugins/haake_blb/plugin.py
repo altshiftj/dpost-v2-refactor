@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Optional
 
 from ipat_watchdog.core.config import PCConfig
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin

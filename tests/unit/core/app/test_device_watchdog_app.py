@@ -1,14 +1,11 @@
 import queue
-import queue
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp, QueueingEventHandler
-import pytest
 
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp, QueueingEventHandler
 
 
 def test_initialization_sets_handlers_and_starts_observer(watchdog_app, fake_ui):

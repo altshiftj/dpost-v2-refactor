@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from ipat_watchdog.device_plugins.dsv_horiba.file_processor import FileProcessorDSVHoriba
 from ipat_watchdog.device_plugins.dsv_horiba.settings import build_config

@@ -26,8 +26,11 @@
   - `reports/`: findings in existing code.
   - `planning/`: plan of attack for the requested functionality.
   - `checklists/`: step-by-step checklist for the work.
+- `refactors/`: post-green refactor proposals and implementation notes.
 - "RPC" is shorthand for this report/plan/checklist workflow.
 - Checklists must include a short "why this matters" blurb per section.
+- Checklists must include a final `Manual Check` section with concrete human validation
+  steps (UI/API/role-path checks as relevant).
 - When a checklist section is completed, mark it done and add a short "how it was done" blurb.
 
 ## Code Style

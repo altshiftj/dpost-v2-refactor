@@ -1,18 +1,13 @@
 """Record interaction flows invoked by the processing pipeline."""
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable
 
 from ipat_watchdog.core.interactions import (DialogPrompts,
                                              UserInteractionPort,
                                              WarningMessages)
-from ipat_watchdog.core.processing.file_processor_abstract import \
-    FileProcessorABS
 from ipat_watchdog.core.processing.models import (ProcessingResult,
-                                                  ProcessingStatus,
                                                   RouteContext)
-from ipat_watchdog.core.records.local_record import LocalRecord
 
 
 def handle_unappendable_record(

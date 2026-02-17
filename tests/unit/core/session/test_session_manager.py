@@ -1,4 +1,3 @@
-import pytest
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.config import current
 from ipat_watchdog.core.records.local_record import LocalRecord

@@ -1,5 +1,4 @@
 """Integration tests for the configuration service."""
-from pathlib import Path
 
 import pytest
 

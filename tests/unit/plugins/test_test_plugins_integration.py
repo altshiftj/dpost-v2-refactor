@@ -1,5 +1,4 @@
 """Tests for integration between test device and test PC plugins."""
-from pathlib import Path
 
 from ipat_watchdog.device_plugins.test_device.plugin import TestDevicePlugin
 from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config

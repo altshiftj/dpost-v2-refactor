@@ -2,7 +2,6 @@
 from ipat_watchdog.core.interactions import (RenameDecision, RenamePrompt,
                                              SessionPromptDetails)
 from ipat_watchdog.core.interactions.ports import UserInteractionPort
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
 
 
 class HeadlessUI(UserInteractionPort):
