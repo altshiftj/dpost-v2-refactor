@@ -10,7 +10,6 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from ipat_watchdog.core.processing.models import ProcessingResult
 from ipat_watchdog.core.storage.filesystem_utils import (
     generate_file_id,
     generate_record_id,
@@ -38,6 +37,24 @@ class StagedSuffixProcessor(DummyProcessor):
         staged = path.with_name(f"{path.stem}.__staged__{path.suffix}")
         staged.write_text("prepared")
         return PreprocessingResult.passthrough(str(staged))
+
+
+class MissingPreparedPathProcessor(DummyProcessor):
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult:
+        """Return a non-existent prepared path with a different extension."""
+        path = Path(src_path)
+        missing_prepared = path.with_suffix(".xlsx")
+        return PreprocessingResult.passthrough(str(missing_prepared))
+
+    def device_specific_processing(
+        self,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        """Force pipeline failure so exception-routing metadata can be asserted."""
+        raise RuntimeError("boom")
 
 
 @pytest.fixture
@@ -234,3 +251,31 @@ def test_is_internal_staging_path_detects_nested():
     assert FileProcessManager._is_internal_staging_path(suffixed) is True
     assert FileProcessManager._is_internal_staging_path(suffixed_counter) is True
     assert FileProcessManager._is_internal_staging_path(duped) is True
+
+
+def test_process_item_preserves_source_extension_on_effective_path_fallback(
+    manager_components, tmp_settings, monkeypatch
+):
+    """Keep source suffix when prepared-path fallback triggers exception routing."""
+    manager, _ = manager_components
+    manager.file_processor = MissingPreparedPathProcessor()
+
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("data")
+
+    moves: list[tuple[str, str, str]] = []
+
+    def record_move(path_like: str, prefix: str | None = None, extension: str | None = None):
+        moves.append((path_like, prefix or "", extension or ""))
+
+    monkeypatch.setattr(
+        "ipat_watchdog.core.processing.file_process_manager.safe_move_to_exception",
+        record_move,
+    )
+
+    with pytest.raises(RuntimeError):
+        manager.process_item(str(src))
+
+    assert moves
+    assert moves[0][0] == str(src)
+    assert moves[0][2] == ".txt"

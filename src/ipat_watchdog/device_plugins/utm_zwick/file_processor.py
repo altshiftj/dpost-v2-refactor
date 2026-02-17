@@ -64,12 +64,10 @@ class FileProcessorUTMZwick(FileProcessorABS):
             return None
 
         stem = p.stem
-        sanitized, is_valid = sanitize_and_validate(stem)
+        key, is_valid = self._normalize_series_key(stem)
         if not is_valid:
             logger.warning("Zwick: invalid prefix %r for %s", stem, p.name)
             return None
-
-        key = sanitized
 
         with self._lock:
             ttl_ready = self._find_ttl_ready_locked()
@@ -143,51 +141,29 @@ class FileProcessorUTMZwick(FileProcessorABS):
         record_dir = Path(record_path)
 
         # Series path
-        with self._lock:
-            state = self._series.pop(raw_prefix, None)
+        state = self._pop_series_state(raw_prefix)
         if not state:
             raise KeyError(f"No staged series for '{raw_prefix}'")
         # From here we deterministically move the staged artefacts into the record directory.
 
-        # NOTE: We intentionally avoid overwriting existing artefacts now.
-        #       Each .zs2 and .xlsx file is stored with a unique, incremented name
-        #       to prevent accidental data loss when instrument restarts or replays.
-
         # Move latest zs2 (raw) with unique filename if present
-        if state.last_zs2 and state.last_zs2.exists():
-            unique_zs2_path = Path(
-                get_unique_filename(str(record_dir), file_id, state.last_zs2.suffix)
-            )
-            try:
-                move_item(str(state.last_zs2), str(unique_zs2_path))
-                logger.debug(
-                    "Moved raw zs2 '%s' -> '%s' (unique, no overwrite)",
-                    state.last_zs2,
-                    unique_zs2_path,
-                )
-            except Exception as exc:  # pragma: no cover - defensive
-                logger.warning(
-                    "Failed moving zs2 '%s' to '%s': %s", state.last_zs2, unique_zs2_path, exc
-                )
+        self._move_staged_artifact(
+            source=state.last_zs2,
+            record_dir=record_dir,
+            filename_prefix=file_id,
+            success_label="raw zs2",
+            failure_label="zs2",
+        )
 
         # Move sentinel xlsx as primary exported data with unique filename (no overwrite)
         primary = state.sentinel_xlsx
-        if primary and primary.exists():
-            results_prefix = f"{file_id}_results"
-            unique_results_path = Path(
-                get_unique_filename(str(record_dir), results_prefix, primary.suffix)
-            )
-            try:
-                move_item(str(primary), str(unique_results_path))
-                logger.debug(
-                    "Moved results '%s' -> '%s' (unique, no overwrite)",
-                    primary,
-                    unique_results_path,
-                )
-            except Exception as exc:  # pragma: no cover - defensive
-                logger.warning(
-                    "Failed moving results '%s' to '%s': %s", primary, unique_results_path, exc
-                )
+        self._move_staged_artifact(
+            source=primary,
+            record_dir=record_dir,
+            filename_prefix=f"{file_id}_results",
+            success_label="results",
+            failure_label="results",
+        )
 
         datatype = "xlsx" if state.sentinel_xlsx else "zs2"
         return ProcessingOutput(final_path=str(record_dir), datatype=datatype)
@@ -259,3 +235,47 @@ class FileProcessorUTMZwick(FileProcessorABS):
             if state.last_update <= ttl_cutoff:
                 return state
         return None
+
+    def _pop_series_state(self, raw_prefix: str) -> _SeriesState | None:
+        """Return and remove staged state for the given filename stem."""
+        series_key, _ = self._normalize_series_key(raw_prefix)
+        with self._lock:
+            return self._series.pop(series_key, None)
+
+    @staticmethod
+    def _move_staged_artifact(
+        source: Optional[Path],
+        record_dir: Path,
+        filename_prefix: str,
+        success_label: str,
+        failure_label: str,
+    ) -> None:
+        """Move one staged artifact into record storage using unique naming."""
+        if source is None or not source.exists():
+            return
+
+        unique_path = Path(get_unique_filename(str(record_dir), filename_prefix, source.suffix))
+        try:
+            move_item(str(source), str(unique_path))
+            logger.debug(
+                "Moved %s '%s' -> '%s' (unique, no overwrite)",
+                success_label,
+                source,
+                unique_path,
+            )
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning(
+                "Failed moving %s '%s' to '%s': %s",
+                failure_label,
+                source,
+                unique_path,
+                exc,
+            )
+
+    @staticmethod
+    def _normalize_series_key(stem: str) -> tuple[str, bool]:
+        """Return a canonical series key and validity flag for a filename stem."""
+        sanitized, is_valid = sanitize_and_validate(stem)
+        if is_valid:
+            return sanitized, True
+        return stem, False

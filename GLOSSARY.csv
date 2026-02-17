@@ -1,3 +1,5 @@
 term,type,purpose,usage
 usr-inst-sample_name,naming convention,Defines the expected filename prefix format for Zwick UTM artefacts,Used to validate `.zs2` filenames before accepting a series
 sentinel workbook,workflow marker,Signals that staged Zwick UTM artefacts are ready for processing,The `.xlsx` file that triggers final processing of a `.zs2` series
+series staging key,workflow state key,Defines the normalized in-memory key used to join staged `.zs2` and `.xlsx` artefacts,Derived from filename stem and used for series map insert and lookup
+exception extension drift,failure mode,Describes incorrect suffix metadata when moving failed artefacts to exceptions,Can mislabel raw payloads (for example `.ZS2`) as `.xlsx` during fallback handling

@@ -31,7 +31,6 @@ from ipat_watchdog.core.processing.record_flow import \
     handle_unappendable_record
 from ipat_watchdog.core.processing.record_utils import (apply_device_defaults,
                                                         get_or_create_record,
-                                                        manage_session,
                                                         update_record)
 from ipat_watchdog.core.processing.rename_flow import RenameService
 from ipat_watchdog.core.processing.routing import (determine_routing_state,
@@ -121,28 +120,14 @@ class _ProcessingPipeline:
         raise RuntimeError("Unreachable code in _execute_pipeline")
 
     def _build_candidate(self, request: ProcessingRequest, processor: FileProcessorABS) -> ProcessingCandidate | ProcessingResult:
-        manager = self._manager
         preprocessed = processor.device_specific_preprocessing(str(request.source))
         if preprocessed is None:
             return ProcessingResult(ProcessingStatus.DEFERRED, "Awaiting paired artefacts")
         assert isinstance(preprocessed, PreprocessingResult)  # type narrowing for Pylance
 
-        # Normalise any internal staging suffix before deriving prefix/extension.
-        parse_target = manager._strip_internal_stage_suffix(Path(preprocessed.effective_path))
-        prefix, extension = parse_filename(str(parse_target))
-        if preprocessed.prefix_override:
-            prefix = preprocessed.prefix_override
-        if preprocessed.extension_override:
-            extension = preprocessed.extension_override
-
-        effective_path = Path(preprocessed.effective_path)
-        if not effective_path.exists():
-            effective_path = request.source
-
-        preprocessed_path = None
-        explicit_path = Path(preprocessed.effective_path)
-        if explicit_path != effective_path and explicit_path.exists():
-            preprocessed_path = explicit_path
+        prefix, extension, effective_path, preprocessed_path = self._derive_candidate_metadata(
+            request, preprocessed
+        )
 
         return ProcessingCandidate(
             original_path=request.source,
@@ -153,6 +138,37 @@ class _ProcessingPipeline:
             device=request.device,
             preprocessed_path=preprocessed_path,
         )
+
+    def _derive_candidate_metadata(
+        self,
+        request: ProcessingRequest,
+        preprocessed: PreprocessingResult,
+    ) -> tuple[str, str, Path, Optional[Path]]:
+        """Resolve prefix/extension and effective paths for candidate routing."""
+        manager = self._manager
+        effective_path = Path(preprocessed.effective_path)
+
+        # Start from preprocessed path metadata so overrides can adjust it.
+        parse_target = manager._strip_internal_stage_suffix(effective_path)
+        prefix, extension = parse_filename(str(parse_target))
+        if preprocessed.prefix_override:
+            prefix = preprocessed.prefix_override
+        if preprocessed.extension_override:
+            extension = preprocessed.extension_override
+
+        if not effective_path.exists():
+            effective_path = request.source
+            # Keep metadata aligned with the true source path when preprocessing returns
+            # an alias path that does not exist (important for exception routing suffixes).
+            parse_target = manager._strip_internal_stage_suffix(effective_path)
+            prefix, extension = parse_filename(str(parse_target))
+
+        preprocessed_path = None
+        explicit_path = Path(preprocessed.effective_path)
+        if explicit_path != effective_path and explicit_path.exists():
+            preprocessed_path = explicit_path
+
+        return prefix, extension, effective_path, preprocessed_path
 
     def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
         manager = self._manager
