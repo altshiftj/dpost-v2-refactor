@@ -42,7 +42,7 @@ def test_sync_settings_integration(tmp_path):
         session=SessionSettings(timeout_seconds=120),
     )
 
-    service = init_config(pc, [device])
+    init_config(pc, [device])
     try:
         ui = HeadlessUI()
         sync_manager = KadiSyncManager(interactions=ui)

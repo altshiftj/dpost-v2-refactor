@@ -4,14 +4,12 @@ from unittest.mock import patch, MagicMock
 import tkinter.messagebox as messagebox
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
 from ipat_watchdog.core.interactions import SessionPromptDetails
-from ipat_watchdog.core.interactions.messages import DialogPrompts, InfoMessages
+from ipat_watchdog.core.interactions.messages import DialogPrompts
 
 
 @pytest.fixture
 def ui_instance():
-    with patch("tkinter.Tk") as MockTk, patch("tkinter.Toplevel") as MockTop:
-        mock_root = MockTk.return_value
-        mock_top = MockTop.return_value
+    with patch("tkinter.Tk"), patch("tkinter.Toplevel"):
         ui = TKinterUI()
         return ui
 

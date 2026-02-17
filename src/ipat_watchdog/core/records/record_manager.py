@@ -252,7 +252,7 @@ class RecordManager:
             record: LocalRecord to synchronize
         """
         # Delegate actual sync logic to the sync manager
-        files_remaining = self.sync.sync_record_to_database(record)
+        self.sync.sync_record_to_database(record)
         self.save_records() 
 
         logger.debug(f"Persisted updated state for record '{record.identifier}' after sync.")

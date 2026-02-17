@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import sys
 from dataclasses import replace
 from pathlib import Path

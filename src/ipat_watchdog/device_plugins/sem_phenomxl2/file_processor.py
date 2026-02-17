@@ -77,7 +77,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
             move_item(actual_src_path, str(destination))
             return ProcessingOutput(final_path=destination, datatype="img")
 
-        zip_path = self._zip_export(actual_src_path, record_dir, filename_prefix)
+        self._zip_export(actual_src_path, record_dir, filename_prefix)
         self._move_descriptors(actual_src_path, record_dir, filename_prefix)
         self._cleanup(actual_src_path)
 

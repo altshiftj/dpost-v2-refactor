@@ -118,7 +118,7 @@ def test_excel_safe_save_sequence_is_eventually_processed(app_with_extr_haake, t
     _delayed_write(final_path, b"final content", delay=0.8)
 
     # Drive processing for the initial (now-missing) path; under the new behavior, this should wait
-    result = app.file_processing.process_item(str(initial_path))
+    app.file_processing.process_item(str(initial_path))
 
     # Allow any scheduled UI tasks to run and processing to complete
     drain_scheduled_tasks(app.ui)

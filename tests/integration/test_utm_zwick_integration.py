@@ -45,7 +45,6 @@ def utm_processing_manager(tmp_path):
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
-    session = FakeSessionManager(interactions=ui, scheduler=ui)
     fpm = FileProcessManager(
         interactions=ui,
         sync_manager=sync,

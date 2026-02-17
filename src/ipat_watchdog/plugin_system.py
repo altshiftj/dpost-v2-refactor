@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Pluggy-based plugin management for device and PC plugins."""
+
+from __future__ import annotations
 
 import pkgutil
 import sys

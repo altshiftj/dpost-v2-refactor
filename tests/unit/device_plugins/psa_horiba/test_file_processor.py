@@ -61,7 +61,6 @@ def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
 
     first_csv = record_dir / f"{expected_prefix}-01.csv"
     first_zip = record_dir / f"{expected_prefix}-01.zip"
-    second_csv = record_dir / f"{expected_prefix}-02.csv"
     second_zip = record_dir / f"{expected_prefix}-02.zip"
 
     # CSV content is preserved (no delimiter conversion) and originals removed

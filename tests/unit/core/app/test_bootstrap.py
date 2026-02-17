@@ -1,13 +1,13 @@
+# ruff: noqa: E402
 """Unit tests for the bootstrap helpers."""
 
 from __future__ import annotations
 
-import pytest
-
 import importlib
 
-bootstrap_mod = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+import pytest
 
+bootstrap_mod = importlib.import_module("ipat_watchdog.core.app.bootstrap")
 from ipat_watchdog.core.app.bootstrap import (
     collect_startup_settings,
     MissingConfiguration,
