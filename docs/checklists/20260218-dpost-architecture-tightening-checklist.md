@@ -193,6 +193,22 @@
 - Green verification:
   `python -m pytest -m migration`
   -> `19 passed, 292 deselected`.
+- Tests-first fallback-removal increment:
+  added failing migration tests in
+  `tests/migration/test_configuration_consolidation.py` asserting
+  `filesystem_utils` operational helpers fail fast without an active
+  config service (`init_dirs()` implicit path and `get_record_path()`).
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 19 passed, 292 deselected`.
+- Green implementation increment:
+  removed legacy constants fallback from
+  `src/ipat_watchdog/core/storage/filesystem_utils.py` operational
+  config readers, making runtime path/naming reads config-service
+  authoritative.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `21 passed, 292 deselected`.
 
 ---
 

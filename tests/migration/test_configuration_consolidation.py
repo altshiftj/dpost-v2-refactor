@@ -88,3 +88,38 @@ def test_compose_bootstrap_reads_env_driven_startup_settings(
     assert settings.device_names == ("env_one", "env_two")
     assert settings.prometheus_port == 9300
     assert settings.observability_port == 9301
+
+
+def _raise_missing_config_service() -> None:
+    """Raise the canonical runtime error for missing config service."""
+    raise RuntimeError("Configuration service has not been initialised")
+
+
+def test_init_dirs_without_explicit_directories_requires_active_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reject implicit directory initialisation when config service is unavailable."""
+    filesystem_utils = importlib.import_module(
+        "ipat_watchdog.core.storage.filesystem_utils"
+    )
+    monkeypatch.setattr(filesystem_utils, "current", _raise_missing_config_service)
+
+    with pytest.raises(
+        RuntimeError, match="Configuration service has not been initialised"
+    ):
+        filesystem_utils.init_dirs()
+
+
+def test_get_record_path_requires_active_config(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Reject implicit destination path resolution when config service is unavailable."""
+    filesystem_utils = importlib.import_module(
+        "ipat_watchdog.core.storage.filesystem_utils"
+    )
+    monkeypatch.setattr(filesystem_utils, "current", _raise_missing_config_service)
+
+    with pytest.raises(
+        RuntimeError, match="Configuration service has not been initialised"
+    ):
+        filesystem_utils.get_record_path("usr-ipat-sample", device_abbr="UTM")

@@ -15,7 +15,6 @@ import re
 from pathlib import Path
 from typing import Callable, Optional, Union
 
-from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.config import current
 from ipat_watchdog.core.config.service import ActiveConfig
 from ipat_watchdog.core.interactions.messages import ValidationMessages
@@ -25,74 +24,44 @@ from ipat_watchdog.core.records.local_record import LocalRecord
 logger = setup_logger(__name__)
 
 
-def _active_config() -> ActiveConfig | None:
-    try:
-        return current()
-    except RuntimeError:
-        return None
+def _active_config() -> ActiveConfig:
+    return current()
 
 
 def _directory_list() -> tuple[Path, ...]:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.directory_list
-    return tuple(_CONST.DIRECTORY_LIST)
+    return _active_config().directory_list
 
 
 def _dest_dir() -> Path:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.paths.dest_dir
-    return _CONST.DEST_DIR
+    return _active_config().paths.dest_dir
 
 
 def _rename_dir() -> Path:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.paths.rename_dir
-    return _CONST.RENAME_DIR
+    return _active_config().paths.rename_dir
 
 
 def _exceptions_dir() -> Path:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.paths.exceptions_dir
-    return _CONST.EXCEPTIONS_DIR
+    return _active_config().paths.exceptions_dir
 
 
 def _daily_records_path() -> Path:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.paths.daily_records_json
-    return _CONST.DAILY_RECORDS_JSON
+    return _active_config().paths.daily_records_json
 
 
 def _id_sep() -> str:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.id_separator
-    return _CONST.ID_SEP
+    return _active_config().id_separator
 
 
 def _file_sep() -> str:
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.file_separator
-    return _CONST.FILE_SEP
+    return _active_config().file_separator
 
 
 def _filename_pattern():
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.filename_pattern
-    return _CONST.FILENAME_PATTERN
+    return _active_config().filename_pattern
 
 
 def _current_device():
-    cfg = _active_config()
-    if cfg is not None:
-        return cfg.device
-    return None
+    return _active_config().device
 
 
 

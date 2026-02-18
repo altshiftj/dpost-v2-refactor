@@ -80,7 +80,9 @@
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
-- Legacy constant fallbacks coexist with config service access.
+- Legacy naming/constants dependencies still exist in selected modules
+  (for example `local_record`, `sync_kadi`), but `filesystem_utils`
+  operational path/naming reads are now config-service authoritative.
 - Desktop UI is a default runtime path today.
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost composition still delegates full runtime bootstrap to legacy wiring while

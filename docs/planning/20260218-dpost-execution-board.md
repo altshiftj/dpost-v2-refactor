@@ -158,3 +158,20 @@
 - green verification:
   `python -m pytest -m migration`
   returned `19 passed, 292 deselected`.
+- Phase 4 filesystem operational fallback-removal tests-first increment on
+  2026-02-18:
+- added failing migration tests in
+  `tests/migration/test_configuration_consolidation.py` requiring
+  config-service-authoritative behavior for implicit `init_dirs()` and
+  `get_record_path()` resolution paths.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 19 passed, 292 deselected`.
+- implementation status:
+- updated `src/ipat_watchdog/core/storage/filesystem_utils.py` to remove
+  legacy constants fallback from operational config readers (`_directory_list`,
+  `_dest_dir`, `_rename_dir`, `_exceptions_dir`, `_daily_records_path`,
+  `_id_sep`, `_file_sep`, `_filename_pattern`, `_current_device`).
+- green verification:
+  `python -m pytest -m migration`
+  returned `21 passed, 292 deselected`.
