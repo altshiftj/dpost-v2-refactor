@@ -11,7 +11,7 @@
 | `dpost.runtime.composition` | Runtime kernel boundary | Resolve kernel-level adapter/plugin profile selection and delegate bootstrap wiring | Startup composition policy and env-to-contract mapping | Concrete backend SDK imports or plugin discovery logic |
 | `DeviceWatchdogApp` | Application | Coordinate observer lifecycle and queue-driven processing loop | Event queue polling, graceful shutdown orchestration | Direct plugin discovery logic |
 | `FileProcessManager` | Application | Execute artifact processing workflow end-to-end | Pipeline orchestration, stage sequencing, and result handling | Low-level transport/backend API details |
-| `_ProcessingPipeline` | Application (internal helper) | Sequence stage transitions for a single artifact | Resolve/stabilize/preprocess/route-decision and persist-stage control flow | Direct record persistence implementation details |
+| `_ProcessingPipeline` | Application (internal helper) | Sequence stage transitions for a single artifact | Resolve/stabilize/preprocess/route-decision/non-ACCEPT-route and persist-stage control flow | Direct record persistence implementation details |
 | `DeviceResolver` | Application | Select correct device for artifact using selectors + probe hints | Candidate resolution logic | File movement and persistence side effects |
 | `FileProcessorABS` + concrete processors | Plugins | Apply device-specific preprocessing and processing | Device-format handling rules | Global runtime wiring |
 | `ConfigService` | Domain/Application support | Provide active PC/device configuration context | Config registration and activation scope | Filesystem mutation side effects |

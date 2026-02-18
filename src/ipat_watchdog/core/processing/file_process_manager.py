@@ -213,20 +213,10 @@ class _ProcessingPipeline:
         return self._build_route_context(candidate)
 
     def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
-        manager = self._manager
-        candidate = context.candidate
-
-        def rename_delegate(path, prefix, ext, contextual_reason=None):
-            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
-
-        if context.decision is RoutingDecision.UNAPPENDABLE:
-            return handle_unappendable_record(manager.interactions, rename_delegate, context)
-
         if context.decision is RoutingDecision.ACCEPT:
             return self._persist_and_sync_stage(context)
 
-        # Remaining cases fall back to the rename flow (invalid format, collisions, etc.).
-        return self._invoke_rename_flow(candidate, candidate.prefix, candidate.extension)
+        return self._non_accept_route_stage(context)
 
     def _persist_and_sync_stage(self, context: RouteContext) -> ProcessingResult:
         """Persist processed output and trigger sync behavior for accepted routes."""
@@ -244,6 +234,20 @@ class _ProcessingPipeline:
         if final_path is None:
             return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
         return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
+
+    def _non_accept_route_stage(self, context: RouteContext) -> ProcessingResult:
+        """Handle non-ACCEPT routing outcomes (rename-required or unappendable)."""
+        manager = self._manager
+        candidate = context.candidate
+
+        def rename_delegate(path, prefix, ext, contextual_reason=None):
+            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
+
+        if context.decision is RoutingDecision.UNAPPENDABLE:
+            return handle_unappendable_record(manager.interactions, rename_delegate, context)
+
+        # Remaining non-ACCEPT cases fall back to the rename flow.
+        return self._invoke_rename_flow(candidate, candidate.prefix, candidate.extension)
 
     def _invoke_rename_flow(
         self,
@@ -270,7 +274,7 @@ class _ProcessingPipeline:
         context = self._route_decision_stage(updated)
         if context.decision is RoutingDecision.ACCEPT:
             return self._persist_and_sync_stage(context)
-        return self._dispatch_route(context)
+        return self._non_accept_route_stage(context)
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         manager = self._manager

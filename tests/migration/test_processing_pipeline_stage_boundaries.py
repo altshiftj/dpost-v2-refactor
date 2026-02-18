@@ -275,3 +275,71 @@ def test_route_with_prefix_delegates_accept_without_dispatch(
 
     assert result.status is ProcessingStatus.PROCESSED
     assert calls == ["route_decision", "persist"]
+
+
+def test_pipeline_declares_non_accept_route_stage_hook() -> None:
+    """Require explicit non-ACCEPT routing seam for decision-path clarity."""
+    assert hasattr(_ProcessingPipeline, "_non_accept_route_stage")
+
+
+def test_route_with_prefix_delegates_non_accept_without_dispatch(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Resolve non-ACCEPT decision and delegate without redispatching."""
+    pipeline = process_manager._pipeline
+    source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    source.write_text("payload")
+    candidate = ProcessingCandidate(
+        original_path=source,
+        effective_path=source,
+        prefix="abc-ipat-sample",
+        extension=".txt",
+        processor=DummyProcessor(),
+        device=config_service.devices[0],
+        preprocessed_path=None,
+    )
+    expected_context = RouteContext(
+        candidate=candidate,
+        sanitized_prefix="abc-ipat-sample",
+        existing_record=None,
+        decision=RoutingDecision.REQUIRE_RENAME,
+    )
+    calls: list[str] = []
+
+    def route_decision_stage(route_candidate: ProcessingCandidate) -> RouteContext:
+        calls.append("route_decision")
+        assert route_candidate.prefix == "abc-ipat-sample"
+        return expected_context
+
+    def non_accept_stage(route_context: RouteContext) -> ProcessingResult:
+        calls.append("non_accept")
+        assert route_context is expected_context
+        return ProcessingResult(ProcessingStatus.REJECTED, "rename-required")
+
+    monkeypatch.setattr(
+        pipeline,
+        "_route_decision_stage",
+        route_decision_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        pipeline,
+        "_non_accept_route_stage",
+        non_accept_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        pipeline,
+        "_dispatch_route",
+        lambda *_args, **_kwargs: pytest.fail(
+            "_route_with_prefix should not redispatch through _dispatch_route."
+        ),
+    )
+
+    result = pipeline._route_with_prefix(candidate, "abc-ipat-sample")
+
+    assert result.status is ProcessingStatus.REJECTED
+    assert calls == ["route_decision", "non_accept"]

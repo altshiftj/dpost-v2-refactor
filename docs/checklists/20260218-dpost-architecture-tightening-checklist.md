@@ -362,6 +362,23 @@
   -> `35 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first non-ACCEPT-route-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring an explicit `_non_accept_route_stage()` seam and non-ACCEPT
+  reroute handling without redispatch through `_dispatch_route()`.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 35 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_non_accept_route_stage()` and route non-ACCEPT flows from both
+  `_dispatch_route()` and `_route_with_prefix()` through that seam.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `37 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 
