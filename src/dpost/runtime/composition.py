@@ -13,4 +13,3 @@ def compose_bootstrap() -> BootstrapContext:
     bootstrap path while migration is in progress.
     """
     return legacy_bootstrap()
-
