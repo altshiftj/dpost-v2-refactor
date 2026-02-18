@@ -32,6 +32,10 @@
 - `src/ipat_watchdog/core/app/bootstrap.py`
 - New migration composition scaffold:
 - `src/dpost/runtime/composition.py`
+- dpost sync adapter port contract:
+- `src/dpost/application/ports/sync.py`
+- dpost reference sync adapter (noop):
+- `src/dpost/infrastructure/sync/noop.py`
 - Runtime loop and event handling:
 - `src/ipat_watchdog/core/app/device_watchdog_app.py`
 - Processing orchestration:
@@ -51,12 +55,16 @@
 - `migration` marker for `dpost` migration and cutover tests.
 - New migration entrypoint tests currently live in:
 - `tests/migration/test_dpost_main.py`
+- Phase 3 sync adapter selection tests currently live in:
+- `tests/migration/test_sync_adapter_selection.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
 - Legacy constant fallbacks coexist with config service access.
 - Desktop UI is a default runtime path today.
 - Sync backend is currently Kadi-coupled in core paths.
+- dpost composition still delegates full runtime bootstrap to legacy wiring while
+  sync adapter kernel contracts are being introduced incrementally.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

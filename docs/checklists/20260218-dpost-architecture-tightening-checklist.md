@@ -69,11 +69,11 @@
 
 ### Checklist
 - [ ] Define framework kernel boundary and port contracts for pluggable integrations.
-- [ ] Add framework-level migration tests that do not depend on concrete backend integrations.
-- [ ] Add reference sync adapter implementation (noop/local) for kernel validation.
+- [x] Add framework-level migration tests that do not depend on concrete backend integrations.
+- [x] Add reference sync adapter implementation (noop/local) for kernel validation.
 - [ ] Add reference plugin flow for kernel validation.
-- [ ] Define and document sync adapter port contract.
-- [ ] Add adapter selection mechanism to startup config.
+- [x] Define and document sync adapter port contract.
+- [x] Add adapter selection mechanism to startup config.
 - [ ] Add startup test without Kadi adapter installed.
 - [ ] Add startup test for clear error path when adapter name is unknown.
 - [ ] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
@@ -81,7 +81,14 @@
 - [ ] Add startup test with Kadi adapter selected.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: In progress as of 2026-02-18. Added sync kernel contract
+  surface at `src/dpost/application/ports/sync.py`, reference adapter
+  `src/dpost/infrastructure/sync/noop.py`, and explicit adapter selection in
+  `src/dpost/runtime/composition.py` via `DPOST_SYNC_ADAPTER` (default:
+  `noop`). Added migration tests in
+  `tests/migration/test_sync_adapter_selection.py` and validated:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  -> `3 passed`.
 
 ---
 

@@ -16,7 +16,9 @@
 | `RecordManager` | Application | Manage local record lifecycle and persistence delegation | Record creation, lookup, sync trigger calls | Device-specific parsing |
 | `LocalRecord` | Domain model | Represent per-record metadata and file upload state | Record state and sync flags | Backend API operations |
 | `ISyncManager` | Application port | Define sync backend contract | Sync abstraction boundary | UI event-loop concerns |
+| `SyncAdapterPort` | Application port | Define dpost sync adapter contract for framework composition paths | Adapter behavior contract for sync calls | Concrete backend SDK imports |
 | `KadiSyncManager` | Infrastructure adapter | Implement sync backend against Kadi | Kadi API mapping and upload calls | Core processing orchestration |
+| `NoopSyncAdapter` | Infrastructure adapter (reference) | Provide no-op sync behavior for framework validation and local headless paths | Deterministic no-op sync responses | Production backend side effects |
 | `PluginLoader` | Infrastructure support | Register/discover/instantiate device and PC plugins | Plugin lifecycle and registration state | Artifact processing behavior |
 | `UserInteractionPort` + adapters | Application port + Infrastructure adapter | Decouple interaction requests from UI implementation | Interaction contract and adapter mapping | Core domain decision logic |
 
@@ -25,4 +27,3 @@
 2. Plugins can provide domain behavior for devices, but not global runtime wiring.
 3. Infrastructure adapters can depend on external SDKs/APIs, but domain models cannot.
 4. New component ownership changes must update this catalog in the same change set.
-

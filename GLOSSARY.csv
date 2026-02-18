@@ -9,3 +9,5 @@ migration test suite,test contract,Defines tests that validate `dpost` scaffoldi
 framework-first sequencing,migration policy,Defines delivery order where framework contracts are implemented before concrete integrations,Used to gate migration phases so plugins/adapters follow kernel validation
 framework kernel,architecture component,Defines core runtime contracts/composition paths independent of concrete integrations,Built and validated before migrating specific plugins or sync adapters
 reference implementation,validation artifact,Defines a minimal concrete implementation used to validate framework contracts,Examples include noop sync adapter and test plugin flow in migration tests
+sync adapter port,architecture component,Defines the application-layer sync contract used by framework composition and orchestrators,Implemented by infrastructure adapters so runtime logic stays backend-agnostic
+noop sync adapter,reference implementation,Defines a backend-free sync adapter used for framework validation and local headless paths,Selected as default in early dpost migration phases to avoid concrete backend coupling
