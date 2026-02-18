@@ -28,6 +28,15 @@
 - Avoid new module-level singletons outside explicit runtime composition.
 - Runtime mode selection (headless/desktop) is configured at composition root.
 
+## Framework Kernel Boundary (Phase 3)
+- The dpost kernel boundary is currently limited to these framework surfaces:
+- `src/dpost/runtime/composition.py` (startup composition and adapter/profile selection)
+- `src/dpost/application/ports/sync.py` (sync adapter port contract)
+- `src/dpost/plugins/reference.py` (reference plugin profile contract)
+- Kernel composition paths can map explicit profile names to startup settings.
+- Kernel composition paths must not import concrete backend SDK modules directly.
+- Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
+
 ## Framework-first Sequencing Rules
 - Build framework kernel contracts before migrating concrete integrations.
 - Validate framework with reference implementations first (for example noop adapter, test plugin flow).

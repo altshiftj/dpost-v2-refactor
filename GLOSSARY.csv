@@ -12,3 +12,4 @@ reference implementation,validation artifact,Defines a minimal concrete implemen
 sync adapter port,architecture component,Defines the application-layer sync contract used by framework composition and orchestrators,Implemented by infrastructure adapters so runtime logic stays backend-agnostic
 noop sync adapter,reference implementation,Defines a backend-free sync adapter used for framework validation and local headless paths,Selected as default in early dpost migration phases to avoid concrete backend coupling
 kadi sync adapter,reference implementation,Defines the dpost wrapper that delegates sync calls to the legacy Kadi manager with lazy optional dependency loading,Selected with DPOST_SYNC_ADAPTER=kadi and raises startup error when kadi_apy is unavailable
+plugin profile,runtime configuration,Defines a named PC and device plugin selection used by dpost kernel composition,Configured with DPOST_PLUGIN_PROFILE for framework validation startup paths

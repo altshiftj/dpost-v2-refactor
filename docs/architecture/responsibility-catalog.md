@@ -8,6 +8,7 @@
 | Object/Module | Layer | Primary Responsibility | Owns | Must Not Own |
 |---|---|---|---|---|
 | `bootstrap` | Application/Infrastructure boundary | Compose runtime dependencies and startup settings | Runtime wiring, startup validation | Device-specific business rules |
+| `dpost.runtime.composition` | Runtime kernel boundary | Resolve kernel-level adapter/plugin profile selection and delegate bootstrap wiring | Startup composition policy and env-to-contract mapping | Concrete backend SDK imports or plugin discovery logic |
 | `DeviceWatchdogApp` | Application | Coordinate observer lifecycle and queue-driven processing loop | Event queue polling, graceful shutdown orchestration | Direct plugin discovery logic |
 | `FileProcessManager` | Application | Execute artifact processing workflow end-to-end | Pipeline orchestration and result handling | Low-level transport/backend API details |
 | `DeviceResolver` | Application | Select correct device for artifact using selectors + probe hints | Candidate resolution logic | File movement and persistence side effects |
@@ -17,6 +18,7 @@
 | `LocalRecord` | Domain model | Represent per-record metadata and file upload state | Record state and sync flags | Backend API operations |
 | `ISyncManager` | Application port | Define sync backend contract | Sync abstraction boundary | UI event-loop concerns |
 | `SyncAdapterPort` | Application port | Define dpost sync adapter contract for framework composition paths | Adapter behavior contract for sync calls | Concrete backend SDK imports |
+| `PluginProfile` + `REFERENCE_PLUGIN_PROFILE` | Plugin reference contract | Define a backend-agnostic plugin profile for kernel validation startup paths | Test-safe PC/device plugin identifiers | Runtime orchestration and concrete backend coupling |
 | `KadiSyncManager` | Infrastructure adapter | Implement sync backend against Kadi | Kadi API mapping and upload calls | Core processing orchestration |
 | `KadiSyncAdapter` | Infrastructure adapter (dpost wrapper) | Bridge dpost sync port to legacy Kadi implementation with optional dependency handling | Adapter selection path and lazy legacy delegation | Runtime composition policy |
 | `NoopSyncAdapter` | Infrastructure adapter (reference) | Provide no-op sync behavior for framework validation and local headless paths | Deterministic no-op sync responses | Production backend side effects |

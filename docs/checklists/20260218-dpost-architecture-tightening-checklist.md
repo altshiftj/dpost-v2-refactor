@@ -68,10 +68,10 @@
 - Why this matters: Establishing framework contracts first avoids coupling migration behavior to concrete integrations too early.
 
 ### Checklist
-- [ ] Define framework kernel boundary and port contracts for pluggable integrations.
+- [x] Define framework kernel boundary and port contracts for pluggable integrations.
 - [x] Add framework-level migration tests that do not depend on concrete backend integrations.
 - [x] Add reference sync adapter implementation (noop/local) for kernel validation.
-- [ ] Add reference plugin flow for kernel validation.
+- [x] Add reference plugin flow for kernel validation.
 - [x] Define and document sync adapter port contract.
 - [x] Add adapter selection mechanism to startup config.
 - [x] Add startup test without Kadi adapter installed.
@@ -140,6 +140,26 @@
   -> `15 passed`.
   `python -m pytest -m migration`
   -> `15 passed, 292 deselected`.
+- Tests-first reference plugin flow increment (pending implementation approval):
+  added migration coverage in
+  `tests/migration/test_reference_plugin_flow.py` to lock the expectation that
+  `DPOST_PLUGIN_PROFILE=reference` passes explicit startup settings through
+  composition without concrete backend/plugin coupling.
+  Red-state verification run:
+  `python -m pytest tests/migration/test_reference_plugin_flow.py`
+  -> `1 failed`.
+- Framework kernel boundary + reference plugin flow implementation increment
+  (green):
+  added `src/dpost/plugins/reference.py` (`PluginProfile`,
+  `REFERENCE_PLUGIN_PROFILE`) and composition profile selection/wiring in
+  `src/dpost/runtime/composition.py` via `DPOST_PLUGIN_PROFILE`.
+  Architecture boundary docs were updated in
+  `docs/architecture/architecture-contract.md`,
+  `docs/architecture/architecture-baseline.md`, and
+  `docs/architecture/responsibility-catalog.md`.
+  Green verification run:
+  `python -m pytest -m migration`
+  -> `16 passed, 292 deselected`.
 
 ---
 

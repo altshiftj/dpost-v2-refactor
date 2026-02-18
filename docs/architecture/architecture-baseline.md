@@ -34,10 +34,15 @@
 - `src/dpost/runtime/composition.py`
 - dpost composition now validates selected sync adapter and injects a
   `sync_manager_factory` into legacy bootstrap wiring.
+- dpost composition now supports an explicit reference plugin profile path via
+  `DPOST_PLUGIN_PROFILE=reference`, mapping to startup settings without direct
+  concrete plugin/backend coupling.
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):
 - `src/dpost/infrastructure/sync/noop.py`
+- dpost reference plugin profile contract:
+- `src/dpost/plugins/reference.py`
 - dpost Kadi sync adapter wrapper (optional backend):
 - `src/dpost/infrastructure/sync/kadi.py`
 - dpost packaging split for optional Kadi backend dependency:
@@ -65,6 +70,8 @@
 - `tests/migration/test_sync_adapter_selection.py`
 - Phase 3 optional Kadi packaging contract test currently lives in:
 - `tests/migration/test_optional_kadi_packaging.py`
+- Phase 3 reference plugin flow test currently lives in:
+- `tests/migration/test_reference_plugin_flow.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -73,6 +80,8 @@
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost composition still delegates full runtime bootstrap to legacy wiring while
   sync adapter kernel contracts are being introduced incrementally.
+- dpost plugin profile support is currently reference-only and intended for
+  kernel validation until concrete plugin migration begins.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.
