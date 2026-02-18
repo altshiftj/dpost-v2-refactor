@@ -127,7 +127,7 @@ class _ProcessingPipeline:
                 if isinstance(item, ProcessingResult):
                     return item
                 candidate = item
-                context = self._build_route_context(candidate)
+                context = self._route_decision_stage(candidate)
                 return self._dispatch_route(context)
         except Exception as exc:
             manager._handle_processing_failure(request.source, candidate, exc)
@@ -208,6 +208,10 @@ class _ProcessingPipeline:
         )
         return RouteContext(candidate, sanitized_prefix, record, decision)
 
+    def _route_decision_stage(self, candidate: ProcessingCandidate) -> RouteContext:
+        """Resolve routing decision context for a candidate artifact."""
+        return self._build_route_context(candidate)
+
     def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
         manager = self._manager
         candidate = context.candidate
@@ -262,19 +266,11 @@ class _ProcessingPipeline:
         return self._route_with_prefix(updated_candidate, outcome.sanitized_prefix)
 
     def _route_with_prefix(self, candidate: ProcessingCandidate, prefix_override: str) -> ProcessingResult:
-        manager = self._manager
-        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            manager.records, prefix_override, candidate.device
-        )
-        decision = determine_routing_state(
-            record,
-            is_valid_format,
-            prefix_override,
-            candidate.extension,
-            candidate.processor,
-        )
         updated = replace(candidate, prefix=prefix_override)
-        return self._dispatch_route(RouteContext(updated, sanitized_prefix, record, decision))
+        context = self._route_decision_stage(updated)
+        if context.decision is RoutingDecision.ACCEPT:
+            return self._persist_and_sync_stage(context)
+        return self._dispatch_route(context)
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         manager = self._manager
