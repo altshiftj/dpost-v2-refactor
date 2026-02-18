@@ -64,3 +64,21 @@
 - migration marker check:
   `python -m pytest -m migration`
   returned `7 passed, 292 deselected`.
+- Phase 3 startup-wiring tests-first increment on 2026-02-18:
+- added failing tests for `compose_bootstrap` sync-factory wiring and
+  unknown-adapter env behavior in
+  `tests/migration/test_sync_adapter_selection.py`.
+- added failing test for `dpost.main()` unknown-adapter env exit path in
+  `tests/migration/test_dpost_main.py`.
+- red-state verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_dpost_main.py`
+  returned `3 failed, 7 passed` pending implementation.
+- startup-wiring implementation status:
+- `src/dpost/runtime/composition.py` now pre-validates selected adapter and
+  passes `sync_manager_factory` into legacy bootstrap.
+- green verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_dpost_main.py`
+  returned `10 passed`.
+- migration marker re-check:
+  `python -m pytest -m migration`
+  returned `10 passed, 292 deselected`.

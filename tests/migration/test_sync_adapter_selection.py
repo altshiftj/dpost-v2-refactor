@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import importlib
 import sys
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 
 import pytest
+
+from dpost.infrastructure.sync import NoopSyncAdapter
 
 
 def _reload_composition_module() -> ModuleType:
@@ -43,3 +45,47 @@ def test_unknown_sync_adapter_name_raises_startup_error() -> None:
 
     with pytest.raises(StartupError, match="Unknown sync adapter"):
         composition.select_sync_adapter("missing-adapter")
+
+
+def test_compose_bootstrap_wires_noop_sync_factory(monkeypatch) -> None:
+    """Wire noop sync adapter factory into legacy bootstrap composition."""
+    composition = _reload_composition_module()
+    captured: dict[str, object] = {}
+    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+
+    def fake_bootstrap(*args, **kwargs):
+        captured["kwargs"] = kwargs
+        return SimpleNamespace(app=SimpleNamespace(run=lambda: None))
+
+    monkeypatch.setattr(bootstrap_module, "bootstrap", fake_bootstrap)
+    monkeypatch.setenv("DPOST_SYNC_ADAPTER", "noop")
+
+    composition.compose_bootstrap()
+
+    assert "sync_manager_factory" in captured["kwargs"]
+    adapter_factory = captured["kwargs"]["sync_manager_factory"]
+    adapter = adapter_factory(object())
+    assert isinstance(adapter, NoopSyncAdapter)
+
+
+def test_compose_bootstrap_unknown_adapter_from_env_raises_startup_error(
+    monkeypatch,
+) -> None:
+    """Raise startup error when env-selected sync adapter is unknown."""
+    from ipat_watchdog.core.app.bootstrap import StartupError
+
+    composition = _reload_composition_module()
+    called = {"bootstrap_called": False}
+    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+
+    def fake_bootstrap(*args, **kwargs):
+        called["bootstrap_called"] = True
+        return SimpleNamespace(app=SimpleNamespace(run=lambda: None))
+
+    monkeypatch.setattr(bootstrap_module, "bootstrap", fake_bootstrap)
+    monkeypatch.setenv("DPOST_SYNC_ADAPTER", "missing-adapter")
+
+    with pytest.raises(StartupError, match="Unknown sync adapter"):
+        composition.compose_bootstrap()
+
+    assert called["bootstrap_called"] is False

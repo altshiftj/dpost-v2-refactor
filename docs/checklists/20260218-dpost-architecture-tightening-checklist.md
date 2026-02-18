@@ -74,8 +74,8 @@
 - [ ] Add reference plugin flow for kernel validation.
 - [x] Define and document sync adapter port contract.
 - [x] Add adapter selection mechanism to startup config.
-- [ ] Add startup test without Kadi adapter installed.
-- [ ] Add startup test for clear error path when adapter name is unknown.
+- [x] Add startup test without Kadi adapter installed.
+- [x] Add startup test for clear error path when adapter name is unknown.
 - [ ] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
 - [ ] Make Kadi adapter optional in dependency/packaging flow.
 - [ ] Add startup test with Kadi adapter selected.
@@ -89,6 +89,22 @@
   `tests/migration/test_sync_adapter_selection.py` and validated:
   `python -m pytest tests/migration/test_sync_adapter_selection.py`
   -> `3 passed`.
+- Tests-first startup wiring increment (pending implementation approval):
+  added failing expectations for `compose_bootstrap` adapter-factory wiring and
+  unknown-adapter env handling in
+  `tests/migration/test_sync_adapter_selection.py`, plus unknown-adapter main
+  exit behavior in `tests/migration/test_dpost_main.py`.
+  Red-state verification run:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_dpost_main.py`
+  -> `3 failed, 7 passed`.
+- Startup wiring implementation increment (green):
+  `src/dpost/runtime/composition.py` now resolves adapter selection before
+  bootstrap and injects `sync_manager_factory` into legacy bootstrap wiring.
+  Green verification runs:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_dpost_main.py`
+  -> `10 passed`.
+  `python -m pytest -m migration`
+  -> `10 passed, 292 deselected`.
 
 ---
 

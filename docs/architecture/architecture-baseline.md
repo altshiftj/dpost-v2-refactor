@@ -32,6 +32,8 @@
 - `src/ipat_watchdog/core/app/bootstrap.py`
 - New migration composition scaffold:
 - `src/dpost/runtime/composition.py`
+- dpost composition now validates selected sync adapter and injects a
+  `sync_manager_factory` into legacy bootstrap wiring.
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):

@@ -36,4 +36,9 @@ def compose_bootstrap() -> "BootstrapContext":
     """
     from ipat_watchdog.core.app.bootstrap import bootstrap as legacy_bootstrap
 
-    return legacy_bootstrap()
+    sync_adapter = select_sync_adapter()
+
+    def sync_manager_factory(_interactions: object) -> SyncAdapterPort:
+        return sync_adapter
+
+    return legacy_bootstrap(sync_manager_factory=sync_manager_factory)
