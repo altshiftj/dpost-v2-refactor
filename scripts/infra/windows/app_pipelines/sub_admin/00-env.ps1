@@ -97,7 +97,7 @@ $env:CI_JOB_NAME = "zwick_blb"
 $env:DEVICE_NAMES= "utm_zwick"
 $env:DEVICE_PLUGINS = if ($env:DEVICE_PLUGINS) { $env:DEVICE_PLUGINS } else { $env:DEVICE_NAMES }
 $env:PIP_EXTRAS = Get-PipExtras -CiJob $env:CI_JOB_NAME -DevPlugins $env:DEVICE_PLUGINS
-$env:TARGET_IP   = "134.169.58.210"
+$env:TARGET_IP   = "134.169.58.140"
 $env:TARGET_USER = "admin"
 $env:SSH_PORT    = 22
 

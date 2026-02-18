@@ -13,17 +13,23 @@ if (-not $ciJobName)  { Write-Error "CI_JOB_NAME not set.";  exit 1 }
 
 $binaryName      = "wd-${ciJobName}.exe"
 $distBinaryPath  = "dist\$binaryName"
+$buildVersionPath      = "build\version-$ciJobName.txt"
+$deployVersionFilename = "version-$ciJobName.txt"
+$deployVersionPath     = $deployVersionFilename
 
 if (!(Test-Path $distBinaryPath)) { Write-Error "$distBinaryPath missing."; exit 1 }
-if (!(Test-Path 'version.txt'))   { Write-Error "version.txt missing.";     exit 1 }
+if (!(Test-Path $buildVersionPath)) {
+    Write-Error "$buildVersionPath missing. Did you run the build?"
+    exit 1
+}
 
-@"
-COMMIT_TAG=$env:COMMIT_TAG
-COMMIT_HASH=$env:COMMIT_HASH
-GIT_BRANCH=$env:GIT_BRANCH
-BUILD_TIME=$env:BUILD_TIME
+$deployMeta = @"
 DEPLOY_TIME=$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')Z
-"@ | Set-Content -Encoding UTF8 version.txt
+CI_JOB_NAME=$env:CI_JOB_NAME
+DEVICE_PLUGINS=$env:DEVICE_PLUGINS
+PIP_EXTRAS=$env:PIP_EXTRAS
+"@
+(Get-Content $buildVersionPath) + $deployMeta | Set-Content -Encoding UTF8 $deployVersionPath
 
 $start = Get-Date
 
@@ -49,7 +55,21 @@ if (!(Test-Path -LiteralPath `$p)) {
     throw "Remote target path not found or not creatable: `$p"
 }
 
-foreach (`$f in @(`$exe,'version.txt')) {
+# Stop watchdog tasks/processes before rotating files to avoid file locks.
+if (Get-Command Get-ScheduledTask -ErrorAction SilentlyContinue) {
+    Get-ScheduledTask -ErrorAction SilentlyContinue |
+        Where-Object { `$_.TaskName -like 'IPAT-Watchdog*' } |
+        ForEach-Object {
+            Stop-ScheduledTask       -TaskName `$_.TaskName -EA SilentlyContinue
+            Unregister-ScheduledTask -TaskName `$_.TaskName -Confirm:`$false -EA SilentlyContinue
+        }
+}
+Start-Sleep 2
+Get-Process -EA SilentlyContinue |
+    Where-Object { `$_.Path -eq `$path } |
+    Stop-Process -Force
+
+foreach (`$f in @(`$exe,'$deployVersionFilename')) {
     `$src = Join-Path `$p `$f
     if (Test-Path -LiteralPath `$src) {
         `$bak = `$src -replace '\.(\w+)$','_backup.`$1'
@@ -73,7 +93,7 @@ if ($LASTEXITCODE) { Write-Error 'Remote prep failed.'; exit 1 }
 # SCP new files
 $scpMap = @{
     $distBinaryPath = "$remotePath/$binaryName"
-    'version.txt'   = "$remotePath/version.txt"
+    $deployVersionPath = "$remotePath/$deployVersionFilename"
 }
 foreach ($pair in $scpMap.GetEnumerator()) {
     # Keep a native Windows path and quote it
