@@ -44,6 +44,12 @@
 - Responsibility ownership is documented.
 - Vocabulary changes are reflected in `GLOSSARY.csv`.
 
+## Sequencing Guard
+- Migration delivery is framework-first:
+- implement framework kernel/contracts first
+- validate with reference implementations second
+- migrate concrete plugins/adapters third
+
 ## Test Isolation Commands
 - Full suite:
 - `python -m pytest`

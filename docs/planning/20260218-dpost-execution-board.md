@@ -17,7 +17,7 @@
 |---|---|---|---|---|
 | Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Completed (2026-02-18) | Baseline tests green and architecture contract doc linked |
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | In Progress | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
-| Phase 3: Optional Sync Adapter Interface | 2026-03-11 -> 2026-03-19 | Core Owner | Planned | Sync adapter port active, Kadi adapter optional, adapter-selection tests green |
+| Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Planned | Framework contracts + reference implementations green before concrete adapter migration |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Planned | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Planned | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
@@ -47,3 +47,4 @@
 - `dpost` script entrypoint exists in `pyproject.toml`.
 - migration entrypoint tests exist under `tests/migration/`.
 - marker split is active (`legacy` and `migration`).
+- Sequencing update: Phase 3 is framework-first; concrete Kadi adapter migration follows kernel contract validation.

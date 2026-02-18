@@ -7,6 +7,7 @@
 
 ## Current Migration Decisions (Locked)
 - Runtime posture: headless-first.
+- Migration sequencing: framework-first (kernel/contracts/reference implementations before concrete integrations).
 - Sync architecture: optional adapters to support multiple databases/ELNs.
 - Architecture governance: baseline + contract + responsibility catalog + ADR workflow.
 
@@ -19,6 +20,10 @@
 - Use small, targeted diffs that fit the current migration phase.
 - Prefer `python -m ...` invocations to avoid PATH issues on Windows.
 - Avoid compatibility shims unless explicitly requested or clearly required for transition safety.
+- Apply framework-first sequencing:
+- define and test framework contracts and composition paths first
+- add reference implementations second (for example test plugin, noop adapter)
+- migrate concrete plugins/adapters only after framework gates are green
 - Keep test intent isolated:
 - place `ipat_watchdog` contract tests in legacy paths (`tests/unit`, `tests/integration`, `tests/manual`)
 - place new `dpost` migration/cutover tests in `tests/migration`

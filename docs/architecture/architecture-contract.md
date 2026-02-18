@@ -28,6 +28,11 @@
 - Avoid new module-level singletons outside explicit runtime composition.
 - Runtime mode selection (headless/desktop) is configured at composition root.
 
+## Framework-first Sequencing Rules
+- Build framework kernel contracts before migrating concrete integrations.
+- Validate framework with reference implementations first (for example noop adapter, test plugin flow).
+- Migrate concrete adapters/plugins only after kernel contract tests are green.
+
 ## Sync Adapter Rules
 - Application code uses sync adapter port abstractions.
 - Concrete backends (for example Kadi) are infrastructure adapters.

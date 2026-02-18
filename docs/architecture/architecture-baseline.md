@@ -60,5 +60,6 @@
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.
+- Framework-first sequencing is active: kernel and contracts are prioritized before concrete integrations.
 - Sync is being moved toward optional adapter architecture for multi-ELN/database support.
 - Major structural updates should be tracked via ADRs in `docs/architecture/adr/`.

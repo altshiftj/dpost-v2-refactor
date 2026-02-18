@@ -5,6 +5,7 @@
 
 ## Decisions Locked (2026-02-18)
 - Runtime posture: headless-first.
+- Migration sequencing posture: framework-first.
 - Sync architecture: optional adapters to support multiple databases/ELNs.
 - Planning cadence: execute via a dated board with owners and target dates.
 
@@ -21,6 +22,7 @@
 ## Approach
 - Use phased migration with acceptance gates per phase.
 - First lock behavior via tests and characterization checks.
+- Build core framework contracts before migrating concrete integrations.
 - Build a new package structure around explicit boundaries:
 - `domain` for core models/rules
 - `application` for orchestration/use-cases
@@ -29,6 +31,10 @@
 - Define a sync adapter port early and move Kadi to an optional adapter implementation.
 - Bring desktop runtime back only after headless mode is green and stable.
 - Move modules gradually, with compatibility shims only where required.
+- Keep concrete plugins/adapters behind framework gates:
+- contract definitions and composition root paths
+- reference plugin and reference adapter implementations
+- migration test coverage for selection/error paths
 
 ## Documentation Backbone
 - Architecture baseline:
@@ -44,7 +50,7 @@
 ## Milestones
 1. Baseline and Architecture Contract Freeze
 2. dpost Package Spine and Headless Composition Root
-3. Optional Sync Adapter Interface and Packaging
+3. Framework Kernel and Sync Adapter Contract
 4. Configuration Consolidation
 5. Processing Pipeline Decomposition
 6. Plugin and Discovery Hardening
@@ -73,12 +79,16 @@
 - No new module-level singletons introduced outside explicitly approved runtime wiring.
 - Migration tests run independently via marker selection.
 
-### Phase 3: Optional Sync Adapter Interface and Packaging
+### Phase 3: Framework Kernel and Sync Adapter Contract
 - Scope:
+- Define framework kernel contracts for pluggable integrations (sync and plugin boundaries).
+- Add reference implementations first (for example noop sync adapter and test plugin flow).
 - Define a sync adapter port in the application boundary.
 - Move current Kadi implementation behind an optional adapter package path.
 - Support adapter selection via explicit configuration.
 - Acceptance criteria:
+- Framework kernel contract docs are complete and linked from architecture docs.
+- Reference adapter and reference plugin paths run end-to-end in migration tests.
 - Core application can run without importing Kadi adapter modules.
 - Kadi adapter remains functionally equivalent when selected.
 - At least one no-op/mock adapter path exists for headless local usage and tests.

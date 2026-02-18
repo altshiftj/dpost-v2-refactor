@@ -64,17 +64,21 @@
 
 ---
 
-## Section: Phase 3 Optional Sync Adapter Interface
-- Why this matters: Optional sync adapters enable database/ELN flexibility while keeping the core runtime portable.
+## Section: Phase 3 Framework Kernel and Sync Adapter Contract
+- Why this matters: Establishing framework contracts first avoids coupling migration behavior to concrete integrations too early.
 
 ### Checklist
+- [ ] Define framework kernel boundary and port contracts for pluggable integrations.
+- [ ] Add framework-level migration tests that do not depend on concrete backend integrations.
+- [ ] Add reference sync adapter implementation (noop/local) for kernel validation.
+- [ ] Add reference plugin flow for kernel validation.
 - [ ] Define and document sync adapter port contract.
-- [ ] Move Kadi sync behind adapter implementation boundary.
-- [ ] Make Kadi adapter optional in dependency/packaging flow.
 - [ ] Add adapter selection mechanism to startup config.
 - [ ] Add startup test without Kadi adapter installed.
-- [ ] Add startup test with Kadi adapter selected.
 - [ ] Add startup test for clear error path when adapter name is unknown.
+- [ ] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
+- [ ] Make Kadi adapter optional in dependency/packaging flow.
+- [ ] Add startup test with Kadi adapter selected.
 
 ### Completion Notes
 - How it was done: Pending.
