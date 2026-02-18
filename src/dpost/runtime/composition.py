@@ -3,14 +3,126 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Sequence
 
 from dpost.application.ports import SyncAdapterPort
 from dpost.infrastructure.sync import NoopSyncAdapter
 from dpost.plugins import REFERENCE_PLUGIN_PROFILE, PluginProfile
 
 if TYPE_CHECKING:
-    from ipat_watchdog.core.app.bootstrap import BootstrapContext
+    from ipat_watchdog.core.app.bootstrap import BootstrapContext, StartupSettings
+
+
+def _list_from_env(raw: str) -> tuple[str, ...]:
+    """Normalize comma/semicolon delimited env values into a token tuple."""
+    return tuple(
+        token.strip() for token in raw.replace(";", ",").split(",") if token.strip()
+    )
+
+
+def _coerce_port(
+    value: int | str | None,
+    *,
+    env_name: str,
+    fallback: int,
+) -> int:
+    """Parse and validate positive integer ports from explicit or env values."""
+    if value is None:
+        return fallback
+    if isinstance(value, int):
+        if value <= 0:
+            from ipat_watchdog.core.app.bootstrap import StartupError
+
+            raise StartupError(f"{env_name} must be a positive integer. Got {value}.")
+        return value
+
+    raw = value.strip()
+    if raw == "":
+        return fallback
+    try:
+        parsed = int(raw)
+    except ValueError as exc:
+        from ipat_watchdog.core.app.bootstrap import StartupError
+
+        raise StartupError(f"Invalid integer value for {env_name}: {value!r}") from exc
+    if parsed <= 0:
+        from ipat_watchdog.core.app.bootstrap import StartupError
+
+        raise StartupError(f"{env_name} must be a positive integer. Got {parsed}.")
+    return parsed
+
+
+def resolve_startup_settings(
+    *,
+    pc_name: str | None = None,
+    device_names: Sequence[str] | None = None,
+    prometheus_port: int | None = None,
+    observability_port: int | None = None,
+) -> "StartupSettings | None":
+    """Resolve optional startup settings from explicit overrides and DPOST env."""
+    env_pc_name = os.getenv("DPOST_PC_NAME")
+    env_device_names = os.getenv("DPOST_DEVICE_PLUGINS")
+    env_prometheus_port = os.getenv("DPOST_PROMETHEUS_PORT")
+    env_observability_port = os.getenv("DPOST_OBSERVABILITY_PORT")
+
+    has_overrides = any(
+        (
+            pc_name is not None,
+            device_names is not None,
+            prometheus_port is not None,
+            observability_port is not None,
+            bool(env_pc_name and env_pc_name.strip()),
+            bool(env_device_names and env_device_names.strip()),
+            bool(env_prometheus_port and env_prometheus_port.strip()),
+            bool(env_observability_port and env_observability_port.strip()),
+        )
+    )
+    if not has_overrides:
+        return None
+
+    from ipat_watchdog.core.app.bootstrap import (
+        StartupSettings as LegacyStartupSettings,
+    )
+    from ipat_watchdog.core.app.bootstrap import collect_startup_settings
+
+    resolved_pc_name = (pc_name if pc_name is not None else (env_pc_name or "")).strip()
+    resolved_device_names: tuple[str, ...] | None
+    if device_names is not None:
+        resolved_device_names = tuple(
+            name.strip() for name in device_names if name.strip()
+        )
+    elif env_device_names:
+        resolved_device_names = _list_from_env(env_device_names)
+    else:
+        resolved_device_names = None
+
+    base_settings = collect_startup_settings(
+        pc_name=resolved_pc_name or None,
+        device_names=resolved_device_names,
+    )
+
+    final_prometheus_port = _coerce_port(
+        prometheus_port if prometheus_port is not None else env_prometheus_port,
+        env_name="DPOST_PROMETHEUS_PORT",
+        fallback=base_settings.prometheus_port,
+    )
+    final_observability_port = _coerce_port(
+        (
+            observability_port
+            if observability_port is not None
+            else env_observability_port
+        ),
+        env_name="DPOST_OBSERVABILITY_PORT",
+        fallback=base_settings.observability_port,
+    )
+
+    return LegacyStartupSettings(
+        pc_name=base_settings.pc_name,
+        device_names=base_settings.device_names,
+        prometheus_port=final_prometheus_port,
+        observability_port=final_observability_port,
+        env_source=base_settings.env_source,
+    )
 
 
 def select_sync_adapter(adapter_name: str | None = None) -> SyncAdapterPort:
@@ -70,6 +182,7 @@ def compose_bootstrap() -> "BootstrapContext":
 
     sync_adapter = select_sync_adapter()
     plugin_profile = select_plugin_profile()
+    resolved_settings = resolve_startup_settings()
 
     def sync_manager_factory(_interactions: object) -> SyncAdapterPort:
         return sync_adapter
@@ -82,5 +195,7 @@ def compose_bootstrap() -> "BootstrapContext":
             pc_name=plugin_profile.pc_name,
             device_names=plugin_profile.device_names,
         )
+    elif resolved_settings is not None:
+        bootstrap_kwargs["settings"] = resolved_settings
 
     return legacy_bootstrap(**bootstrap_kwargs)

@@ -37,6 +37,9 @@
 - dpost composition now supports an explicit reference plugin profile path via
   `DPOST_PLUGIN_PROFILE=reference`, mapping to startup settings without direct
   concrete plugin/backend coupling.
+- dpost composition now includes a startup settings resolver for optional
+  `DPOST_PC_NAME`, `DPOST_DEVICE_PLUGINS`, `DPOST_PROMETHEUS_PORT`, and
+  `DPOST_OBSERVABILITY_PORT` overrides before delegating to legacy bootstrap.
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):
@@ -72,6 +75,8 @@
 - `tests/migration/test_optional_kadi_packaging.py`
 - Phase 3 reference plugin flow test currently lives in:
 - `tests/migration/test_reference_plugin_flow.py`
+- Phase 4 config consolidation tests currently live in:
+- `tests/migration/test_configuration_consolidation.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.

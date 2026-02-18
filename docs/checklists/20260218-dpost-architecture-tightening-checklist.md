@@ -167,16 +167,32 @@
 - Why this matters: Multiple configuration sources create drift and make behavior hard to reason about across environments.
 
 ### Checklist
-- [ ] Inventory all runtime reads from legacy constants.
+- [x] Inventory all runtime reads from legacy constants.
 - [ ] Move operational configuration reads to config schema/service path.
 - [ ] Remove fallback usage from operational code paths.
-- [ ] Add test for default config behavior.
-- [ ] Add test for explicit path override behavior.
-- [ ] Add test for environment-driven bootstrap behavior.
+- [x] Add test for default config behavior.
+- [x] Add test for explicit path override behavior.
+- [x] Add test for environment-driven bootstrap behavior.
 - [ ] Update docs with the canonical configuration flow.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Phase 4 kickoff completed on 2026-02-18 with a
+  runtime configuration read inventory in
+  `docs/reports/20260218-phase4-runtime-config-read-inventory.md`.
+- Tests-first increment:
+  added `tests/migration/test_configuration_consolidation.py` for
+  default behavior, explicit override precedence, and env-driven bootstrap
+  wiring through `dpost` composition.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `3 failed, 16 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/dpost/runtime/composition.py` with
+  `resolve_startup_settings()` and startup-settings wiring into
+  `compose_bootstrap()`.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `19 passed, 292 deselected`.
 
 ---
 

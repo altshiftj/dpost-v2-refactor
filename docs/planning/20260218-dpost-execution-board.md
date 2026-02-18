@@ -18,7 +18,7 @@
 | Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Completed (2026-02-18) | Baseline tests green and architecture contract doc linked |
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | Completed (2026-02-18) | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Completed (2026-02-18) | Framework contracts + reference implementations green before concrete adapter migration |
-| Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Planned | Legacy constant fallbacks removed from operational paths |
+| Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | In Progress (2026-02-18) | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Planned | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
 | Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Planned | Desktop and headless smoke tests both green |
@@ -139,3 +139,22 @@
   returned `16 passed, 292 deselected`.
 - Phase 3 gate closed on 2026-02-18 after kernel contracts, reference sync
   adapter, and reference plugin flow were validated together.
+- Phase 4 configuration-consolidation tests-first kickoff on 2026-02-18:
+- added runtime config-read inventory report:
+  `docs/reports/20260218-phase4-runtime-config-read-inventory.md`.
+- added migration tests in
+  `tests/migration/test_configuration_consolidation.py` for:
+  default resolver behavior, explicit override precedence, and env-driven
+  bootstrap startup-settings wiring.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `3 failed, 16 passed, 292 deselected`.
+- Phase 4 minimal resolver/composition implementation status:
+- updated `src/dpost/runtime/composition.py` with
+  `resolve_startup_settings()` and `DPOST_PC_NAME`,
+  `DPOST_DEVICE_PLUGINS`, `DPOST_PROMETHEUS_PORT`,
+  `DPOST_OBSERVABILITY_PORT` mapping into bootstrap `StartupSettings`.
+- preserved existing `DPOST_PLUGIN_PROFILE=reference` composition behavior.
+- green verification:
+  `python -m pytest -m migration`
+  returned `19 passed, 292 deselected`.
