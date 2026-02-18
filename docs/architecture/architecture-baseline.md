@@ -40,6 +40,8 @@
 - `src/dpost/infrastructure/sync/noop.py`
 - dpost Kadi sync adapter wrapper (optional backend):
 - `src/dpost/infrastructure/sync/kadi.py`
+- dpost packaging split for optional Kadi backend dependency:
+- `pyproject.toml` (`[project.optional-dependencies].kadi`)
 - Runtime loop and event handling:
 - `src/ipat_watchdog/core/app/device_watchdog_app.py`
 - Processing orchestration:
@@ -61,6 +63,8 @@
 - `tests/migration/test_dpost_main.py`
 - Phase 3 sync adapter selection tests currently live in:
 - `tests/migration/test_sync_adapter_selection.py`
+- Phase 3 optional Kadi packaging contract test currently lives in:
+- `tests/migration/test_optional_kadi_packaging.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -74,4 +78,6 @@
 - Headless-first migration is the current execution posture.
 - Framework-first sequencing is active: kernel and contracts are prioritized before concrete integrations.
 - Sync is being moved toward optional adapter architecture for multi-ELN/database support.
+- Default `dpost` install path no longer requires `kadi_apy`; Kadi is enabled via
+  the `kadi` optional dependency group.
 - Major structural updates should be tracked via ADRs in `docs/architecture/adr/`.

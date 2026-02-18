@@ -77,7 +77,7 @@
 - [x] Add startup test without Kadi adapter installed.
 - [x] Add startup test for clear error path when adapter name is unknown.
 - [x] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
-- [ ] Make Kadi adapter optional in dependency/packaging flow.
+- [x] Make Kadi adapter optional in dependency/packaging flow.
 - [x] Add startup test with Kadi adapter selected.
 
 ### Completion Notes
@@ -122,6 +122,24 @@
   -> `7 passed`.
   `python -m pytest -m migration`
   -> `12 passed, 292 deselected`.
+- Tests-first optional Kadi packaging increment (pending implementation
+  approval):
+  added migration assertions for default/noop startup behavior when Kadi
+  dependency is unavailable and explicit `kadi` startup failure with clear
+  optional dependency messaging in
+  `tests/migration/test_sync_adapter_selection.py`, plus optional packaging
+  contract coverage in `tests/migration/test_optional_kadi_packaging.py`.
+  Red-state verification run:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_optional_kadi_packaging.py`
+  -> `1 failed, 9 passed`.
+- Optional Kadi packaging implementation increment (green):
+  moved `kadi-apy` from default `[project].dependencies` to
+  `[project.optional-dependencies].kadi` in `pyproject.toml`.
+  Green verification runs:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_optional_kadi_packaging.py tests/migration/test_dpost_main.py`
+  -> `15 passed`.
+  `python -m pytest -m migration`
+  -> `15 passed, 292 deselected`.
 
 ---
 

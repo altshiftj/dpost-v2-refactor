@@ -100,3 +100,22 @@
 - migration marker re-check:
   `python -m pytest -m migration`
   returned `12 passed, 292 deselected`.
+- Phase 3 optional Kadi packaging tests-first increment on 2026-02-18:
+- added migration assertions for default/noop startup behavior when Kadi
+  dependency is unavailable and explicit `kadi` startup failure messaging in
+  `tests/migration/test_sync_adapter_selection.py`.
+- added packaging contract coverage in
+  `tests/migration/test_optional_kadi_packaging.py`.
+- red-state verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_optional_kadi_packaging.py`
+  returned `1 failed, 9 passed` pending implementation.
+- optional Kadi packaging implementation status:
+- `pyproject.toml` now keeps `kadi-apy` out of default
+  `[project].dependencies` and exposes it through
+  `[project.optional-dependencies].kadi`.
+- green verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py tests/migration/test_optional_kadi_packaging.py tests/migration/test_dpost_main.py`
+  returned `15 passed`.
+- migration marker re-check:
+  `python -m pytest -m migration`
+  returned `15 passed, 292 deselected`.

@@ -37,6 +37,8 @@
 - Application code uses sync adapter port abstractions.
 - Concrete backends (for example Kadi) are infrastructure adapters.
 - Adapter selection is explicit and validated at startup.
+- Backend-specific SDK dependencies stay optional in packaging and are enabled
+  through explicit optional dependency groups.
 - dpost sync adapter kernel contract currently lives in:
 - `src/dpost/application/ports/sync.py`
 - dpost reference adapter for kernel validation currently lives in:
