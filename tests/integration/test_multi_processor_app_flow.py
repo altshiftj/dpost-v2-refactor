@@ -166,7 +166,7 @@ def test_multi_processor_app_flow(multi_processor_app):
     utm_dir = paths.DEST_DIR / "IPAT" / "USR" / "UTM-tensileA"
     assert utm_dir.exists()
     assert list(utm_dir.glob("UTM-tensileA-*.zs2"))
-    assert list(utm_dir.glob("UTM-tensileA_results-*.xlsx"))
+    assert list(utm_dir.glob("UTM-tensileA-*.xlsx"))
 
     for path in (*eirich_paths, zs2_path, xlsx_path):
         assert not path.exists()

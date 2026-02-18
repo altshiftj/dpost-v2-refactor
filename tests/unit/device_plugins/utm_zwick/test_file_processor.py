@@ -53,6 +53,20 @@ def test_preprocessing_ignores_sentinel_without_zs2(tmp_path, processor):
     r1 = processor.device_specific_preprocessing(str(xlsx))
     assert r1 is None
 
+
+def test_preprocessing_requires_exact_stem_match(tmp_path, processor):
+    """Do not pair artefacts when stems differ in casing."""
+    zs2 = tmp_path / "Usr-Inst-SampleA.zs2"
+    xlsx = tmp_path / "usr-inst-samplea.xlsx"
+    zs2.write_text("raw")
+    xlsx.write_text("results")
+
+    first = processor.device_specific_preprocessing(str(zs2))
+    second = processor.device_specific_preprocessing(str(xlsx))
+
+    assert first is None
+    assert second is None
+
 # ---------------------------------------------------------------------------
 # Processing flow (zs2 + sentinel xlsx)
 # ---------------------------------------------------------------------------
@@ -86,7 +100,7 @@ def test_device_specific_processing_moves_staged_series(
 
     unique_paths = [
         str(record_dir / "prefix-01.zs2"),
-        str(record_dir / "prefix_results-01.xlsx"),
+        str(record_dir / "prefix-01.xlsx"),
     ]
 
     with patch(
@@ -103,7 +117,7 @@ def test_device_specific_processing_moves_staged_series(
     assert output.datatype == "xlsx"
     assert mock_unique.call_args_list == [
         call(str(record_dir), "prefix", ".zs2"),
-        call(str(record_dir), "prefix_results", ".xlsx"),
+        call(str(record_dir), "prefix", ".xlsx"),
     ]
     assert mock_move.call_args_list == [
         call(str(zs2), unique_paths[0]),

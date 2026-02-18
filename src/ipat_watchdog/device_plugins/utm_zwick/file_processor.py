@@ -22,14 +22,15 @@ from ipat_watchdog.core.processing.file_processor_abstract import (
     ProcessingOutput,
 )
 from ipat_watchdog.core.records.local_record import LocalRecord
+from ipat_watchdog.core.storage.filesystem_utils import get_record_path
 from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename
 from ipat_watchdog.core.storage.filesystem_utils import move_item
-from ipat_watchdog.core.storage.filesystem_utils import sanitize_and_validate
 
 logger = setup_logger(__name__)
 
 @dataclass
 class _SeriesState:
+    series_key: str
     sample: str
     last_zs2: Optional[Path] = None
     sentinel_xlsx: Optional[Path] = None
@@ -52,22 +53,19 @@ class FileProcessorUTMZwick(FileProcessorABS):
     # ------------------------------------------------------------------
     # Pre-processing
     # ------------------------------------------------------------------
-    def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
+    def device_specific_preprocessing(self, src_path: str) -> PreprocessingResult | None:
         """Stage incoming path (zs2/xlsx) without moving files.
 
         - Track series state by prefix from the filename stem.
         - Return path if ready for processing (trigger on sentinel `.xlsx`).
         """
-        p = Path(path)
+        p = Path(src_path)
         ext = p.suffix.lower()
         if ext not in {".zs2", ".xlsx"}:
             return None
 
         stem = p.stem
-        key, is_valid = self._normalize_series_key(stem)
-        if not is_valid:
-            logger.warning("Zwick: invalid prefix %r for %s", stem, p.name)
-            return None
+        key = self._series_key(stem)
 
         with self._lock:
             ttl_ready = self._find_ttl_ready_locked()
@@ -79,7 +77,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 return None
 
             if not state:
-                state = _SeriesState(sample=key)
+                state = _SeriesState(series_key=key, sample=stem)
                 self._series[key] = state
                 # Fresh series: start collecting artefacts until the XLSX finalizer appears.
             state.last_update = datetime.now()
@@ -87,6 +85,8 @@ class FileProcessorUTMZwick(FileProcessorABS):
             if ext == ".zs2":
                 state.last_zs2 = p
             elif ext == ".xlsx":
+                # Prefer sentinel casing for downstream display/record title semantics.
+                state.sample = stem
                 state.sentinel_xlsx = p
                 state.xlsx_received_at = datetime.now()
 
@@ -160,7 +160,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         self._move_staged_artifact(
             source=primary,
             record_dir=record_dir,
-            filename_prefix=f"{file_id}_results",
+            filename_prefix=f"{file_id}",
             success_label="results",
             failure_label="results",
         )
@@ -197,7 +197,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         for state in states:
             if state.sentinel_xlsx is None and state.last_update > ttl_cutoff:
                 with self._lock:
-                    self._series[state.sample] = state
+                    self._series[state.series_key] = state
                 continue
             primary = state.sentinel_xlsx or state.last_zs2
 
@@ -206,12 +206,14 @@ class FileProcessorUTMZwick(FileProcessorABS):
 
             # Put back state so processing path can pop it
             with self._lock:
-                self._series[state.sample] = state
+                self._series[state.series_key] = state
 
             try:
+                device_abbr = getattr(self.device_config.metadata, "device_abbr", None)
+                record_dir = get_record_path(state.sample, device_abbr)
                 out = self.device_specific_processing(
                     str(primary),
-                    self._current_record_dir_fallback(primary),
+                    record_dir,
                     state.sample,
                     primary.suffix,
                 )
@@ -219,10 +221,6 @@ class FileProcessorUTMZwick(FileProcessorABS):
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning("Failed flushing incomplete series '%s': %s", state.sample, exc)
         return outputs
-
-    def _current_record_dir_fallback(self, primary: Path) -> str:
-        """Best-effort: choose the parent directory of primary as record dir if no manager provided."""
-        return str(primary.parent)
 
     def _find_ttl_ready_locked(self) -> _SeriesState | None:
         ttl_seconds = getattr(getattr(self.device_config, "batch", None), "ttl_seconds", 1800)
@@ -238,7 +236,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
 
     def _pop_series_state(self, raw_prefix: str) -> _SeriesState | None:
         """Return and remove staged state for the given filename stem."""
-        series_key, _ = self._normalize_series_key(raw_prefix)
+        series_key = self._series_key(raw_prefix)
         with self._lock:
             return self._series.pop(series_key, None)
 
@@ -273,9 +271,6 @@ class FileProcessorUTMZwick(FileProcessorABS):
             )
 
     @staticmethod
-    def _normalize_series_key(stem: str) -> tuple[str, bool]:
-        """Return a canonical series key and validity flag for a filename stem."""
-        sanitized, is_valid = sanitize_and_validate(stem)
-        if is_valid:
-            return sanitized, True
-        return stem, False
+    def _series_key(stem: str) -> str:
+        """Return the in-memory pairing key derived from the filename stem."""
+        return stem

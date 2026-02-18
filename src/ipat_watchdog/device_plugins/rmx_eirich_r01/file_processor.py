@@ -66,7 +66,7 @@ class FileProcessorEirich(FileProcessorABS):
         extension: str,
     ) -> ProcessingOutput:
         """
-        Mirror EXTR/Hioki behaviour: use the already-validated filename_prefix
+        Mirror EXTR/Hioki behaviour: use the incoming filename_prefix
         and let filesystem_utils generate a unique name in the record folder.
         """
         destination = get_unique_filename(record_path, filename_prefix, extension)

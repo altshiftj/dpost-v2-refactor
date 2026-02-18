@@ -107,7 +107,7 @@ def test_end_to_end_series_processing_with_xlsx(utm_processing_manager, tmp_sett
     # Non-overwriting unique names now expected for final artefacts.
     # First arrival should still create initial numbered variants (..-01.*)
     zs2_candidates = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
-    xlsx_candidates = sorted(record_dir.glob("UTM-tensileA_results-*.xlsx"))
+    xlsx_candidates = sorted(record_dir.glob("UTM-tensileA-*.xlsx"))
     assert zs2_candidates, "Expected at least one unique .zs2 artefact"
     assert xlsx_candidates, "Expected at least one unique .xlsx artefact"
     # The first ones should end with -01 by convention of get_unique_filename
@@ -150,7 +150,7 @@ def test_repeat_series_creates_additional_unique_files(utm_processing_manager, t
 
     # After second series, we expect additional uniquely numbered artefacts, not overwrites.
     zs2_files = sorted(record_dir.glob("UTM-tensileA-*.zs2"))
-    xlsx_files = sorted(record_dir.glob("UTM-tensileA_results-*.xlsx"))
+    xlsx_files = sorted(record_dir.glob("UTM-tensileA-*.xlsx"))
     assert len(zs2_files) >= 2, "Expected at least two .zs2 versions after repeat series"
     assert len(xlsx_files) >= 2, "Expected at least two .xlsx versions after repeat series"
 

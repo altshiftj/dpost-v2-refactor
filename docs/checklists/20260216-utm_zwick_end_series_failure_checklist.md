@@ -36,9 +36,10 @@ Target: address staged series key mismatch and exception extension drift documen
 - [x] Add safe fallback lookup for pre-existing in-memory keys during runtime.
 - [x] Recompute prefix/extension when `effective_path` falls back to source in manager pipeline.
 - [x] Ensure exception moves use accurate suffix metadata after fallback.
+- [x] Keep filename sanitize/validate policy in core routing (not in file processors).
 
 ### Completion Notes
-- How it was done: Updated `FileProcessorUTMZwick` to derive one normalized series key in both preprocessing and processing, with a backward-compatible raw-key fallback; updated `_build_candidate` in `FileProcessManager` to recompute `prefix`/`extension` when preprocessed effective path does not exist and pipeline falls back to the original source path.
+- How it was done: Updated `FileProcessorUTMZwick` to use a non-validating in-memory series key for staging/pairing only (derived from the observed stem); left filename sanitize/validate to `core.processing.routing` + rename flow. Updated `_build_candidate` in `FileProcessManager` to recompute `prefix`/`extension` when preprocessed effective path does not exist and pipeline falls back to the original source path.
 
 ---
 
