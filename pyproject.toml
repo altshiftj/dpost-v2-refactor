@@ -47,12 +47,20 @@ eirich_blb      = []
 
 [project.scripts]
 ipat-watchdog = "ipat_watchdog.__main__:main"
+dpost = "dpost.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+markers = [
+    "legacy: Tests validating current ipat_watchdog behavior.",
+    "migration: Tests validating dpost migration scaffolding and cutover paths.",
+]
 
 [build-system]
 requires = ["setuptools", "wheel"]

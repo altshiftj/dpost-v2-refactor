@@ -4,8 +4,9 @@
 - Why this matters: <short rationale>
 
 ### Checklist
-- [ ] <step 1>
-- [ ] <step 2>
+- [ ] <single standalone step 1>
+- [ ] <single standalone step 2>
+- [ ] <single standalone step 3>
 
 ### Completion Notes
 - How it was done: <short summary once completed>
@@ -16,8 +17,10 @@
 - Why this matters: <short rationale>
 
 ### Checklist
-- [ ] <step 1>
-- [ ] <step 2>
+- [ ] <single standalone step 1>
+- [ ] <single standalone step 2>
+- [ ] <single standalone step 3>
 
 ### Completion Notes
 - How it was done: <short summary once completed>
+

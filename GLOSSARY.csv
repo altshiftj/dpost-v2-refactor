@@ -4,3 +4,11 @@ sentinel workbook,workflow marker,Signals that staged Zwick UTM artefacts are re
 series staging key,workflow state key,Defines the in-memory key used to join staged `.zs2` and `.xlsx` artefacts within a session,Derived from the filename stem and used only for series map insert/lookup
 exception extension drift,failure mode,Describes incorrect suffix metadata when moving failed artefacts to exceptions,Can mislabel raw payloads (for example `.ZS2`) as `.xlsx` during fallback handling
 append casing canonicalization,processing policy,Defines how case-only sample-name differences are normalized during appends to an existing record,When incoming sample casing differs only by case use the existing record sample casing for path and file ID derivation
+sync adapter,architecture component,Defines a pluggable backend integration for record synchronization,Core runtime depends on a sync port while concrete adapters target specific databases or ELNs
+headless-first,runtime strategy,Defines migration order where non-interactive runtime is stabilized before desktop UI integration,Used to sequence migration phases and reduce UI-coupling risk during refactor
+architecture baseline,documentation artifact,Defines the current-state structural snapshot of layers and major runtime components,Updated when component boundaries or runtime composition materially change
+responsibility catalog,documentation artifact,Defines ownership boundaries for major modules/objects and what they must not own,Used to prevent overlap and maintain clean boundaries during refactor
+architecture decision record (ADR),documentation artifact,Defines a durable record of architectural decisions and tradeoffs,Created for major direction changes and linked from plans/checklists
+architecture contract,governance artifact,Defines enforceable dependency and ownership rules across layers during migration,Updated when dependency policy changes or exceptions are approved
+legacy test suite,test contract,Defines tests that preserve current `ipat_watchdog` behavior during migration,Selected with pytest marker `legacy` and run independently from migration tests
+migration test suite,test contract,Defines tests that validate `dpost` scaffolding and cutover behavior,Selected with pytest marker `migration` and focused under `tests/migration`

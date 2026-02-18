@@ -1,0 +1,32 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^(src/dpost/|tests/migration/)
+      - id: end-of-file-fixer
+        files: ^(src/dpost/|tests/migration/)
+      - id: check-ast
+        files: ^(src/dpost/|tests/migration/).*\.py$
+      - id: debug-statements
+        files: ^(src/dpost/|tests/migration/).*\.py$
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile, black]
+        files: ^(src/dpost/|tests/migration/).*\.py$
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^(src/dpost/|tests/migration/).*\.py$
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+        files: ^(src/dpost/|tests/migration/).*\.py$

@@ -1,64 +1,103 @@
-# AI Agent Instructions (kadi_tools)
+# AI Agent Instructions (ipat_watchdog -> dpost)
 
 ## Purpose
-- This repo is a Python tooling/CLI project for Kadi-related workflows.
-- Keep changes safe, small, and easy to review.
+- This repository is migrating from `ipat_watchdog` to `dpost`.
+- Keep changes safe, incremental, and reviewable.
+- Preserve behavior first; tighten architecture in controlled phases.
+
+## Current Migration Decisions (Locked)
+- Runtime posture: headless-first.
+- Sync architecture: optional adapters to support multiple databases/ELNs.
+- Architecture governance: baseline + contract + responsibility catalog + ADR workflow.
 
 ## Scope
-- Prefer edits under `src/` and `tests/` (if tests exist).
-- Avoid touching `.venv/`, `uv.lock`, or generated files unless asked.
+- Prefer edits under `src/`, `tests/`, and `docs/`.
+- Avoid touching `.venv/`, lockfiles, build artifacts, or generated files unless asked.
 
-## Workflow
-- Inspect existing code before editing.
-- Use small, targeted diffs.
+## Execution Rules
+- Inspect existing code and active architecture docs before editing.
+- Use small, targeted diffs that fit the current migration phase.
 - Prefer `python -m ...` invocations to avoid PATH issues on Windows.
-- Avoid compatibility shims or legacy wrappers unless explicitly requested or there is
-  clear, current usage that requires them.
-- Follow a strict human-in-the-loop TDD cycle for novel code:
-  - First, write failing tests and report back.
-  - Wait for human approval to proceed.
-  - Implement code to make tests pass.
-  - Human verifies tests.
-  - Suggest possible refactors afterward.
+- Avoid compatibility shims unless explicitly requested or clearly required for transition safety.
+- Keep test intent isolated:
+- place `ipat_watchdog` contract tests in legacy paths (`tests/unit`, `tests/integration`, `tests/manual`)
+- place new `dpost` migration/cutover tests in `tests/migration`
 
-## Planning Phases and Docs
-- When prompted to examine or plan novel functionality, maintain documentation:
-  - `reports/`: findings in existing code.
-  - `planning/`: plan of attack for the requested functionality.
-  - `checklists/`: step-by-step checklist for the work.
-- `refactors/`: post-green refactor proposals and implementation notes.
-- "RPC" is shorthand for this report/plan/checklist workflow.
-- Checklists must include a short "why this matters" blurb per section.
-- Checklists must include a final `Manual Check` section with concrete human validation
-  steps (UI/API/role-path checks as relevant).
-- When a checklist section is completed, mark it done and add a short "how it was done" blurb.
+## Human-in-the-loop TDD (Novel Code)
+- For new behavior or non-trivial architectural changes:
+- First add failing tests and report.
+- Wait for human approval.
+- Implement until tests pass.
+- Human verifies.
+- Propose refactors after green.
+
+## Architecture Governance (Required)
+- Treat these as source-of-truth artifacts:
+- `docs/architecture/architecture-baseline.md`
+- `docs/architecture/architecture-contract.md`
+- `docs/architecture/responsibility-catalog.md`
+- `docs/architecture/adr/`
+- Keep them updated when architecture-impacting changes are made.
+- Record major decisions as ADRs.
+- Keep terminology aligned with `GLOSSARY.csv`.
+
+## Planning and Tracking Workflow
+- Use RPC documentation for substantial work:
+- `docs/reports/` for findings
+- `docs/planning/` for approach
+- `docs/checklists/` for execution steps
+- Keep active migration docs at each folder root and move historical sets to matching archive folders:
+- `docs/reports/archive/`
+- `docs/planning/archive/`
+- `docs/checklists/archive/`
+- `docs/refactors/archive/`
+- Checklists must include:
+- a short `Why this matters` blurb per section
+- a final `Manual Check` section with concrete human validation steps
+- completion notes (`How it was done`) when sections are finished
+
+## Layering and Design Constraints
+- Follow the architecture contract:
+- domain: pure business/data rules
+- application: orchestration and ports
+- infrastructure: adapters and external integrations
+- plugins: device/PC extensions
+- Keep dependency wiring in a composition root.
+- Do not introduce new global singletons without explicit approval.
+- Application code should depend on sync ports, not concrete backend adapters.
 
 ## Code Style
 - Python 3.12+.
-- Format with Black (88 char lines).
+- Format with Black (88 columns).
 - Lint with Ruff.
-- Type checking is strict; write code to satisfy strict type checking rules and avoid
-  typing shortcuts unless clearly justified.
+- Maintain strict typing discipline; avoid shortcuts unless justified.
 - Add type hints for new public functions.
-- Docstrings are required for all tests and functions.
+- Add docstrings for new tests and functions.
 
 ## Commands
 - Lint: `python -m ruff check .`
 - Lint fix: `python -m ruff check . --fix`
 - Format: `python -m black .`
 - Tests: `python -m pytest`
+- Legacy tests only: `python -m pytest -m legacy`
+- Migration tests only: `python -m pytest -m migration`
 
-## Key Files
-- CLI entrypoint: `src/kadi-tools/__main__.py`
-- Package directory: `src/kadi-tools` (note the hyphen).
+## Key Paths (Current)
+- CLI entrypoint: `src/ipat_watchdog/__main__.py`
+- New CLI entrypoint scaffold: `src/dpost/__main__.py`
+- Runtime bootstrap: `src/ipat_watchdog/core/app/bootstrap.py`
+- New composition root scaffold: `src/dpost/runtime/composition.py`
+- Architecture docs: `docs/architecture/`
+- Migration plan/checklist: `docs/planning/20260218-dpost-architecture-tightening-plan.md`, `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
+- Migration tests: `tests/migration/`
 
-## Output
-- Summarize changes and note tests run (or say not run).
-- When providing test commands, always give a full terminal-ready line that can be copy/pasted.
+## Output Expectations
+- Summarize what changed and why.
+- Report tests/lint executed, or state clearly if not run.
+- When sharing commands, provide full terminal-ready lines.
 
-## Glossary
-- Maintain a `GLOSSARY.csv` at the repo root for project-defined terms.
-- CSV columns: `term`, `type`, `purpose`, `usage`.
-- Only include terms we invent for this codebase (exclude library/vendor terms).
-- When introducing a new term in code or docs, add it to the glossary.
-- Before writing new code, review the glossary and use consistent terminology.
+## Glossary Rules
+- Maintain `GLOSSARY.csv` at repository root.
+- Columns: `term,type,purpose,usage`.
+- Include only project-defined terms (exclude vendor/library terms).
+- Add glossary entries when introducing new internal terms in code/docs.

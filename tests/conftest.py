@@ -33,6 +33,14 @@ from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
 
 
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Assign `legacy`/`migration` markers automatically from test paths."""
+    for item in items:
+        path_obj = Path(str(getattr(item, "path", item.fspath)))
+        marker = pytest.mark.migration if "migration" in path_obj.parts else pytest.mark.legacy
+        item.add_marker(marker)
+
+
 @pytest.fixture
 def config_service(tmp_path):
     """Initialise the configuration service with sandboxed paths for tests."""
