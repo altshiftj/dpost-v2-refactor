@@ -21,7 +21,10 @@ def test_preprocessing_normalizes_measurement_name(tmp_path: Path) -> None:
     assert normalized.prefix_override == "usr-ipat-sample"
 
 
-def test_processing_moves_measurement_and_forces_cc_aggregate(tmp_path: Path) -> None:
+def test_processing_moves_measurement_and_forces_cc_aggregate(
+    tmp_path: Path,
+    config_service,
+) -> None:
     config = build_config()
     processor = FileProcessorHioki(config)
 
@@ -60,7 +63,7 @@ def test_processing_moves_measurement_and_forces_cc_aggregate(tmp_path: Path) ->
     assert set(output.force_paths) == {str(cc_dest), str(agg_dest)}
 
 
-def test_should_queue_modified_only_for_cc_and_aggregate() -> None:
+def test_should_queue_modified_only_for_cc_and_aggregate(config_service) -> None:
     config = build_config()
     processor = FileProcessorHioki(config)
 

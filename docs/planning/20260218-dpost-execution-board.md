@@ -175,3 +175,37 @@
 - green verification:
   `python -m pytest -m migration`
   returned `21 passed, 292 deselected`.
+- Phase 4 naming/constants consolidation tests-first increment on 2026-02-18:
+- added failing migration tests in
+  `tests/migration/test_naming_constants_consolidation.py` to verify
+  active-config separator behavior for `LocalRecord` and `KadiSyncManager`,
+  and fail-fast separator access in PSA/Kinexus processors when config
+  service is unavailable.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `4 failed, 21 passed, 292 deselected`.
+- implementation status:
+- removed legacy constants separator reads in
+  `src/ipat_watchdog/core/records/local_record.py`,
+  `src/ipat_watchdog/core/sync/sync_kadi.py`,
+  `src/ipat_watchdog/device_plugins/psa_horiba/file_processor.py`, and
+  `src/ipat_watchdog/device_plugins/rhe_kinexus/file_processor.py`.
+- green verification:
+  `python -m pytest -m migration`
+  returned `25 passed, 292 deselected`.
+- Phase 4 legacy regression validation after config-authoritative path changes:
+- initial run:
+  `python -m pytest -m legacy`
+  returned `6 failed, 282 passed, 4 skipped, 25 deselected` from
+  plugin unit tests invoking config-dependent helpers without initialized
+  config service context.
+- test updates:
+  aligned affected unit tests to request `config_service` fixture in
+  DSV Horiba, ERM Hioki, EXTR Haake, PSA Horiba, and RHE Kinexus test
+  modules.
+- green verification:
+  `python -m pytest -m legacy`
+  returned `288 passed, 4 skipped, 25 deselected`.
+- migration re-check:
+  `python -m pytest -m migration`
+  returned `25 passed, 292 deselected`.

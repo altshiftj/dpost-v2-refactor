@@ -21,7 +21,7 @@ def test_build_config_basics():
     assert getattr(config.watcher, "reappear_window_seconds", 0.0) >= 5.0
 
 
-def test_file_processor_moves_excel(tmp_path):
+def test_file_processor_moves_excel(tmp_path, config_service):
     config = build_config()
     processor = FileProcessorEXTRHaake(config)
 

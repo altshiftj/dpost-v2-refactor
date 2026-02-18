@@ -60,7 +60,7 @@ def test_reconstruct_batch_from_stage_pairs_by_stem(tmp_path):
     assert len(batch.pairs) == 2
 
 
-def test_device_specific_processing_reconstructs_from_stage(tmp_path):
+def test_device_specific_processing_reconstructs_from_stage(tmp_path, config_service):
     processor = FileProcessorRHEKinexus(build_config())
     stage_dir = tmp_path / "Batch.__staged__1"
     stage_dir.mkdir()

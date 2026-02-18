@@ -14,7 +14,7 @@ def processor() -> FileProcessorPSAHoriba:
     return FileProcessorPSAHoriba(build_config())
 
 
-def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor):
+def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor, config_service):
     watch_dir = tmp_path / "incoming"
     watch_dir.mkdir()
     record_dir = tmp_path / "record"

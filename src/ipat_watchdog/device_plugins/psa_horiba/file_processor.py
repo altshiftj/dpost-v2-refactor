@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Deque, Dict, List, Optional
 import time
 
-from ipat_watchdog.core.config import constants as _CONST
 from ipat_watchdog.core.config import current
 from ipat_watchdog.core.config.schema import DeviceConfig
 from ipat_watchdog.core.logging.logger import setup_logger
@@ -44,10 +43,7 @@ _MAX_PREFIX_BYTES = 200_000
 
 
 def _id_separator() -> str:
-    try:
-        return current().id_separator
-    except RuntimeError:
-        return _CONST.ID_SEP
+    return current().id_separator
 
 
 def _is_ngb(p: Path) -> bool:

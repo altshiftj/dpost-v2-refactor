@@ -168,12 +168,12 @@
 
 ### Checklist
 - [x] Inventory all runtime reads from legacy constants.
-- [ ] Move operational configuration reads to config schema/service path.
+- [x] Move operational configuration reads to config schema/service path.
 - [ ] Remove fallback usage from operational code paths.
 - [x] Add test for default config behavior.
 - [x] Add test for explicit path override behavior.
 - [x] Add test for environment-driven bootstrap behavior.
-- [ ] Update docs with the canonical configuration flow.
+- [x] Update docs with the canonical configuration flow.
 
 ### Completion Notes
 - How it was done: Phase 4 kickoff completed on 2026-02-18 with a
@@ -209,6 +209,47 @@
 - Green verification:
   `python -m pytest -m migration`
   -> `21 passed, 292 deselected`.
+- Tests-first naming/constants increment:
+  added failing migration tests in
+  `tests/migration/test_naming_constants_consolidation.py` for:
+  `LocalRecord` separator parsing via active config,
+  `KadiSyncManager` separator-driven identifier composition,
+  and fail-fast plugin separator access when config service is unavailable.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `4 failed, 21 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/records/local_record.py`,
+  `src/ipat_watchdog/core/sync/sync_kadi.py`,
+  `src/ipat_watchdog/device_plugins/psa_horiba/file_processor.py`, and
+  `src/ipat_watchdog/device_plugins/rhe_kinexus/file_processor.py`
+  to remove legacy constants usage from separator reads and use
+  config-driven separator resolution.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `25 passed, 292 deselected`.
+- Canonical flow doc update:
+  updated `docs/architecture/architecture-baseline.md` to reflect
+  config-service-authoritative operational naming/path reads and
+  remaining compatibility fallback boundaries.
+- Legacy regression verification increment:
+  `python -m pytest -m legacy` initially surfaced 6 failing unit tests
+  in plugin processors that called config-dependent helpers without
+  initializing config service context.
+- Test harness alignment:
+  updated affected unit tests to request the existing `config_service`
+  fixture in:
+  `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py`,
+  `tests/unit/device_plugins/erm_hioki/test_file_processor.py`,
+  `tests/unit/device_plugins/extr_haake/test_plugin.py`,
+  `tests/unit/device_plugins/psa_horiba/test_file_processor.py`, and
+  `tests/unit/device_plugins/rhe_kinexus/test_file_processor.py`.
+- Green verification:
+  `python -m pytest -m legacy`
+  -> `288 passed, 4 skipped, 25 deselected`.
+- Migration re-check:
+  `python -m pytest -m migration`
+  -> `25 passed, 292 deselected`.
 
 ---
 

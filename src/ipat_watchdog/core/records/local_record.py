@@ -4,10 +4,18 @@ from pathlib import Path
 from dataclasses import dataclass, field, fields as dc_fields
 from typing import Dict, List, Optional, Set
 
-from ipat_watchdog.core.config.constants import ID_SEP
+from ipat_watchdog.core.config import current
 from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
+
+
+def _id_separator() -> str:
+    """Resolve record identifier separator from active config."""
+    try:
+        return current().id_separator
+    except RuntimeError:
+        return "-"
 
 
 @dataclass
@@ -35,14 +43,14 @@ class LocalRecord:
         """
         Extracts additional sync info from the identifier using the device's configured ID separator.
         """
-
-        parts = self.identifier.split(ID_SEP)
+        id_separator = _id_separator()
+        parts = self.identifier.split(id_separator)
         if len(parts) >= 4:
             self.device_type = parts[0].lower()
             self.user = parts[1].lower()
             self.institute = parts[2].lower()
             if self.sample_name == "null":
-                self.sample_name = ID_SEP.join(parts[3:])
+                self.sample_name = id_separator.join(parts[3:])
         else:
             logger.warning(
                 f"Identifier '{self.identifier}' does not conform to expected format."

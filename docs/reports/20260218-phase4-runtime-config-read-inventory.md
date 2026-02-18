@@ -43,3 +43,18 @@
 - Introduce a single composition-time config resolver for startup behavior and bootstrap settings.
 - Remove operational fallback reliance on `core/config/constants.py` in runtime code paths where config service should be authoritative.
 - Preserve behavior with migration tests for default, explicit override, and env-driven bootstrap config scenarios before implementation changes.
+
+## Update Addendum (2026-02-18)
+- `src/ipat_watchdog/core/storage/filesystem_utils.py` operational constants fallback has been removed.
+- Separator reads were migrated off legacy constants in:
+  `src/ipat_watchdog/core/records/local_record.py`,
+  `src/ipat_watchdog/core/sync/sync_kadi.py`,
+  `src/ipat_watchdog/device_plugins/psa_horiba/file_processor.py`, and
+  `src/ipat_watchdog/device_plugins/rhe_kinexus/file_processor.py`.
+- Migration verification after these increments:
+  `python -m pytest -m migration`
+  -> `25 passed, 292 deselected`.
+- Remaining consolidation caveat:
+  `local_record` and `sync_kadi` still keep a compatibility separator default
+  when config service is unavailable; strict fail-fast fallback elimination is
+  still pending.

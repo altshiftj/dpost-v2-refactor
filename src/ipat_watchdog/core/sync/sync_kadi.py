@@ -4,10 +4,10 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from ipat_watchdog.core.config import current
 from ipat_watchdog.core.interactions import ErrorMessages, UserInteractionPort
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-from ipat_watchdog.core.config.constants import ID_SEP
 from ipat_watchdog.core.logging.logger import setup_logger
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord
@@ -17,6 +17,14 @@ from kadi_apy.lib.resources.collections import Collection as KadiCollection
 
 
 logger = setup_logger(__name__)
+
+
+def _id_separator() -> str:
+    """Resolve record identifier separator from active config."""
+    try:
+        return current().id_separator
+    except RuntimeError:
+        return "-"
 
 
 @dataclass
@@ -59,7 +67,8 @@ class KadiSyncManager(ISyncManager):
 
     def _prepare_resources(self, db_manager: KadiManager, local_record: LocalRecord) -> DataSyncContext:
         record_id = local_record.identifier
-        device_user_id = f"{local_record.device_type}{ID_SEP}usr".replace("_", "-").lower()
+        id_separator = _id_separator()
+        device_user_id = f"{local_record.device_type}{id_separator}usr".replace("_", "-").lower()
         device_record_id = local_record.device_type
 
         # Build per-user and per-device scaffolding so ownership metadata stays consistent in Kadi.
@@ -109,7 +118,11 @@ class KadiSyncManager(ISyncManager):
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
     ) -> KadiCollection:
-        collection_id = f"{local_record.user}{ID_SEP}{local_record.institute}{ID_SEP}rawdata{ID_SEP}collection"
+        id_separator = _id_separator()
+        collection_id = (
+            f"{local_record.user}{id_separator}{local_record.institute}"
+            f"{id_separator}rawdata{id_separator}collection"
+        )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
         return self._get_or_create_collection(db_manager, collection_id, title, add_user_info)
@@ -121,7 +134,8 @@ class KadiSyncManager(ISyncManager):
         device_record_id: str,
     ) -> KadiCollection:
         db_device_record = db_manager.record(identifier=device_record_id)
-        collection_id = f"{device_record_id.lower()}{ID_SEP}rawdata{ID_SEP}collection"
+        id_separator = _id_separator()
+        collection_id = f"{device_record_id.lower()}{id_separator}rawdata{id_separator}collection"
         title = f"{db_device_record.meta['title']}: Raw Data Records"
         add_user_info = {"user_id": device_user_id, "role": "admin"}
         return self._get_or_create_collection(db_manager, collection_id, title, add_user_info)
@@ -153,7 +167,11 @@ class KadiSyncManager(ISyncManager):
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
     ) -> KadiGroup:
-        group_id = f"{local_record.user}{ID_SEP}{local_record.institute}{ID_SEP}rawdata{ID_SEP}group"
+        id_separator = _id_separator()
+        group_id = (
+            f"{local_record.user}{id_separator}{local_record.institute}"
+            f"{id_separator}rawdata{id_separator}group"
+        )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
         return self._get_or_create_group(db_manager, group_id, title, add_user_info)
@@ -165,7 +183,8 @@ class KadiSyncManager(ISyncManager):
         device_record_id: str,
     ) -> KadiGroup:
         db_device_record = db_manager.record(identifier=device_record_id)
-        group_id = f"{device_record_id.lower()}{ID_SEP}rawdata{ID_SEP}group"
+        id_separator = _id_separator()
+        group_id = f"{device_record_id.lower()}{id_separator}rawdata{id_separator}group"
         title = f"{db_device_record.meta['title']}: Raw Data Records"
         add_user_info = {"user_id": device_user_id, "role": "admin"}
         return self._get_or_create_group(db_manager, group_id, title, add_user_info)
@@ -178,7 +197,8 @@ class KadiSyncManager(ISyncManager):
         db_manager: KadiManager,
         local_record: LocalRecord,
     ) -> Optional[KadiUser]:
-        user_id = f"{local_record.user}{ID_SEP}{local_record.institute}"
+        id_separator = _id_separator()
+        user_id = f"{local_record.user}{id_separator}{local_record.institute}"
         try:
             return db_manager.user(username=user_id, identity_type="local")
         except Exception:

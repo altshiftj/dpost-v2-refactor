@@ -77,12 +77,19 @@
 - `tests/migration/test_reference_plugin_flow.py`
 - Phase 4 config consolidation tests currently live in:
 - `tests/migration/test_configuration_consolidation.py`
+- Phase 4 naming/constants consolidation tests currently live in:
+- `tests/migration/test_naming_constants_consolidation.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
-- Legacy naming/constants dependencies still exist in selected modules
-  (for example `local_record`, `sync_kadi`), but `filesystem_utils`
-  operational path/naming reads are now config-service authoritative.
+- Legacy constants imports have been removed from operational path/naming
+  readers (`filesystem_utils`, `local_record`, `sync_kadi`, and processor
+  separator helpers), and active config naming/path settings are now the
+  primary runtime source.
+- Compatibility fallback still exists in selected naming reads (for example
+  `local_record` and `sync_kadi` default separator when config service is not
+  initialized), so fallback-elimination work remains for strict fail-fast
+  posture.
 - Desktop UI is a default runtime path today.
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost composition still delegates full runtime bootstrap to legacy wiring while
