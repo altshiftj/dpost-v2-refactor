@@ -54,6 +54,10 @@
 - `src/ipat_watchdog/core/app/device_watchdog_app.py`
 - Processing orchestration:
 - `src/ipat_watchdog/core/processing/file_process_manager.py`
+- Phase 5 decomposition status:
+- `_ProcessingPipeline` now exposes explicit resolve/stabilize stage hooks
+  (`_resolve_device_stage`, `_stabilize_artifact_stage`) before preprocess and
+  routing execution.
 - Plugin loading and registration:
 - `src/ipat_watchdog/plugin_system.py`
 - Configuration schema and runtime service:
@@ -79,6 +83,8 @@
 - `tests/migration/test_configuration_consolidation.py`
 - Phase 4 naming/constants consolidation tests currently live in:
 - `tests/migration/test_naming_constants_consolidation.py`
+- Phase 5 stage-boundary decomposition tests currently live in:
+- `tests/migration/test_processing_pipeline_stage_boundaries.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -94,6 +100,8 @@
   sync adapter kernel contracts are being introduced incrementally.
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
+- Processing route/rename decision and persist/sync side effects are still
+  partially coupled in `file_process_manager` and remain active Phase 5 targets.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

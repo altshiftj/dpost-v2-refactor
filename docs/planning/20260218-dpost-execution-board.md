@@ -19,7 +19,7 @@
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | Completed (2026-02-18) | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Completed (2026-02-18) | Framework contracts + reference implementations green before concrete adapter migration |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Completed (2026-02-18) | Legacy constant fallbacks removed from operational paths |
-| Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Planned | Stage services extracted, integration suite unchanged/green |
+| Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | In progress (2026-02-18) | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
 | Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Planned | Desktop and headless smoke tests both green |
 | Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | Planned | `dpost` canonical metadata/docs complete and release gate passed |
@@ -231,3 +231,25 @@
   returned `27 passed, 292 deselected`.
 - Phase 4 gate closed on 2026-02-18 after removing operational fallback usage
   from runtime config and naming reads.
+- Phase 5 processing-pipeline decomposition kickoff on 2026-02-18:
+- added decomposition report:
+  `docs/reports/20260218-phase5-processing-pipeline-decomposition-report.md`
+  mapping current `FileProcessManager` responsibilities into explicit
+  stage boundaries (`resolve`, `stabilize`, `preprocess`, `route/rename`,
+  `persist/sync`) with call-site coupling risks.
+- added tests-first migration coverage in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring:
+  explicit `_resolve_device_stage` and `_stabilize_artifact_stage` hooks and
+  `process()` delegation through these hooks.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 27 passed, 292 deselected`.
+- first implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract resolve/stabilize stage hooks and wire `process()` through them
+  without changing external `ProcessingResult` behavior.
+- green verification:
+  `python -m pytest -m migration`
+  returned `29 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

@@ -61,13 +61,24 @@ class _ProcessingPipeline:
         self._manager = manager
 
     def process(self, src_path: Path) -> ProcessingResult:
-        # Stage 1: resolve a device and wait for stability; may return early with a ProcessingResult.
-        prepared = self._prepare_request(src_path)
+        # Stage 1: resolve a device; may return early with a ProcessingResult.
+        resolved = self._resolve_device_stage(src_path)
+        if isinstance(resolved, ProcessingResult):
+            return resolved
+        # Stage 2: wait for artifact stability before entering preprocessing/routing.
+        prepared = self._stabilize_artifact_stage(resolved)
         if isinstance(prepared, ProcessingResult):
             return prepared
         return self._execute_pipeline(prepared)
 
     def _prepare_request(self, path: Path) -> ProcessingRequest | ProcessingResult:
+        """Backward-compatible helper retained while stage extraction is in progress."""
+        resolved = self._resolve_device_stage(path)
+        if isinstance(resolved, ProcessingResult):
+            return resolved
+        return self._stabilize_artifact_stage(resolved)
+
+    def _resolve_device_stage(self, path: Path) -> ProcessingRequest | ProcessingResult:
         manager = self._manager
 
         if manager._is_internal_staging_path(path):
@@ -88,17 +99,22 @@ class _ProcessingPipeline:
                     retry_delay=resolution.retry_delay,
                 )
             return self._reject_immediately(path, reason)
-        
+        return ProcessingRequest(source=path, device=device)
+
+    def _stabilize_artifact_stage(
+        self,
+        request: ProcessingRequest,
+    ) -> ProcessingRequest | ProcessingResult:
+        manager = self._manager
         # Block until the artefact stops changing (device overrides can tweak thresholds).
-        stability_outcome = FileStabilityTracker(path, device).wait()
+        stability_outcome = FileStabilityTracker(request.source, request.device).wait()
         if stability_outcome.rejected:
             reason = stability_outcome.reason or "File rejected by stability guard"
-            manager._register_rejection(str(path), reason)
-            safe_move_to_exception(str(path))
+            manager._register_rejection(str(request.source), reason)
+            safe_move_to_exception(str(request.source))
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
-
-        return ProcessingRequest(source=path, device=device)
+        return request
 
     def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:
         manager = self._manager

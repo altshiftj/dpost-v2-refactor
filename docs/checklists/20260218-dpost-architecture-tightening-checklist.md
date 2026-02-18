@@ -283,14 +283,34 @@
 - Why this matters: Smaller focused services improve maintainability, test isolation, and future plugin onboarding.
 
 ### Checklist
-- [ ] Define stage service boundaries (resolve, stabilize, preprocess, route, persist/sync).
+- [x] Define stage service boundaries (resolve, stabilize, preprocess, route, persist/sync).
 - [ ] Extract one stage at a time with unit tests per stage.
 - [ ] Keep integration behavior stable while orchestration is split.
 - [ ] Reduce direct cross-module coupling in orchestration module.
 - [ ] Validate no regressions in multi-device and multi-processor integration tests.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Phase 5 kickoff completed on 2026-02-18 with a
+  decomposition report in
+  `docs/reports/20260218-phase5-processing-pipeline-decomposition-report.md`.
+- Tests-first increment:
+  added `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  to require explicit resolve/stabilize stage hooks in
+  `_ProcessingPipeline` and to require `process()` delegation through those
+  hooks before execution.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 27 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_resolve_device_stage()` and `_stabilize_artifact_stage()`,
+  and to route `process()` through these boundaries while preserving
+  existing result and rejection semantics.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `29 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 
