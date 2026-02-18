@@ -65,7 +65,7 @@ def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path, monke
     assert result == {}
 
 
-def test_save_persisted_records_writes_json(tmp_path: Path, monkeypatch):
+def test_save_persisted_records_writes_json(tmp_path: Path, monkeypatch, config_service):
     records_path = tmp_path / "records.json"
     monkeypatch.setattr(filesystem_utils, "_daily_records_path", lambda: records_path)
 

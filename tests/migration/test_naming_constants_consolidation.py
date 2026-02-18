@@ -93,6 +93,21 @@ def test_local_record_parses_identifier_using_active_config_separator(
     assert record.sample_name == "sample_1"
 
 
+def test_local_record_requires_active_config_for_separator_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fail fast when LocalRecord separator is resolved without active config."""
+    local_record_module = importlib.import_module(
+        "ipat_watchdog.core.records.local_record"
+    )
+    monkeypatch.setattr(local_record_module, "current", _missing_config_service)
+
+    with pytest.raises(
+        RuntimeError, match="Configuration service has not been initialised"
+    ):
+        local_record_module.LocalRecord(identifier="dev-usr-inst-sample")
+
+
 def test_sync_kadi_uses_active_config_separator_for_user_lookup(
     custom_separator_config,
     monkeypatch: pytest.MonkeyPatch,
@@ -120,6 +135,32 @@ def test_sync_kadi_uses_active_config_separator_for_user_lookup(
     assert result is not None
     assert calls["identity_type"] == "local"
     assert calls["username"] == "usr:inst"
+
+
+def test_sync_kadi_requires_active_config_for_separator_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fail fast when sync naming separator is resolved without active config."""
+    sync_kadi = _reload_sync_kadi_module_with_stubbed_dependencies(monkeypatch)
+    sync_manager = sync_kadi.KadiSyncManager.__new__(sync_kadi.KadiSyncManager)
+    sync_manager.interactions = SimpleNamespace(
+        show_error=lambda *_args, **_kwargs: None
+    )
+    monkeypatch.setattr(sync_kadi, "current", _missing_config_service)
+
+    class DummyDbManager:
+        """Capture user lookup calls for failure-path verification."""
+
+        def user(self, *, username: str, identity_type: str):
+            return object()
+
+    with pytest.raises(
+        RuntimeError, match="Configuration service has not been initialised"
+    ):
+        sync_manager._get_db_user_from_local_record(
+            DummyDbManager(),
+            SimpleNamespace(user="usr", institute="inst"),
+        )
 
 
 def test_psa_separator_requires_active_config(monkeypatch: pytest.MonkeyPatch) -> None:

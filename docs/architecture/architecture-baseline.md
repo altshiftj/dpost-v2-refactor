@@ -86,10 +86,8 @@
   readers (`filesystem_utils`, `local_record`, `sync_kadi`, and processor
   separator helpers), and active config naming/path settings are now the
   primary runtime source.
-- Compatibility fallback still exists in selected naming reads (for example
-  `local_record` and `sync_kadi` default separator when config service is not
-  initialized), so fallback-elimination work remains for strict fail-fast
-  posture.
+- Operational config/naming paths now use strict fail-fast behavior when
+  config service is not initialized.
 - Desktop UI is a default runtime path today.
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost composition still delegates full runtime bootstrap to legacy wiring while

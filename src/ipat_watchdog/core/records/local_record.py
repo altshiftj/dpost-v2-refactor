@@ -12,10 +12,7 @@ logger = setup_logger(__name__)
 
 def _id_separator() -> str:
     """Resolve record identifier separator from active config."""
-    try:
-        return current().id_separator
-    except RuntimeError:
-        return "-"
+    return current().id_separator
 
 
 @dataclass

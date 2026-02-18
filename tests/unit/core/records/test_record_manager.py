@@ -6,6 +6,8 @@ import pytest
 from ipat_watchdog.core.records.record_manager import RecordManager
 from ipat_watchdog.core.records.local_record import LocalRecord
 
+pytestmark = pytest.mark.usefixtures("config_service")
+
 
 @pytest.fixture
 def record_manager(fake_sync, tmp_settings):

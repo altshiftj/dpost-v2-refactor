@@ -4,6 +4,8 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 
 from ipat_watchdog.core.records.local_record import LocalRecord
 
+pytestmark = pytest.mark.usefixtures("config_service")
+
 
 @pytest.fixture
 def sample_record():

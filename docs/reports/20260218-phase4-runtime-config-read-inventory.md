@@ -51,10 +51,9 @@
   `src/ipat_watchdog/core/sync/sync_kadi.py`,
   `src/ipat_watchdog/device_plugins/psa_horiba/file_processor.py`, and
   `src/ipat_watchdog/device_plugins/rhe_kinexus/file_processor.py`.
+- Remaining compatibility separator defaults were removed from
+  `local_record` and `sync_kadi`; separator resolution now fails fast if
+  config service is unavailable.
 - Migration verification after these increments:
   `python -m pytest -m migration`
-  -> `25 passed, 292 deselected`.
-- Remaining consolidation caveat:
-  `local_record` and `sync_kadi` still keep a compatibility separator default
-  when config service is unavailable; strict fail-fast fallback elimination is
-  still pending.
+  -> `27 passed, 292 deselected`.

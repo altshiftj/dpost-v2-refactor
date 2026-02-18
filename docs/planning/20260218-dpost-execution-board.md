@@ -18,7 +18,7 @@
 | Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Completed (2026-02-18) | Baseline tests green and architecture contract doc linked |
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | Completed (2026-02-18) | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Completed (2026-02-18) | Framework contracts + reference implementations green before concrete adapter migration |
-| Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | In Progress (2026-02-18) | Legacy constant fallbacks removed from operational paths |
+| Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Completed (2026-02-18) | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Planned | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
 | Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Planned | Desktop and headless smoke tests both green |
@@ -209,3 +209,25 @@
 - migration re-check:
   `python -m pytest -m migration`
   returned `25 passed, 292 deselected`.
+- Phase 4 strict fail-fast caveat-removal tests-first increment on 2026-02-18:
+- added failing migration tests in
+  `tests/migration/test_naming_constants_consolidation.py` requiring
+  `LocalRecord` and `KadiSyncManager` separator resolution to fail fast
+  when config service is unavailable.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 25 passed, 292 deselected`.
+- implementation status:
+- removed remaining compatibility separator defaults from
+  `src/ipat_watchdog/core/records/local_record.py` and
+  `src/ipat_watchdog/core/sync/sync_kadi.py`.
+- updated affected legacy unit tests to request `config_service` fixture in
+  core records/storage/sync and SEM PhenomXL2 test modules.
+- legacy verification:
+  `python -m pytest -m legacy`
+  returned `288 passed, 4 skipped, 27 deselected`.
+- migration re-check:
+  `python -m pytest -m migration`
+  returned `27 passed, 292 deselected`.
+- Phase 4 gate closed on 2026-02-18 after removing operational fallback usage
+  from runtime config and naming reads.

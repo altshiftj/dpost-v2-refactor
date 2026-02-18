@@ -169,7 +169,7 @@
 ### Checklist
 - [x] Inventory all runtime reads from legacy constants.
 - [x] Move operational configuration reads to config schema/service path.
-- [ ] Remove fallback usage from operational code paths.
+- [x] Remove fallback usage from operational code paths.
 - [x] Add test for default config behavior.
 - [x] Add test for explicit path override behavior.
 - [x] Add test for environment-driven bootstrap behavior.
@@ -250,6 +250,32 @@
 - Migration re-check:
   `python -m pytest -m migration`
   -> `25 passed, 292 deselected`.
+- Tests-first strict fail-fast caveat increment:
+  added failing migration tests in
+  `tests/migration/test_naming_constants_consolidation.py` requiring
+  `LocalRecord` and `KadiSyncManager` separator resolution to fail fast
+  when config service is unavailable.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 25 passed, 292 deselected`.
+- Green implementation increment:
+  removed remaining compatibility separator fallback defaults from
+  `src/ipat_watchdog/core/records/local_record.py` and
+  `src/ipat_watchdog/core/sync/sync_kadi.py`.
+- Legacy alignment:
+  updated unit tests that construct `LocalRecord`/sync paths without
+  config initialization to request `config_service` fixture in
+  `tests/unit/core/records/test_local_record.py`,
+  `tests/unit/core/records/test_record_manager.py`,
+  `tests/unit/core/storage/test_filesystem_utils.py`,
+  `tests/unit/core/sync/test_sync_kadi.py`, and
+  `tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py`.
+- Green verification:
+  `python -m pytest -m legacy`
+  -> `288 passed, 4 skipped, 27 deselected`.
+- Migration re-check:
+  `python -m pytest -m migration`
+  -> `27 passed, 292 deselected`.
 
 ---
 

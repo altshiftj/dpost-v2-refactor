@@ -6,6 +6,8 @@ from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProces
 from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.device_plugins.sem_phenomxl2.settings import build_config
 
+pytestmark = pytest.mark.usefixtures("config_service")
+
 
 # ---------------------------------------------------------------------------
 # Fixtures & boilerplate

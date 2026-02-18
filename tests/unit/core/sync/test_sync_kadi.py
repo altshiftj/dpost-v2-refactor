@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, call
 from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
 from ipat_watchdog.core.records.local_record import LocalRecord
 
+pytestmark = pytest.mark.usefixtures("config_service")
+
 
 class DummyKadiUser:
     def __init__(self, user_id="dummy_user"):
