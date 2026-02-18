@@ -253,3 +253,35 @@
   returned `29 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 preprocess-stage tests-first increment on 2026-02-18:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `_preprocess_stage` and `_execute_pipeline` delegation through it.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 29 passed, 292 deselected`.
+- second implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_preprocess_stage` and route `_execute_pipeline` through the
+  preprocess seam without changing external processing outcomes.
+- green verification:
+  `python -m pytest -m migration`
+  returned `31 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.
+- Phase 5 persist/sync-stage tests-first increment on 2026-02-18:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `_persist_and_sync_stage` and ACCEPT-path delegation through it.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 31 passed, 292 deselected`.
+- third implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_persist_and_sync_stage` and delegate ACCEPT routing side effects
+  through this seam without changing processing outcomes.
+- green verification:
+  `python -m pytest -m migration`
+  returned `33 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

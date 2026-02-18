@@ -123,7 +123,7 @@ class _ProcessingPipeline:
             with manager.config_service.activate_device(request.device):
                 # Ensure downstream helpers read the selected device's configuration.
                 processor = manager._resolve_processor(request.device)
-                item = self._build_candidate(request, processor)
+                item = self._preprocess_stage(request, processor)
                 if isinstance(item, ProcessingResult):
                     return item
                 candidate = item
@@ -134,6 +134,14 @@ class _ProcessingPipeline:
             raise RuntimeError(f"File processing failed for {request.source}: {exc}") from exc
         # This point should be unreachable because control flow either returns or raises above.
         raise RuntimeError("Unreachable code in _execute_pipeline")
+
+    def _preprocess_stage(
+        self,
+        request: ProcessingRequest,
+        processor: FileProcessorABS,
+    ) -> ProcessingCandidate | ProcessingResult:
+        """Run preprocessing and return a routable candidate or deferred result."""
+        return self._build_candidate(request, processor)
 
     def _build_candidate(self, request: ProcessingRequest, processor: FileProcessorABS) -> ProcessingCandidate | ProcessingResult:
         preprocessed = processor.device_specific_preprocessing(str(request.source))
@@ -211,21 +219,27 @@ class _ProcessingPipeline:
             return handle_unappendable_record(manager.interactions, rename_delegate, context)
 
         if context.decision is RoutingDecision.ACCEPT:
-            final_path = manager.add_item_to_record(
-                context.existing_record,
-                str(candidate.effective_path),
-                context.sanitized_prefix,
-                candidate.extension,
-                candidate.processor,
-                notify=False,
-                device=candidate.device,
-            )
-            if final_path is None:
-                return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
-            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
+            return self._persist_and_sync_stage(context)
 
         # Remaining cases fall back to the rename flow (invalid format, collisions, etc.).
         return self._invoke_rename_flow(candidate, candidate.prefix, candidate.extension)
+
+    def _persist_and_sync_stage(self, context: RouteContext) -> ProcessingResult:
+        """Persist processed output and trigger sync behavior for accepted routes."""
+        manager = self._manager
+        candidate = context.candidate
+        final_path = manager.add_item_to_record(
+            context.existing_record,
+            str(candidate.effective_path),
+            context.sanitized_prefix,
+            candidate.extension,
+            candidate.processor,
+            notify=False,
+            device=candidate.device,
+        )
+        if final_path is None:
+            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
+        return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
 
     def _invoke_rename_flow(
         self,

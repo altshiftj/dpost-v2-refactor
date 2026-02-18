@@ -311,6 +311,40 @@
   -> `29 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first preprocess-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring an explicit `_preprocess_stage()` seam and
+  `_execute_pipeline()` delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 29 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_preprocess_stage()` and route `_execute_pipeline()` through it
+  while preserving current preprocessing result semantics.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `31 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
+- Tests-first persist/sync-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring an explicit `_persist_and_sync_stage()` seam and ACCEPT-route
+  delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 31 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_persist_and_sync_stage()` and route ACCEPT path persistence
+  through that stage seam.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `33 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

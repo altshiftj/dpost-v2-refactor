@@ -53,6 +53,15 @@
 - dpost reference adapter for kernel validation currently lives in:
 - `src/dpost/infrastructure/sync/noop.py`
 
+## Naming Clarity Rules
+- Prefer intention-revealing names for orchestration-stage functions and variables.
+- Avoid generic stage-boundary names (for example `item`, `data`, `thing`) when
+  a domain term exists (`request`, `candidate`, `context`, `decision`,
+  `result`).
+- Function names should reflect side effects: route/decision functions should
+  not imply persistence or sync side effects; persistence/sync functions should
+  state that intent directly.
+
 ## Documentation Rules
 - Architecture-impacting changes require:
 - relevant report/plan/checklist updates
