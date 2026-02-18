@@ -19,16 +19,30 @@
 - Why this matters: Stable migration requires a locked behavioral baseline and clear dependency rules before refactoring.
 
 ### Checklist
-- [ ] Confirm full baseline test pass.
-- [ ] Add or verify characterization test for bootstrap startup path.
-- [ ] Add or verify characterization test for plugin load by canonical name.
-- [ ] Add or verify characterization test for processing pipeline happy path.
-- [ ] Add or verify characterization test for immediate sync behavior for processed records.
-- [ ] Add architecture contract doc describing allowed dependency directions.
-- [ ] Link contract doc from developer-facing documentation.
+- [x] Confirm full baseline test pass.
+- [x] Add or verify characterization test for bootstrap startup path.
+- [x] Add or verify characterization test for plugin load by canonical name.
+- [x] Add or verify characterization test for processing pipeline happy path.
+- [x] Add or verify characterization test for immediate sync behavior for processed records.
+- [x] Add architecture contract doc describing allowed dependency directions.
+- [x] Link contract doc from developer-facing documentation.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Closed Phase 1 on 2026-02-18 by verifying existing
+  characterization coverage and running marker-specific gate suites.
+  `python -m pytest -m legacy` passed (`288 passed, 4 skipped, 4 deselected`)
+  and `python -m pytest -m migration` passed (`4 passed, 292 deselected`).
+  Bootstrap startup characterization is covered by
+  `tests/unit/core/app/test_bootstrap.py::test_bootstrap_starts_services`.
+  Canonical plugin-name loading is covered by
+  `tests/unit/plugin_system/test_plugin_loader.py` via
+  `load_device("test_device")` and `load_pc("test_pc")`.
+  Processing happy path and immediate sync behavior are covered by
+  `tests/integration/test_multi_processor_app_flow.py::test_multi_processor_app_flow`
+  and `tests/integration/test_device_integrations.py` assertions on
+  `sync.synced_records`. Dependency direction rules are documented in
+  `docs/architecture/architecture-contract.md` and linked from
+  `docs/architecture/README.md`.
 
 ---
 

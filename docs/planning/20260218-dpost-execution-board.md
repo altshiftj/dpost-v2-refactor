@@ -15,7 +15,7 @@
 ## Schedule
 | Phase | Window (Start -> Target End) | Owner | Status | Gate to Close |
 |---|---|---|---|---|
-| Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Planned | Baseline tests green and architecture contract doc linked |
+| Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Completed (2026-02-18) | Baseline tests green and architecture contract doc linked |
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | In Progress | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Optional Sync Adapter Interface | 2026-03-11 -> 2026-03-19 | Core Owner | Planned | Sync adapter port active, Kadi adapter optional, adapter-selection tests green |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Planned | Legacy constant fallbacks removed from operational paths |
@@ -38,6 +38,10 @@
 
 ## Current State (as of 2026-02-18)
 - Decisions captured and locked in planning/checklist docs.
+- Phase 1 gate formally closed on 2026-02-18:
+- `python -m pytest -m legacy`: `288 passed, 4 skipped, 4 deselected`.
+- `python -m pytest -m migration`: `4 passed, 292 deselected`.
+- Contract linkage verified from `docs/architecture/README.md` to `docs/architecture/architecture-contract.md`.
 - Phase 2 scaffold landed early:
 - `src/dpost/` package skeleton exists.
 - `dpost` script entrypoint exists in `pyproject.toml`.
