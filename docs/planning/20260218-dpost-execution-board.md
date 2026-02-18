@@ -2,7 +2,7 @@
 
 ## Board Metadata
 - Created: 2026-02-18
-- Planning horizon: 2026-02-19 to 2026-05-15
+- Planning horizon: 2026-02-18 to 2026-05-15
 - Runtime posture: headless-first
 - Sync posture: optional adapter model
 
@@ -16,7 +16,7 @@
 | Phase | Window (Start -> Target End) | Owner | Status | Gate to Close |
 |---|---|---|---|---|
 | Phase 1: Baseline and Contract Freeze | 2026-02-19 -> 2026-02-26 | QA Owner + Core Owner | Completed (2026-02-18) | Baseline tests green and architecture contract doc linked |
-| Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | In Progress | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
+| Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | Completed (2026-02-18) | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Planned | Framework contracts + reference implementations green before concrete adapter migration |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Planned | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Planned | Stage services extracted, integration suite unchanged/green |
@@ -42,7 +42,7 @@
 - `python -m pytest -m legacy`: `288 passed, 4 skipped, 4 deselected`.
 - `python -m pytest -m migration`: `4 passed, 292 deselected`.
 - Contract linkage verified from `docs/architecture/README.md` to `docs/architecture/architecture-contract.md`.
-- Phase 2 scaffold landed early:
+- Phase 2 gate closed early on 2026-02-18:
 - `src/dpost/` package skeleton exists.
 - `dpost` script entrypoint exists in `pyproject.toml`.
 - migration entrypoint tests exist under `tests/migration/`.
