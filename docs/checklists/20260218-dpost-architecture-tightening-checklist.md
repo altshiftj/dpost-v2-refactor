@@ -76,9 +76,9 @@
 - [x] Add adapter selection mechanism to startup config.
 - [x] Add startup test without Kadi adapter installed.
 - [x] Add startup test for clear error path when adapter name is unknown.
-- [ ] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
+- [x] Move Kadi sync behind adapter implementation boundary after kernel tests are green.
 - [ ] Make Kadi adapter optional in dependency/packaging flow.
-- [ ] Add startup test with Kadi adapter selected.
+- [x] Add startup test with Kadi adapter selected.
 
 ### Completion Notes
 - How it was done: In progress as of 2026-02-18. Added sync kernel contract
@@ -105,6 +105,23 @@
   -> `10 passed`.
   `python -m pytest -m migration`
   -> `10 passed, 292 deselected`.
+- Tests-first Kadi adapter increment (pending implementation approval):
+  added failing expectations for `DPOST_SYNC_ADAPTER=kadi` startup wiring and
+  missing optional dependency error handling in
+  `tests/migration/test_sync_adapter_selection.py`.
+  Red-state verification run:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  -> `2 failed, 5 passed`.
+- Kadi adapter implementation increment (green):
+  added `src/dpost/infrastructure/sync/kadi.py` and updated
+  `src/dpost/runtime/composition.py` adapter selection to support `kadi`.
+  Kadi import remains lazy and missing optional dependency raises a startup
+  error mentioning `kadi_apy`.
+  Green verification runs:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  -> `7 passed`.
+  `python -m pytest -m migration`
+  -> `12 passed, 292 deselected`.
 
 ---
 

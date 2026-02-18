@@ -38,6 +38,8 @@
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):
 - `src/dpost/infrastructure/sync/noop.py`
+- dpost Kadi sync adapter wrapper (optional backend):
+- `src/dpost/infrastructure/sync/kadi.py`
 - Runtime loop and event handling:
 - `src/ipat_watchdog/core/app/device_watchdog_app.py`
 - Processing orchestration:

@@ -21,10 +21,22 @@ def select_sync_adapter(adapter_name: str | None = None) -> SyncAdapterPort:
     if selected_name == "noop":
         return NoopSyncAdapter()
 
+    if selected_name == "kadi":
+        try:
+            from dpost.infrastructure.sync.kadi import KadiSyncAdapter
+
+            return KadiSyncAdapter()
+        except ModuleNotFoundError as exc:
+            from ipat_watchdog.core.app.bootstrap import StartupError
+
+            raise StartupError(
+                "Kadi sync adapter requires optional dependency 'kadi_apy'."
+            ) from exc
+
     from ipat_watchdog.core.app.bootstrap import StartupError
 
     raise StartupError(
-        f"Unknown sync adapter '{selected_name}'. Available adapters: noop."
+        f"Unknown sync adapter '{selected_name}'. Available adapters: noop, kadi."
     )
 
 

@@ -18,6 +18,7 @@
 | `ISyncManager` | Application port | Define sync backend contract | Sync abstraction boundary | UI event-loop concerns |
 | `SyncAdapterPort` | Application port | Define dpost sync adapter contract for framework composition paths | Adapter behavior contract for sync calls | Concrete backend SDK imports |
 | `KadiSyncManager` | Infrastructure adapter | Implement sync backend against Kadi | Kadi API mapping and upload calls | Core processing orchestration |
+| `KadiSyncAdapter` | Infrastructure adapter (dpost wrapper) | Bridge dpost sync port to legacy Kadi implementation with optional dependency handling | Adapter selection path and lazy legacy delegation | Runtime composition policy |
 | `NoopSyncAdapter` | Infrastructure adapter (reference) | Provide no-op sync behavior for framework validation and local headless paths | Deterministic no-op sync responses | Production backend side effects |
 | `PluginLoader` | Infrastructure support | Register/discover/instantiate device and PC plugins | Plugin lifecycle and registration state | Artifact processing behavior |
 | `UserInteractionPort` + adapters | Application port + Infrastructure adapter | Decouple interaction requests from UI implementation | Interaction contract and adapter mapping | Core domain decision logic |

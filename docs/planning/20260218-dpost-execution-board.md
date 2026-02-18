@@ -82,3 +82,21 @@
 - migration marker re-check:
   `python -m pytest -m migration`
   returned `10 passed, 292 deselected`.
+- Phase 3 Kadi adapter tests-first increment on 2026-02-18:
+- added failing tests for `DPOST_SYNC_ADAPTER=kadi` startup wiring and missing
+  optional dependency error handling in
+  `tests/migration/test_sync_adapter_selection.py`.
+- red-state verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  returned `2 failed, 5 passed` pending implementation.
+- Kadi adapter implementation status:
+- added `src/dpost/infrastructure/sync/kadi.py` and updated
+  `src/dpost/runtime/composition.py` to select `kadi` explicitly.
+- missing optional dependency (`kadi_apy`) now raises startup error on adapter
+  selection.
+- green verification:
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  returned `7 passed`.
+- migration marker re-check:
+  `python -m pytest -m migration`
+  returned `12 passed, 292 deselected`.
