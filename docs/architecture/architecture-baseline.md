@@ -63,6 +63,9 @@
   (`_persist_and_sync_stage`) on ACCEPT routing paths.
 - `FileProcessManager` now exposes `_persist_candidate_record_stage()` and
   `_persist_and_sync_stage()` delegates ACCEPT persistence through this seam.
+- `FileProcessManager` now exposes
+  `_resolve_record_persistence_context_stage()` and `add_item_to_record()`
+  delegates record/processor/path-id setup through this seam.
 - `FileProcessManager` now exposes `_post_persist_side_effects_stage()` and
   `add_item_to_record()` delegates bookkeeping/metrics/immediate-sync side
   effects through this seam.
@@ -115,9 +118,9 @@
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.
-- `add_item_to_record()` now delegates post-persist side effects, but processor
-  invocation and record initialization concerns remain coupled there and are
-  active decomposition targets.
+- `add_item_to_record()` now delegates record-context and post-persist side
+  effects, but processor invocation and output handling concerns remain coupled
+  there and are active decomposition targets.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

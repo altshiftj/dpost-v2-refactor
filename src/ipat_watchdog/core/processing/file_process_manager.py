@@ -38,6 +38,7 @@ from ipat_watchdog.core.processing.routing import (determine_routing_state,
                                                    fetch_record_for_prefix)
 from ipat_watchdog.core.processing.stability_tracker import \
     FileStabilityTracker
+from ipat_watchdog.core.records.local_record import LocalRecord
 from ipat_watchdog.core.records.record_manager import RecordManager
 from ipat_watchdog.core.session.session_manager import SessionManager
 from ipat_watchdog.core.storage.filesystem_utils import (
@@ -379,13 +380,17 @@ class FileProcessManager:
             FILES_FAILED.inc()
             raise RuntimeError("No file processor available")
 
-        device = device or self.config_service.current_device()
-        record = get_or_create_record(self.records, record, filename_prefix, device)
-        device_abbr = device.metadata.device_abbr if device else None
-        apply_device_defaults(record, device)
-
-        record_path = get_record_path(filename_prefix, device_abbr)
-        file_id = generate_file_id(filename_prefix, device_abbr)
+        (
+            record,
+            processor,
+            record_path,
+            file_id,
+        ) = self._resolve_record_persistence_context_stage(
+            record,
+            filename_prefix,
+            device,
+            processor,
+        )
         output: ProcessingOutput = processor.device_specific_processing(
             src_path, record_path, file_id, extension
         )
@@ -398,6 +403,29 @@ class FileProcessManager:
         self._post_persist_side_effects_stage(output, record, record_path, src_path)
 
         return output.final_path
+
+    def _resolve_record_persistence_context_stage(
+        self,
+        record: LocalRecord | None,
+        filename_prefix: str,
+        device: DeviceConfig | None,
+        processor: FileProcessorABS,
+    ) -> tuple[LocalRecord, FileProcessorABS, str, str]:
+        """Resolve record, processor context, and naming paths for persistence."""
+        resolved_device = device or self.config_service.current_device()
+        resolved_record = get_or_create_record(
+            self.records,
+            record,
+            filename_prefix,
+            resolved_device,
+        )
+        device_abbr = (
+            resolved_device.metadata.device_abbr if resolved_device else None
+        )
+        apply_device_defaults(resolved_record, resolved_device)
+        record_path = get_record_path(filename_prefix, device_abbr)
+        file_id = generate_file_id(filename_prefix, device_abbr)
+        return resolved_record, processor, record_path, file_id
 
     def _post_persist_side_effects_stage(
         self,

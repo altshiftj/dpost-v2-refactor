@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -171,6 +172,103 @@ def test_manager_declares_persist_candidate_record_stage_hook() -> None:
 def test_manager_declares_post_persist_side_effects_stage_hook() -> None:
     """Require explicit manager seam for post-persist bookkeeping side effects."""
     assert hasattr(FileProcessManager, "_post_persist_side_effects_stage")
+
+
+def test_manager_declares_resolve_record_persistence_context_stage_hook() -> None:
+    """Require explicit manager seam for record/processor context resolution."""
+    assert hasattr(FileProcessManager, "_resolve_record_persistence_context_stage")
+
+
+def test_add_item_to_record_delegates_resolve_record_persistence_context_stage(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate record initialization and processor context to explicit seam."""
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("payload")
+    calls: list[str] = []
+    fake_record = SimpleNamespace(
+        default_description="", default_tags=[], datatype=None
+    )
+
+    class FakeProcessor(DummyProcessor):
+        def __init__(self):
+            super().__init__()
+            self.processing_calls: list[tuple[str, str, str, str]] = []
+
+        def device_specific_processing(
+            self,
+            src_path: str,
+            record_path: str,
+            file_id: str,
+            extension: str,
+        ):
+            self.processing_calls.append((src_path, record_path, file_id, extension))
+            return super().device_specific_processing(
+                src_path, record_path, file_id, extension
+            )
+
+    fake_processor = FakeProcessor()
+
+    def resolve_record_persistence_context_stage(
+        _record,
+        _filename_prefix: str,
+        _device,
+        _processor,
+    ):
+        calls.append("resolve_context")
+        return fake_record, fake_processor, str(tmp_settings.WATCH_DIR), "test_file_id"
+
+    monkeypatch.setattr(
+        process_manager,
+        "_resolve_record_persistence_context_stage",
+        resolve_record_persistence_context_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_post_persist_side_effects_stage",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        "ipat_watchdog.core.processing.file_process_manager.get_or_create_record",
+        lambda *_args, **_kwargs: pytest.fail(
+            "add_item_to_record should delegate record setup through "
+            "_resolve_record_persistence_context_stage."
+        ),
+    )
+    monkeypatch.setattr(
+        "ipat_watchdog.core.processing.file_process_manager.get_record_path",
+        lambda *_args, **_kwargs: pytest.fail(
+            "add_item_to_record should delegate record path resolution through "
+            "_resolve_record_persistence_context_stage."
+        ),
+    )
+    monkeypatch.setattr(
+        "ipat_watchdog.core.processing.file_process_manager.generate_file_id",
+        lambda *_args, **_kwargs: pytest.fail(
+            "add_item_to_record should delegate file-id resolution through "
+            "_resolve_record_persistence_context_stage."
+        ),
+    )
+
+    result = process_manager.add_item_to_record(
+        record=None,
+        src_path=str(src),
+        filename_prefix="abc-ipat-sample",
+        extension=".txt",
+        file_processor=process_manager.file_processor,
+        notify=False,
+        device=config_service.devices[0],
+    )
+
+    assert result is not None
+    assert calls == ["resolve_context"]
+    assert fake_processor.processing_calls == [
+        (str(src), str(tmp_settings.WATCH_DIR), "test_file_id", ".txt")
+    ]
 
 
 def test_add_item_to_record_delegates_post_persist_side_effects_stage(
