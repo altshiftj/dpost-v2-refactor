@@ -319,3 +319,21 @@
   returned `37 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 rename-recursion-reduction tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  non-ACCEPT rename retries to avoid recursive `_route_with_prefix`
+  re-entry.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 37 passed, 292 deselected`.
+- sixth implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  replace recursive rename retry control flow with an iterative
+  `_invoke_rename_flow` loop while preserving existing ACCEPT, unappendable,
+  and cancellation outcomes.
+- green verification:
+  `python -m pytest -m migration`
+  returned `39 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

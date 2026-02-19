@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-18
+- 2026-02-19
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -61,6 +61,8 @@
   (`_route_decision_stage`), an explicit non-ACCEPT route stage hook
   (`_non_accept_route_stage`), and an explicit persist/sync stage hook
   (`_persist_and_sync_stage`) on ACCEPT routing paths.
+- `_invoke_rename_flow()` now uses iterative retry evaluation, removing
+  recursive `_route_with_prefix()` re-entry during non-ACCEPT rename loops.
 - Plugin loading and registration:
 - `src/ipat_watchdog/plugin_system.py`
 - Configuration schema and runtime service:
@@ -103,8 +105,9 @@
   sync adapter kernel contracts are being introduced incrementally.
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
-- Processing rename retries still use recursive reroute control flow and remain
-  active Phase 5 decomposition targets after route/persist separation.
+- Rename retries no longer recurse through `_route_with_prefix()`, but rename
+  prompts and unappendable warning side effects still live in
+  `file_process_manager` and remain active decomposition targets.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

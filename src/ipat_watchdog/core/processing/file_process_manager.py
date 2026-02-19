@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from ipat_watchdog.core.config import ConfigService, DeviceConfig, get_service
-from ipat_watchdog.core.interactions import UserInteractionPort
+from ipat_watchdog.core.interactions import (DialogPrompts, UserInteractionPort,
+                                             WarningMessages)
 from ipat_watchdog.core.logging.logger import setup_logger
 from ipat_watchdog.core.processing.device_resolver import DeviceResolver
 from ipat_watchdog.core.processing.error_handling import safe_move_to_exception
@@ -257,17 +258,37 @@ class _ProcessingPipeline:
         contextual_reason: Optional[str] = None,
     ) -> ProcessingResult:
         manager = self._manager
-        # UI-driven rename can either supply a sanitized prefix or bail out to manual processing.
-        outcome = manager._rename_service.obtain_valid_prefix(current_prefix, contextual_reason)
-        if outcome.cancelled or not outcome.sanitized_prefix:
-            manager._rename_service.send_to_manual_bucket(
-                str(candidate.effective_path), current_prefix, extension
-            )
-            FILES_FAILED.inc()
-            return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
+        retry_prefix = current_prefix
+        retry_reason = contextual_reason
 
-        updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
-        return self._route_with_prefix(updated_candidate, outcome.sanitized_prefix)
+        while True:
+            # UI-driven rename can either supply a sanitized prefix or bail out to manual processing.
+            outcome = manager._rename_service.obtain_valid_prefix(retry_prefix, retry_reason)
+            if outcome.cancelled or not outcome.sanitized_prefix:
+                manager._rename_service.send_to_manual_bucket(
+                    str(candidate.effective_path), retry_prefix, extension
+                )
+                FILES_FAILED.inc()
+                return ProcessingResult(ProcessingStatus.REJECTED, "Rename cancelled by user")
+
+            updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
+            context = self._route_decision_stage(updated_candidate)
+            if context.decision is RoutingDecision.ACCEPT:
+                return self._persist_and_sync_stage(context)
+
+            if context.decision is RoutingDecision.UNAPPENDABLE:
+                manager.interactions.show_warning(
+                    WarningMessages.INVALID_RECORD,
+                    WarningMessages.INVALID_RECORD_DETAILS,
+                )
+                retry_prefix = context.sanitized_prefix
+                retry_reason = DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
+                    record_id=context.sanitized_prefix
+                )
+                continue
+
+            retry_prefix = context.candidate.prefix
+            retry_reason = None
 
     def _route_with_prefix(self, candidate: ProcessingCandidate, prefix_override: str) -> ProcessingResult:
         updated = replace(candidate, prefix=prefix_override)
