@@ -20,6 +20,7 @@ artifacts.
 - `docs/planning/20260218-dpost-architecture-tightening-plan.md`
 - `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
 - `docs/planning/20260218-dpost-execution-board.md`
+- `docs/reports/20260219-phase8-cutover-migration-notes.md`
 
 ## Test Split
 - Legacy behavior contract tests: `python -m pytest -m legacy`

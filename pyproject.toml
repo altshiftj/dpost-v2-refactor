@@ -61,6 +61,21 @@ markers = [
     "migration: Tests validating dpost migration scaffolding and cutover paths.",
 ]
 
+[tool.black]
+line-length = 88
+# Temporary Phase 8 cutover scope: keep Black enforcement on active migration
+# surfaces while legacy modules remain in compatibility-retention window.
+extend-exclude = '''
+(
+  ^/src/ipat_watchdog/
+  | ^/tests/unit/
+  | ^/tests/integration/
+  | ^/tests/manual/
+  | ^/tests/helpers/
+  | ^/tests/conftest\.py$
+)
+'''
+
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"

@@ -96,3 +96,8 @@ If you need assistance, prepare the following before contacting support:
 - Confirmation of the `PC_NAME` value you are using.
 
 With this information your support team can quickly identify whether the issue stems from naming, device configuration, or the upload pipeline.
+
+## Cutover Notes
+- Canonical runtime identity is `dpost`.
+- See `docs/reports/20260219-phase8-cutover-migration-notes.md` for concise
+  command mapping and transition guidance.

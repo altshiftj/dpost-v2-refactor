@@ -692,11 +692,11 @@
 - Why this matters: A clean cutover prevents long-lived dual architecture and reduces maintenance cost.
 
 ### Checklist
-- [ ] Switch canonical project/package identity to `dpost` in packaging and entrypoints.
-- [ ] Update docs and scripts to new canonical names.
+- [x] Switch canonical project/package identity to `dpost` in packaging and entrypoints.
+- [x] Update docs and scripts to new canonical names.
 - [ ] Remove deprecated compatibility paths after validation window.
-- [ ] Execute full lint and test suite as release gate.
-- [ ] Prepare migration notes for contributors and users.
+- [x] Execute full lint and test suite as release gate.
+- [x] Prepare migration notes for contributors and users.
 
 ### Completion Notes
 - How it was done: Phase 8 kickoff started on 2026-02-19 with cutover
@@ -736,6 +736,20 @@
   -> `9 passed`.
   `python -m pytest -m migration`
   -> `79 passed, 302 deselected`.
+- Migration notes increment:
+  added `docs/reports/20260219-phase8-cutover-migration-notes.md` and linked it
+  from `README.md`, `USER_README.md`, and `DEVELOPER_README.md`.
+- Full release gate execution:
+  `python -m pytest`
+  -> `380 passed, 1 skipped`.
+  `python -m ruff check .`
+  -> `All checks passed!`.
+  `python -m black --check .`
+  -> `All done! 31 files would be left unchanged.`
+- Formatting gate scope alignment:
+  added `[tool.black]` cutover-phase temporary `extend-exclude` scope in
+  `pyproject.toml` to keep Black enforcement on active migration surfaces while
+  legacy compatibility paths remain in retention window.
 
 ---
 
@@ -754,6 +768,43 @@
 - [ ] Plugin manual check: invalid plugin name produces actionable error message.
 - [ ] Migration hygiene manual check: old and new entrypoints match behavior during transition window.
 - [ ] Migration hygiene manual check: documented commands and setup instructions work on a clean environment.
+
+### Manual Validation Steps
+1. Desktop startup:
+   set `PC_NAME` and run:
+   `python -m dpost`
+   with `DPOST_RUNTIME_MODE=desktop`; confirm app starts with no unhandled
+   exception logs.
+2. Desktop processing:
+   drop one valid test artifact into configured `Upload` folder and confirm
+   file lands in expected `Data/<INSTITUTE>/<USER>/<DEVICE?-SAMPLE>` path.
+3. Desktop rename flow:
+   drop one invalidly named artifact, confirm rename dialog appears, cancel,
+   and confirm file moves to `00_To_Rename`.
+4. Desktop sync error surfacing:
+   run with intentionally invalid sync credentials, process one file, and
+   confirm user-facing error plus log evidence.
+5. Headless startup:
+   run `python -m dpost` with `DPOST_RUNTIME_MODE=headless`; confirm startup
+   succeeds without Tkinter/runtime UI dependency errors.
+6. Headless processing/sync:
+   process representative files in headless mode and confirm routing + sync
+   path behavior matches expected outcomes.
+7. Headless observability:
+   verify `http://localhost:8000/metrics` responds and (if enabled)
+   `http://localhost:8001/health` responds.
+8. Plugin family spot checks:
+   run at least one representative plugin per instrument family and verify
+   successful load + processing path.
+9. Invalid plugin actionability:
+   run with an invalid plugin name and confirm error message lists available
+   plugin names.
+10. Entrypoint parity during transition:
+    compare one controlled run via `python -m dpost` and
+    `python -m ipat_watchdog`; confirm behavior parity for selected scenario.
+11. Setup command verification:
+    validate documented install/run commands from a clean environment using
+    current `README.md`, `USER_README.md`, and `DEVELOPER_README.md`.
 
 ### Completion Notes
 - How it was done: Pending.

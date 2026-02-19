@@ -134,3 +134,8 @@ The suite mixes unit and integration coverage and relies on Pyfakefs for filesys
 - **Kadi sync failures** – verify `kadi_apy` credentials and network reachability; failed uploads leave records marked unsynchronised but do not stop the watcher.
 
 For user-focused instructions see `USER_README.md`. PC plugin authors should also consult `PC_PLUGIN_README.md`.
+
+## Cutover Notes
+- Canonical project/package identity is `dpost`.
+- See `docs/reports/20260219-phase8-cutover-migration-notes.md` for transition
+  command mapping, contributor expectations, and legacy sunset information.

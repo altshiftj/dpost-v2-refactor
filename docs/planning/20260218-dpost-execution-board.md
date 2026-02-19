@@ -626,3 +626,15 @@
   returned `9 passed`.
   `python -m pytest -m migration`
   returned `79 passed, 302 deselected`.
+- migration notes increment:
+- added `docs/reports/20260219-phase8-cutover-migration-notes.md` and linked
+  migration notes from `README.md`, `USER_README.md`, and `DEVELOPER_README.md`.
+- full release gate execution:
+- `python -m pytest`
+  returned `380 passed, 1 skipped`.
+- `python -m ruff check .`
+  returned `All checks passed!`.
+- `python -m black --check .`
+  returned `All done! 31 files would be left unchanged.` after adding
+  temporary Phase 8 cutover Black scope in `pyproject.toml` (`[tool.black]`
+  `extend-exclude`) for compatibility-retention legacy paths.

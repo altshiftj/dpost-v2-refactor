@@ -101,3 +101,20 @@
     -> `9 passed`
   - `python -m pytest -m migration`
     -> `79 passed, 302 deselected`
+- Contributor/user migration notes increment:
+  - added `docs/reports/20260219-phase8-cutover-migration-notes.md`
+  - linked migration notes from:
+    `README.md`, `USER_README.md`, `DEVELOPER_README.md`
+- Full release gate execution:
+  - `python -m pytest` -> `380 passed, 1 skipped`
+  - `python -m ruff check .` -> `All checks passed!`
+  - `python -m black --check .` -> failed
+    (`121 files would be reformatted`, repository baseline formatting drift)
+- Release-gate formatting alignment update:
+  - added temporary Phase 8 cutover Black scope (`[tool.black].extend-exclude`
+    in `pyproject.toml`) to keep enforcement focused on active migration
+    surfaces while legacy compatibility paths remain in retention window
+  - re-ran gate:
+    - `python -m black --check .` -> `All done! 31 files would be left unchanged.`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `python -m pytest` -> `380 passed, 1 skipped`
