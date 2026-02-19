@@ -472,6 +472,23 @@
   -> `47 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first process-record-artifact-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring explicit manager seam `_process_record_artifact_stage()` and
+  `add_item_to_record()` delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 47 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_process_record_artifact_stage()` and route processor
+  invocation/output handling through it from `add_item_to_record()`.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `49 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

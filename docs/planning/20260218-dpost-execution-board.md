@@ -406,3 +406,20 @@
   returned `47 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 process-record-artifact-stage tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `FileProcessManager._process_record_artifact_stage` and
+  `add_item_to_record` delegation through this seam.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 47 passed, 292 deselected`.
+- eleventh implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `FileProcessManager._process_record_artifact_stage` and route
+  processor invocation/output handling through this seam.
+- green verification:
+  `python -m pytest -m migration`
+  returned `49 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

@@ -391,8 +391,12 @@ class FileProcessManager:
             device,
             processor,
         )
-        output: ProcessingOutput = processor.device_specific_processing(
-            src_path, record_path, file_id, extension
+        output: ProcessingOutput = self._process_record_artifact_stage(
+            processor,
+            src_path,
+            record_path,
+            file_id,
+            extension,
         )
 
         record.datatype = output.datatype
@@ -426,6 +430,22 @@ class FileProcessManager:
         record_path = get_record_path(filename_prefix, device_abbr)
         file_id = generate_file_id(filename_prefix, device_abbr)
         return resolved_record, processor, record_path, file_id
+
+    def _process_record_artifact_stage(
+        self,
+        processor: FileProcessorABS,
+        src_path: str,
+        record_path: str,
+        file_id: str,
+        extension: str,
+    ) -> ProcessingOutput:
+        """Invoke processor and return normalized output for record persistence."""
+        return processor.device_specific_processing(
+            src_path,
+            record_path,
+            file_id,
+            extension,
+        )
 
     def _post_persist_side_effects_stage(
         self,
