@@ -48,3 +48,16 @@
     -> `5 passed`
   - `python -m pytest -m migration`
     -> `62 passed, 292 deselected`
+- Implemented outdated-mapping cleanup increment by:
+  - adding migration guard
+    `test_unit_mapping_tests_do_not_reference_legacy_plugin_ids` in
+    `tests/migration/test_plugin_discovery_hardening.py`
+  - updating unit mapping expectations in
+    `tests/unit/loader/test_pc_device_mapping.py` and
+    `tests/unit/pc_plugins/test_pc_plugins.py` to current canonical PC plugin
+    mappings
+- Verification after mapping cleanup:
+  - `python -m pytest tests/migration/test_plugin_discovery_hardening.py::test_unit_mapping_tests_do_not_reference_legacy_plugin_ids tests/unit/loader/test_pc_device_mapping.py tests/unit/pc_plugins/test_pc_plugins.py`
+    -> `27 passed`
+  - `python -m pytest -m migration`
+    -> `63 passed, 302 deselected`

@@ -5,13 +5,6 @@ from ipat_watchdog.loader import load_pc_plugin
 from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
 
 
-def _load_plugin_or_skip(name: str) -> PCPlugin:
-    try:
-        return load_pc_plugin(name)
-    except RuntimeError as exc:
-        pytest.skip(f"PC plugin {name!r} not available: {exc}")
-
-
 @pytest.mark.parametrize(
     "plugin_name, expectations",
     [
@@ -25,10 +18,31 @@ def _load_plugin_or_skip(name: str) -> PCPlugin:
             },
         ),
         (
-            "twinscrew_blb",
+            "eirich_blb",
             {
-                "identifier": "twinscrew_blb",
-                "devices": ("etr_twinscrew",),
+                "identifier": "eirich_blb",
+                "devices": ("rmx_eirich_el1", "rmx_eirich_r01"),
+            },
+        ),
+        (
+            "haake_blb",
+            {
+                "identifier": "haake_blb",
+                "devices": ("extr_haake",),
+            },
+        ),
+        (
+            "hioki_blb",
+            {
+                "identifier": "hioki_blb",
+                "devices": ("erm_hioki",),
+            },
+        ),
+        (
+            "horiba_blb",
+            {
+                "identifier": "horiba_blb",
+                "devices": ("psa_horiba", "dsv_horiba"),
             },
         ),
         (
@@ -38,11 +52,25 @@ def _load_plugin_or_skip(name: str) -> PCPlugin:
                 "devices": ("rhe_kinexus",),
             },
         ),
-        ("tischrem_blb", {}),
+        (
+            "tischrem_blb",
+            {
+                "identifier": "tischrem_blb",
+                "devices": ("sem_phenomxl2",),
+            },
+        ),
+        (
+            "zwick_blb",
+            {
+                "identifier": "zwick_blb",
+                "devices": ("utm_zwick",),
+            },
+        ),
     ],
 )
-def test_load_pc_plugins(plugin_name: str, expectations: dict[str, object]):
-    plugin = _load_plugin_or_skip(plugin_name)
+def test_load_pc_plugins(plugin_name: str, expectations: dict[str, object]) -> None:
+    """Load each canonical PC plugin and validate expected config fields."""
+    plugin = load_pc_plugin(plugin_name)
     assert isinstance(plugin, PCPlugin)
 
     config = plugin.get_config()
@@ -58,6 +86,7 @@ def test_load_pc_plugins(plugin_name: str, expectations: dict[str, object]):
         assert str(config.paths.dest_dir).endswith(str(expectations["dest_dir_suffix"]))
 
 
-def test_pc_plugin_not_found():
+def test_pc_plugin_not_found() -> None:
+    """Raise runtime error for unknown PC plugin identifiers."""
     with pytest.raises(RuntimeError, match="No PC plugin named 'nonexistent'"):
         load_pc_plugin("nonexistent")

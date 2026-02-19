@@ -530,3 +530,19 @@
   returned `62 passed, 292 deselected`.
   `python -m pytest tests/unit/plugin_system/test_plugin_loader.py tests/unit/device_plugins/test_device_loader.py tests/unit/pc_plugins/test_pc_plugins.py`
   returned `11 passed, 1 skipped`.
+- Phase 6 outdated-mapping tests-first increment on 2026-02-19:
+- added failing migration guard in
+  `tests/migration/test_plugin_discovery_hardening.py` to block stale
+  `twinscrew_blb` and `etr_twinscrew` references in unit mapping tests.
+- red-state verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py::test_unit_mapping_tests_do_not_reference_legacy_plugin_ids`
+  returned `1 failed`.
+- mapping cleanup implementation status:
+- updated `tests/unit/loader/test_pc_device_mapping.py` and
+  `tests/unit/pc_plugins/test_pc_plugins.py` to use canonical in-repo PC
+  plugin mappings and remove stale legacy expectations.
+- green verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py::test_unit_mapping_tests_do_not_reference_legacy_plugin_ids tests/unit/loader/test_pc_device_mapping.py tests/unit/pc_plugins/test_pc_plugins.py`
+  returned `27 passed`.
+  `python -m pytest -m migration`
+  returned `63 passed, 302 deselected`.

@@ -580,7 +580,7 @@
 - [x] Remove stale plugin directories/artifacts not representing valid source plugins.
 - [x] Reconcile plugin inventory with optional dependency groups.
 - [x] Validate plugin discovery errors and messages are actionable.
-- [ ] Update or remove outdated mapping expectations in tests.
+- [x] Update or remove outdated mapping expectations in tests.
 
 ### Completion Notes
 - How it was done: Phase 6 kickoff started on 2026-02-19 with plugin/discovery
@@ -612,6 +612,24 @@
   -> `62 passed, 292 deselected`.
   `python -m pytest tests/unit/plugin_system/test_plugin_loader.py tests/unit/device_plugins/test_device_loader.py tests/unit/pc_plugins/test_pc_plugins.py`
   -> `11 passed, 1 skipped`.
+- Tests-first outdated-mapping increment:
+  added failing migration guard
+  `test_unit_mapping_tests_do_not_reference_legacy_plugin_ids` in
+  `tests/migration/test_plugin_discovery_hardening.py` to block stale
+  `twinscrew_blb`/`etr_twinscrew` references in unit mapping tests.
+- Red-state verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py::test_unit_mapping_tests_do_not_reference_legacy_plugin_ids`
+  -> `1 failed`.
+- Mapping cleanup implementation (green):
+  updated canonical PC mapping expectations in
+  `tests/unit/loader/test_pc_device_mapping.py` and
+  `tests/unit/pc_plugins/test_pc_plugins.py`, removing stale legacy IDs and
+  skip-based fallback behavior for in-repo PC plugins.
+- Green verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py::test_unit_mapping_tests_do_not_reference_legacy_plugin_ids tests/unit/loader/test_pc_device_mapping.py tests/unit/pc_plugins/test_pc_plugins.py`
+  -> `27 passed`.
+  `python -m pytest -m migration`
+  -> `63 passed, 302 deselected`.
 
 ---
 

@@ -112,3 +112,21 @@ def test_unknown_device_plugin_error_lists_available_plugins() -> None:
     assert "missing_device" in error_message
     assert "available device plugins" in error_message.lower()
     assert "test_device" in error_message
+
+
+def test_unit_mapping_tests_do_not_reference_legacy_plugin_ids() -> None:
+    """Require unit plugin mapping tests to avoid stale legacy plugin IDs."""
+    unit_mapping_tests = (
+        PROJECT_ROOT / "tests" / "unit" / "loader" / "test_pc_device_mapping.py",
+        PROJECT_ROOT / "tests" / "unit" / "pc_plugins" / "test_pc_plugins.py",
+    )
+    legacy_identifiers = ("twinscrew_blb", "etr_twinscrew")
+
+    stale_references: list[str] = []
+    for test_file in unit_mapping_tests:
+        contents = test_file.read_text(encoding="utf-8")
+        for identifier in legacy_identifiers:
+            if identifier in contents:
+                stale_references.append(f"{test_file.name}:{identifier}")
+
+    assert stale_references == []
