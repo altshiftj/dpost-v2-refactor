@@ -63,6 +63,8 @@
   (`_persist_and_sync_stage`) on ACCEPT routing paths.
 - `_invoke_rename_flow()` now uses iterative retry evaluation, removing
   recursive `_route_with_prefix()` re-entry during non-ACCEPT rename loops.
+- `_rename_retry_policy_stage()` now defines non-ACCEPT retry warning/context
+  policy for the rename loop.
 - Plugin loading and registration:
 - `src/ipat_watchdog/plugin_system.py`
 - Configuration schema and runtime service:
@@ -106,8 +108,8 @@
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
-  prompts and unappendable warning side effects still live in
-  `file_process_manager` and remain active decomposition targets.
+  prompts and retry loop orchestration still live in `file_process_manager`
+  and remain active decomposition targets.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

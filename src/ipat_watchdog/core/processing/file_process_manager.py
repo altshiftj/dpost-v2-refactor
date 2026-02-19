@@ -276,19 +276,26 @@ class _ProcessingPipeline:
             if context.decision is RoutingDecision.ACCEPT:
                 return self._persist_and_sync_stage(context)
 
-            if context.decision is RoutingDecision.UNAPPENDABLE:
-                manager.interactions.show_warning(
-                    WarningMessages.INVALID_RECORD,
-                    WarningMessages.INVALID_RECORD_DETAILS,
-                )
-                retry_prefix = context.sanitized_prefix
-                retry_reason = DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
-                    record_id=context.sanitized_prefix
-                )
-                continue
+            retry_prefix, retry_reason = self._rename_retry_policy_stage(context)
 
-            retry_prefix = context.candidate.prefix
-            retry_reason = None
+    def _rename_retry_policy_stage(
+        self,
+        context: RouteContext,
+    ) -> tuple[str, Optional[str]]:
+        """Return next rename-loop prompt policy for non-ACCEPT routing outcomes."""
+        manager = self._manager
+        if context.decision is RoutingDecision.UNAPPENDABLE:
+            manager.interactions.show_warning(
+                WarningMessages.INVALID_RECORD,
+                WarningMessages.INVALID_RECORD_DETAILS,
+            )
+            return (
+                context.sanitized_prefix,
+                DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
+                    record_id=context.sanitized_prefix
+                ),
+            )
+        return context.candidate.prefix, None
 
     def _route_with_prefix(self, candidate: ProcessingCandidate, prefix_override: str) -> ProcessingResult:
         updated = replace(candidate, prefix=prefix_override)

@@ -337,3 +337,20 @@
   returned `39 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 rename-retry-policy-stage tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `_rename_retry_policy_stage` and `_invoke_rename_flow`
+  delegation of unappendable warning/context side effects through this seam.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 39 passed, 292 deselected`.
+- seventh implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_rename_retry_policy_stage` and use it from
+  `_invoke_rename_flow` for non-ACCEPT retry policy decisions.
+- green verification:
+  `python -m pytest -m migration`
+  returned `41 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

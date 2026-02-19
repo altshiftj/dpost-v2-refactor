@@ -510,3 +510,101 @@ def test_non_accept_route_stage_unappendable_avoids_recursive_route_with_prefix_
     result = pipeline._non_accept_route_stage(context)
 
     assert result.status is ProcessingStatus.PROCESSED
+
+
+def test_pipeline_declares_rename_retry_policy_stage_hook() -> None:
+    """Require an explicit retry-policy seam for rename loop side effects."""
+    assert hasattr(_ProcessingPipeline, "_rename_retry_policy_stage")
+
+
+def test_invoke_rename_flow_delegates_retry_policy_stage_without_inline_warning(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate unappendable retry policy via stage hook instead of inline warnings."""
+    pipeline = process_manager._pipeline
+    source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    source.write_text("payload")
+    candidate = ProcessingCandidate(
+        original_path=source,
+        effective_path=source,
+        prefix="abc-ipat-sample",
+        extension=".txt",
+        processor=DummyProcessor(),
+        device=config_service.devices[0],
+        preprocessed_path=None,
+    )
+
+    rename_attempts: list[tuple[str, str | None]] = []
+    route_decisions = iter((RoutingDecision.UNAPPENDABLE, RoutingDecision.ACCEPT))
+    policy_calls: list[str] = []
+
+    def obtain_valid_prefix(
+        current_prefix: str,
+        contextual_reason: str | None = None,
+    ) -> RenameOutcome:
+        rename_attempts.append((current_prefix, contextual_reason))
+        if len(rename_attempts) == 1:
+            return RenameOutcome("abc-ipat-retry1", cancelled=False)
+        return RenameOutcome("abc-ipat-final", cancelled=False)
+
+    def route_decision_stage(route_candidate: ProcessingCandidate) -> RouteContext:
+        decision = next(route_decisions)
+        if decision is RoutingDecision.UNAPPENDABLE:
+            return RouteContext(
+                candidate=route_candidate,
+                sanitized_prefix="locked-record",
+                existing_record=None,
+                decision=decision,
+            )
+        return RouteContext(
+            candidate=route_candidate,
+            sanitized_prefix=route_candidate.prefix,
+            existing_record=None,
+            decision=decision,
+        )
+
+    def rename_retry_policy_stage(
+        route_context: RouteContext,
+    ) -> tuple[str, str | None]:
+        policy_calls.append("retry_policy")
+        assert route_context.decision is RoutingDecision.UNAPPENDABLE
+        return "policy-prefix", "policy-reason"
+
+    def persist_stage(_route_context: RouteContext) -> ProcessingResult:
+        return ProcessingResult(ProcessingStatus.PROCESSED, "processed")
+
+    monkeypatch.setattr(
+        process_manager._rename_service,
+        "obtain_valid_prefix",
+        obtain_valid_prefix,
+    )
+    monkeypatch.setattr(pipeline, "_route_decision_stage", route_decision_stage)
+    monkeypatch.setattr(
+        pipeline,
+        "_rename_retry_policy_stage",
+        rename_retry_policy_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(pipeline, "_persist_and_sync_stage", persist_stage)
+    monkeypatch.setattr(
+        process_manager.interactions,
+        "show_warning",
+        lambda *_args, **_kwargs: pytest.fail(
+            "_invoke_rename_flow should delegate unappendable warning policy "
+            "through _rename_retry_policy_stage."
+        ),
+    )
+
+    result = pipeline._invoke_rename_flow(
+        candidate, candidate.prefix, candidate.extension
+    )
+
+    assert result.status is ProcessingStatus.PROCESSED
+    assert policy_calls == ["retry_policy"]
+    assert rename_attempts == [
+        ("abc-ipat-sample", None),
+        ("policy-prefix", "policy-reason"),
+    ]
