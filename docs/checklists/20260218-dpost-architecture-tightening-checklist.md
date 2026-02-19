@@ -435,6 +435,24 @@
   -> `43 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first post-persist-side-effects-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring explicit manager seam `_post_persist_side_effects_stage()` and
+  `add_item_to_record()` delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 43 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_post_persist_side_effects_stage()` and route post-persist
+  bookkeeping/metrics/immediate-sync side effects through it from
+  `add_item_to_record()`.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `45 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

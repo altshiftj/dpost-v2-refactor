@@ -395,7 +395,18 @@ class FileProcessManager:
             notify_success(self.interactions, src_path, output.final_path)
 
         logger.debug("Processed %s -> %s", src_path, output.final_path)
+        self._post_persist_side_effects_stage(output, record, record_path, src_path)
 
+        return output.final_path
+
+    def _post_persist_side_effects_stage(
+        self,
+        output: ProcessingOutput,
+        record,
+        record_path: str,
+        src_path: str,
+    ) -> None:
+        """Apply post-persist bookkeeping, metrics, and immediate sync policy."""
         new_files = update_record(self.records, output.final_path, record)
         if output.force_paths:
             for force_path in output.force_paths:
@@ -424,8 +435,6 @@ class FileProcessManager:
                     self.records.sync_records_to_database()
             except Exception as exc:  # noqa: BLE001
                 logger.exception("Immediate sync failed after processing %s: %s", src_path, exc)
-
-        return output.final_path
 
     def _persist_candidate_record_stage(self, context: RouteContext) -> Optional[str]:
         """Persist accepted candidate artifact and return final output path."""

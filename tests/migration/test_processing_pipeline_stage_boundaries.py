@@ -168,6 +168,56 @@ def test_manager_declares_persist_candidate_record_stage_hook() -> None:
     assert hasattr(FileProcessManager, "_persist_candidate_record_stage")
 
 
+def test_manager_declares_post_persist_side_effects_stage_hook() -> None:
+    """Require explicit manager seam for post-persist bookkeeping side effects."""
+    assert hasattr(FileProcessManager, "_post_persist_side_effects_stage")
+
+
+def test_add_item_to_record_delegates_post_persist_side_effects_stage(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate record bookkeeping/sync side effects through stage seam."""
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("payload")
+    calls: list[str] = []
+
+    def post_persist_side_effects_stage(
+        *_args,
+        **_kwargs,
+    ) -> None:
+        calls.append("post_persist")
+
+    monkeypatch.setattr(
+        process_manager,
+        "_post_persist_side_effects_stage",
+        post_persist_side_effects_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "ipat_watchdog.core.processing.file_process_manager.update_record",
+        lambda *_args, **_kwargs: pytest.fail(
+            "add_item_to_record should delegate post-persist bookkeeping "
+            "through _post_persist_side_effects_stage."
+        ),
+    )
+
+    result = process_manager.add_item_to_record(
+        record=None,
+        src_path=str(src),
+        filename_prefix="abc-ipat-sample",
+        extension=".txt",
+        file_processor=process_manager.file_processor,
+        notify=False,
+        device=config_service.devices[0],
+    )
+
+    assert result is not None
+    assert calls == ["post_persist"]
+
+
 def test_persist_and_sync_stage_delegates_manager_persist_candidate_record_stage(
     process_manager: FileProcessManager,
     config_service,
