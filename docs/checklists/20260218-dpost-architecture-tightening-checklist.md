@@ -508,6 +508,23 @@
   -> `51 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first datatype-assignment-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring explicit manager seam `_assign_record_datatype_stage()` and
+  `add_item_to_record()` delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 51 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_assign_record_datatype_stage()` and route datatype assignment
+  through this seam from `add_item_to_record()`.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `53 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

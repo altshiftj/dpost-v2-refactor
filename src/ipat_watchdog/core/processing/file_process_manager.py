@@ -397,7 +397,7 @@ class FileProcessManager:
             extension,
         )
 
-        record.datatype = output.datatype
+        self._assign_record_datatype_stage(record, output)
         logger.debug("Processed %s -> %s", src_path, output.final_path)
         self._post_persist_side_effects_stage(output, record, record_path, src_path)
 
@@ -441,6 +441,14 @@ class FileProcessManager:
             file_id,
             extension,
         )
+
+    def _assign_record_datatype_stage(
+        self,
+        record,
+        output: ProcessingOutput,
+    ) -> None:
+        """Assign processor-reported datatype onto the target record."""
+        record.datatype = output.datatype
 
     def _post_persist_side_effects_stage(
         self,

@@ -443,3 +443,20 @@
   returned `51 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 datatype-assignment-stage tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `FileProcessManager._assign_record_datatype_stage` and
+  `add_item_to_record` delegation through this seam.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 51 passed, 292 deselected`.
+- thirteenth implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `FileProcessManager._assign_record_datatype_stage` and route
+  datatype assignment through it from `add_item_to_record`.
+- green verification:
+  `python -m pytest -m migration`
+  returned `53 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

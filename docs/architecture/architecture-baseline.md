@@ -69,6 +69,8 @@
 - `FileProcessManager` now exposes `_process_record_artifact_stage()` and
   `add_item_to_record()` delegates processor invocation/output handling
   through this seam.
+- `FileProcessManager` now exposes `_assign_record_datatype_stage()` and
+  `add_item_to_record()` delegates datatype assignment through this seam.
 - `FileProcessManager` now exposes `_post_persist_side_effects_stage()` and
   `add_item_to_record()` delegates bookkeeping/metrics/immediate-sync side
   effects through this seam.
@@ -124,8 +126,9 @@
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.
 - `add_item_to_record()` now delegates record-context resolution, processor
-  invocation, and post-persist side effects; datatype/result mapping remains
-  coupled there and is an active decomposition target.
+  invocation, datatype assignment, and post-persist side effects; output/
+  result orchestration ordering remains coupled there and is an active
+  decomposition target.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.
