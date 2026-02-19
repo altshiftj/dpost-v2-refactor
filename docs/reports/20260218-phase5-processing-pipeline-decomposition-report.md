@@ -19,12 +19,12 @@
 | Stabilize artifact | `_ProcessingPipeline._stabilize_artifact_stage()` | `FileStabilityTracker(request.source, request.device).wait()` at `src/ipat_watchdog/core/processing/file_process_manager.py:110` | Stability rejection path still carries rejection side effects (`_register_rejection`, `safe_move_to_exception`, `FILES_FAILED.inc`) in one stage method. |
 | Preprocess | `_ProcessingPipeline._preprocess_stage()` + `_build_candidate()` + `_derive_candidate_metadata()` | `manager._resolve_processor(request.device)` at `src/ipat_watchdog/core/processing/file_process_manager.py:125`; stage delegation at `src/ipat_watchdog/core/processing/file_process_manager.py:126`; `processor.device_specific_preprocessing(...)` at `src/ipat_watchdog/core/processing/file_process_manager.py:147`; metadata parse at `src/ipat_watchdog/core/processing/file_process_manager.py:175` | Preprocess stage is coupled to config activation scope (`activate_device`) and filename parse/staging-suffix normalization details. |
 | Route/rename decision | `_route_decision_stage()` + `_dispatch_route()` + `_non_accept_route_stage()` + `_invoke_rename_flow()` + `_rename_retry_policy_stage()` + `_route_with_prefix()` | decision stage at `src/ipat_watchdog/core/processing/file_process_manager.py`; `determine_routing_state(...)` in routing helpers; non-ACCEPT seam in `_non_accept_route_stage()`; `handle_unappendable_record(...)` in `record_flow`; rename prompt via `obtain_valid_prefix(...)`; retry policy via `_rename_retry_policy_stage()` | Route decision and non-ACCEPT seams are explicit; rename retries evaluate iteratively inside `_invoke_rename_flow()` and delegate retry warning/context policy through `_rename_retry_policy_stage()`. |
-| Persist/sync trigger | `_persist_and_sync_stage()` + `FileProcessManager._persist_candidate_record_stage()` + `FileProcessManager.add_item_to_record()` + `FileProcessManager._resolve_record_persistence_context_stage()` + `FileProcessManager._process_record_artifact_stage()` + `FileProcessManager._post_persist_side_effects_stage()` | ACCEPT delegation in `_persist_and_sync_stage()`; manager persistence seam in `_persist_candidate_record_stage()`; context seam in `_resolve_record_persistence_context_stage()`; processor seam in `_process_record_artifact_stage()`; post-persist bookkeeping/metrics/sync seam in `_post_persist_side_effects_stage()` | Persist stage seam is explicit and now delegates through manager seams for persistence, record context resolution, processor invocation/output handling, and post-persist side effects; remaining coupling is centered on result mapping/notification in `add_item_to_record()`. |
+| Persist/sync trigger | `_persist_and_sync_stage()` + `FileProcessManager._persist_candidate_record_stage()` + `FileProcessManager.add_item_to_record()` + `FileProcessManager._resolve_record_persistence_context_stage()` + `FileProcessManager._process_record_artifact_stage()` + `FileProcessManager._post_persist_side_effects_stage()` | ACCEPT delegation in `_persist_and_sync_stage()`; manager persistence seam in `_persist_candidate_record_stage()`; context seam in `_resolve_record_persistence_context_stage()`; processor seam in `_process_record_artifact_stage()`; post-persist bookkeeping/metrics/sync seam in `_post_persist_side_effects_stage()` | Persist stage seam is explicit and now delegates through manager seams for persistence, record context resolution, processor invocation/output handling, and post-persist side effects; remaining coupling is centered on datatype/result mapping in `add_item_to_record()`. |
 
 ## Coupling Risks
 1. Resolve and stabilize now have distinct methods, but both still embed reject/defer side effects; extracting side-effect policy from stage logic remains a follow-up risk (`src/ipat_watchdog/core/processing/file_process_manager.py:81` through `src/ipat_watchdog/core/processing/file_process_manager.py:117`).
 2. Route decision and non-ACCEPT handling now have explicit seams and rename retries no longer recurse through `_route_with_prefix()`. Retry warning/context policy is extracted to `_rename_retry_policy_stage()`, but prompt loops still live in one orchestration class (`src/ipat_watchdog/core/processing/file_process_manager.py`).
-3. `add_item_to_record()` now delegates record-context setup, processor invocation/output handling, and post-persist side effects, but datatype mapping and notification policy still share one hotspot (`src/ipat_watchdog/core/processing/file_process_manager.py`).
+3. `add_item_to_record()` now delegates record-context setup, processor invocation/output handling, and post-persist side effects; remaining hotspot is datatype/result mapping (`src/ipat_watchdog/core/processing/file_process_manager.py`).
 4. Error handling spans across stage boundaries in `_execute_pipeline()` and `_handle_processing_failure()`, so extraction must preserve current exception-routing semantics for both effective and preprocessed paths (`src/ipat_watchdog/core/processing/file_process_manager.py:133` through `src/ipat_watchdog/core/processing/file_process_manager.py:136`, `src/ipat_watchdog/core/processing/file_process_manager.py:446` through `src/ipat_watchdog/core/processing/file_process_manager.py:461`).
 
 ## Extraction Order Recommendation (Incremental)
@@ -103,5 +103,14 @@
 - Verification after increment 11:
   `python -m pytest -m migration`
   -> `49 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
+- Completed extraction increment 12:
+  legacy notify-success wiring was retired from
+  `FileProcessManager.add_item_to_record()`, removing the `notify` argument
+  and corresponding success-notification side effect path.
+- Verification after increment 12:
+  `python -m pytest -m migration`
+  -> `51 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.

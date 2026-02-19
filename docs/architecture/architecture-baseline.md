@@ -72,6 +72,8 @@
 - `FileProcessManager` now exposes `_post_persist_side_effects_stage()` and
   `add_item_to_record()` delegates bookkeeping/metrics/immediate-sync side
   effects through this seam.
+- `add_item_to_record()` no longer exposes the legacy `notify` flag and no
+  longer dispatches the legacy success-notification helper.
 - `_invoke_rename_flow()` now uses iterative retry evaluation, removing
   recursive `_route_with_prefix()` re-entry during non-ACCEPT rename loops.
 - `_rename_retry_policy_stage()` now defines non-ACCEPT retry warning/context
@@ -122,9 +124,8 @@
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.
 - `add_item_to_record()` now delegates record-context resolution, processor
-  invocation, and post-persist side effects, but datatype mapping and success
-  notification policy remain coupled there and are active decomposition
-  targets.
+  invocation, and post-persist side effects; datatype/result mapping remains
+  coupled there and is an active decomposition target.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

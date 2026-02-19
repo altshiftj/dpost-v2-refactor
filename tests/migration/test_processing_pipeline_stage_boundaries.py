@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -259,7 +260,6 @@ def test_add_item_to_record_delegates_process_record_artifact_stage(
         filename_prefix="abc-ipat-sample",
         extension=".txt",
         file_processor=process_manager.file_processor,
-        notify=False,
         device=config_service.devices[0],
     )
 
@@ -349,7 +349,6 @@ def test_add_item_to_record_delegates_resolve_record_persistence_context_stage(
         filename_prefix="abc-ipat-sample",
         extension=".txt",
         file_processor=process_manager.file_processor,
-        notify=False,
         device=config_service.devices[0],
     )
 
@@ -397,7 +396,6 @@ def test_add_item_to_record_delegates_post_persist_side_effects_stage(
         filename_prefix="abc-ipat-sample",
         extension=".txt",
         file_processor=process_manager.file_processor,
-        notify=False,
         device=config_service.devices[0],
     )
 
@@ -905,3 +903,62 @@ def test_invoke_rename_flow_delegates_retry_policy_stage_without_inline_warning(
         ("abc-ipat-sample", None),
         ("policy-prefix", "policy-reason"),
     ]
+
+
+def test_manager_add_item_to_record_signature_omits_notify_flag() -> None:
+    """Retire legacy success-notification toggle from record persistence API."""
+    parameters = inspect.signature(FileProcessManager.add_item_to_record).parameters
+    assert "notify" not in parameters
+
+
+def test_persist_candidate_record_stage_calls_add_item_without_notify_flag(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Persist candidate path should call add_item_to_record without notify kwarg."""
+    source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    source.write_text("payload")
+    candidate = ProcessingCandidate(
+        original_path=source,
+        effective_path=source,
+        prefix="abc-ipat-sample",
+        extension=".txt",
+        processor=DummyProcessor(),
+        device=config_service.devices[0],
+        preprocessed_path=None,
+    )
+    context = RouteContext(
+        candidate=candidate,
+        sanitized_prefix="abc-ipat-sample",
+        existing_record=None,
+        decision=RoutingDecision.ACCEPT,
+    )
+    expected_path = str(tmp_settings.DEST_DIR / "processed.txt")
+
+    def add_item_to_record_without_notify(
+        _record,
+        src_path: str,
+        filename_prefix: str,
+        extension: str,
+        file_processor,
+        device=None,
+    ) -> str:
+        assert src_path == str(source)
+        assert filename_prefix == "abc-ipat-sample"
+        assert extension == ".txt"
+        assert file_processor is candidate.processor
+        assert device is candidate.device
+        return expected_path
+
+    monkeypatch.setattr(
+        process_manager,
+        "add_item_to_record",
+        add_item_to_record_without_notify,
+        raising=False,
+    )
+
+    result = process_manager._persist_candidate_record_stage(context)
+
+    assert result == expected_path

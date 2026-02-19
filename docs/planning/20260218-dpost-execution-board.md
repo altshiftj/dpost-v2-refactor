@@ -423,3 +423,23 @@
   returned `49 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 notify-success-retirement tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  `FileProcessManager.add_item_to_record` to drop the legacy `notify` flag
+  and requiring `_persist_candidate_record_stage` to call it without a
+  `notify` keyword argument.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 49 passed, 292 deselected`.
+- twelfth implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  remove legacy notify-success wiring from `add_item_to_record` and align
+  ACCEPT persistence call sites to the simplified signature.
+- updated migration and unit call sites still using `notify=False` to match
+  the updated API contract.
+- green verification:
+  `python -m pytest -m migration`
+  returned `51 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.

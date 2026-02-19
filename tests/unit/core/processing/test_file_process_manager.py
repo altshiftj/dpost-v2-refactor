@@ -114,7 +114,6 @@ def test_add_item_to_record_success(manager_components, config_service, tmp_sett
             filename_prefix=prefix,
             extension=".txt",
             file_processor=manager.file_processor,
-            notify=False,
         )
 
     assert result_path.endswith("dummy_file.txt")
@@ -132,7 +131,6 @@ def test_add_item_to_record_failure_raises(manager_components, config_service, t
                 filename_prefix="abc-ipat-sample",
                 extension=".txt",
                 file_processor=manager.file_processor,
-                notify=False,
             )
 
 
@@ -172,7 +170,6 @@ def test_add_item_to_record_force_paths_marked(manager_components, config_servic
             filename_prefix=prefix,
             extension=".txt",
             file_processor=manager.file_processor,
-            notify=False,
         )
 
     record_id = generate_record_id(prefix, dev_kadi_record_id=device.metadata.record_kadi_id)

@@ -25,7 +25,6 @@ from ipat_watchdog.core.processing.models import (ProcessingCandidate,
                                                   ProcessingStatus,
                                                   RouteContext,
                                                   RoutingDecision)
-from ipat_watchdog.core.processing.notifications import notify_success
 from ipat_watchdog.core.processing.processor_factory import \
     FileProcessorFactory
 from ipat_watchdog.core.processing.record_flow import \
@@ -371,7 +370,6 @@ class FileProcessManager:
         filename_prefix: str,
         extension: str,
         file_processor: Optional[FileProcessorABS] = None,
-        notify: bool = True,
         device: DeviceConfig | None = None,
     ) -> Optional[str]:
         processor = file_processor or self.file_processor
@@ -400,9 +398,6 @@ class FileProcessManager:
         )
 
         record.datatype = output.datatype
-        if notify:
-            notify_success(self.interactions, src_path, output.final_path)
-
         logger.debug("Processed %s -> %s", src_path, output.final_path)
         self._post_persist_side_effects_stage(output, record, record_path, src_path)
 
@@ -493,7 +488,6 @@ class FileProcessManager:
             context.sanitized_prefix,
             candidate.extension,
             candidate.processor,
-            notify=False,
             device=candidate.device,
         )
 

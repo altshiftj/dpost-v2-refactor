@@ -489,6 +489,25 @@
   -> `49 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first notify-success-retirement increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring `FileProcessManager.add_item_to_record()` to omit the legacy
+  `notify` flag and requiring `_persist_candidate_record_stage()` to call
+  `add_item_to_record()` without a notify keyword argument.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 49 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  remove the legacy `notify` argument and `notify_success` side effect from
+  `add_item_to_record()`, and updated ACCEPT persistence call sites to match
+  the streamlined signature.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `51 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

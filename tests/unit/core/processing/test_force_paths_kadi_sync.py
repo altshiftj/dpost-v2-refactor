@@ -74,7 +74,6 @@ def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, m
             filename_prefix=prefix,
             extension=".csv",
             file_processor=manager.file_processor,
-            notify=False,
         )
 
     device_abbr = device.metadata.device_abbr
@@ -145,7 +144,6 @@ def test_force_paths_relative_to_record_dir_are_forced(config_service, tmp_setti
             filename_prefix=prefix,
             extension=".csv",
             file_processor=manager.file_processor,
-            notify=False,
         )
 
     device_abbr = device.metadata.device_abbr
