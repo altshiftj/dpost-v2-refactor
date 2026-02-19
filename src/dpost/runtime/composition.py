@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING, Callable, Sequence
 
 from dpost.application.ports import SyncAdapterPort
+from dpost.infrastructure.runtime import HeadlessRuntimeUI
 from dpost.infrastructure.sync import NoopSyncAdapter
 from dpost.plugins import REFERENCE_PLUGIN_PROFILE, PluginProfile
 
@@ -171,6 +172,32 @@ def select_plugin_profile(profile_name: str | None = None) -> PluginProfile | No
     )
 
 
+def select_runtime_mode(mode_name: str | None = None) -> str:
+    """Resolve the runtime mode used for startup wiring."""
+    selected_name = (
+        (mode_name or os.getenv("DPOST_RUNTIME_MODE") or "headless").strip().lower()
+    )
+    if selected_name in {"headless", "desktop"}:
+        return selected_name
+
+    from ipat_watchdog.core.app.bootstrap import StartupError
+
+    raise StartupError(
+        "Unknown runtime mode "
+        f"'{selected_name}'. Available modes: headless, desktop."
+    )
+
+
+def select_ui_factory(mode_name: str | None = None) -> Callable[[], object]:
+    """Return the UI factory for the selected runtime mode."""
+    selected_mode = select_runtime_mode(mode_name)
+    if selected_mode == "desktop":
+        from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+
+        return TKinterUI
+    return HeadlessRuntimeUI
+
+
 def compose_bootstrap() -> "BootstrapContext":
     """Build and return the runtime context for dpost.
 
@@ -182,12 +209,14 @@ def compose_bootstrap() -> "BootstrapContext":
 
     sync_adapter = select_sync_adapter()
     plugin_profile = select_plugin_profile()
+    runtime_mode = select_runtime_mode()
     resolved_settings = resolve_startup_settings()
 
     def sync_manager_factory(_interactions: object) -> SyncAdapterPort:
         return sync_adapter
 
     bootstrap_kwargs: dict[str, object] = {
+        "ui_factory": select_ui_factory(runtime_mode),
         "sync_manager_factory": sync_manager_factory,
     }
     if plugin_profile is not None:

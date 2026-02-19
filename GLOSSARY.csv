@@ -14,3 +14,6 @@ noop sync adapter,reference implementation,Defines a backend-free sync adapter u
 kadi sync adapter,reference implementation,Defines the dpost wrapper that delegates sync calls to the legacy Kadi manager with lazy optional dependency loading,Selected with DPOST_SYNC_ADAPTER=kadi and raises startup error when kadi_apy is unavailable
 plugin profile,runtime configuration,Defines a named PC and device plugin selection used by dpost kernel composition,Configured with DPOST_PLUGIN_PROFILE for framework validation startup paths
 intent-revealing naming,governance principle,Defines naming guidance that stage functions and variables should encode precise domain intent and side effects,Applied during Phase 5 pipeline decomposition to reduce cognitive drag in orchestration code
+runtime mode,runtime configuration,Defines startup behavior selection between headless and desktop,Configured at composition root to choose explicit runtime wiring
+DPOST_RUNTIME_MODE,environment variable,Selects runtime mode for dpost startup composition,Expected values are headless or desktop for migration phase 7 tests
+HeadlessRuntimeUI,infrastructure adapter,Defines the non-interactive UI and scheduler adapter for dpost headless runtime mode,Used by composition when DPOST_RUNTIME_MODE resolves to headless

@@ -40,6 +40,14 @@
 - dpost composition now includes a startup settings resolver for optional
   `DPOST_PC_NAME`, `DPOST_DEVICE_PLUGINS`, `DPOST_PROMETHEUS_PORT`, and
   `DPOST_OBSERVABILITY_PORT` overrides before delegating to legacy bootstrap.
+- dpost composition now includes explicit runtime mode selection via
+  `DPOST_RUNTIME_MODE` (`headless` default, `desktop` optional) and validates
+  unknown runtime mode values at startup.
+- dpost composition now wires explicit mode-specific UI factories into legacy
+  bootstrap (`HeadlessRuntimeUI` for headless mode, `TKinterUI` for desktop
+  mode).
+- dpost headless runtime UI adapter:
+- `src/dpost/infrastructure/runtime/headless_ui.py`
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):
@@ -121,7 +129,10 @@
   primary runtime source.
 - Operational config/naming paths now use strict fail-fast behavior when
   config service is not initialized.
-- Desktop UI is a default runtime path today.
+- Legacy bootstrap defaults to desktop UI when no `ui_factory` override is
+  provided.
+- dpost composition default runtime mode is now explicit headless, with
+  optional desktop mode wiring.
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost composition still delegates full runtime bootstrap to legacy wiring while
   sync adapter kernel contracts are being introduced incrementally.

@@ -8,7 +8,7 @@
 | Object/Module | Layer | Primary Responsibility | Owns | Must Not Own |
 |---|---|---|---|---|
 | `bootstrap` | Application/Infrastructure boundary | Compose runtime dependencies and startup settings | Runtime wiring, startup validation | Device-specific business rules |
-| `dpost.runtime.composition` | Runtime kernel boundary | Resolve kernel-level adapter/plugin profile selection and delegate bootstrap wiring | Startup composition policy and env-to-contract mapping | Concrete backend SDK imports or plugin discovery logic |
+| `dpost.runtime.composition` | Runtime kernel boundary | Resolve runtime mode, adapter/profile selection, and delegate bootstrap wiring | Startup composition policy and env-to-contract mapping, explicit UI factory selection | Concrete backend SDK imports or plugin discovery logic |
 | `DeviceWatchdogApp` | Application | Coordinate observer lifecycle and queue-driven processing loop | Event queue polling, graceful shutdown orchestration | Direct plugin discovery logic |
 | `FileProcessManager` | Application | Execute artifact processing workflow end-to-end | Pipeline orchestration, stage sequencing, and result handling | Low-level transport/backend API details |
 | `_ProcessingPipeline` | Application (internal helper) | Sequence stage transitions for a single artifact | Resolve/stabilize/preprocess/route-decision/non-ACCEPT-route and persist-stage control flow | Direct record persistence implementation details |
@@ -23,6 +23,7 @@
 | `KadiSyncManager` | Infrastructure adapter | Implement sync backend against Kadi | Kadi API mapping and upload calls | Core processing orchestration |
 | `KadiSyncAdapter` | Infrastructure adapter (dpost wrapper) | Bridge dpost sync port to legacy Kadi implementation with optional dependency handling | Adapter selection path and lazy legacy delegation | Runtime composition policy |
 | `NoopSyncAdapter` | Infrastructure adapter (reference) | Provide no-op sync behavior for framework validation and local headless paths | Deterministic no-op sync responses | Production backend side effects |
+| `HeadlessRuntimeUI` | Infrastructure adapter (runtime UI) | Provide non-interactive UI/scheduler behavior for headless runtime mode | Headless event-loop scheduling and no-dialog interaction defaults | Desktop dialog rendering and Tk lifecycle ownership |
 | `PluginLoader` | Infrastructure support | Register/discover/instantiate device and PC plugins | Plugin lifecycle and registration state | Artifact processing behavior |
 | `UserInteractionPort` + adapters | Application port + Infrastructure adapter | Decouple interaction requests from UI implementation | Interaction contract and adapter mapping | Core domain decision logic |
 

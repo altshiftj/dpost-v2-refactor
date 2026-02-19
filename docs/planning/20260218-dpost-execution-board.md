@@ -20,8 +20,8 @@
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Completed (2026-02-18) | Framework contracts + reference implementations green before concrete adapter migration |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Completed (2026-02-18) | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Completed (2026-02-19) | Stage services extracted, integration suite unchanged/green |
-| Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
-| Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Planned | Desktop and headless smoke tests both green |
+| Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Completed (2026-02-19) | Plugin inventory normalized and discovery tests green |
+| Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | In progress (2026-02-19) | Desktop and headless smoke tests both green |
 | Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | Planned | `dpost` canonical metadata/docs complete and release gate passed |
 
 ## Weekly Cadence
@@ -546,3 +546,30 @@
   returned `27 passed`.
   `python -m pytest -m migration`
   returned `63 passed, 302 deselected`.
+- Phase 6 gate closed on 2026-02-19 after plugin inventory normalization,
+  discovery-message hardening, and stale mapping cleanup.
+- Phase 7 desktop runtime integration kickoff on 2026-02-19:
+- added runtime integration inventory report:
+  `docs/reports/20260219-phase7-desktop-runtime-integration-inventory.md`.
+- added tests-first migration coverage in
+  `tests/migration/test_runtime_mode_selection.py` for:
+  explicit runtime mode selection, explicit composition runtime-mode UI factory
+  wiring, and dual headless/desktop startup smoke expectations.
+- red-state verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  returned `6 failed` pending implementation approval.
+  `python -m pytest -m migration`
+  returned `6 failed, 63 passed, 302 deselected`.
+- implementation status:
+- updated `src/dpost/runtime/composition.py` with explicit
+  `DPOST_RUNTIME_MODE` selection (`headless` default, `desktop` optional),
+  unknown-mode fail-fast validation, and explicit runtime-mode `ui_factory`
+  wiring for legacy bootstrap delegation.
+- added `src/dpost/infrastructure/runtime/headless_ui.py` and
+  `src/dpost/infrastructure/runtime/__init__.py` to provide non-interactive
+  headless runtime UI/scheduler behavior.
+- green verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  returned `6 passed`.
+  `python -m pytest -m migration`
+  returned `69 passed, 302 deselected`.

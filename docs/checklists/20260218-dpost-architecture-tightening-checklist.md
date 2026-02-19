@@ -637,14 +637,37 @@
 - Why this matters: Desktop support should sit on top of a stable headless core to avoid reintroducing tight coupling.
 
 ### Checklist
-- [ ] Keep runtime mode selection explicit in composition root.
-- [ ] Ensure headless mode remains green after desktop wiring changes.
+- [x] Keep runtime mode selection explicit in composition root.
+- [x] Ensure headless mode remains green after desktop wiring changes.
 - [ ] Ensure desktop mode preserves current UI interaction behavior.
-- [ ] Add/refresh smoke tests for both runtime modes.
+- [x] Add/refresh smoke tests for both runtime modes.
 - [ ] Document runtime mode selection and behavior differences.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Phase 7 kickoff started on 2026-02-19 with runtime-mode
+  inventory report:
+  `docs/reports/20260219-phase7-desktop-runtime-integration-inventory.md`.
+- Tests-first increment:
+  added failing migration tests in
+  `tests/migration/test_runtime_mode_selection.py` covering:
+  explicit runtime mode resolver behavior (`headless` default and unknown-mode
+  fail-fast), explicit composition `ui_factory` wiring for both runtime modes,
+  and dual runtime-mode startup smoke expectations through `dpost.main()`.
+- Red-state verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  -> `6 failed`.
+  `python -m pytest -m migration`
+  -> `6 failed, 63 passed, 302 deselected`.
+- Implementation increment (green):
+  updated `src/dpost/runtime/composition.py` to add explicit
+  `DPOST_RUNTIME_MODE` resolution and mode-specific UI factory wiring
+  (`HeadlessRuntimeUI` for headless, `TKinterUI` for desktop), and added
+  `src/dpost/infrastructure/runtime/headless_ui.py`.
+- Green verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  -> `6 passed`.
+  `python -m pytest -m migration`
+  -> `69 passed, 302 deselected`.
 
 ---
 
