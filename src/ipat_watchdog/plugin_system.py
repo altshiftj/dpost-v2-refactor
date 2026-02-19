@@ -79,8 +79,10 @@ class DevicePluginRegistry(_BaseRegistry):
         try:
             factory = self._factories[name]
         except KeyError as exc:
+            available_plugins = ", ".join(sorted(self._factories)) or "(none)"
             raise RuntimeError(
                 f"No device plugin named {name!r} installed. "
+                f"Available device plugins: {available_plugins}. "
                 f"Run `pip install ipat-watchdog[{name}]` or check casing."
             ) from exc
         plugin = factory()
@@ -99,8 +101,10 @@ class PCPluginRegistry(_BaseRegistry):
         try:
             factory = self._factories[name]
         except KeyError as exc:
+            available_plugins = ", ".join(sorted(self._factories)) or "(none)"
             raise RuntimeError(
                 f"No PC plugin named {name!r} installed. "
+                f"Available PC plugins: {available_plugins}. "
                 f"Run `pip install ipat-watchdog[{name}]` or check casing."
             ) from exc
         plugin = factory()

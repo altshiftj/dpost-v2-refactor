@@ -576,14 +576,42 @@
 - Why this matters: Plugin reliability is central to the architecture and required for open-source trust and extensibility.
 
 ### Checklist
-- [ ] Normalize plugin package hygiene (`__init__.py` naming and structure).
-- [ ] Remove stale plugin directories/artifacts not representing valid source plugins.
-- [ ] Reconcile plugin inventory with optional dependency groups.
-- [ ] Validate plugin discovery errors and messages are actionable.
+- [x] Normalize plugin package hygiene (`__init__.py` naming and structure).
+- [x] Remove stale plugin directories/artifacts not representing valid source plugins.
+- [x] Reconcile plugin inventory with optional dependency groups.
+- [x] Validate plugin discovery errors and messages are actionable.
 - [ ] Update or remove outdated mapping expectations in tests.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Phase 6 kickoff started on 2026-02-19 with plugin/discovery
+  inventory report:
+  `docs/reports/20260219-phase6-plugin-discovery-hardening-inventory.md`.
+- Tests-first increment:
+  added failing migration tests in
+  `tests/migration/test_plugin_discovery_hardening.py` covering:
+  plugin init hygiene, stale plugin directories, optional dependency inventory
+  alignment, built-in discovery parity with source inventory, and actionable
+  unknown-plugin error messaging.
+- Red-state verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py`
+  -> `5 failed`.
+- First implementation increment (green):
+  renamed misnamed plugin package init modules:
+  `src/ipat_watchdog/device_plugins/erm_hioki/__init__.py`,
+  `src/ipat_watchdog/pc_plugins/eirich_blb/__init__.py`,
+  `src/ipat_watchdog/pc_plugins/hioki_blb/__init__.py`,
+  `src/ipat_watchdog/pc_plugins/kinexus_blb/__init__.py`;
+  removed stale directory `src/ipat_watchdog/device_plugins/psa_camsizer/`;
+  and updated plugin discovery errors in
+  `src/ipat_watchdog/plugin_system.py` to include available plugin names for
+  actionable unknown-plugin guidance.
+- Green verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py`
+  -> `5 passed`.
+  `python -m pytest -m migration`
+  -> `62 passed, 292 deselected`.
+  `python -m pytest tests/unit/plugin_system/test_plugin_loader.py tests/unit/device_plugins/test_device_loader.py tests/unit/pc_plugins/test_pc_plugins.py`
+  -> `11 passed, 1 skipped`.
 
 ---
 

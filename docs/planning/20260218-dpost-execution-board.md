@@ -503,3 +503,30 @@
   returned `288 passed, 4 skipped, 57 deselected`.
 - Phase 5 gate closed on 2026-02-19 after decomposition increments and
   cross-suite regression validation.
+- Phase 6 plugin/discovery hardening kickoff on 2026-02-19:
+- added inventory report:
+  `docs/reports/20260219-phase6-plugin-discovery-hardening-inventory.md`.
+- added tests-first migration coverage in
+  `tests/migration/test_plugin_discovery_hardening.py` for:
+  package init naming hygiene, stale directory detection, optional dependency
+  group alignment, built-in discovery parity, and actionable discovery error
+  messages.
+- red-state verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py`
+  returned `5 failed` pending implementation approval.
+- first implementation increment status:
+- normalized plugin package init modules by renaming `_init_.py` to
+  `__init__.py` in `erm_hioki`, `eirich_blb`, `hioki_blb`, and
+  `kinexus_blb`.
+- removed stale device plugin directory:
+  `src/ipat_watchdog/device_plugins/psa_camsizer/`.
+- updated plugin discovery error messaging in
+  `src/ipat_watchdog/plugin_system.py` to include available plugin names for
+  unknown-device/PC lookups.
+- green verification:
+  `python -m pytest tests/migration/test_plugin_discovery_hardening.py`
+  returned `5 passed`.
+  `python -m pytest -m migration`
+  returned `62 passed, 292 deselected`.
+  `python -m pytest tests/unit/plugin_system/test_plugin_loader.py tests/unit/device_plugins/test_device_loader.py tests/unit/pc_plugins/test_pc_plugins.py`
+  returned `11 passed, 1 skipped`.
