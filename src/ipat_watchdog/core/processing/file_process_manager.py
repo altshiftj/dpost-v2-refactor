@@ -222,16 +222,7 @@ class _ProcessingPipeline:
     def _persist_and_sync_stage(self, context: RouteContext) -> ProcessingResult:
         """Persist processed output and trigger sync behavior for accepted routes."""
         manager = self._manager
-        candidate = context.candidate
-        final_path = manager.add_item_to_record(
-            context.existing_record,
-            str(candidate.effective_path),
-            context.sanitized_prefix,
-            candidate.extension,
-            candidate.processor,
-            notify=False,
-            device=candidate.device,
-        )
+        final_path = manager._persist_candidate_record_stage(context)
         if final_path is None:
             return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
         return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item", Path(final_path))
@@ -435,6 +426,19 @@ class FileProcessManager:
                 logger.exception("Immediate sync failed after processing %s: %s", src_path, exc)
 
         return output.final_path
+
+    def _persist_candidate_record_stage(self, context: RouteContext) -> Optional[str]:
+        """Persist accepted candidate artifact and return final output path."""
+        candidate = context.candidate
+        return self.add_item_to_record(
+            context.existing_record,
+            str(candidate.effective_path),
+            context.sanitized_prefix,
+            candidate.extension,
+            candidate.processor,
+            notify=False,
+            device=candidate.device,
+        )
 
     def sync_records_to_database(self) -> None:
         if self.records.all_records_uploaded():

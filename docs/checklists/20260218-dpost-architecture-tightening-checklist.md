@@ -416,6 +416,25 @@
   -> `41 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first persist-candidate-record-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring explicit manager seam `_persist_candidate_record_stage()` and
+  ACCEPT persistence delegation through that seam from
+  `_persist_and_sync_stage()`.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 41 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_persist_candidate_record_stage()` on `FileProcessManager` and
+  route `_persist_and_sync_stage()` persistence through it while preserving
+  current output/result behavior.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `43 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
 
 ---
 

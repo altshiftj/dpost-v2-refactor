@@ -163,6 +163,66 @@ def test_pipeline_declares_persist_and_sync_stage_hook() -> None:
     assert hasattr(_ProcessingPipeline, "_persist_and_sync_stage")
 
 
+def test_manager_declares_persist_candidate_record_stage_hook() -> None:
+    """Require explicit manager seam for record persistence side effects."""
+    assert hasattr(FileProcessManager, "_persist_candidate_record_stage")
+
+
+def test_persist_and_sync_stage_delegates_manager_persist_candidate_record_stage(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate ACCEPT persistence through manager seam, not direct add-item calls."""
+    pipeline = process_manager._pipeline
+    source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    source.write_text("payload")
+    candidate = ProcessingCandidate(
+        original_path=source,
+        effective_path=source,
+        prefix="abc-ipat-sample",
+        extension=".txt",
+        processor=DummyProcessor(),
+        device=config_service.devices[0],
+        preprocessed_path=None,
+    )
+    context = RouteContext(
+        candidate=candidate,
+        sanitized_prefix="abc-ipat-sample",
+        existing_record=None,
+        decision=RoutingDecision.ACCEPT,
+    )
+    calls: list[str] = []
+    expected_final_path = source.parent / "record" / "processed.txt"
+
+    def persist_candidate_record_stage(route_context: RouteContext) -> str:
+        calls.append("persist_candidate_record")
+        assert route_context is context
+        return str(expected_final_path)
+
+    monkeypatch.setattr(
+        process_manager,
+        "_persist_candidate_record_stage",
+        persist_candidate_record_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "add_item_to_record",
+        lambda *_args, **_kwargs: pytest.fail(
+            "_persist_and_sync_stage should delegate via "
+            "_persist_candidate_record_stage."
+        ),
+    )
+
+    result = pipeline._persist_and_sync_stage(context)
+
+    assert result.status is ProcessingStatus.PROCESSED
+    assert result.final_path == expected_final_path
+    assert calls == ["persist_candidate_record"]
+
+
 def test_dispatch_route_accept_delegates_to_persist_and_sync_stage(
     process_manager: FileProcessManager,
     config_service,

@@ -354,3 +354,20 @@
   returned `41 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 persist-candidate-record-stage tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `FileProcessManager._persist_candidate_record_stage` and
+  `_persist_and_sync_stage` delegation through this seam.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 41 passed, 292 deselected`.
+- eighth implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `FileProcessManager._persist_candidate_record_stage` and route
+  ACCEPT persistence from `_persist_and_sync_stage` through it.
+- green verification:
+  `python -m pytest -m migration`
+  returned `43 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.
