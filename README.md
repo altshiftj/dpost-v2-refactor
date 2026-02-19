@@ -1,17 +1,13 @@
-# ipat-watchdog (Migrating to dpost)
+# dpost
 
-This repository contains the current `ipat_watchdog` implementation and an in-progress migration scaffold for `dpost`.
+This repository contains the `dpost` runtime and supporting architecture
+artifacts.
 
 ## Current Entrypoints
-- Legacy: `ipat-watchdog` -> `ipat_watchdog.__main__:main`
-- Migration scaffold: `dpost` -> `dpost.__main__:main`
+- Canonical console script: `dpost` -> `dpost.__main__:main`
+- Canonical module startup: `python -m dpost`
 
-## Migration Status
-- Headless-first migration is active.
-- Optional sync-adapter architecture is planned.
-- Architecture governance docs live under `docs/architecture/`.
-
-## dpost Runtime Modes (Migration)
+## Runtime Modes
 - `DPOST_RUNTIME_MODE` controls startup mode in `dpost` composition:
   - `headless` (default): uses non-interactive `HeadlessRuntimeUI`.
   - `desktop`: uses `TKinterUI` to preserve desktop dialog/session behavior.

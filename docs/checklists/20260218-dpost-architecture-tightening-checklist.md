@@ -699,7 +699,43 @@
 - [ ] Prepare migration notes for contributors and users.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Phase 8 kickoff started on 2026-02-19 with cutover
+  inventory report:
+  `docs/reports/20260219-phase8-final-cutover-cleanup-inventory.md`.
+- Tests-first increment:
+  added failing migration tests in
+  `tests/migration/test_phase8_cutover_identity.py` covering:
+  canonical `dpost` packaging/entrypoint identity expectations,
+  docs/scripts naming cutover expectations, and legacy compatibility
+  retirement guards (remove or explicitly sunset deprecated paths).
+- Red-state verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `8 failed`.
+  `python -m pytest -m migration`
+  -> `8 failed, 71 passed, 302 deselected`.
+- Implementation increment (green):
+  updated canonical package/entrypoint metadata in `pyproject.toml`,
+  updated startup naming in `README.md`, `USER_README.md`, and
+  `DEVELOPER_README.md`, updated consolidated pipeline naming references in
+  `scripts/infra/windows/consolidated_pipelines/`, and introduced
+  `src/dpost/runtime/bootstrap.py` bridge wiring used by
+  `src/dpost/__main__.py` and `src/dpost/runtime/composition.py`.
+- Legacy compatibility-path guard alignment:
+  added explicit deprecation + sunset notice in
+  `src/ipat_watchdog/__main__.py` (sunset `2026-06-30`) while retaining
+  transition-time compatibility.
+- Runtime test stability follow-up (green):
+  updated bootstrap bridge symbol resolution to lazy per-call lookup to avoid
+  runtime-mode migration test hangs/timeouts under monkeypatched startup paths.
+- Green verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `8 passed`.
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  -> `8 passed`.
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  -> `9 passed`.
+  `python -m pytest -m migration`
+  -> `79 passed, 302 deselected`.
 
 ---
 

@@ -9,6 +9,12 @@ from dpost.application.ports import SyncAdapterPort
 from dpost.infrastructure.runtime import HeadlessRuntimeUI
 from dpost.infrastructure.sync import NoopSyncAdapter
 from dpost.plugins import REFERENCE_PLUGIN_PROFILE, PluginProfile
+from dpost.runtime.bootstrap import (
+    bootstrap_runtime,
+    build_startup_settings,
+    collect_startup_settings,
+    startup_error,
+)
 
 if TYPE_CHECKING:
     from ipat_watchdog.core.app.bootstrap import BootstrapContext, StartupSettings
@@ -32,9 +38,7 @@ def _coerce_port(
         return fallback
     if isinstance(value, int):
         if value <= 0:
-            from ipat_watchdog.core.app.bootstrap import StartupError
-
-            raise StartupError(f"{env_name} must be a positive integer. Got {value}.")
+            raise startup_error(f"{env_name} must be a positive integer. Got {value}.")
         return value
 
     raw = value.strip()
@@ -43,13 +47,9 @@ def _coerce_port(
     try:
         parsed = int(raw)
     except ValueError as exc:
-        from ipat_watchdog.core.app.bootstrap import StartupError
-
-        raise StartupError(f"Invalid integer value for {env_name}: {value!r}") from exc
+        raise startup_error(f"Invalid integer value for {env_name}: {value!r}") from exc
     if parsed <= 0:
-        from ipat_watchdog.core.app.bootstrap import StartupError
-
-        raise StartupError(f"{env_name} must be a positive integer. Got {parsed}.")
+        raise startup_error(f"{env_name} must be a positive integer. Got {parsed}.")
     return parsed
 
 
@@ -80,11 +80,6 @@ def resolve_startup_settings(
     )
     if not has_overrides:
         return None
-
-    from ipat_watchdog.core.app.bootstrap import (
-        StartupSettings as LegacyStartupSettings,
-    )
-    from ipat_watchdog.core.app.bootstrap import collect_startup_settings
 
     resolved_pc_name = (pc_name if pc_name is not None else (env_pc_name or "")).strip()
     resolved_device_names: tuple[str, ...] | None
@@ -117,7 +112,7 @@ def resolve_startup_settings(
         fallback=base_settings.observability_port,
     )
 
-    return LegacyStartupSettings(
+    return build_startup_settings(
         pc_name=base_settings.pc_name,
         device_names=base_settings.device_names,
         prometheus_port=final_prometheus_port,
@@ -141,15 +136,11 @@ def select_sync_adapter(adapter_name: str | None = None) -> SyncAdapterPort:
 
             return KadiSyncAdapter()
         except ModuleNotFoundError as exc:
-            from ipat_watchdog.core.app.bootstrap import StartupError
-
-            raise StartupError(
+            raise startup_error(
                 "Kadi sync adapter requires optional dependency 'kadi_apy'."
             ) from exc
 
-    from ipat_watchdog.core.app.bootstrap import StartupError
-
-    raise StartupError(
+    raise startup_error(
         f"Unknown sync adapter '{selected_name}'. Available adapters: noop, kadi."
     )
 
@@ -165,9 +156,7 @@ def select_plugin_profile(profile_name: str | None = None) -> PluginProfile | No
     if selected_name == "reference":
         return REFERENCE_PLUGIN_PROFILE
 
-    from ipat_watchdog.core.app.bootstrap import StartupError
-
-    raise StartupError(
+    raise startup_error(
         "Unknown plugin profile " f"'{selected_name}'. Available profiles: reference."
     )
 
@@ -180,9 +169,7 @@ def select_runtime_mode(mode_name: str | None = None) -> str:
     if selected_name in {"headless", "desktop"}:
         return selected_name
 
-    from ipat_watchdog.core.app.bootstrap import StartupError
-
-    raise StartupError(
+    raise startup_error(
         "Unknown runtime mode "
         f"'{selected_name}'. Available modes: headless, desktop."
     )
@@ -199,13 +186,7 @@ def select_ui_factory(mode_name: str | None = None) -> Callable[[], object]:
 
 
 def compose_bootstrap() -> "BootstrapContext":
-    """Build and return the runtime context for dpost.
-
-    This temporary implementation delegates to the existing ipat_watchdog
-    bootstrap path while migration is in progress.
-    """
-    from ipat_watchdog.core.app.bootstrap import StartupSettings
-    from ipat_watchdog.core.app.bootstrap import bootstrap as legacy_bootstrap
+    """Build and return the runtime context for dpost."""
 
     sync_adapter = select_sync_adapter()
     plugin_profile = select_plugin_profile()
@@ -220,11 +201,11 @@ def compose_bootstrap() -> "BootstrapContext":
         "sync_manager_factory": sync_manager_factory,
     }
     if plugin_profile is not None:
-        bootstrap_kwargs["settings"] = StartupSettings(
+        bootstrap_kwargs["settings"] = build_startup_settings(
             pc_name=plugin_profile.pc_name,
             device_names=plugin_profile.device_names,
         )
     elif resolved_settings is not None:
         bootstrap_kwargs["settings"] = resolved_settings
 
-    return legacy_bootstrap(**bootstrap_kwargs)
+    return bootstrap_runtime(**bootstrap_kwargs)

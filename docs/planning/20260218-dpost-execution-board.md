@@ -22,7 +22,7 @@
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Completed (2026-02-19) | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Completed (2026-02-19) | Plugin inventory normalized and discovery tests green |
 | Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Completed (2026-02-19) | Desktop and headless smoke tests both green |
-| Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | Planned | `dpost` canonical metadata/docs complete and release gate passed |
+| Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | In Progress (2026-02-19) | `dpost` canonical metadata/docs complete and release gate passed |
 
 ## Weekly Cadence
 - Monday: phase planning and risk review.
@@ -588,3 +588,41 @@
 - Phase 7 gate closed on 2026-02-19 after explicit runtime mode composition,
   dual-mode smoke checks, desktop interaction parity characterization, and
   runtime mode behavior documentation updates.
+- Phase 8 final cutover/cleanup kickoff on 2026-02-19:
+- added inventory report:
+  `docs/reports/20260219-phase8-final-cutover-cleanup-inventory.md`.
+- added tests-first migration coverage in
+  `tests/migration/test_phase8_cutover_identity.py` for:
+  canonical `dpost` packaging/entrypoint identity expectations,
+  docs/scripts naming cutover expectations, and legacy compatibility
+  retirement guards.
+- red-state verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `8 failed`.
+  `python -m pytest -m migration`
+  returned `8 failed, 71 passed, 302 deselected`.
+- first implementation increment status:
+- updated canonical package identity and entrypoint metadata in
+  `pyproject.toml` (`name = "dpost"`, `dpost` script retained as canonical).
+- updated startup naming documentation in `README.md`, `USER_README.md`, and
+  `DEVELOPER_README.md` to `python -m dpost` / `dpost`.
+- updated consolidated pipeline namespace references in
+  `scripts/infra/windows/consolidated_pipelines/pipeline-utils.ps1` and
+  `scripts/infra/windows/consolidated_pipelines/README.md`.
+- added `src/dpost/runtime/bootstrap.py` and rewired
+  `src/dpost/__main__.py` + `src/dpost/runtime/composition.py` through this
+  bridge to remove direct legacy bootstrap imports from canonical entry modules.
+- added deprecation + sunset note to legacy entrypoint
+  `src/ipat_watchdog/__main__.py` (sunset `2026-06-30`).
+- runtime-mode stability follow-up:
+- updated the bridge to lazy per-call bootstrap symbol lookup to keep
+  monkeypatched migration runtime tests deterministic and avoid startup hangs.
+- green verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `8 passed`.
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  returned `8 passed`.
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  returned `9 passed`.
+  `python -m pytest -m migration`
+  returned `79 passed, 302 deselected`.

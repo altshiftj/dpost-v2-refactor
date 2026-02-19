@@ -1,1 +1,1 @@
-"""Runtime composition and startup wiring for dpost."""
+"""Runtime composition and bootstrap wiring for dpost."""

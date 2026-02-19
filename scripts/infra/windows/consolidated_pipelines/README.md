@@ -151,7 +151,7 @@ To add a new PC configuration, edit the `Get-PCConfigurations` function in `acce
 - Router Tunnel: SSH tunneling for network-isolated targets
 
 ### PC/Device Mapping Integration
-- Uses `ipat_watchdog.pc_device_mapping` for dependency resolution
+- Uses canonical `dpost` plugin mapping configuration for dependency resolution
 - Automatically installs correct device plugins per PC type
 - Maintains compatibility with existing build specifications
 

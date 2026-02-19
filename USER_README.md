@@ -15,7 +15,7 @@ IPAT Data Watchdog keeps an eye on your workstation's upload folder, checks that
 | Option | Steps |
 |--------|-------|
 | Packaged build | Double-click the supplied `wd_<pc_name>.exe`. Ensure the `PC_NAME` environment variable is set beforehand if the package does not embed it. |
-| Python environment | Activate the environment where `ipat_watchdog` is installed, set the variables below, then run `python -m ipat_watchdog` or the console script `ipat-watchdog`. |
+| Python environment | Activate the environment where `dpost` is installed, set the variables below, then run `python -m dpost` or the console script `dpost`. |
 
 Required environment variables:
 ```powershell

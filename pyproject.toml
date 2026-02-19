@@ -1,5 +1,5 @@
 [project]
-name = "ipat-watchdog"
+name = "dpost"
 version = "0.1.0"
 description = "Scientific watchdog app for automated data ingestion"
 readme = "README.md"
@@ -46,7 +46,6 @@ test_pc         = []
 eirich_blb      = []
 
 [project.scripts]
-ipat-watchdog = "ipat_watchdog.__main__:main"
 dpost = "dpost.__main__:main"
 
 [tool.setuptools]

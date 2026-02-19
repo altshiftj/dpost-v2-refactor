@@ -11,7 +11,8 @@ IPAT Data Watchdog monitors the workstation upload folder, normalises new artefa
 - UI abstractions (`core/ui/adapters.py`) bridge domain prompts onto the concrete Tkinter implementation (`core/ui/ui_tkinter.py`).
 
 ## Startup Flow and Environment
-1. `src/ipat_watchdog/__main__.py` invokes `bootstrap()` in `core/app/bootstrap.py`.
+1. `src/dpost/__main__.py` invokes `compose_bootstrap()` in
+   `src/dpost/runtime/composition.py`.
 2. `collect_startup_settings()` optionally loads a bundled `.env` from `build/.env`; real environment variables always win.
 3. Environment variables:
    - `PC_NAME` (**required**) – selects the PC plugin.
@@ -97,10 +98,12 @@ python -m pip install -e .[dev]
 $env:PC_NAME = "test_pc"                # or a production PC plugin
 $env:DEVICE_PLUGINS = "test_device"     # optional override
 
-python -m ipat_watchdog
+python -m dpost
 ```
 
-The console script `ipat-watchdog` is also registered when the project is installed. Metrics are served at `http://localhost:8000/metrics`; if the observability extras are installed, the log viewer lives at `http://localhost:8001/logs`.
+The console script `dpost` is also registered when the project is installed.
+Metrics are served at `http://localhost:8000/metrics`; if the observability
+extras are installed, the log viewer lives at `http://localhost:8001/logs`.
 
 Run tests with:
 ```powershell

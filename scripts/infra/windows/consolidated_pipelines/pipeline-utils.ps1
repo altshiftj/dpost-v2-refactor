@@ -158,7 +158,7 @@ function Get-DevicesForPC {
     param([string] $PCName, [string] $ProjectRoot)
     
     try {
-        $devices = python -c "import sys; from importlib.metadata import entry_points; eps = entry_points(group='ipat_watchdog.pc_plugins'); names = [ep.name for ep in eps if ep.name == '$PCName']; print(','.join(names))"
+        $devices = python -c "from importlib.metadata import entry_points; eps = entry_points(group='dpost.pc_plugins'); names = [ep.name for ep in eps if ep.name == '$PCName']; print(','.join(names))"
         return $devices -split ',' | ForEach-Object { $_.Trim() }
     } catch {
         Write-Warning "Failed to load PC plugins from pyproject.toml entry points."

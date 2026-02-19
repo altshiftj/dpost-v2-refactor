@@ -1,4 +1,8 @@
-"""Executable entry point for the Watchdog application."""
+"""Deprecated compatibility entrypoint for the Watchdog application.
+
+Deprecated: use ``python -m dpost`` or the ``dpost`` console script.
+Sunset: 2026-06-30.
+"""
 
 from __future__ import annotations
 
