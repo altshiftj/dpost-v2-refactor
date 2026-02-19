@@ -284,10 +284,10 @@
 
 ### Checklist
 - [x] Define stage service boundaries (resolve, stabilize, preprocess, route, persist/sync).
-- [ ] Extract one stage at a time with unit tests per stage.
-- [ ] Keep integration behavior stable while orchestration is split.
-- [ ] Reduce direct cross-module coupling in orchestration module.
-- [ ] Validate no regressions in multi-device and multi-processor integration tests.
+- [x] Extract one stage at a time with unit tests per stage.
+- [x] Keep integration behavior stable while orchestration is split.
+- [x] Reduce direct cross-module coupling in orchestration module.
+- [x] Validate no regressions in multi-device and multi-processor integration tests.
 
 ### Completion Notes
 - How it was done: Phase 5 kickoff completed on 2026-02-18 with a
@@ -543,6 +543,32 @@
   -> `55 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   -> `15 passed`.
+- Tests-first resolve-record-processor-stage increment:
+  added failing migration assertions in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  requiring explicit manager seam `_resolve_record_processor_stage()` and
+  `add_item_to_record()` delegation through that seam.
+- Red-state verification:
+  `python -m pytest -m migration`
+  -> `2 failed, 55 passed, 292 deselected`.
+- Green implementation increment:
+  updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `_resolve_record_processor_stage()` and route processor selection
+  through this seam from `add_item_to_record()`, preserving legacy
+  no-processor exception routing behavior.
+- Green verification:
+  `python -m pytest -m migration`
+  -> `57 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  -> `15 passed`.
+- Phase 5 closeout regression verification:
+  `python -m pytest tests/integration/test_multi_processor_app_flow.py tests/integration/test_device_integrations.py tests/integration/test_integration.py`
+  -> `20 passed`.
+  `python -m pytest -m legacy`
+  -> `288 passed, 4 skipped, 57 deselected`.
+- Gate close summary:
+  Phase 5 gate closed on 2026-02-19 after 15 decomposition increments with
+  migration, targeted unit, integration, and legacy regression suites green.
 
 ---
 

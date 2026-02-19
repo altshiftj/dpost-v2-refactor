@@ -64,6 +64,9 @@
 - `FileProcessManager` now exposes `_persist_candidate_record_stage()` and
   `_persist_and_sync_stage()` delegates ACCEPT persistence through this seam.
 - `FileProcessManager` now exposes
+  `_resolve_record_processor_stage()` and `add_item_to_record()` delegates
+  processor selection through this seam.
+- `FileProcessManager` now exposes
   `_resolve_record_persistence_context_stage()` and `add_item_to_record()`
   delegates record/processor/path-id setup through this seam.
 - `FileProcessManager` now exposes `_process_record_artifact_stage()` and
@@ -128,9 +131,9 @@
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.
 - `add_item_to_record()` now delegates record-context resolution, processor
-  invocation, datatype assignment, output finalization, and post-persist
-  side effects; stage-call ordering remains coupled there and is an active
-  decomposition target.
+  selection, invocation, datatype assignment, output finalization, and
+  post-persist side effects; stage-call ordering remains coupled there and is
+  an active decomposition target.
 
 ## Migration Notes
 - Headless-first migration is the current execution posture.

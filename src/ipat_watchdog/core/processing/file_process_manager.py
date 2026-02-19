@@ -372,11 +372,7 @@ class FileProcessManager:
         file_processor: Optional[FileProcessorABS] = None,
         device: DeviceConfig | None = None,
     ) -> Optional[str]:
-        processor = file_processor or self.file_processor
-        if processor is None:
-            move_to_exception_folder(src_path)
-            FILES_FAILED.inc()
-            raise RuntimeError("No file processor available")
+        processor = self._resolve_record_processor_stage(file_processor, src_path)
 
         (
             record,
@@ -404,6 +400,19 @@ class FileProcessManager:
             record_path,
             src_path,
         )
+
+    def _resolve_record_processor_stage(
+        self,
+        file_processor: Optional[FileProcessorABS],
+        source_path: str,
+    ) -> FileProcessorABS:
+        """Resolve processor for record persistence or fail with legacy routing behavior."""
+        processor = file_processor or self.file_processor
+        if processor is None:
+            move_to_exception_folder(source_path)
+            FILES_FAILED.inc()
+            raise RuntimeError("No file processor available")
+        return processor
 
     def _resolve_record_persistence_context_stage(
         self,

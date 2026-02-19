@@ -19,7 +19,7 @@
 | Phase 2: dpost Spine and Headless Composition Root | 2026-02-27 -> 2026-03-10 | Runtime Owner + Core Owner | Completed (2026-02-18) | Headless `dpost` entrypoint smoke test green, legacy entrypoint intact |
 | Phase 3: Framework Kernel and Sync Adapter Contract | 2026-03-11 -> 2026-03-19 | Core Owner | Completed (2026-02-18) | Framework contracts + reference implementations green before concrete adapter migration |
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Completed (2026-02-18) | Legacy constant fallbacks removed from operational paths |
-| Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | In progress (2026-02-18) | Stage services extracted, integration suite unchanged/green |
+| Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Completed (2026-02-19) | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Planned | Plugin inventory normalized and discovery tests green |
 | Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Planned | Desktop and headless smoke tests both green |
 | Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | Planned | `dpost` canonical metadata/docs complete and release gate passed |
@@ -36,7 +36,7 @@
 - updated acceptance criteria in the phase checklist
 - re-baselined target end date
 
-## Current State (as of 2026-02-18)
+## Current State (as of 2026-02-19)
 - Decisions captured and locked in planning/checklist docs.
 - Phase 1 gate formally closed on 2026-02-18:
 - `python -m pytest -m legacy`: `288 passed, 4 skipped, 4 deselected`.
@@ -477,3 +477,29 @@
   returned `55 passed, 292 deselected`.
   `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
   returned `15 passed`.
+- Phase 5 resolve-record-processor-stage tests-first increment on 2026-02-19:
+- added failing migration tests in
+  `tests/migration/test_processing_pipeline_stage_boundaries.py` requiring
+  explicit `FileProcessManager._resolve_record_processor_stage` and
+  `add_item_to_record` delegation through this seam.
+- red-state verification:
+  `python -m pytest -m migration`
+  returned `2 failed, 55 passed, 292 deselected`.
+- fifteenth implementation increment status:
+- updated `src/ipat_watchdog/core/processing/file_process_manager.py` to
+  extract `FileProcessManager._resolve_record_processor_stage` and route
+  processor resolution through it from `add_item_to_record`.
+- green verification:
+  `python -m pytest -m migration`
+  returned `57 passed, 292 deselected`.
+  `python -m pytest tests/unit/core/processing/test_file_process_manager.py`
+  returned `15 passed`.
+- Phase 5 closeout validation on 2026-02-19:
+- integration regression verification:
+  `python -m pytest tests/integration/test_multi_processor_app_flow.py tests/integration/test_device_integrations.py tests/integration/test_integration.py`
+  returned `20 passed`.
+- legacy regression verification:
+  `python -m pytest -m legacy`
+  returned `288 passed, 4 skipped, 57 deselected`.
+- Phase 5 gate closed on 2026-02-19 after decomposition increments and
+  cross-suite regression validation.

@@ -196,6 +196,11 @@ def test_manager_declares_finalize_record_output_stage_hook() -> None:
     assert hasattr(FileProcessManager, "_finalize_record_output_stage")
 
 
+def test_manager_declares_resolve_record_processor_stage_hook() -> None:
+    """Require explicit manager seam for record-processor selection policy."""
+    assert hasattr(FileProcessManager, "_resolve_record_processor_stage")
+
+
 def test_add_item_to_record_delegates_process_record_artifact_stage(
     process_manager: FileProcessManager,
     config_service,
@@ -447,6 +452,73 @@ def test_add_item_to_record_delegates_finalize_record_output_stage(
 
     assert result == "final-path-from-stage"
     assert calls == ["finalize_output"]
+
+
+def test_add_item_to_record_delegates_resolve_record_processor_stage(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate processor selection through explicit seam without inline fallback logic."""
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("payload")
+    fake_record = SimpleNamespace(
+        default_description="",
+        default_tags=[],
+        datatype=None,
+    )
+    sentinel_processor = DummyProcessor()
+    calls: list[str] = []
+
+    def resolve_record_processor_stage(
+        file_processor,
+        source_path: str,
+    ) -> DummyProcessor:
+        calls.append("resolve_processor")
+        assert file_processor is None
+        assert source_path == str(src)
+        return sentinel_processor
+
+    def resolve_record_persistence_context_stage(
+        _record,
+        _filename_prefix: str,
+        _device,
+        processor,
+    ):
+        assert processor is sentinel_processor
+        return fake_record, processor, str(tmp_settings.WATCH_DIR), "test_file_id"
+
+    monkeypatch.setattr(
+        process_manager,
+        "_resolve_record_processor_stage",
+        resolve_record_processor_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_resolve_record_persistence_context_stage",
+        resolve_record_persistence_context_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_finalize_record_output_stage",
+        lambda output, *_args, **_kwargs: output.final_path,
+        raising=False,
+    )
+
+    result = process_manager.add_item_to_record(
+        record=None,
+        src_path=str(src),
+        filename_prefix="abc-ipat-sample",
+        extension=".txt",
+        file_processor=None,
+        device=config_service.devices[0],
+    )
+
+    assert result is not None
+    assert calls == ["resolve_processor"]
 
 
 def test_add_item_to_record_delegates_resolve_record_persistence_context_stage(
