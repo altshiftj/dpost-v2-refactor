@@ -638,3 +638,14 @@
   returned `All done! 31 files would be left unchanged.` after adding
   temporary Phase 8 cutover Black scope in `pyproject.toml` (`[tool.black]`
   `extend-exclude`) for compatibility-retention legacy paths.
+- post-sunset retirement prep increment:
+- added dedicated compatibility-retirement execution package:
+  `docs/planning/20260219-post-sunset-compatibility-retirement-plan.md`
+  and
+  `docs/checklists/20260219-post-sunset-compatibility-retirement-checklist.md`
+  with file-by-file removal sequence and gate/manual validation steps for
+  post-`2026-06-30` execution.
+- added companion PR runbook:
+  `docs/planning/20260219-post-sunset-compatibility-retirement-pr-runbook.md`
+  with title/body template, commit sequencing, and terminal-ready validation
+  command blocks.

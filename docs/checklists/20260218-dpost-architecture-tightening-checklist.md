@@ -750,6 +750,11 @@
   added `[tool.black]` cutover-phase temporary `extend-exclude` scope in
   `pyproject.toml` to keep Black enforcement on active migration surfaces while
   legacy compatibility paths remain in retention window.
+- Post-sunset retirement planning increment:
+  added dedicated retirement planning/checklist docs for compatibility path
+  sunset execution:
+  `docs/planning/20260219-post-sunset-compatibility-retirement-plan.md` and
+  `docs/checklists/20260219-post-sunset-compatibility-retirement-checklist.md`.
 
 ---
 
