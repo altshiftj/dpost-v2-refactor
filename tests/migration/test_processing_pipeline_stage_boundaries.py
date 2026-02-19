@@ -191,6 +191,11 @@ def test_manager_declares_assign_record_datatype_stage_hook() -> None:
     assert hasattr(FileProcessManager, "_assign_record_datatype_stage")
 
 
+def test_manager_declares_finalize_record_output_stage_hook() -> None:
+    """Require explicit manager seam for output/result finalization policy."""
+    assert hasattr(FileProcessManager, "_finalize_record_output_stage")
+
+
 def test_add_item_to_record_delegates_process_record_artifact_stage(
     process_manager: FileProcessManager,
     config_service,
@@ -352,6 +357,96 @@ def test_add_item_to_record_delegates_record_datatype_assignment_stage(
     assert result == expected_output.final_path
     assert calls == ["assign_datatype"]
     assert fake_record.datatype is None
+
+
+def test_add_item_to_record_delegates_finalize_record_output_stage(
+    process_manager: FileProcessManager,
+    config_service,
+    tmp_settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Delegate output finalization through explicit seam without inline side effects."""
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("payload")
+    fake_record = SimpleNamespace(
+        default_description="",
+        default_tags=[],
+        datatype=None,
+    )
+    expected_output = ProcessingOutput(
+        str(tmp_settings.WATCH_DIR / "processed.txt"),
+        "dummy_type",
+    )
+    calls: list[str] = []
+
+    def resolve_record_persistence_context_stage(
+        _record,
+        _filename_prefix: str,
+        _device,
+        processor,
+    ):
+        return fake_record, processor, str(tmp_settings.WATCH_DIR), "test_file_id"
+
+    def process_record_artifact_stage(
+        _processor,
+        _src_path: str,
+        _record_path: str,
+        _file_id: str,
+        _extension: str,
+    ) -> ProcessingOutput:
+        return expected_output
+
+    def finalize_record_output_stage(
+        output: ProcessingOutput,
+        record,
+        record_path: str,
+        src_path: str,
+    ) -> str:
+        calls.append("finalize_output")
+        assert output is expected_output
+        assert record is fake_record
+        assert record_path == str(tmp_settings.WATCH_DIR)
+        assert src_path == str(src)
+        return "final-path-from-stage"
+
+    monkeypatch.setattr(
+        process_manager,
+        "_resolve_record_persistence_context_stage",
+        resolve_record_persistence_context_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_process_record_artifact_stage",
+        process_record_artifact_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_finalize_record_output_stage",
+        finalize_record_output_stage,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        process_manager,
+        "_post_persist_side_effects_stage",
+        lambda *_args, **_kwargs: pytest.fail(
+            "add_item_to_record should delegate output finalization through "
+            "_finalize_record_output_stage."
+        ),
+    )
+
+    result = process_manager.add_item_to_record(
+        record=None,
+        src_path=str(src),
+        filename_prefix="abc-ipat-sample",
+        extension=".txt",
+        file_processor=process_manager.file_processor,
+        device=config_service.devices[0],
+    )
+
+    assert result == "final-path-from-stage"
+    assert calls == ["finalize_output"]
 
 
 def test_add_item_to_record_delegates_resolve_record_persistence_context_stage(

@@ -398,10 +398,12 @@ class FileProcessManager:
         )
 
         self._assign_record_datatype_stage(record, output)
-        logger.debug("Processed %s -> %s", src_path, output.final_path)
-        self._post_persist_side_effects_stage(output, record, record_path, src_path)
-
-        return output.final_path
+        return self._finalize_record_output_stage(
+            output,
+            record,
+            record_path,
+            src_path,
+        )
 
     def _resolve_record_persistence_context_stage(
         self,
@@ -449,6 +451,18 @@ class FileProcessManager:
     ) -> None:
         """Assign processor-reported datatype onto the target record."""
         record.datatype = output.datatype
+
+    def _finalize_record_output_stage(
+        self,
+        output: ProcessingOutput,
+        record,
+        record_path: str,
+        src_path: str,
+    ) -> str:
+        """Finalize persistence side effects and return the output path."""
+        logger.debug("Processed %s -> %s", src_path, output.final_path)
+        self._post_persist_side_effects_stage(output, record, record_path, src_path)
+        return output.final_path
 
     def _post_persist_side_effects_stage(
         self,
