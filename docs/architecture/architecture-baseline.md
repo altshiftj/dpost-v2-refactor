@@ -120,6 +120,8 @@
 - `tests/migration/test_naming_constants_consolidation.py`
 - Phase 5 stage-boundary decomposition tests currently live in:
 - `tests/migration/test_processing_pipeline_stage_boundaries.py`
+- Phase 7 runtime mode + desktop parity tests currently live in:
+- `tests/migration/test_runtime_mode_selection.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.

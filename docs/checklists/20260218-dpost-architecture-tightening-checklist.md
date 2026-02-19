@@ -639,9 +639,9 @@
 ### Checklist
 - [x] Keep runtime mode selection explicit in composition root.
 - [x] Ensure headless mode remains green after desktop wiring changes.
-- [ ] Ensure desktop mode preserves current UI interaction behavior.
+- [x] Ensure desktop mode preserves current UI interaction behavior.
 - [x] Add/refresh smoke tests for both runtime modes.
-- [ ] Document runtime mode selection and behavior differences.
+- [x] Document runtime mode selection and behavior differences.
 
 ### Completion Notes
 - How it was done: Phase 7 kickoff started on 2026-02-19 with runtime-mode
@@ -668,6 +668,23 @@
   -> `6 passed`.
   `python -m pytest -m migration`
   -> `69 passed, 302 deselected`.
+- Desktop parity characterization increment (green):
+  extended `tests/migration/test_runtime_mode_selection.py` with desktop-mode
+  bootstrap/adapter behavior assertions using a desktop UI probe to lock:
+  `UiInteractionAdapter` + `UiTaskScheduler` wiring and dialog/scheduler
+  behavior delegation through desktop runtime composition.
+- Runtime mode documentation increment:
+  updated `README.md` with `DPOST_RUNTIME_MODE` selection behavior and related
+  migration startup env variables.
+- Green verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  -> `8 passed`.
+  `python -m pytest -m migration`
+  -> `71 passed, 302 deselected`.
+- Gate close summary:
+  Phase 7 gate closed on 2026-02-19 after explicit runtime mode composition,
+  dual-mode smoke tests, desktop interaction parity characterization, and
+  runtime mode behavior documentation updates.
 
 ---
 

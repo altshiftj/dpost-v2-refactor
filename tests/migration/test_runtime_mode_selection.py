@@ -9,6 +9,7 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from dpost import __main__ as main_module
+from ipat_watchdog.core.interactions import RenamePrompt, SessionPromptDetails
 from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
 
 
@@ -54,6 +55,103 @@ def _install_bootstrap_stub(
 
     monkeypatch.setattr(bootstrap_module, "bootstrap", fake_bootstrap)
     return captured, calls
+
+
+def _install_bootstrap_runtime_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Patch legacy bootstrap dependencies for deterministic composition tests."""
+    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+
+    monkeypatch.setattr(bootstrap_module, "_build_config_service", lambda *_: "config")
+    monkeypatch.setattr(bootstrap_module, "init_dirs", lambda: None)
+    monkeypatch.setattr(bootstrap_module, "start_http_server", lambda *_: None)
+    monkeypatch.setattr(
+        bootstrap_module, "start_observability_server", lambda *_, **__: None
+    )
+
+    class AppStub:
+        """App stub that captures interactions and scheduler wiring."""
+
+        def __init__(self, **kwargs) -> None:
+            self.interactions = kwargs["interactions"]
+            self.scheduler = kwargs["scheduler"]
+
+        def run(self) -> None:
+            """No-op run path for composition tests."""
+
+    monkeypatch.setattr(bootstrap_module, "DeviceWatchdogApp", AppStub)
+
+
+class DesktopUIProbe:
+    """UI probe that captures desktop interaction and scheduler calls."""
+
+    def __init__(self) -> None:
+        self.append_prompts: list[str] = []
+        self.rename_calls: list[tuple[str, dict[str, object]]] = []
+        self.done_calls: list[SessionPromptDetails] = []
+        self.scheduled_calls: list[tuple[int, object]] = []
+        self.cancelled_handles: list[int] = []
+        self.handle_counter = 0
+
+    def initialize(self) -> None:
+        """Initialize probe UI."""
+
+    def show_warning(self, title: str, message: str) -> None:
+        """Record warning calls."""
+
+    def show_info(self, title: str, message: str) -> None:
+        """Record info calls."""
+
+    def show_error(self, title: str, message: str) -> None:
+        """Record error calls."""
+
+    def prompt_rename(self) -> dict[str, str] | None:
+        """Unused legacy probe entrypoint."""
+        return None
+
+    def show_rename_dialog(
+        self, attempted_filename: str, violation_info: dict[str, object]
+    ) -> dict[str, str] | None:
+        """Record rename-dialog calls and return deterministic user input."""
+        self.rename_calls.append((attempted_filename, violation_info))
+        return {"name": "alice", "institute": "lab", "sample_ID": "sample-1"}
+
+    def prompt_append_record(self, record_name: str) -> bool:
+        """Record append prompts and return deterministic desktop choice."""
+        self.append_prompts.append(record_name)
+        return False
+
+    def show_done_dialog(
+        self, session_details: SessionPromptDetails, on_done_callback
+    ) -> None:
+        """Record done prompts and execute callback."""
+        self.done_calls.append(session_details)
+        on_done_callback()
+
+    def get_root(self) -> object:
+        """Return a sentinel root object."""
+        return object()
+
+    def destroy(self) -> None:
+        """No-op destroy path for probe UI."""
+
+    def schedule_task(self, interval_ms: int, callback) -> int:
+        """Record scheduled callbacks and return synthetic handles."""
+        self.handle_counter += 1
+        self.scheduled_calls.append((interval_ms, callback))
+        return self.handle_counter
+
+    def cancel_task(self, handle: int) -> None:
+        """Record cancelled scheduled handles."""
+        self.cancelled_handles.append(handle)
+
+    def set_close_handler(self, callback) -> None:
+        """No-op close handler registration."""
+
+    def set_exception_handler(self, callback) -> None:
+        """No-op exception handler registration."""
+
+    def run_main_loop(self) -> None:
+        """No-op main loop for probe UI."""
 
 
 def test_default_runtime_mode_selection_is_headless() -> None:
@@ -137,3 +235,70 @@ def test_main_smoke_desktop_runtime_mode_uses_mode_specific_composition(
     kwargs = captured["kwargs"]
     assert "ui_factory" in kwargs
     assert kwargs["ui_factory"] is TKinterUI
+
+
+def test_desktop_mode_bootstrap_preserves_interaction_and_scheduler_wiring(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preserve desktop-mode adapter wiring between bootstrap context and app."""
+    composition = _reload_composition_module()
+    _install_bootstrap_runtime_stubs(monkeypatch)
+
+    tkinter_module = importlib.import_module("ipat_watchdog.core.ui.ui_tkinter")
+    monkeypatch.setattr(tkinter_module, "TKinterUI", DesktopUIProbe)
+    monkeypatch.setenv("DPOST_RUNTIME_MODE", "desktop")
+    monkeypatch.setenv("DPOST_SYNC_ADAPTER", "noop")
+    monkeypatch.setenv("DPOST_PLUGIN_PROFILE", "reference")
+
+    context = composition.compose_bootstrap()
+
+    assert isinstance(context.ui, DesktopUIProbe)
+    assert context.app.interactions is context.interactions
+    assert context.app.scheduler is context.scheduler
+
+
+def test_desktop_mode_preserves_interaction_adapter_behavior(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Preserve desktop-mode interaction and scheduler behavior via adapters."""
+    composition = _reload_composition_module()
+    _install_bootstrap_runtime_stubs(monkeypatch)
+
+    tkinter_module = importlib.import_module("ipat_watchdog.core.ui.ui_tkinter")
+    monkeypatch.setattr(tkinter_module, "TKinterUI", DesktopUIProbe)
+    monkeypatch.setenv("DPOST_RUNTIME_MODE", "desktop")
+    monkeypatch.setenv("DPOST_SYNC_ADAPTER", "noop")
+    monkeypatch.setenv("DPOST_PLUGIN_PROFILE", "reference")
+
+    context = composition.compose_bootstrap()
+    ui_probe = context.ui
+
+    assert context.interactions.prompt_append_record("record-1") is False
+    rename_decision = context.interactions.request_rename(
+        RenamePrompt(
+            attempted_prefix="bad-prefix",
+            analysis={"reasons": ["legacy-reason"]},
+            contextual_reason="contextual-reason",
+        )
+    )
+    assert rename_decision.cancelled is False
+    assert rename_decision.values == {
+        "name": "alice",
+        "institute": "lab",
+        "sample_ID": "sample-1",
+    }
+    assert ui_probe.rename_calls
+    _attempted_filename, analysis_payload = ui_probe.rename_calls[0]
+    assert analysis_payload["reasons"][0] == "contextual-reason"
+
+    done_called = {"value": False}
+    context.interactions.show_done_prompt(
+        SessionPromptDetails(users=("alice",), records=("record-1",)),
+        lambda: done_called.__setitem__("value", True),
+    )
+    assert done_called["value"] is True
+
+    scheduled_handle = context.scheduler.schedule(25, lambda: None)
+    context.scheduler.cancel(scheduled_handle)
+    assert scheduled_handle == 1
+    assert ui_probe.cancelled_handles == [1]

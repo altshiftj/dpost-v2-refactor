@@ -21,7 +21,7 @@
 | Phase 4: Configuration Consolidation | 2026-03-20 -> 2026-03-31 | Core Owner | Completed (2026-02-18) | Legacy constant fallbacks removed from operational paths |
 | Phase 5: Processing Pipeline Decomposition | 2026-04-01 -> 2026-04-15 | Core Owner | Completed (2026-02-19) | Stage services extracted, integration suite unchanged/green |
 | Phase 6: Plugin and Discovery Hardening | 2026-04-16 -> 2026-04-24 | Plugin Owner | Completed (2026-02-19) | Plugin inventory normalized and discovery tests green |
-| Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | In progress (2026-02-19) | Desktop and headless smoke tests both green |
+| Phase 7: Desktop Runtime Integration | 2026-04-27 -> 2026-05-06 | Runtime Owner | Completed (2026-02-19) | Desktop and headless smoke tests both green |
 | Phase 8: Final Cutover and Cleanup | 2026-05-07 -> 2026-05-15 | Core Owner + QA Owner | Planned | `dpost` canonical metadata/docs complete and release gate passed |
 
 ## Weekly Cadence
@@ -573,3 +573,18 @@
   returned `6 passed`.
   `python -m pytest -m migration`
   returned `69 passed, 302 deselected`.
+- desktop parity characterization increment on 2026-02-19:
+- extended `tests/migration/test_runtime_mode_selection.py` to verify desktop
+  bootstrap context wiring and preservation of legacy interaction behavior via
+  `UiInteractionAdapter` and `UiTaskScheduler` delegation.
+- runtime mode documentation increment:
+- updated `README.md` with `DPOST_RUNTIME_MODE` behavior differences and
+  related `dpost` startup environment selectors.
+- green verification:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  returned `8 passed`.
+  `python -m pytest -m migration`
+  returned `71 passed, 302 deselected`.
+- Phase 7 gate closed on 2026-02-19 after explicit runtime mode composition,
+  dual-mode smoke checks, desktop interaction parity characterization, and
+  runtime mode behavior documentation updates.

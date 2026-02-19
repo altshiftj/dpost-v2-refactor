@@ -69,3 +69,15 @@
     -> `6 passed`
   - `python -m pytest -m migration`
     -> `69 passed, 302 deselected`
+- Implemented desktop parity characterization increment by:
+  - extending `tests/migration/test_runtime_mode_selection.py` with desktop-mode
+    bootstrap context wiring assertions and adapter behavior delegation checks
+    (`UiInteractionAdapter` + `UiTaskScheduler`) using a desktop UI probe
+- Implemented runtime mode behavior documentation increment by:
+  - updating `README.md` with `DPOST_RUNTIME_MODE` mode selection details and
+    related migration startup environment variables
+- Verification after characterization/docs increment:
+  - `python -m pytest tests/migration/test_runtime_mode_selection.py`
+    -> `8 passed`
+  - `python -m pytest -m migration`
+    -> `71 passed, 302 deselected`
