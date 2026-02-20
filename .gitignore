@@ -11,6 +11,7 @@ build/tischrem_blb
 __pycache__/
 /.pytest_cache/
 /testing_data/
+/.ruff_cache/
 
 # ─── VSCode & Editor Files ────────────────────
 .VSCodeCounter

@@ -1,79 +1,100 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-
-        {
-            "name": "Debug dpost (test, headless)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "dpost",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.test.env",
-            "env": {
-                "DPOST_RUNTIME_MODE": "headless",
-                "DPOST_SYNC_ADAPTER": "noop",
-                "DPOST_PC_NAME": "test_pc",
-                "DPOST_DEVICE_PLUGINS": "test_device",
-                "DPOST_PROMETHEUS_PORT": "9100",
-                "DPOST_OBSERVABILITY_PORT": "9101",
-                "PC_NAME": "test_pc",
-                "DEVICE_PLUGINS": "test_device",
-                "PROMETHEUS_PORT": "9100",
-                "OBSERVABILITY_PORT": "9101",
-                "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
-            }
-        },
-        {
-            "name": "Debug dpost (test, desktop)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "dpost",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.test.env",
-            "env": {
-                "DPOST_RUNTIME_MODE": "desktop",
-                "DPOST_SYNC_ADAPTER": "noop",
-                "DPOST_PC_NAME": "test_pc",
-                "DPOST_DEVICE_PLUGINS": "test_device",
-                "DPOST_PROMETHEUS_PORT": "9200",
-                "DPOST_OBSERVABILITY_PORT": "9201",
-                "PC_NAME": "test_pc",
-                "DEVICE_PLUGINS": "test_device",
-                "PROMETHEUS_PORT": "9200",
-                "OBSERVABILITY_PORT": "9201",
-                "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
-            }
-        },
-        {
-            "name": "Debug dpost (tischrem + sem_phenomxl2, kadi, desktop)",
-            "type": "debugpy",
-            "request": "launch",
-            "module": "dpost",
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.test.env",
-            "env": {
-                "DPOST_RUNTIME_MODE": "desktop",
-                "DPOST_SYNC_ADAPTER": "kadi",
-                "DPOST_PC_NAME": "tischrem_blb",
-                "DPOST_DEVICE_PLUGINS": "sem_phenomxl2",
-                "DPOST_PROMETHEUS_PORT": "9300",
-                "DPOST_OBSERVABILITY_PORT": "9301",
-                "PC_NAME": "tischrem_blb",
-                "DEVICE_PLUGINS": "sem_phenomxl2",
-                "PROMETHEUS_PORT": "9300",
-                "OBSERVABILITY_PORT": "9301",
-                "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
-            }
-        },
-        {
-            "name": "PowerShell: Launch Current File",
-            "type": "PowerShell",
-            "request": "launch",
-            "script": "${file}",
-            "args": []
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug dpost (test, headless)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "dpost",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.test.env",
+      "env": {
+        "DPOST_RUNTIME_MODE": "headless",
+        "DPOST_SYNC_ADAPTER": "noop",
+        "DPOST_PC_NAME": "test_pc",
+        "DPOST_DEVICE_PLUGINS": "test_device",
+        "DPOST_PROMETHEUS_PORT": "9100",
+        "DPOST_OBSERVABILITY_PORT": "9101",
+        "PC_NAME": "test_pc",
+        "DEVICE_PLUGINS": "test_device",
+        "PROMETHEUS_PORT": "9100",
+        "OBSERVABILITY_PORT": "9101",
+        "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
+      }
+    },
+    {
+      "name": "Debug dpost (test, desktop)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "dpost",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.test.env",
+      "env": {
+        "DPOST_RUNTIME_MODE": "desktop",
+        "DPOST_SYNC_ADAPTER": "noop",
+        "DPOST_PC_NAME": "test_pc",
+        "DPOST_DEVICE_PLUGINS": "test_device",
+        "DPOST_PROMETHEUS_PORT": "9200",
+        "DPOST_OBSERVABILITY_PORT": "9201",
+        "PC_NAME": "test_pc",
+        "DEVICE_PLUGINS": "test_device",
+        "PROMETHEUS_PORT": "9200",
+        "OBSERVABILITY_PORT": "9201",
+        "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
+      }
+    },
+    {
+      "name": "Debug dpost (tischrem + sem_phenomxl2, kadi, desktop)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "dpost",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.test.env",
+      "env": {
+        "DPOST_RUNTIME_MODE": "desktop",
+        "DPOST_SYNC_ADAPTER": "kadi",
+        "DPOST_PC_NAME": "tischrem_blb",
+        "DPOST_DEVICE_PLUGINS": "sem_phenomxl2",
+        "DPOST_PROMETHEUS_PORT": "9300",
+        "DPOST_OBSERVABILITY_PORT": "9301",
+        "PC_NAME": "tischrem_blb",
+        "DEVICE_PLUGINS": "sem_phenomxl2",
+        "PROMETHEUS_PORT": "9300",
+        "OBSERVABILITY_PORT": "9301",
+        "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
+      }
+    },
+    {
+      "name": "Debug dpost (tischrem + sem_phenomxl2, kadi, headless)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "dpost",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.test.env",
+      "env": {
+        "DPOST_RUNTIME_MODE": "headless",
+        "DPOST_SYNC_ADAPTER": "kadi",
+        "DPOST_PC_NAME": "tischrem_blb",
+        "DPOST_DEVICE_PLUGINS": "sem_phenomxl2",
+        "DPOST_PROMETHEUS_PORT": "9400",
+        "DPOST_OBSERVABILITY_PORT": "9401",
+        "PC_NAME": "tischrem_blb",
+        "DEVICE_PLUGINS": "sem_phenomxl2",
+        "PROMETHEUS_PORT": "9400",
+        "OBSERVABILITY_PORT": "9401",
+        "LOG_FILE_PATH": "C:/Watchdog/logs/watchdog.log"
+      }
+    },
+    {
+      "name": "PowerShell: Launch Current File",
+      "type": "PowerShell",
+      "request": "launch",
+      "script": "${file}",
+      "args": []
+    }
+  ]
 }

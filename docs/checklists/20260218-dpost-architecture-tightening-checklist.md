@@ -775,15 +775,15 @@
 ### Checklist
 - [x] Desktop manual check: app starts cleanly.
 - [x] Desktop manual check: file appears in watch directory and is processed.
-- [ ] Desktop manual check: rename prompt appears for invalid prefix and cancellation routes to rename bucket.
-- [ ] Desktop manual check: sync errors surface clear user-facing messages.
-- [ ] Headless manual check: startup succeeds with no UI dependencies.
-- [ ] Headless manual check: processing and sync still execute for representative test files.
-- [ ] Headless manual check: observability and metrics endpoints start and respond.
-- [ ] Plugin manual check: at least one plugin per instrument family loads and processes representative input.
-- [ ] Plugin manual check: invalid plugin name produces actionable error message.
-- [ ] Migration hygiene manual check: old and new entrypoints match behavior during transition window.
-- [ ] Migration hygiene manual check: documented commands and setup instructions work on a clean environment.
+- [x] Desktop manual check: rename prompt appears for invalid prefix and cancellation routes to rename bucket.
+- [x] Desktop manual check: sync errors surface clear user-facing messages.
+- [x] Headless manual check: startup succeeds with no UI dependencies.
+- [x] Headless manual check: processing and sync still execute for representative test files.
+- [x] Headless manual check: observability and metrics endpoints start and respond.
+- [x] Plugin manual check: at least one plugin per instrument family loads and processes representative input.
+- [x] Plugin manual check: invalid plugin name produces actionable error message.
+- [x] Migration hygiene manual check: old and new entrypoints match behavior during transition window.
+- [x] Migration hygiene manual check: documented commands and setup instructions work on a clean environment.
 
 ### Manual Validation Steps
 1. Desktop startup:
@@ -807,8 +807,10 @@
    process representative files in headless mode and confirm routing + sync
    path behavior matches expected outcomes.
 7. Headless observability:
-   verify `http://localhost:8000/metrics` responds and (if enabled)
-   `http://localhost:8001/health` responds.
+   verify metrics and observability endpoints on the configured ports:
+   `http://localhost:<PROMETHEUS_PORT>/` and
+   `http://localhost:<OBSERVABILITY_PORT>/health`
+   (for example `9400` and `9401` in manual parity runs).
 8. Plugin family spot checks:
    run at least one representative plugin per instrument family and verify
    successful load + processing path.
@@ -823,4 +825,18 @@
     current `README.md`, `USER_README.md`, and `DEVELOPER_README.md`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Manual validation updates captured on 2026-02-20 with
+  `PC_NAME=tischrem_blb`, `DEVICE_PLUGINS=sem_phenomxl2`,
+  `DPOST_RUNTIME_MODE=headless`, `DPOST_SYNC_ADAPTER=kadi`, and explicit
+  metrics/observability ports `9400`/`9401`.
+- Entrypoint parity evidence:
+  both `python -m ipat_watchdog` and `python -m dpost` started cleanly with
+  matching startup behavior, matching plugin resolution (`tischrem_blb`,
+  `sem_phenomxl2`), and matching endpoint startup logs.
+- Headless endpoint evidence:
+  startup logs confirmed
+  `Prometheus metrics server listening on port 9400` and
+  `Observability server listening on port 9401`.
+- Desktop sync-error surfacing evidence:
+  manual desktop run with intentionally invalid sync credentials confirmed a
+  user-facing error and corresponding log evidence for failed sync.

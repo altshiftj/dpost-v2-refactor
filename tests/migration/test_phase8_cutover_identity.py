@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -43,14 +42,6 @@ def _load_project_metadata() -> dict[str, Any]:
 def _read_utf8(path: Path) -> str:
     """Return UTF-8 text content for a repository file."""
     return path.read_text(encoding="utf-8")
-
-
-def _has_sunset_deprecation_notice(contents: str) -> bool:
-    """Return whether text includes deprecation language and an ISO sunset date."""
-    lowered = contents.lower()
-    has_keywords = "deprecated" in lowered and "sunset" in lowered
-    has_iso_date = re.search(r"\b20\d{2}-\d{2}-\d{2}\b", contents) is not None
-    return has_keywords and has_iso_date
 
 
 def test_project_name_is_canonical_dpost() -> None:
@@ -106,13 +97,9 @@ def test_windows_pipeline_scripts_do_not_hardcode_legacy_identity() -> None:
     assert "ipat_watchdog.pc_device_mapping" not in pipeline_readme_contents
 
 
-def test_legacy_entrypoint_is_removed_or_explicitly_sunsetted() -> None:
-    """Require legacy CLI compatibility path removal or dated deprecation note."""
-    if not LEGACY_MAIN_PATH.is_file():
-        return
-
-    legacy_entrypoint_contents = _read_utf8(LEGACY_MAIN_PATH)
-    assert _has_sunset_deprecation_notice(legacy_entrypoint_contents)
+def test_legacy_entrypoint_is_removed_post_sunset() -> None:
+    """Require post-sunset retirement of the legacy compatibility entrypoint."""
+    assert not LEGACY_MAIN_PATH.is_file()
 
 
 def test_dpost_main_no_longer_imports_legacy_bootstrap_symbols() -> None:
