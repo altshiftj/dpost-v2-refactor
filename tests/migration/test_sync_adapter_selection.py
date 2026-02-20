@@ -46,9 +46,10 @@ def test_composition_import_does_not_eagerly_import_kadi() -> None:
     assert "ipat_watchdog.core.sync.sync_kadi" not in sys.modules
 
 
-def test_default_sync_adapter_selection_uses_noop() -> None:
+def test_default_sync_adapter_selection_uses_noop(monkeypatch) -> None:
     """Resolve the default sync adapter to the reference noop adapter."""
     composition = _reload_composition_module()
+    monkeypatch.delenv("DPOST_SYNC_ADAPTER", raising=False)
 
     adapter = composition.select_sync_adapter()
 

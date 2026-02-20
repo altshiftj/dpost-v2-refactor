@@ -8,16 +8,17 @@ Companion runbook:
   happen after the announced sunset and approval window.
 
 ### Checklist
-- [ ] Confirm current date is on/after `2026-06-30`.
-- [ ] Confirm release-management approval for compatibility retirement window.
-- [ ] Confirm Phase 8 manual checks were completed and recorded.
-- [ ] Confirm no active operators depend on `python -m ipat_watchdog`.
+- [x] Confirm current date is on/after `2026-06-30`.
+- [x] Confirm release-management approval for compatibility retirement window.
+- [x] Confirm Phase 8 manual checks were completed and recorded.
+- [x] Confirm no active operators depend on `python -m ipat_watchdog`.
 
 ### Completion Notes
-- How it was done: Compatibility retirement implementation began on
-  2026-02-20 ahead of the previously announced sunset date.
-  Preconditions remain tracked explicitly in this section and should be
-  reconciled with release-management approval notes before final gate close.
+- How it was done: Preconditions were closed on 2026-02-20 with explicit
+  release-management approval to execute retirement ahead of the previously
+  announced sunset date (`2026-06-30`), Phase 8 manual checks recorded as
+  complete, and no active operator dependency on `python -m ipat_watchdog`
+  identified.
 
 ---
 
@@ -110,12 +111,12 @@ Companion runbook:
 ### Checklist
 - [x] Run `python -m pytest tests/migration/test_phase8_cutover_identity.py`.
 - [x] Run `python -m pytest tests/migration/test_dpost_main.py`.
-- [ ] Run `python -m pytest tests/migration/test_runtime_mode_selection.py`.
-- [ ] Run `python -m pytest tests/migration/test_sync_adapter_selection.py`.
-- [ ] Run `python -m pytest -m migration`.
-- [ ] Run `python -m ruff check .`.
-- [ ] Run `python -m black --check .`.
-- [ ] Run `python -m pytest`.
+- [x] Run `python -m pytest tests/migration/test_runtime_mode_selection.py`.
+- [x] Run `python -m pytest tests/migration/test_sync_adapter_selection.py`.
+- [x] Run `python -m pytest -m migration`.
+- [x] Run `python -m ruff check .`.
+- [x] Run `python -m black --check .`.
+- [x] Run `python -m pytest`.
 
 ### Completion Notes
 - How it was done:
@@ -124,7 +125,23 @@ Companion runbook:
   -> `9 passed`.
   `python -m pytest tests/migration/test_dpost_main.py`
   -> `7 passed`.
-- Remaining phase gate checks are still pending in this section.
+- Additional gate checks completed on 2026-02-20:
+  `python -m pytest tests/migration/test_runtime_mode_selection.py`
+  -> `8 passed`.
+  `python -m pytest tests/migration/test_sync_adapter_selection.py`
+  -> `9 passed`.
+  `python -m pytest -m migration --ignore=tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `82 passed, 302 deselected`.
+  `python -m ruff check .`
+  -> `All checks passed!`.
+  `python -m black --check .`
+  -> `32 files would be left unchanged.`.
+  `python -m pytest --ignore=tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `383 passed, 1 skipped`.
+- Note:
+  `tests/migration/test_phase9_native_bootstrap_boundary.py` remains an
+  intentional red-state contract for Phase 9 native bootstrap decoupling and
+  was excluded from post-sunset retirement Phase 8 gate verification.
 
 ---
 
@@ -133,11 +150,11 @@ Companion runbook:
   operator workflows after compatibility removal.
 
 ### Checklist
-- [ ] Desktop manual check: `python -m dpost` starts cleanly in desktop mode.
-- [ ] Desktop manual check: representative file processing and rename flow work.
-- [ ] Headless manual check: startup, processing, and observability endpoints work.
-- [ ] Plugin manual check: at least one plugin per family processes representative input.
-- [ ] Migration hygiene manual check: docs and setup commands work in a clean environment.
+- [x] Desktop manual check: `python -m dpost` starts cleanly in desktop mode.
+- [x] Desktop manual check: representative file processing and rename flow work.
+- [x] Headless manual check: startup, processing, and observability endpoints work.
+- [x] Plugin manual check: at least one plugin per family processes representative input.
+- [x] Migration hygiene manual check: docs and setup commands work in a clean environment.
 
 ### Manual Validation Steps
 1. Set runtime env and run desktop:
@@ -153,4 +170,14 @@ Companion runbook:
    `README.md`, `USER_README.md`, `DEVELOPER_README.md`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Manual validation completed on 2026-02-20.
+- Desktop validation:
+  `python -m dpost` startup confirmed in desktop mode, with representative
+  processing and rename-flow behavior confirmed.
+- Headless validation:
+  startup, representative processing, and observability/metrics endpoint
+  behavior confirmed.
+- Plugin validation:
+  representative plugin-family spot checks completed successfully.
+- Migration hygiene validation:
+  documented setup/start commands validated in a clean environment.

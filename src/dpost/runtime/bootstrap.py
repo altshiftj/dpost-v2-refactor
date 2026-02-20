@@ -14,11 +14,6 @@ def _bootstrap_module() -> Any:
     return importlib.import_module("ipat_watchdog.core.app.bootstrap")
 
 
-_bootstrap = _bootstrap_module()
-StartupError = _bootstrap.StartupError
-MissingConfiguration = _bootstrap.MissingConfiguration
-
-
 def bootstrap_runtime(**kwargs: object) -> "BootstrapContext":
     """Build and return a runtime context from startup wiring arguments.
 
@@ -43,9 +38,16 @@ def startup_error(message: str) -> Exception:
     return _bootstrap_module().StartupError(message)
 
 
+def __getattr__(name: str) -> Any:
+    """Lazily expose legacy exception classes for post-transition entrypoint wiring."""
+    if name == "StartupError":
+        return _bootstrap_module().StartupError
+    if name == "MissingConfiguration":
+        return _bootstrap_module().MissingConfiguration
+    raise AttributeError(name)
+
+
 __all__ = [
-    "MissingConfiguration",
-    "StartupError",
     "build_startup_settings",
     "bootstrap_runtime",
     "collect_startup_settings",

@@ -694,7 +694,7 @@
 ### Checklist
 - [x] Switch canonical project/package identity to `dpost` in packaging and entrypoints.
 - [x] Update docs and scripts to new canonical names.
-- [ ] Remove deprecated compatibility paths after validation window.
+- [x] Remove deprecated compatibility paths after validation window.
 - [x] Execute full lint and test suite as release gate.
 - [x] Prepare migration notes for contributors and users.
 
