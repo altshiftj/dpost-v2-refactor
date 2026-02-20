@@ -11,6 +11,24 @@
 - Prior phase notes remain historical context unless explicitly reactivated.
 - Current objective is native `dpost` runtime completion and legacy runtime
   dependency retirement through Phase 9-13 gates.
+- Autonomy posture for Phase 9-13 is fully autonomous execution by default:
+  plan, test, implement, refactor, validate, and document without waiting for
+  step-by-step human approvals.
+
+## Phase 9-13 Full Autonomy Mandate
+- For all work scoped to Phases 9 through 13, treat autonomous execution as the
+  default operating mode.
+- Execute end-to-end within a single session whenever feasible:
+- analyze architecture context
+- run tests-first red-state setup
+- implement to green
+- refactor with tests green
+- update required architecture/reporting artifacts
+- report outcomes and remaining risks
+- Only pause for human intervention when requirements are ambiguous,
+  contradictory, or unsafe.
+- Do not introduce human-in-the-loop wait points inside normal TDD cycles for
+  Phase 9-13 execution.
 
 ## Current Migration Decisions (Locked)
 - Runtime posture: headless-first.
