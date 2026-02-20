@@ -755,6 +755,17 @@
   sunset execution:
   `docs/planning/20260219-post-sunset-compatibility-retirement-plan.md` and
   `docs/checklists/20260219-post-sunset-compatibility-retirement-checklist.md`.
+- Full-strangler continuation planning increment:
+  added post-Phase 8 forward plan/checklist docs:
+  `docs/planning/20260219-dpost-phase9-13-full-strangler-plan.md` and
+  `docs/checklists/20260219-dpost-phase9-13-full-strangler-checklist.md`.
+- Phase 9 tests-first kickoff:
+  added `tests/migration/test_phase9_native_bootstrap_boundary.py` and captured
+  red-state inventory in
+  `docs/reports/20260219-phase9-native-bootstrap-boundary-inventory.md`.
+- Red-state verification:
+  `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `2 failed`.
 
 ---
 
@@ -762,8 +773,8 @@
 - Why this matters: Human verification confirms real operator workflows beyond automated test coverage.
 
 ### Checklist
-- [ ] Desktop manual check: app starts cleanly.
-- [ ] Desktop manual check: file appears in watch directory and is processed.
+- [x] Desktop manual check: app starts cleanly.
+- [x] Desktop manual check: file appears in watch directory and is processed.
 - [ ] Desktop manual check: rename prompt appears for invalid prefix and cancellation routes to rename bucket.
 - [ ] Desktop manual check: sync errors surface clear user-facing messages.
 - [ ] Headless manual check: startup succeeds with no UI dependencies.

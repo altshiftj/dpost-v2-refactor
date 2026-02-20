@@ -649,3 +649,15 @@
   `docs/planning/20260219-post-sunset-compatibility-retirement-pr-runbook.md`
   with title/body template, commit sequencing, and terminal-ready validation
   command blocks.
+- post-Phase 8 full-strangler continuation planning increment:
+- added forward migration plan/checklist docs:
+  `docs/planning/20260219-dpost-phase9-13-full-strangler-plan.md`
+  and
+  `docs/checklists/20260219-dpost-phase9-13-full-strangler-checklist.md`.
+- Phase 9 tests-first kickoff:
+- added `tests/migration/test_phase9_native_bootstrap_boundary.py` with
+  native-bootstrap boundary expectations and captured red-state findings in
+  `docs/reports/20260219-phase9-native-bootstrap-boundary-inventory.md`.
+- red-state verification:
+  `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  returned `2 failed`.

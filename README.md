@@ -24,6 +24,9 @@ artifacts.
 - `docs/planning/20260219-post-sunset-compatibility-retirement-plan.md`
 - `docs/checklists/20260219-post-sunset-compatibility-retirement-checklist.md`
 - `docs/planning/20260219-post-sunset-compatibility-retirement-pr-runbook.md`
+- `docs/planning/20260219-dpost-phase9-13-full-strangler-plan.md`
+- `docs/checklists/20260219-dpost-phase9-13-full-strangler-checklist.md`
+- `docs/reports/20260219-phase9-native-bootstrap-boundary-inventory.md`
 
 ## Test Split
 - Legacy behavior contract tests: `python -m pytest -m legacy`
