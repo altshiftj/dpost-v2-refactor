@@ -14,7 +14,10 @@ Companion runbook:
 - [ ] Confirm no active operators depend on `python -m ipat_watchdog`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Compatibility retirement implementation began on
+  2026-02-20 ahead of the previously announced sunset date.
+  Preconditions remain tracked explicitly in this section and should be
+  reconciled with release-management approval notes before final gate close.
 
 ---
 
@@ -23,16 +26,42 @@ Companion runbook:
   and keep review diff scope auditable.
 
 ### Checklist
-- [ ] Delete `src/ipat_watchdog/__main__.py`.
-- [ ] Simplify `src/dpost/runtime/bootstrap.py` by removing transition-only
+- [x] Delete `src/ipat_watchdog/__main__.py`.
+- [x] Simplify `src/dpost/runtime/bootstrap.py` by removing transition-only
       exception-class indirection helpers.
-- [ ] Simplify `src/dpost/__main__.py` to post-sunset exception import/handling
+- [x] Simplify `src/dpost/__main__.py` to post-sunset exception import/handling
       contract.
 - [ ] Update `src/ipat_watchdog/plugin_system.py` install hint strings from
       `ipat-watchdog[...]` to `dpost[...]`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done:
+- Tests-first retirement increment (red):
+  updated `tests/migration/test_phase8_cutover_identity.py` to require
+  legacy entrypoint removal.
+  Verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `1 failed, 7 passed`.
+- Code retirement increment (green):
+  deleted `src/ipat_watchdog/__main__.py`.
+  Verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `8 passed`.
+- Tests-first bootstrap/main simplification increment (red):
+  added failing migration checks in
+  `tests/migration/test_dpost_main.py` requiring post-transition
+  exception contract usage.
+  Verification:
+  `python -m pytest tests/migration/test_dpost_main.py`
+  -> `2 failed, 5 passed`.
+- Code simplification increment (green):
+  simplified `src/dpost/runtime/bootstrap.py` to remove
+  `startup_error_cls`/`missing_configuration_cls`,
+  and updated `src/dpost/__main__.py` to import
+  `StartupError`/`MissingConfiguration` directly.
+  Verification:
+  `python -m pytest tests/migration/test_dpost_main.py`
+  -> `7 passed`.
 
 ---
 
@@ -41,20 +70,22 @@ Companion runbook:
   transitional compatibility assumptions.
 
 ### Checklist
-- [ ] Update `tests/migration/test_phase8_cutover_identity.py` legacy-entrypoint
+- [x] Update `tests/migration/test_phase8_cutover_identity.py` legacy-entrypoint
       check from “removed or sunsetted” to “removed”.
-- [ ] Remove transition-only entrypoint parity step from
+- [x] Remove transition-only entrypoint parity step from
       `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
       Manual Check section.
-- [ ] Update `docs/reports/20260219-phase8-cutover-migration-notes.md` to mark
+- [x] Update `docs/reports/20260219-phase8-cutover-migration-notes.md` to mark
       compatibility entrypoint as retired.
-- [ ] Add execution notes to:
+- [x] Add execution notes to:
       `docs/reports/20260219-phase8-final-cutover-cleanup-inventory.md`,
       `docs/planning/20260218-dpost-execution-board.md`, and
       `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Updated Phase 8/retirement docs to reflect
+  compatibility-path removal progress and current post-transition runtime
+  contract status on 2026-02-20.
 
 ---
 
@@ -63,8 +94,8 @@ Companion runbook:
   quality bars as the rest of Phase 8.
 
 ### Checklist
-- [ ] Run `python -m pytest tests/migration/test_phase8_cutover_identity.py`.
-- [ ] Run `python -m pytest tests/migration/test_dpost_main.py`.
+- [x] Run `python -m pytest tests/migration/test_phase8_cutover_identity.py`.
+- [x] Run `python -m pytest tests/migration/test_dpost_main.py`.
 - [ ] Run `python -m pytest tests/migration/test_runtime_mode_selection.py`.
 - [ ] Run `python -m pytest tests/migration/test_sync_adapter_selection.py`.
 - [ ] Run `python -m pytest -m migration`.
@@ -73,7 +104,13 @@ Companion runbook:
 - [ ] Run `python -m pytest`.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done:
+- Focused retirement checks completed:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `8 passed`.
+  `python -m pytest tests/migration/test_dpost_main.py`
+  -> `7 passed`.
+- Remaining phase gate checks are still pending in this section.
 
 ---
 

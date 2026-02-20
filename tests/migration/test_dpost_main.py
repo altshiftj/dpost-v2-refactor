@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import importlib
+from pathlib import Path
 from types import SimpleNamespace
 
 from dpost import __main__ as main_module
 from ipat_watchdog.core.app.bootstrap import MissingConfiguration, StartupError
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DPOST_MAIN_PATH = PROJECT_ROOT / "src" / "dpost" / "__main__.py"
+DPOST_RUNTIME_BOOTSTRAP_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "runtime" / "bootstrap.py"
+)
 
 
 class DummyApp:
@@ -87,3 +94,19 @@ def test_main_unknown_sync_adapter_from_env(monkeypatch) -> None:
     monkeypatch.setattr(main_module, "compose_bootstrap", compose_bootstrap)
 
     assert main_module.main() == 1
+
+
+def test_dpost_main_no_longer_uses_transition_exception_class_helpers() -> None:
+    """Require post-sunset main to avoid class-indirection helper imports."""
+    main_contents = DPOST_MAIN_PATH.read_text(encoding="utf-8")
+
+    assert "missing_configuration_cls" not in main_contents
+    assert "startup_error_cls" not in main_contents
+
+
+def test_runtime_bootstrap_no_longer_exports_transition_exception_helpers() -> None:
+    """Require post-sunset runtime bootstrap to retire class helper exports."""
+    bootstrap_contents = DPOST_RUNTIME_BOOTSTRAP_PATH.read_text(encoding="utf-8")
+
+    assert "def startup_error_cls" not in bootstrap_contents
+    assert "def missing_configuration_cls" not in bootstrap_contents

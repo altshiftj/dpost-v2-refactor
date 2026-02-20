@@ -766,6 +766,18 @@
 - Red-state verification:
   `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 failed`.
+- Post-sunset retirement execution kickoff (2026-02-20):
+  began compatibility-path retirement with tests-first increments in
+  `tests/migration/test_phase8_cutover_identity.py` and
+  `tests/migration/test_dpost_main.py`.
+- Retirement red/green verification snapshots:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `1 failed, 7 passed` (red after strict-removal assertion), then
+  `8 passed` (green after removing `src/ipat_watchdog/__main__.py`).
+  `python -m pytest tests/migration/test_dpost_main.py`
+  -> `2 failed, 5 passed` (red for transition-helper removal), then
+  `7 passed` (green after simplifying `src/dpost/runtime/bootstrap.py`
+  and `src/dpost/__main__.py`).
 
 ---
 
@@ -782,7 +794,6 @@
 - [x] Headless manual check: observability and metrics endpoints start and respond.
 - [x] Plugin manual check: at least one plugin per instrument family loads and processes representative input.
 - [x] Plugin manual check: invalid plugin name produces actionable error message.
-- [x] Migration hygiene manual check: old and new entrypoints match behavior during transition window.
 - [x] Migration hygiene manual check: documented commands and setup instructions work on a clean environment.
 
 ### Manual Validation Steps
@@ -817,10 +828,7 @@
 9. Invalid plugin actionability:
    run with an invalid plugin name and confirm error message lists available
    plugin names.
-10. Entrypoint parity during transition:
-    compare one controlled run via `python -m dpost` and
-    `python -m ipat_watchdog`; confirm behavior parity for selected scenario.
-11. Setup command verification:
+10. Setup command verification:
     validate documented install/run commands from a clean environment using
     current `README.md`, `USER_README.md`, and `DEVELOPER_README.md`.
 
@@ -829,7 +837,8 @@
   `PC_NAME=tischrem_blb`, `DEVICE_PLUGINS=sem_phenomxl2`,
   `DPOST_RUNTIME_MODE=headless`, `DPOST_SYNC_ADAPTER=kadi`, and explicit
   metrics/observability ports `9400`/`9401`.
-- Entrypoint parity evidence:
+- Historical transition-window parity evidence (captured before compatibility
+  retirement):
   both `python -m ipat_watchdog` and `python -m dpost` started cleanly with
   matching startup behavior, matching plugin resolution (`tischrem_blb`,
   `sem_phenomxl2`), and matching endpoint startup logs.

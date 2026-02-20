@@ -661,3 +661,29 @@
 - red-state verification:
   `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   returned `2 failed`.
+- post-sunset retirement execution kickoff on 2026-02-20:
+- tests-first increment 1:
+  tightened `tests/migration/test_phase8_cutover_identity.py` to require
+  legacy entrypoint removal.
+- red-state verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `1 failed, 7 passed`.
+- implementation increment 1:
+  removed `src/ipat_watchdog/__main__.py`.
+- green verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `8 passed`.
+- tests-first increment 2:
+  added post-transition exception-contract checks in
+  `tests/migration/test_dpost_main.py` for runtime bootstrap/main helper
+  removal.
+- red-state verification:
+  `python -m pytest tests/migration/test_dpost_main.py`
+  returned `2 failed, 5 passed`.
+- implementation increment 2:
+  simplified `src/dpost/runtime/bootstrap.py` to remove transition-only
+  class-indirection helpers and updated `src/dpost/__main__.py` to direct
+  `StartupError`/`MissingConfiguration` imports.
+- green verification:
+  `python -m pytest tests/migration/test_dpost_main.py`
+  returned `7 passed`.

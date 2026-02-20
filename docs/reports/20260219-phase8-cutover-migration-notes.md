@@ -12,9 +12,10 @@
 - Canonical startup commands are:
   - `python -m dpost`
   - `dpost`
-- Legacy compatibility entrypoint remains temporarily at
-  `src/ipat_watchdog/__main__.py` with explicit sunset date:
-  - Sunset: `2026-06-30`
+- Legacy compatibility entrypoint has been retired:
+  - `src/ipat_watchdog/__main__.py` removed on `2026-02-20`
+  - This was executed ahead of the previously announced sunset date
+    (`2026-06-30`).
 
 ## Command Mapping
 | Previous | Canonical Now |
@@ -28,12 +29,13 @@
 - Avoid introducing new direct imports from `dpost` entry modules to
   `ipat_watchdog.core.app.bootstrap`; use `dpost.runtime.bootstrap` bridge
   utilities instead.
-- Treat legacy compatibility paths as transition-only and remove them at/after
-  the sunset window once validation gates are complete.
+- Treat any remaining compatibility wording in docs/checklists as historical
+  context only; canonical runtime behavior is now `dpost`-only.
 
 ## User Notes
 - If you run from source, use `python -m dpost`.
 - If you run installed console scripts, use `dpost`.
+- `python -m ipat_watchdog` is no longer supported.
 - Existing environment variables (`PC_NAME`, `DEVICE_PLUGINS`,
   `PROMETHEUS_PORT`, `OBSERVABILITY_PORT`, `DPOST_*`) remain unchanged.
 - Runtime mode behavior remains:

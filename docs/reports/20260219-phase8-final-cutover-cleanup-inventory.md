@@ -118,3 +118,29 @@
     - `python -m black --check .` -> `All done! 31 files would be left unchanged.`
     - `python -m ruff check .` -> `All checks passed!`
     - `python -m pytest` -> `380 passed, 1 skipped`
+
+## Update Addendum (2026-02-20)
+- Post-sunset retirement execution started with tests-first increments:
+  - tightened legacy-entrypoint contract in
+    `tests/migration/test_phase8_cutover_identity.py` from
+    “removed or sunsetted” to “removed”.
+  - added post-transition exception-contract checks in
+    `tests/migration/test_dpost_main.py` for
+    `src/dpost/runtime/bootstrap.py` and `src/dpost/__main__.py`.
+- Red-state snapshots:
+  - `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+    -> `1 failed, 7 passed`
+  - `python -m pytest tests/migration/test_dpost_main.py`
+    -> `2 failed, 5 passed`
+- Green implementation increments:
+  - removed `src/ipat_watchdog/__main__.py`
+  - simplified `src/dpost/runtime/bootstrap.py` by removing
+    transition-only `startup_error_cls` / `missing_configuration_cls`
+  - simplified `src/dpost/__main__.py` to direct
+    `StartupError` / `MissingConfiguration` imports from
+    `dpost.runtime.bootstrap`
+- Green verification:
+  - `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+    -> `8 passed`
+  - `python -m pytest tests/migration/test_dpost_main.py`
+    -> `7 passed`

@@ -14,6 +14,11 @@ def _bootstrap_module() -> Any:
     return importlib.import_module("ipat_watchdog.core.app.bootstrap")
 
 
+_bootstrap = _bootstrap_module()
+StartupError = _bootstrap.StartupError
+MissingConfiguration = _bootstrap.MissingConfiguration
+
+
 def bootstrap_runtime(**kwargs: object) -> "BootstrapContext":
     """Build and return a runtime context from startup wiring arguments.
 
@@ -38,21 +43,11 @@ def startup_error(message: str) -> Exception:
     return _bootstrap_module().StartupError(message)
 
 
-def startup_error_cls() -> type[Exception]:
-    """Return the current startup error class."""
-    return _bootstrap_module().StartupError
-
-
-def missing_configuration_cls() -> type[Exception]:
-    """Return the current missing-configuration error class."""
-    return _bootstrap_module().MissingConfiguration
-
-
 __all__ = [
+    "MissingConfiguration",
+    "StartupError",
     "build_startup_settings",
     "bootstrap_runtime",
     "collect_startup_settings",
-    "missing_configuration_cls",
     "startup_error",
-    "startup_error_cls",
 ]
