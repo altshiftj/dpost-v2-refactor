@@ -18,6 +18,17 @@
 - Keep compatibility retirement sequencing aligned with sunset constraints and
   human validation gates.
 
+## Modernization Posture
+- Use a two-axis gate for every phase:
+  - functional equivalence: operator-visible runtime behavior, processing
+    outcomes, and error semantics remain equivalent to the current baseline.
+  - syntactic simplification: replace transition-only indirection with clearer,
+    smaller, intention-revealing `dpost` boundaries.
+- Favor open-source-grade readability in migrated surfaces:
+  - explicit boundary contracts and type names
+  - minimized pass-through wrappers and alias layers
+  - composition flows that are easy to trace without legacy module context
+
 ## Approach
 - Continue strangler migration in five additional phases after Phase 8:
   - Phase 9: native `dpost` bootstrap core boundary.
@@ -42,6 +53,10 @@
     dependency.
   - `src/dpost/runtime/composition.py` contains no legacy bootstrap type/module
     dependency.
+  - transition-only bootstrap wrapper indirection is removed in favor of native
+    `dpost` contracts with clear names.
+  - startup behavior and exception semantics remain equivalent to the current
+    migration baseline.
   - migration tests for native bootstrap boundary are green.
 
 ## Phase 10: Application Orchestration Extraction
@@ -52,6 +67,8 @@
 - Acceptance criteria:
   - orchestration entrypoints used by runtime composition resolve through
     `dpost/application`.
+  - orchestration call paths are simplified (reduced pass-through delegation
+    and clearer intent naming).
   - migration and legacy characterization tests remain green.
 
 ## Phase 11: Infrastructure Adapter Extraction
@@ -63,6 +80,8 @@
   - application modules have no direct dependency on concrete legacy
     infrastructure modules.
   - adapter selection/wiring remains composition-root owned.
+  - adapter interfaces are narrowed to port-oriented contracts without
+    transition-era helper sprawl.
 
 ## Phase 12: Plugin and Config Boundary Migration
 - Scope:
@@ -73,6 +92,8 @@
   - plugin/config contracts for runtime startup are resolved through `dpost`
     boundaries.
   - discovery and startup error messaging remains actionable and tested.
+  - plugin/config boundary APIs use canonical `dpost` naming with reduced alias
+    indirection.
 
 ## Phase 13: Legacy Runtime Retirement
 - Scope:
@@ -81,6 +102,7 @@
   - retain only historical documentation references as needed.
 - Acceptance criteria:
   - canonical runtime startup path is fully `dpost`-native.
+  - canonical startup path is concise and free of transition-only glue layers.
   - post-retirement migration gate passes (lint, format, migration marker,
     full suite, manual checks).
 
@@ -94,6 +116,9 @@
   - Mitigation: phase-specific inventory reports plus targeted migration tests.
 - Risk: behavior drift while extracting orchestration/infrastructure seams.
   - Mitigation: tests-first increments with marker/full regression gates.
+- Risk: syntactic cleanup attempts accidentally increase complexity.
+  - Mitigation: require per-phase before/after simplification evidence in
+    reports and reject net-new indirection without contract value.
 - Risk: plugin integration regressions from boundary shifts.
   - Mitigation: plugin discovery/actionability and representative plugin flow
     checks in each relevant phase.
@@ -109,5 +134,8 @@
 ## Rollout / Validation
 - Execute each phase via dedicated report + plan + checklist docs.
 - Keep execution board status updates at each increment boundary.
+- For each phase report, record:
+  - functional-equivalence evidence (tests/manual checks)
+  - syntactic-simplification evidence (wrappers/aliases/indirection removed)
 - Close each phase only when acceptance criteria, test gates, and manual
   validation expectations are satisfied.

@@ -1,5 +1,26 @@
 # dpost Phase 9-13 Full Strangler Checklist
 
+## Section: Cross-phase Modernization Quality Gates
+- Why this matters: Final migration work should deliver both behavior safety
+  and cleaner, open-source-grade architecture quality.
+
+### Checklist
+- [ ] Define/confirm functional-equivalence assertions before each
+      implementation increment.
+- [ ] Define targeted syntactic simplifications before each increment (for
+      example wrapper removal, call-path flattening, intent naming cleanup).
+- [ ] Reject changes that add new indirection without clear contract or
+      boundary value.
+- [ ] Capture per-phase before/after simplification evidence in the phase
+      report.
+- [ ] Keep architecture baseline/contract/responsibility docs aligned with
+      ownership and boundary shifts.
+
+### Completion Notes
+- How it was done: Pending.
+
+---
+
 ## Section: Phase 9 Native dpost Bootstrap Core
 - Why this matters: Removing bootstrap-level legacy coupling is the first hard
   boundary needed for a truly native `dpost` runtime.
@@ -11,6 +32,8 @@
 - [ ] Remove legacy bootstrap-module dependency from `src/dpost/runtime/bootstrap.py`.
 - [ ] Remove legacy bootstrap type/module dependency from
       `src/dpost/runtime/composition.py`.
+- [ ] Remove transition-only bootstrap indirection and keep startup behavior
+      equivalent to current baseline.
 - [ ] Verify migration + full gates are green.
 
 ### Completion Notes
@@ -26,6 +49,8 @@
 - [ ] Add failing migration tests for `dpost/application` orchestration usage.
 - [ ] Extract orchestration entrypoints into `dpost/application` services.
 - [ ] Keep behavior parity for processing/session runtime paths.
+- [ ] Flatten orchestration call paths and replace legacy alias naming with
+      intention-revealing `dpost` names.
 - [ ] Verify migration + full gates are green.
 
 ### Completion Notes
@@ -43,6 +68,8 @@
 - [ ] Move runtime/filesystem/observability glue behind `dpost/infrastructure`
       adapters and ports.
 - [ ] Ensure composition root owns adapter selection/wiring.
+- [ ] Narrow adapter APIs to explicit ports and remove transition-era helper
+      sprawl.
 - [ ] Verify migration + full gates are green.
 
 ### Completion Notes
@@ -59,6 +86,8 @@
       `dpost`.
 - [ ] Migrate plugin/config startup contracts to `dpost` boundary modules.
 - [ ] Keep plugin discovery errors actionable and regression-tested.
+- [ ] Normalize plugin/config boundary naming to canonical `dpost` terms and
+      remove alias indirection.
 - [ ] Verify migration + full gates are green.
 
 ### Completion Notes
@@ -74,6 +103,8 @@
 - [ ] Add failing migration tests asserting no runtime dependency on
       `src/ipat_watchdog/core/...` from canonical startup path.
 - [ ] Remove remaining runtime dependency surfaces and transition-only glue.
+- [ ] Confirm canonical startup path is concise and readable without legacy
+      runtime context.
 - [ ] Update docs/checklists/execution board to reflect legacy runtime
       retirement completion.
 - [ ] Verify migration + full gates are green.
@@ -97,6 +128,8 @@
       instrument families.
 - [ ] Migration hygiene manual check: documented setup/start commands work from
       a clean environment.
+- [ ] Manual architecture readability check: touched runtime/composition paths
+      are understandable without transition-era wrapper tracing.
 
 ### Manual Validation Steps
 1. Run desktop mode (`DPOST_RUNTIME_MODE=desktop`) and validate startup,

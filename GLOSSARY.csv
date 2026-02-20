@@ -17,3 +17,5 @@ intent-revealing naming,governance principle,Defines naming guidance that stage 
 runtime mode,runtime configuration,Defines startup behavior selection between headless and desktop,Configured at composition root to choose explicit runtime wiring
 DPOST_RUNTIME_MODE,environment variable,Selects runtime mode for dpost startup composition,Expected values are headless or desktop for migration phase 7 tests
 HeadlessRuntimeUI,infrastructure adapter,Defines the non-interactive UI and scheduler adapter for dpost headless runtime mode,Used by composition when DPOST_RUNTIME_MODE resolves to headless
+functional equivalence,migration quality gate,Defines the requirement that migration refactors preserve operator-visible behavior and error semantics,Used as a required acceptance dimension in Phase 9-13 migration increments
+syntactic simplification,migration quality gate,Defines the requirement that migration refactors reduce indirection and improve readability without changing behavior,Tracked in Phase 9-13 plans and reports through before/after simplification evidence

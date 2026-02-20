@@ -4,6 +4,13 @@
 - This repository is migrating from `ipat_watchdog` to `dpost`.
 - Keep changes safe, incremental, and reviewable.
 - Preserve behavior first; tighten architecture in controlled phases.
+- Active implementation scope is Phase 9+ (post-Phase 8 cutover/retirement).
+
+## Active Phase Scope (Phase 9+)
+- All migration execution guidance in this document is for Phase 9 and later.
+- Prior phase notes remain historical context unless explicitly reactivated.
+- Current objective is native `dpost` runtime completion and legacy runtime
+  dependency retirement through Phase 9-13 gates.
 
 ## Current Migration Decisions (Locked)
 - Runtime posture: headless-first.
@@ -28,13 +35,23 @@
 - place `ipat_watchdog` contract tests in legacy paths (`tests/unit`, `tests/integration`, `tests/manual`)
 - place new `dpost` migration/cutover tests in `tests/migration`
 
-## Human-in-the-loop TDD (Novel Code)
-- For new behavior or non-trivial architectural changes:
-- First add failing tests and report.
-- Wait for human approval.
-- Implement until tests pass.
-- Human verifies.
-- Propose refactors after green.
+## Autonomous TDD (Novel Code)
+- For Phase 9+ behavior changes or non-trivial architectural changes, run full
+  TDD loops autonomously:
+- add failing tests and capture red-state evidence
+- implement until tests pass
+- refactor while tests stay green
+- report red/green verification evidence and rationale
+- Do not pause for human approval between red and green unless requirements are ambiguous or unsafe.
+
+## Reasoning Effort Policy
+- Very high reasoning effort:
+- documentation analysis/updates (architecture, planning, checklists, ADR impact)
+- test design and test writing
+- code design, implementation, and refactoring
+- Medium reasoning effort:
+- running test/lint/format/pre-commit commands
+- git status/review and commit workflow operations
 
 ## Architecture Governance (Required)
 - Treat these as source-of-truth artifacts:
@@ -83,13 +100,35 @@
 - Lint: `python -m ruff check .`
 - Lint fix: `python -m ruff check . --fix`
 - Format: `python -m black .`
+- Pre-commit: `python -m pre_commit run --all-files`
 - Tests: `python -m pytest`
 - Legacy tests only: `python -m pytest -m legacy`
 - Migration tests only: `python -m pytest -m migration`
 
+## Git Safety Rules
+- Primary goal: prevent destructive repository operations during autonomous execution.
+- Allowed git write operations:
+- `git add ...`
+- `git commit ...`
+- Allowed quality gate command:
+- `python -m pre_commit run --all-files`
+- Allowed git read operations:
+- `git status`
+- `git diff`
+- `git log`
+- Forbidden git operations unless explicitly requested by a human:
+- `git reset --hard`
+- `git checkout -- ...`
+- `git clean -fd` / `git clean -fdx`
+- `git rebase`
+- `git merge`
+- `git cherry-pick`
+- `git commit --amend`
+- `git push --force`
+
 ## Key Paths (Current)
-- CLI entrypoint: `src/ipat_watchdog/__main__.py`
-- New CLI entrypoint scaffold: `src/dpost/__main__.py`
+- Canonical CLI entrypoint: `src/dpost/__main__.py`
+- Legacy CLI entrypoint (retired): `src/ipat_watchdog/__main__.py`
 - Runtime bootstrap: `src/ipat_watchdog/core/app/bootstrap.py`
 - New composition root scaffold: `src/dpost/runtime/composition.py`
 - Architecture docs: `docs/architecture/`

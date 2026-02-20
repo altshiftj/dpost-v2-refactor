@@ -24,6 +24,15 @@
 | Composition boundary typing | `dpost` composition currently keeps legacy bootstrap type coupling via type-check imports. | `src/dpost/runtime/composition.py` TYPE_CHECKING import from legacy bootstrap |
 | Architecture direction gap | Current architecture baseline still describes composition delegating runtime bootstrap to legacy wiring, which is incompatible with full strangler completion. | `docs/architecture/architecture-baseline.md` migration notes |
 
+## Phase 9 Implementation Posture
+- The increment should satisfy two simultaneous outcomes:
+  - functional equivalence for startup behavior, processing entry flow, and
+    startup error semantics.
+  - syntactic simplification by removing transition-only bootstrap indirection
+    in favor of native `dpost` contracts with intention-revealing names.
+- Any change that introduces additional wrapper layers should be treated as a
+  regression unless required by an explicit contract boundary.
+
 ## Phase 9 Tests-First Contract Added
 - Added migration tests in:
   - `tests/migration/test_phase9_native_bootstrap_boundary.py`
@@ -40,9 +49,15 @@
 - Runtime bootstrap decoupling can affect startup exception/context contracts
   used by existing migration tests.
 - Boundary cleanup must preserve behavior while removing type/module coupling.
+- Over-aggressive restructuring can reduce readability if new indirection is
+  introduced during decoupling.
 
 ## Open Questions
 - Should native `dpost` bootstrap context/settings classes be introduced in one
   increment or staged (types first, behavior second)?
   - Answer: Deferred to implementation increment; tests currently lock boundary
     decoupling outcome only.
+- Should syntactic cleanup be optimized in the same increment as bootstrap
+  decoupling?
+  - Answer: Yes; Phase 9 should target functionally equivalent behavior with
+    cleaner native boundary syntax in the same gated increment.
