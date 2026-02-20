@@ -31,7 +31,7 @@ Companion runbook:
       exception-class indirection helpers.
 - [x] Simplify `src/dpost/__main__.py` to post-sunset exception import/handling
       contract.
-- [ ] Update `src/ipat_watchdog/plugin_system.py` install hint strings from
+- [x] Update `src/ipat_watchdog/plugin_system.py` install hint strings from
       `ipat-watchdog[...]` to `dpost[...]`.
 
 ### Completion Notes
@@ -62,6 +62,20 @@ Companion runbook:
   Verification:
   `python -m pytest tests/migration/test_dpost_main.py`
   -> `7 passed`.
+- Tests-first plugin-install-hint increment (red):
+  added migration assertion in
+  `tests/migration/test_phase8_cutover_identity.py` requiring
+  `pip install dpost[...]` guidance and no
+  `pip install ipat-watchdog[...]` guidance in plugin-system messages.
+  Verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `1 failed, 8 passed`.
+- Plugin-install-hint implementation increment (green):
+  updated install hint strings in
+  `src/ipat_watchdog/plugin_system.py` for unknown device/PC plugin errors.
+  Verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `9 passed`.
 
 ---
 
@@ -107,7 +121,7 @@ Companion runbook:
 - How it was done:
 - Focused retirement checks completed:
   `python -m pytest tests/migration/test_phase8_cutover_identity.py`
-  -> `8 passed`.
+  -> `9 passed`.
   `python -m pytest tests/migration/test_dpost_main.py`
   -> `7 passed`.
 - Remaining phase gate checks are still pending in this section.

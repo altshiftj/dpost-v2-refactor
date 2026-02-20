@@ -83,7 +83,7 @@ class DevicePluginRegistry(_BaseRegistry):
             raise RuntimeError(
                 f"No device plugin named {name!r} installed. "
                 f"Available device plugins: {available_plugins}. "
-                f"Run `pip install ipat-watchdog[{name}]` or check casing."
+                f"Run `pip install dpost[{name}]` or check casing."
             ) from exc
         plugin = factory()
         if not isinstance(plugin, DevicePlugin):
@@ -105,7 +105,7 @@ class PCPluginRegistry(_BaseRegistry):
             raise RuntimeError(
                 f"No PC plugin named {name!r} installed. "
                 f"Available PC plugins: {available_plugins}. "
-                f"Run `pip install ipat-watchdog[{name}]` or check casing."
+                f"Run `pip install dpost[{name}]` or check casing."
             ) from exc
         plugin = factory()
         if not isinstance(plugin, PCPlugin):

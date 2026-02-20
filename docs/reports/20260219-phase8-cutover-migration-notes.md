@@ -31,6 +31,8 @@
   utilities instead.
 - Treat any remaining compatibility wording in docs/checklists as historical
   context only; canonical runtime behavior is now `dpost`-only.
+- Plugin discovery/install guidance now points to canonical package extras:
+  use `pip install dpost[<plugin_name>]`.
 
 ## User Notes
 - If you run from source, use `python -m dpost`.

@@ -778,6 +778,14 @@
   -> `2 failed, 5 passed` (red for transition-helper removal), then
   `7 passed` (green after simplifying `src/dpost/runtime/bootstrap.py`
   and `src/dpost/__main__.py`).
+- Additional sunset increment (plugin hint alignment):
+  added a failing migration assertion for canonical install hint text in
+  `tests/migration/test_phase8_cutover_identity.py` and updated
+  `src/ipat_watchdog/plugin_system.py` install guidance from
+  `pip install ipat-watchdog[...]` to `pip install dpost[...]`.
+  Verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  -> `1 failed, 8 passed` (red), then `9 passed` (green).
 
 ---
 

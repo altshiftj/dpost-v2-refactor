@@ -139,8 +139,18 @@
   - simplified `src/dpost/__main__.py` to direct
     `StartupError` / `MissingConfiguration` imports from
     `dpost.runtime.bootstrap`
+- Additional tests-first increment (plugin install hint alignment):
+  - added failing migration contract in
+    `tests/migration/test_phase8_cutover_identity.py` requiring
+    canonical `pip install dpost[...]` guidance in plugin-system errors.
+  - red-state verification:
+    `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+    -> `1 failed, 8 passed`
+  - implementation:
+    updated `src/ipat_watchdog/plugin_system.py` install hints for unknown
+    device/PC plugins from `ipat-watchdog[...]` to `dpost[...]`.
 - Green verification:
   - `python -m pytest tests/migration/test_phase8_cutover_identity.py`
-    -> `8 passed`
+    -> `9 passed`
   - `python -m pytest tests/migration/test_dpost_main.py`
     -> `7 passed`

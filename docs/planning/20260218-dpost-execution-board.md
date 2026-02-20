@@ -687,3 +687,17 @@
 - green verification:
   `python -m pytest tests/migration/test_dpost_main.py`
   returned `7 passed`.
+- tests-first increment 3:
+  added migration contract in
+  `tests/migration/test_phase8_cutover_identity.py` requiring
+  plugin install hints to use `dpost[...]` naming.
+- red-state verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `1 failed, 8 passed`.
+- implementation increment 3:
+  updated install hint strings in
+  `src/ipat_watchdog/plugin_system.py` from
+  `pip install ipat-watchdog[...]` to `pip install dpost[...]`.
+- green verification:
+  `python -m pytest tests/migration/test_phase8_cutover_identity.py`
+  returned `9 passed`.
