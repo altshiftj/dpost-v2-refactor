@@ -143,12 +143,14 @@
 - `src/dpost/device_plugins/sem_phenomxl2/`
 - `src/dpost/device_plugins/rmx_eirich_el1/`
 - `src/dpost/device_plugins/rmx_eirich_r01/`
+- `src/dpost/device_plugins/dsv_horiba/`
 - Canonical concrete PC plugin package (migration wave):
 - `src/dpost/pc_plugins/zwick_blb/`
 - `src/dpost/pc_plugins/haake_blb/`
 - `src/dpost/pc_plugins/hioki_blb/`
 - `src/dpost/pc_plugins/tischrem_blb/`
 - `src/dpost/pc_plugins/eirich_blb/`
+- `src/dpost/pc_plugins/horiba_blb/`
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
@@ -244,6 +246,8 @@
   (`dpost.device_plugins.rmx_eirich_el1`) before any legacy fallback path.
 - Concrete RMX EIRICH R01 plugin now loads from canonical dpost namespace
   (`dpost.device_plugins.rmx_eirich_r01`) before any legacy fallback path.
+- Concrete DSV HORIBA plugin now loads from canonical dpost namespace
+  (`dpost.device_plugins.dsv_horiba`) before any legacy fallback path.
 - Concrete Zwick BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.zwick_blb`) before any legacy fallback path.
 - Concrete HAAKE BLB PC plugin now loads from canonical dpost namespace
@@ -254,6 +258,8 @@
   (`dpost.pc_plugins.tischrem_blb`) before any legacy fallback path.
 - Concrete EIRICH BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.eirich_blb`) before any legacy fallback path.
+- Concrete HORIBA BLB PC plugin now loads from canonical dpost namespace
+  (`dpost.pc_plugins.horiba_blb`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   keeps legacy hook-namespace compatibility through isolated orchestration in
   `src/dpost/plugins/system.py`.

@@ -69,13 +69,15 @@
     `src/dpost/device_plugins/erm_hioki/` and
     `src/dpost/device_plugins/sem_phenomxl2/` and
     `src/dpost/device_plugins/rmx_eirich_el1/` and
-    `src/dpost/device_plugins/rmx_eirich_r01/`.
+    `src/dpost/device_plugins/rmx_eirich_r01/` and
+    `src/dpost/device_plugins/dsv_horiba/`.
   - Concrete PC plugins migrated to canonical dpost namespace:
     `src/dpost/pc_plugins/zwick_blb/` and
     `src/dpost/pc_plugins/haake_blb/` and
     `src/dpost/pc_plugins/hioki_blb/` and
     `src/dpost/pc_plugins/tischrem_blb/` and
-    `src/dpost/pc_plugins/eirich_blb/`.
+    `src/dpost/pc_plugins/eirich_blb/` and
+    `src/dpost/pc_plugins/horiba_blb/`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +
