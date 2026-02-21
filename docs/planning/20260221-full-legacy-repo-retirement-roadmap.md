@@ -36,6 +36,13 @@
   - conftest/runtime fixture migration increment landed:
     shared `watchdog_app` fixture and related unit app test imports now resolve
     `DeviceWatchdogApp` from `dpost.application.runtime.device_watchdog_app`.
+  - integration runtime migration increment landed:
+    runtime app imports and observer patch targets were migrated to canonical
+    dpost runtime ownership in:
+    - `tests/integration/test_integration.py`
+    - `tests/integration/test_multi_processor_app_flow.py`
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate

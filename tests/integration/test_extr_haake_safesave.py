@@ -1,6 +1,7 @@
 """Integration test for EXTR HAAKE plugin handling Excel safe-save (disappear/reappear)."""
 from __future__ import annotations
 
+import importlib
 import threading
 import time
 from dataclasses import replace
@@ -9,8 +10,9 @@ from typing import Any, cast
 
 import pytest
 
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import init_config, reset_service
+from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from ipat_watchdog.device_plugins.extr_haake.settings import build_config as build_extr_haake_config
 from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
@@ -62,10 +64,11 @@ def app_with_extr_haake(tmp_path):
         ui=cast(Any, ui),
         sync_manager=sync,
         config_service=service,
+        file_process_manager_cls=FileProcessManager,
     )
 
-    # Monkeypatch the Observer factory used by the app
-    import ipat_watchdog.core.app.device_watchdog_app as app_mod
+    # Monkeypatch the Observer factory used by the app.
+    app_mod = importlib.import_module(DeviceWatchdogApp.__module__)
     app_mod.Observer = lambda: observer_stub  # type: ignore[assignment]
 
     app.initialize()

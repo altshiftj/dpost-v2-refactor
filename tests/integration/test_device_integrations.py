@@ -9,9 +9,10 @@ from typing import Callable
 import pytest
 
 import ipat_watchdog.plugin_system as plugin_system
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import PCConfig, PathSettings, init_config, reset_service
 from ipat_watchdog.core.config.schema import DeviceConfig
+from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.processing.stability_tracker import (
     FileStabilityTracker,
     StabilityOutcome,
@@ -107,8 +108,9 @@ def _build_uber_config(tmp_path: Path) -> tuple[PCConfig, list[DeviceConfig], Pa
 def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, HeadlessUI, DummySyncManager, PathSettings]:
     _silence_file_logging(monkeypatch)
     monkeypatch.setattr(FileStabilityTracker, "wait", _stable_immediately)
+    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
     monkeypatch.setattr(
-        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        observer_target,
         lambda: FakeObserver(),
     )
     loader = PluginLoader(load_entrypoints=False, load_builtins=False)
@@ -120,7 +122,12 @@ def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, Headless
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
-    app = DeviceWatchdogApp(ui=ui, sync_manager=sync, config_service=config_service)
+    app = DeviceWatchdogApp(
+        ui=ui,
+        sync_manager=sync,
+        config_service=config_service,
+        file_process_manager_cls=FileProcessManager,
+    )
     app.initialize()
     return app, ui, sync, paths
 

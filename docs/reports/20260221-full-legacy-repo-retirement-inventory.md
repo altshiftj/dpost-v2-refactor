@@ -71,6 +71,12 @@
 - Migrated shared watchdog fixture runtime import to canonical dpost runtime:
   - `tests/conftest.py`
   - `tests/unit/core/app/test_device_watchdog_app.py`
+- Migrated integration runtime app imports/observer targets to canonical dpost
+  runtime ownership:
+  - `tests/integration/test_integration.py`
+  - `tests/integration/test_multi_processor_app_flow.py`
+  - `tests/integration/test_device_integrations.py`
+  - `tests/integration/test_extr_haake_safesave.py`
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -83,11 +89,15 @@
     fake-processor guard), then `5 passed` (green), then
     `1 failed, 5 passed` (red after legacy-metrics guard), then
     `6 passed` (green), then `1 failed, 6 passed` (red after watchdog-fixture
-    runtime-import guard), then `7 passed` (green)
+    runtime-import guard), then `7 passed` (green), then
+    `1 failed, 7 passed` (red after integration-runtime guard), then
+    `8 passed` (green)
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
     -> `8 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/integration/test_integration.py tests/integration/test_device_integrations.py tests/integration/test_multi_processor_app_flow.py tests/integration/test_extr_haake_safesave.py`
+    -> `29 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -96,10 +106,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `168 passed, 302 deselected`
+      -> `169 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `469 passed, 1 skipped`
+      -> `470 passed, 1 skipped`

@@ -51,6 +51,16 @@
     `dpost.application.runtime.device_watchdog_app.DeviceWatchdogApp`
   - matching unit app test import migration in
     `tests/unit/core/app/test_device_watchdog_app.py`
+  - runtime app import migration for integration suites:
+    - `tests/integration/test_integration.py`
+    - `tests/integration/test_multi_processor_app_flow.py`
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
+  - observer patch target migration to dynamic module resolution in those
+    integration suites
+  - explicit legacy processing manager injection retained in
+    `test_device_integrations.py` and `test_extr_haake_safesave.py` to preserve
+    existing behavior while runtime/config convergence continues
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

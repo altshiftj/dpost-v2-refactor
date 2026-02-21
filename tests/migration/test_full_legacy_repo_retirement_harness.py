@@ -13,6 +13,12 @@ FAKE_PROCESS_MANAGER_PATH = (
 FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
 LEGACY_METRICS_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "metrics.py"
+INTEGRATION_RUNTIME_TEST_PATHS = (
+    PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_multi_processor_app_flow.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_extr_haake_safesave.py",
+)
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -68,3 +74,17 @@ def test_legacy_metrics_module_reexports_dpost_metrics() -> None:
     assert "Counter(" not in contents
     assert "Gauge(" not in contents
     assert "Histogram(" not in contents
+
+
+def test_integration_runtime_tests_avoid_legacy_watchdog_runtime_paths() -> None:
+    """Require integration runtime tests to avoid legacy watchdog runtime import paths."""
+    for path in INTEGRATION_RUNTIME_TEST_PATHS:
+        contents = path.read_text(encoding="utf-8")
+        assert (
+            "from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp"
+            not in contents
+        )
+        assert "ipat_watchdog.core.app.device_watchdog_app.Observer" not in contents
+        assert "import ipat_watchdog.core.app.device_watchdog_app as app_mod" not in (
+            contents
+        )

@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import pytest
 
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.interactions.messages import InfoMessages
 from ipat_watchdog.core.processing.file_process_manager import \
     FileProcessManager
@@ -34,8 +34,9 @@ def real_processing_app(config_service, tmp_settings, monkeypatch):
     init_dirs()
 
     observer_stub = FakeObserver()
+    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
     monkeypatch.setattr(
-        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        observer_target,
         lambda: observer_stub,
     )
     app = DeviceWatchdogApp(

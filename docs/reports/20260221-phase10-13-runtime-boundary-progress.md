@@ -718,7 +718,8 @@
 - Red-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `2 failed`, then `1 failed, 2 passed`, then `1 failed, 3 passed`, then
-    `1 failed, 4 passed`, then `1 failed, 5 passed`, then `1 failed, 6 passed`
+    `1 failed, 4 passed`, then `1 failed, 5 passed`, then `1 failed, 6 passed`,
+    then `1 failed, 7 passed`
 - Implementation:
   - migrated shared helper boundaries away from direct legacy interaction/sync
     imports:
@@ -737,14 +738,26 @@
     deriving target module dynamically from `DeviceWatchdogApp.__module__`:
     - `tests/conftest.py`
   - migrated shared watchdog fixture and unit app test imports to canonical
-    dpost runtime app ownership:
+  dpost runtime app ownership:
     - `tests/conftest.py`
     - `tests/unit/core/app/test_device_watchdog_app.py`
+  - migrated integration runtime app imports and observer patch targets to
+    canonical dpost runtime module ownership:
+    - `tests/integration/test_integration.py`
+    - `tests/integration/test_multi_processor_app_flow.py`
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
+  - preserved integration behavior parity by explicitly wiring legacy
+    `FileProcessManager` into migrated runtime app fixtures where required:
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
 - Green-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
-    -> `7 passed`
+    -> `8 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
     -> `8 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/integration/test_integration.py tests/integration/test_device_integrations.py tests/integration/test_multi_processor_app_flow.py tests/integration/test_extr_haake_safesave.py`
+    -> `29 passed`
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
@@ -756,13 +769,13 @@
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `168 passed, 302 deselected`
+  -> `169 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `157 files would be left unchanged.`
 - `python -m pytest`
-  -> `469 passed, 1 skipped`
+  -> `470 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,

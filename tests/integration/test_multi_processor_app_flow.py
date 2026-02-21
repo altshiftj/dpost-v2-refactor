@@ -8,7 +8,7 @@ from typing import Any, cast
 import pytest
 
 import ipat_watchdog.plugin_system as plugin_system
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import init_config, reset_service
 from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
 from ipat_watchdog.core.processing.stability_tracker import (
@@ -108,8 +108,9 @@ def multi_processor_app(tmp_path, monkeypatch):
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
     observer_stub = FakeObserver()
+    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
     monkeypatch.setattr(
-        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        observer_target,
         lambda: observer_stub,
     )
 
