@@ -6,16 +6,12 @@ from typing import Any, cast
 
 import pytest
 
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.processing.file_process_manager import \
-    FileProcessManager
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage.filesystem_utils import (get_record_path,
-                                                         init_dirs)
-from ipat_watchdog.device_plugins.utm_zwick.settings import \
-    build_config as build_utm_config
-from ipat_watchdog.pc_plugins.test_pc.settings import \
-    build_config as build_pc_config
+from dpost.application.config import init_config, reset_service
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.records.local_record import LocalRecord
+from dpost.device_plugins.utm_zwick.settings import build_config as build_utm_config
+from dpost.infrastructure.storage.filesystem_utils import get_record_path, init_dirs
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI

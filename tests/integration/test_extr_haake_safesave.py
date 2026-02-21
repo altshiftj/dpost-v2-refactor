@@ -10,12 +10,14 @@ from typing import Any, cast
 
 import pytest
 
+from dpost.application.config import init_config, reset_service
+from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.extr_haake.settings import build_config as build_extr_haake_config
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.device_plugins.extr_haake.settings import (
+    build_config as build_extr_haake_config,
+)
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI

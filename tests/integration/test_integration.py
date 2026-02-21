@@ -6,12 +6,11 @@ from typing import Any, cast
 
 import pytest
 
+from dpost.application.interactions.messages import InfoMessages
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.models import ProcessingStatus
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.interactions.messages import InfoMessages
-from ipat_watchdog.core.processing.file_process_manager import \
-    FileProcessManager
-from ipat_watchdog.core.processing.models import ProcessingStatus
-from ipat_watchdog.core.storage.filesystem_utils import init_dirs
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI

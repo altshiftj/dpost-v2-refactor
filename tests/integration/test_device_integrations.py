@@ -8,44 +8,49 @@ from typing import Callable
 
 import pytest
 
-import ipat_watchdog.plugin_system as plugin_system
-from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.config import PCConfig, PathSettings, init_config, reset_service
-from ipat_watchdog.core.config.schema import DeviceConfig
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.stability_tracker import (
+import dpost.plugins.system as plugin_system
+from dpost.application.config import (
+    DeviceConfig,
+    PCConfig,
+    PathSettings,
+    init_config,
+    reset_service,
+)
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
     StabilityOutcome,
 )
-from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.dsv_horiba.settings import (
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
+from dpost.device_plugins.dsv_horiba.settings import (
     build_config as build_dsv_config,
 )
-from ipat_watchdog.device_plugins.erm_hioki.settings import (
+from dpost.device_plugins.erm_hioki.settings import (
     build_config as build_hioki_config,
 )
-from ipat_watchdog.device_plugins.extr_haake.settings import (
+from dpost.device_plugins.extr_haake.settings import (
     build_config as build_extr_config,
 )
-from ipat_watchdog.device_plugins.psa_horiba.settings import (
+from dpost.device_plugins.psa_horiba.settings import (
     build_config as build_psa_config,
 )
-from ipat_watchdog.device_plugins.rhe_kinexus.settings import (
+from dpost.device_plugins.rhe_kinexus.settings import (
     build_config as build_kinexus_config,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_el1.settings import (
+from dpost.device_plugins.rmx_eirich_el1.settings import (
     build_config as build_eirich_el1_config,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.settings import (
+from dpost.device_plugins.rmx_eirich_r01.settings import (
     build_config as build_eirich_r01_config,
 )
-from ipat_watchdog.device_plugins.sem_phenomxl2.settings import (
+from dpost.device_plugins.sem_phenomxl2.settings import (
     build_config as build_sem_config,
 )
-from ipat_watchdog.device_plugins.utm_zwick.settings import (
+from dpost.device_plugins.utm_zwick.settings import (
     build_config as build_utm_config,
 )
-from ipat_watchdog.plugin_system import PluginLoader
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
+from dpost.plugins.system import PluginLoader
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
@@ -134,7 +139,7 @@ def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, Headless
 
 def _silence_file_logging(monkeypatch) -> None:
     """Avoid writing to the shared C:\\Watchdog log during tests."""
-    import ipat_watchdog.core.logging.logger as logger_mod
+    import dpost.infrastructure.logging as logger_mod
 
     def _setup_logger_no_file(name: str = "watchdog") -> logging.Logger:
         logger = logging.getLogger(name)
@@ -146,7 +151,7 @@ def _silence_file_logging(monkeypatch) -> None:
     monkeypatch.setattr(logger_mod, "setup_logger", _setup_logger_no_file)
 
     for logger_name in list(logging.Logger.manager.loggerDict):
-        if not isinstance(logger_name, str) or not logger_name.startswith("ipat_watchdog"):
+        if not isinstance(logger_name, str) or not logger_name.startswith("dpost"):
             continue
         logger = logging.getLogger(logger_name)
         for handler in list(logger.handlers):

@@ -85,6 +85,16 @@
   - runtime-service fixture bridge in conftest now seeds both legacy and dpost
     runtime registries so mixed-import test slices remain behaviorally aligned
     while import retirement continues.
+  - integration suite migration to canonical dpost boundaries:
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
+    - `tests/integration/test_integration.py`
+    - `tests/integration/test_multi_device_integration.py`
+    - `tests/integration/test_multi_processor_app_flow.py`
+    - `tests/integration/test_settings_integration.py`
+    - `tests/integration/test_utm_zwick_integration.py`
+  - migration harness now includes integration-wide retirement guard:
+    `test_integration_tests_avoid_legacy_import_paths`.
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

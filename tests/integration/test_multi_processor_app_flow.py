@@ -7,26 +7,26 @@ from typing import Any, cast
 
 import pytest
 
-import ipat_watchdog.plugin_system as plugin_system
-from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.stability_tracker import (
+import dpost.plugins.system as plugin_system
+from dpost.application.config import init_config, reset_service
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
     StabilityOutcome,
 )
-from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.rmx_eirich_el1.settings import (
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
+from dpost.device_plugins.rmx_eirich_el1.settings import (
     build_config as build_eirich_el1_config,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.settings import (
+from dpost.device_plugins.rmx_eirich_r01.settings import (
     build_config as build_eirich_r01_config,
 )
-from ipat_watchdog.device_plugins.utm_zwick.settings import (
+from dpost.device_plugins.utm_zwick.settings import (
     build_config as build_utm_config,
 )
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
-from ipat_watchdog.plugin_system import PluginLoader
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.plugins.system import PluginLoader
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
@@ -48,17 +48,17 @@ EIRICH_CASES = (
 DEVICE_PLUGIN_SPECS = (
     {
         "name": "test-eirich-el1",
-        "module": "ipat_watchdog.device_plugins.rmx_eirich_el1.plugin",
+        "module": "dpost.device_plugins.rmx_eirich_el1.plugin",
         "config_builder": build_eirich_el1_config,
     },
     {
         "name": "test-eirich-r01",
-        "module": "ipat_watchdog.device_plugins.rmx_eirich_r01.plugin",
+        "module": "dpost.device_plugins.rmx_eirich_r01.plugin",
         "config_builder": build_eirich_r01_config,
     },
     {
         "name": "test-utm-zwick",
-        "module": "ipat_watchdog.device_plugins.utm_zwick.plugin",
+        "module": "dpost.device_plugins.utm_zwick.plugin",
         "config_builder": build_utm_config,
     },
 )

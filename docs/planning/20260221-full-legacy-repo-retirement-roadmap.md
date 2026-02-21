@@ -43,6 +43,19 @@
     - `tests/integration/test_multi_processor_app_flow.py`
     - `tests/integration/test_device_integrations.py`
     - `tests/integration/test_extr_haake_safesave.py`
+  - integration legacy-import retirement increment landed:
+    integration suites now resolve canonical dpost config/processing/storage/
+    plugin boundaries in:
+    - `tests/integration/test_device_integrations.py`
+    - `tests/integration/test_extr_haake_safesave.py`
+    - `tests/integration/test_integration.py`
+    - `tests/integration/test_multi_device_integration.py`
+    - `tests/integration/test_multi_processor_app_flow.py`
+    - `tests/integration/test_settings_integration.py`
+    - `tests/integration/test_utm_zwick_integration.py`
+  - migration guard scope expanded:
+    `tests/migration/test_full_legacy_repo_retirement_harness.py` now enforces
+    integration-wide prohibition of `ipat_watchdog` imports.
   - observability unit migration increment landed:
     `tests/unit/test_observability.py` now imports canonical
     `dpost.infrastructure.observability`.

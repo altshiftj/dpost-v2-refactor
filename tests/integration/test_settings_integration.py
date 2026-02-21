@@ -2,13 +2,20 @@
 
 import pytest
 
-from ipat_watchdog.core.config import (activate_device, current, init_config,
-                                       reset_service)
-from ipat_watchdog.core.config.schema import (DeviceConfig,
-                                              DeviceFileSelectors,
-                                              DeviceMetadata, NamingSettings,
-                                              PathSettings, PCConfig,
-                                              SessionSettings, WatcherSettings)
+from dpost.application.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    NamingSettings,
+    PathSettings,
+    PCConfig,
+    SessionSettings,
+    WatcherSettings,
+    activate_device,
+    current,
+    init_config,
+    reset_service,
+)
 
 
 @pytest.fixture

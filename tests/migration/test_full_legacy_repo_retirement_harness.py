@@ -103,6 +103,15 @@ INTEGRATION_RUNTIME_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_multi_processor_app_flow.py",
     PROJECT_ROOT / "tests" / "integration" / "test_extr_haake_safesave.py",
 )
+INTEGRATION_TEST_PATHS = (
+    PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_extr_haake_safesave.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_multi_device_integration.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_multi_processor_app_flow.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_settings_integration.py",
+    PROJECT_ROOT / "tests" / "integration" / "test_utm_zwick_integration.py",
+)
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -279,3 +288,11 @@ def test_device_plugin_unit_tests_avoid_legacy_plugin_import_paths() -> None:
     ):
         contents = path.read_text(encoding="utf-8")
         assert "from ipat_watchdog.core." not in contents
+
+
+def test_integration_tests_avoid_legacy_import_paths() -> None:
+    """Require integration tests to import canonical dpost boundaries only."""
+    for path in INTEGRATION_TEST_PATHS:
+        contents = path.read_text(encoding="utf-8")
+        assert "from ipat_watchdog" not in contents
+        assert "import ipat_watchdog" not in contents
