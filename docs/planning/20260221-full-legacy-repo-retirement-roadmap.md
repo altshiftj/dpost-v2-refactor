@@ -135,6 +135,13 @@
     collectors.
   - test import migration now uses canonical dpost module ownership for
     shared fixtures + migration/integration/unit/manual suites.
+  - full legacy source retirement checkpoint landed:
+    - removed `src/ipat_watchdog/**` (core/runtime/plugins/loader/metrics/
+      observability legacy package tree)
+    - migration harness now enforces legacy source package absence and native
+      `dpost.application.metrics` ownership
+    - phase-8 identity guard now validates install guidance from
+      `src/dpost/plugins/system.py` instead of removed legacy plugin system.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

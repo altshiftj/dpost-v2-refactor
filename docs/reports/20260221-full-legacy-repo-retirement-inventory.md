@@ -164,6 +164,15 @@
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
+- Retired full legacy source package tree:
+  - removed `src/ipat_watchdog/**` including legacy `core/`, plugin trees,
+    `loader.py`, `plugin_system.py`, `metrics.py`, and `observability.py`.
+- Updated migration guards for post-retirement end state:
+  - `tests/migration/test_full_legacy_repo_retirement_harness.py` now requires
+    `src/ipat_watchdog/` package absence and verifies canonical
+    `src/dpost/application/metrics.py` ownership.
+  - `tests/migration/test_phase8_cutover_identity.py` now validates plugin
+    install guidance from `src/dpost/plugins/system.py`.
 - Verification snapshots:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `2 failed` (red), then `2 passed` (green), then
@@ -216,14 +225,22 @@
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
     -> `26 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
+    -> `1 failed, 15 passed` (red), then `16 passed` (green)
+  - `cmd /c rmdir /s /q src\ipat_watchdog`
+    -> completed (legacy source tree removed)
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/migration/test_phase8_cutover_identity.py`
+    -> `25 passed`
+  - `python -m pytest -m migration`
+    -> `177 passed, 302 deselected`
   - Required gates:
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `176 passed, 302 deselected`
+      -> `177 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `477 passed, 1 skipped`
+      -> `478 passed, 1 skipped`

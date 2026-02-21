@@ -9,7 +9,7 @@
 - [x] Define retirement target end-state criteria.
 - [x] Add migration guard tests for repository-wide retirement criteria.
 - [x] Link roadmap/checklist/report artifacts from active contributor docs.
-- [ ] Define explicit exception policy for any temporary retained legacy files.
+- [x] Define explicit exception policy for any temporary retained legacy files.
 
 ### Completion Notes
 - How it was done: Inventory baseline captured in
@@ -19,6 +19,8 @@
   assertions for shared helper decoupling from legacy interaction/sync imports.
   Roadmap/checklist/report artifacts are linked from canonical contributor docs
   (`README.md`, `DEVELOPER_README.md`).
+  Exception policy is now explicit: no temporary retained legacy source files
+  are permitted under `src/ipat_watchdog/**`.
 
 ---
 
@@ -143,14 +145,18 @@
   trees and converging tests/imports on canonical dpost plugins.
 
 ### Checklist
-- [ ] Confirm all plugin loaders/tests resolve canonical dpost plugin paths.
-- [ ] Retire `src/ipat_watchdog/device_plugins/**` in bounded slices.
-- [ ] Retire `src/ipat_watchdog/pc_plugins/**` in bounded slices.
-- [ ] Remove stale legacy plugin-specific docs and naming references.
-- [ ] Verify plugin loading/actionability parity after each slice.
+- [x] Confirm all plugin loaders/tests resolve canonical dpost plugin paths.
+- [x] Retire `src/ipat_watchdog/device_plugins/**` in bounded slices.
+- [x] Retire `src/ipat_watchdog/pc_plugins/**` in bounded slices.
+- [x] Remove stale legacy plugin-specific docs and naming references.
+- [x] Verify plugin loading/actionability parity after each slice.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Canonical plugin loading/tests already resolved to
+  `src/dpost/**`, then full legacy source retirement removed the mirrored
+  plugin trees and loader/plugin-system modules under `src/ipat_watchdog/**`.
+  Migration guard coverage now enforces absence of the legacy source package
+  root and keeps plugin-loading ownership checks green.
 
 ---
 
@@ -159,14 +165,17 @@
   dual-architecture maintenance burden.
 
 ### Checklist
-- [ ] Retire `src/ipat_watchdog/core/app/**` after canonical test migration.
-- [ ] Retire `src/ipat_watchdog/core/processing/**` after parity tests remain green.
-- [ ] Retire `src/ipat_watchdog/core/records/**` and `core/sync/**` after parity checks.
-- [ ] Retire `src/ipat_watchdog/core/config/**`, `core/storage/**`, and `core/ui/**`.
-- [ ] Remove residual legacy package exports and dead imports.
+- [x] Retire `src/ipat_watchdog/core/app/**` after canonical test migration.
+- [x] Retire `src/ipat_watchdog/core/processing/**` after parity tests remain green.
+- [x] Retire `src/ipat_watchdog/core/records/**` and `core/sync/**` after parity checks.
+- [x] Retire `src/ipat_watchdog/core/config/**`, `core/storage/**`, and `core/ui/**`.
+- [x] Remove residual legacy package exports and dead imports.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Full legacy source package deletion retired all remaining
+  core trees under `src/ipat_watchdog/core/**`; canonical runtime,
+  processing, records, config, storage, UI, and sync boundaries are now owned
+  by `src/dpost/**`.
 
 ---
 

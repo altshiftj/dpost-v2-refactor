@@ -100,7 +100,7 @@ def test_init_dirs_without_explicit_directories_requires_active_config(
 ) -> None:
     """Reject implicit directory initialisation when config service is unavailable."""
     filesystem_utils = importlib.import_module(
-        "ipat_watchdog.core.storage.filesystem_utils"
+        "dpost.infrastructure.storage.filesystem_utils"
     )
     monkeypatch.setattr(filesystem_utils, "current", _raise_missing_config_service)
 
@@ -115,7 +115,7 @@ def test_get_record_path_requires_active_config(
 ) -> None:
     """Reject implicit destination path resolution when config service is unavailable."""
     filesystem_utils = importlib.import_module(
-        "ipat_watchdog.core.storage.filesystem_utils"
+        "dpost.infrastructure.storage.filesystem_utils"
     )
     monkeypatch.setattr(filesystem_utils, "current", _raise_missing_config_service)
 

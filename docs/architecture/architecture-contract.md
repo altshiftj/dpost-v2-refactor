@@ -52,6 +52,8 @@
   direct legacy bootstrap module imports.
 - Canonical startup modules should resolve logging and observability through
   `dpost.infrastructure` boundaries, not direct legacy module imports.
+- Legacy source package ownership under `src/ipat_watchdog/**` is retired;
+  new canonical code must not recreate runtime dependencies on that package.
 - Canonical runtime app/bootstrap modules should use dpost-owned dependency
   boundary modules for staged session/UI/runtime integrations instead of
   direct legacy imports in canonical runtime files.
@@ -112,7 +114,7 @@
 
 ## Test Isolation Rules
 - Migration-cutover tests live under `tests/migration/` and are tagged `migration`.
-- Existing behavior contract tests are tagged `legacy`.
+- Archived compatibility characterization tests use the `legacy` marker.
 - Changes that affect both paths should include marker-specific verification runs.
 
 ## Compliance Gate

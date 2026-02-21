@@ -12,7 +12,8 @@ FAKE_PROCESS_MANAGER_PATH = (
 )
 FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
-LEGACY_METRICS_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "metrics.py"
+LEGACY_SOURCE_ROOT = PROJECT_ROOT / "src" / "ipat_watchdog"
+DPOST_METRICS_PATH = PROJECT_ROOT / "src" / "dpost" / "application" / "metrics.py"
 UNIT_OBSERVABILITY_TEST_PATH = PROJECT_ROOT / "tests" / "unit" / "test_observability.py"
 UNIT_PC_DEVICE_MAPPING_TEST_PATH = (
     PROJECT_ROOT / "tests" / "unit" / "loader" / "test_pc_device_mapping.py"
@@ -235,14 +236,20 @@ def test_conftest_watchdog_app_fixture_avoids_legacy_runtime_import() -> None:
     )
 
 
-def test_legacy_metrics_module_reexports_dpost_metrics() -> None:
-    """Require legacy metrics module to re-export canonical dpost metrics."""
-    contents = LEGACY_METRICS_PATH.read_text(encoding="utf-8")
+def test_legacy_source_package_is_retired() -> None:
+    """Require full legacy source package retirement from `src/ipat_watchdog`."""
+    assert not LEGACY_SOURCE_ROOT.exists()
 
-    assert "from dpost.application.metrics import (" in contents
-    assert "Counter(" not in contents
-    assert "Gauge(" not in contents
-    assert "Histogram(" not in contents
+
+def test_dpost_metrics_module_owns_metric_definitions() -> None:
+    """Require canonical dpost metrics module to own metric definitions."""
+    contents = DPOST_METRICS_PATH.read_text(encoding="utf-8")
+
+    assert "from prometheus_client import REGISTRY, Counter, Gauge, Histogram" in (
+        contents
+    )
+    assert "FILES_PROCESSED = _counter(" in contents
+    assert "SESSION_DURATION = _gauge(" in contents
 
 
 def test_integration_runtime_tests_avoid_legacy_watchdog_runtime_paths() -> None:

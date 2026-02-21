@@ -30,7 +30,7 @@ PIPELINE_README_PATH = (
 LEGACY_MAIN_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "__main__.py"
 DPOST_MAIN_PATH = PROJECT_ROOT / "src" / "dpost" / "__main__.py"
 DPOST_COMPOSITION_PATH = PROJECT_ROOT / "src" / "dpost" / "runtime" / "composition.py"
-PLUGIN_SYSTEM_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "plugin_system.py"
+DPOST_PLUGIN_SYSTEM_PATH = PROJECT_ROOT / "src" / "dpost" / "plugins" / "system.py"
 
 
 def _load_project_metadata() -> dict[str, Any]:
@@ -122,7 +122,7 @@ def test_dpost_composition_no_longer_delegates_to_legacy_bootstrap() -> None:
 
 def test_plugin_install_hints_use_dpost_package_name() -> None:
     """Require plugin install guidance to use canonical dpost package naming."""
-    plugin_system_contents = _read_utf8(PLUGIN_SYSTEM_PATH)
+    plugin_system_contents = _read_utf8(DPOST_PLUGIN_SYSTEM_PATH)
 
     assert "pip install ipat-watchdog[" not in plugin_system_contents
     assert "pip install dpost[" in plugin_system_contents

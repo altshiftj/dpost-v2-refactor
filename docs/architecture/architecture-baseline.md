@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through deep-core processing/storage/config/metrics ownership slices)
+- 2026-02-21 (updated through full `src/ipat_watchdog/**` source retirement)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -167,13 +167,13 @@
 - dpost metrics boundary:
 - `src/dpost/application/metrics.py`
 - Local record persistence:
-- `src/ipat_watchdog/core/records/`
+- `src/dpost/application/records/`
 - Current Kadi backend implementation:
-- `src/ipat_watchdog/core/sync/sync_kadi.py`
+- `src/dpost/infrastructure/sync/kadi_manager.py`
 
 ## Current Test Isolation Baseline
 - Pytest markers enforce split test intent:
-- `legacy` marker for current `ipat_watchdog` behavior contract tests.
+- `legacy` marker reserved for archived compatibility characterization suites.
 - `migration` marker for `dpost` migration and cutover tests.
 - New migration entrypoint tests currently live in:
 - `tests/migration/test_dpost_main.py`
@@ -210,21 +210,15 @@
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
-- Legacy constants imports have been removed from operational path/naming
-  readers (`filesystem_utils`, `local_record`, `sync_kadi`, and processor
-  separator helpers), and active config naming/path settings are now the
-  primary runtime source.
 - Operational config/naming paths now use strict fail-fast behavior when
   config service is not initialized.
-- Legacy bootstrap defaults to desktop UI when no `ui_factory` override is
-  provided.
 - dpost composition default runtime mode is now explicit headless, with
   optional desktop mode wiring.
 - Sync backend is currently Kadi-coupled in core paths.
 - dpost runtime bootstrap is now native and no longer delegates through a
   transition bootstrap adapter.
-- Canonical startup modules no longer import `ipat_watchdog.core` directly;
-  some infrastructure adapters still delegate to legacy runtime modules.
+- Canonical startup modules no longer import `ipat_watchdog.core` directly,
+  and no infrastructure adapters delegate to legacy runtime modules.
 - Canonical startup modules also avoid direct `ipat_watchdog.observability`
   imports and resolve observability through `dpost.infrastructure`.
 - Canonical runtime app/bootstrap modules now route config/session/metrics
@@ -235,8 +229,7 @@
   longer import legacy config/metrics modules directly.
 - Transition runtime dependency shims have been retired from canonical dpost
   paths (`runtime_dependencies.py`, `config_dependencies.py`).
-- dpost plugin profile support remains reference-first for kernel validation
-  while concrete plugin namespace migration proceeds incrementally.
+- dpost plugin profile support remains reference-first for kernel validation.
 - dpost plugin loading now uses dpost-owned plugin protocol contracts;
   canonical plugin discovery groups now use `dpost.device_plugins` and
   `dpost.pc_plugins` with no legacy namespace fallback mappings in canonical
@@ -280,9 +273,7 @@
 - Canonical extension contracts are now explicitly documented in
   `docs/architecture/extension-contracts.md`; `DevicePlugin` contract
   expectations include both configuration access and file-processor access.
-- Remaining intentional legacy boundaries in canonical dpost runtime paths are
-  now outside plugin loading; plugin namespace/hook compatibility seams are
-  retired from `src/dpost/plugins/`.
+- Legacy source package `src/ipat_watchdog/` is retired from the repository.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.
