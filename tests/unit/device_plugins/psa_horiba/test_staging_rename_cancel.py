@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.core.interactions.messages import InfoMessages
-from ipat_watchdog.core.processing.rename_flow import RenameService
-from ipat_watchdog.device_plugins.psa_horiba.file_processor import FileProcessorPSAHoriba
-from ipat_watchdog.device_plugins.psa_horiba.settings import build_config
+from dpost.application.interactions.messages import InfoMessages
+from dpost.application.processing.rename_flow import RenameService
+from dpost.device_plugins.psa_horiba.file_processor import FileProcessorPSAHoriba
+from dpost.device_plugins.psa_horiba.settings import build_config
 from tests.helpers.fake_ui import HeadlessUI
 
 

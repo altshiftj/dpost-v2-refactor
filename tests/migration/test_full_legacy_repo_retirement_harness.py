@@ -35,6 +35,68 @@ UNIT_TEST_PC_PLUGIN_TEST_PATH = (
 UNIT_HAAKE_PC_PLUGIN_TEST_PATH = (
     PROJECT_ROOT / "tests" / "unit" / "pc_plugins" / "test_haake_pc_plugin.py"
 )
+DEVICE_PLUGIN_UNIT_TEST_PATHS = (
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "dsv_horiba"
+    / "test_dsv_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "erm_hioki"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "mix_eirich"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "psa_horiba"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "psa_horiba"
+    / "test_purge_and_reconstruct.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "psa_horiba"
+    / "test_staging_rename_cancel.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "rhe_kinexus"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "sem_phenomxl2"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "utm_zwick"
+    / "test_file_processor.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "extr_haake"
+    / "test_plugin.py",
+)
 INTEGRATION_RUNTIME_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
     PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
@@ -180,3 +242,40 @@ def test_loader_plugin_unit_tests_avoid_legacy_loader_and_test_plugin_imports() 
     assert "from ipat_watchdog.plugin_system import PCPluginRegistry" not in (
         haake_contents
     )
+
+
+def test_device_plugin_unit_tests_avoid_legacy_plugin_import_paths() -> None:
+    """Require core device-plugin unit tests to resolve canonical dpost modules."""
+    for path in DEVICE_PLUGIN_UNIT_TEST_PATHS:
+        contents = path.read_text(encoding="utf-8")
+        assert "from ipat_watchdog.device_plugins" not in contents
+        assert "ipat_watchdog.device_plugins." not in contents
+
+    for path in (
+        PROJECT_ROOT
+        / "tests"
+        / "unit"
+        / "device_plugins"
+        / "erm_hioki"
+        / "test_file_processor.py",
+        PROJECT_ROOT
+        / "tests"
+        / "unit"
+        / "device_plugins"
+        / "psa_horiba"
+        / "test_staging_rename_cancel.py",
+        PROJECT_ROOT
+        / "tests"
+        / "unit"
+        / "device_plugins"
+        / "sem_phenomxl2"
+        / "test_file_processor.py",
+        PROJECT_ROOT
+        / "tests"
+        / "unit"
+        / "device_plugins"
+        / "extr_haake"
+        / "test_plugin.py",
+    ):
+        contents = path.read_text(encoding="utf-8")
+        assert "from ipat_watchdog.core." not in contents

@@ -58,13 +58,28 @@
       `tests/unit/pc_plugins/test_test_pc_plugin.py`, and
       `tests/unit/pc_plugins/test_haake_pc_plugin.py` now import canonical
       dpost plugin modules/contracts/loading boundaries.
+  - device-plugin unit migration increment landed:
+    - `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py`
+    - `tests/unit/device_plugins/erm_hioki/test_file_processor.py`
+    - `tests/unit/device_plugins/extr_haake/test_plugin.py`
+    - `tests/unit/device_plugins/mix_eirich/test_file_processor.py`
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor.py`
+    - `tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py`
+    - `tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py`
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor.py`
+    - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py`
+    - `tests/unit/device_plugins/utm_zwick/test_file_processor.py`
+  - conftest runtime-service bridge increment landed:
+    shared `config_service` fixture now registers the same config service in
+    both legacy and dpost runtime registries to keep mixed-import tests
+    behaviorally aligned during migration.
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate
     collectors.
   - conftest import migration remains staged:
-    runtime/config/storage imports cannot all migrate in one slice without
-    additional boundary convergence.
+    some config/storage/settings imports are still legacy-scoped, but runtime
+    service convergence now keeps mixed-import test slices green.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

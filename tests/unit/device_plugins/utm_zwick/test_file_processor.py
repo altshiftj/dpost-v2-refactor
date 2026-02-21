@@ -2,8 +2,8 @@ from pathlib import Path
 from unittest.mock import patch, call
 import pytest
 
-from ipat_watchdog.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
-from ipat_watchdog.device_plugins.utm_zwick.settings import build_config
+from dpost.device_plugins.utm_zwick.file_processor import FileProcessorUTMZwick
+from dpost.device_plugins.utm_zwick.settings import build_config
 
 
 # ---------------------------------------------------------------------------
@@ -104,10 +104,10 @@ def test_device_specific_processing_moves_staged_series(
     ]
 
     with patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.get_unique_filename",
+        f"{FileProcessorUTMZwick.__module__}.get_unique_filename",
         side_effect=unique_paths,
     ) as mock_unique, patch(
-        "ipat_watchdog.device_plugins.utm_zwick.file_processor.move_item"
+        f"{FileProcessorUTMZwick.__module__}.move_item"
     ) as mock_move:
         output = processor.device_specific_processing(
             str(xlsx), str(record_dir), "prefix", ".xlsx"

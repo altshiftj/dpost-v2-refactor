@@ -2,9 +2,9 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.device_plugins.sem_phenomxl2.settings import build_config
+from dpost.application.records.local_record import LocalRecord
+from dpost.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
+from dpost.device_plugins.sem_phenomxl2.settings import build_config
 
 pytestmark = pytest.mark.usefixtures("config_service")
 
@@ -75,11 +75,12 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
 
     unique_file = record_dir / "prefix-01.tif"
 
+    module_path = FileProcessorSEMPhenomXL2.__module__
     with patch(
-        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.get_unique_filename",
+        f"{module_path}.get_unique_filename",
         return_value=str(unique_file),
     ) as mock_unique, patch(
-        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
+        f"{module_path}.move_item"
     ) as mock_move:
 
         output = processor.device_specific_processing(
@@ -114,11 +115,11 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
     record_dir.mkdir()
 
     with patch(
-        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.make_archive"
+        f"{FileProcessorSEMPhenomXL2.__module__}.shutil.make_archive"
     ) as mock_archive, patch(
-        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.move_item"
+        f"{FileProcessorSEMPhenomXL2.__module__}.move_item"
     ) as mock_move, patch(
-        "ipat_watchdog.device_plugins.sem_phenomxl2.file_processor.shutil.rmtree"
+        f"{FileProcessorSEMPhenomXL2.__module__}.shutil.rmtree"
     ) as mock_rmtree:
 
         mock_archive.return_value = str(record_dir / "prefix.zip")

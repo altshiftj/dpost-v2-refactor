@@ -71,6 +71,20 @@
     - `tests/unit/pc_plugins/test_pc_plugins.py`
     - `tests/unit/pc_plugins/test_test_pc_plugin.py`
     - `tests/unit/pc_plugins/test_haake_pc_plugin.py`
+  - device-plugin unit migration to canonical dpost plugin modules:
+    - `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py`
+    - `tests/unit/device_plugins/erm_hioki/test_file_processor.py`
+    - `tests/unit/device_plugins/extr_haake/test_plugin.py`
+    - `tests/unit/device_plugins/mix_eirich/test_file_processor.py`
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor.py`
+    - `tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py`
+    - `tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py`
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor.py`
+    - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py`
+    - `tests/unit/device_plugins/utm_zwick/test_file_processor.py`
+  - runtime-service fixture bridge in conftest now seeds both legacy and dpost
+    runtime registries so mixed-import test slices remain behaviorally aligned
+    while import retirement continues.
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

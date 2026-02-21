@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.device_plugins.erm_hioki.file_processor import FileProcessorHioki
-from ipat_watchdog.device_plugins.erm_hioki.settings import build_config
-from ipat_watchdog.core.storage.filesystem_utils import get_unique_filename
+from dpost.device_plugins.erm_hioki.file_processor import FileProcessorHioki
+from dpost.device_plugins.erm_hioki.settings import build_config
+from dpost.infrastructure.storage.filesystem_utils import get_unique_filename
 
 
 def test_preprocessing_normalizes_measurement_name(tmp_path: Path) -> None:

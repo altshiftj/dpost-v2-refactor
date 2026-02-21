@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.device_plugins.extr_haake.file_processor import (
+from dpost.application.records.local_record import LocalRecord
+from dpost.device_plugins.extr_haake.file_processor import (
     FileProcessorEXTRHaake,
 )
-from ipat_watchdog.device_plugins.extr_haake.settings import build_config
+from dpost.device_plugins.extr_haake.settings import build_config
 
 
 def test_build_config_basics():

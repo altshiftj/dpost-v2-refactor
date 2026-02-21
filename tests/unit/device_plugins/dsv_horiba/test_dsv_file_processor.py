@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 
-from ipat_watchdog.device_plugins.dsv_horiba.file_processor import FileProcessorDSVHoriba
-from ipat_watchdog.device_plugins.dsv_horiba.settings import build_config
+from dpost.device_plugins.dsv_horiba.file_processor import FileProcessorDSVHoriba
+from dpost.device_plugins.dsv_horiba.settings import build_config
 
 
 def test_preprocessing_returns_passthrough_when_ready(tmp_path):
@@ -60,14 +60,15 @@ def test_purge_orphans_moves_files(tmp_path, monkeypatch):
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0
+    module_path = FileProcessorDSVHoriba.__module__
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.dsv_horiba.file_processor.time.time",
+        f"{module_path}.time.time",
         lambda: now,
     )
 
     moved: list[str] = []
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.dsv_horiba.file_processor.move_to_exception_folder",
+        f"{module_path}.move_to_exception_folder",
         lambda path: moved.append(path),
     )
 

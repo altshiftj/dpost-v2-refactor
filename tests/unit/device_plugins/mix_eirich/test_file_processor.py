@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.device_plugins.rmx_eirich_el1.file_processor import (
+from dpost.device_plugins.rmx_eirich_el1.file_processor import (
     FileProcessorEirich as FileProcessorEirichEL1,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.file_processor import (
+from dpost.device_plugins.rmx_eirich_r01.file_processor import (
     FileProcessorEirich as FileProcessorEirichR01,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_el1.settings import (
+from dpost.device_plugins.rmx_eirich_el1.settings import (
     build_config as build_el1_config,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.settings import (
+from dpost.device_plugins.rmx_eirich_r01.settings import (
     build_config as build_r01_config,
 )
 

@@ -5,7 +5,7 @@ import os
 
 import pytest
 
-from ipat_watchdog.device_plugins.psa_horiba.file_processor import (
+from dpost.device_plugins.psa_horiba.file_processor import (
     FileProcessorPSAHoriba,
     _FolderState,
     _FlushBatch,
@@ -13,7 +13,7 @@ from ipat_watchdog.device_plugins.psa_horiba.file_processor import (
     _PendingNGB,
     _Sentinel,
 )
-from ipat_watchdog.device_plugins.psa_horiba.settings import build_config
+from dpost.device_plugins.psa_horiba.settings import build_config
 
 
 def test_preprocessing_skips_finalizing_csv(tmp_path):
@@ -46,8 +46,9 @@ def test_preprocessing_skips_tracked_ngb(tmp_path, monkeypatch):
     ngb_path = watch_dir / "pending.ngb"
     ngb_path.write_bytes(b"ngb")
 
+    module_path = FileProcessorPSAHoriba.__module__
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.psa_horiba.file_processor.time.time",
+        f"{module_path}.time.time",
         lambda: 0.0,
     )
 
@@ -63,14 +64,15 @@ def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypat
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0
+    module_path = FileProcessorPSAHoriba.__module__
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.psa_horiba.file_processor.time.time",
+        f"{module_path}.time.time",
         lambda: now,
     )
 
     moved: list[str] = []
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.psa_horiba.file_processor.safe_move_to_exception",
+        f"{module_path}.safe_move_to_exception",
         lambda path: moved.append(path),
     )
 

@@ -6,14 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.device_plugins.rhe_kinexus.file_processor import (
+from dpost.device_plugins.rhe_kinexus.file_processor import (
     FileProcessorRHEKinexus,
     _FolderState,
     _Pair,
     _PendingRaw,
     _Sentinel,
 )
-from ipat_watchdog.device_plugins.rhe_kinexus.settings import build_config
+from dpost.device_plugins.rhe_kinexus.settings import build_config
 
 
 def test_preprocessing_stages_and_is_idempotent(tmp_path):
@@ -89,14 +89,15 @@ def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypat
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0
+    module_path = FileProcessorRHEKinexus.__module__
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.rhe_kinexus.file_processor.time.time",
+        f"{module_path}.time.time",
         lambda: now,
     )
 
     moved: list[str] = []
     monkeypatch.setattr(
-        "ipat_watchdog.device_plugins.rhe_kinexus.file_processor.move_to_exception_folder",
+        f"{module_path}.move_to_exception_folder",
         lambda path: moved.append(path),
     )
 

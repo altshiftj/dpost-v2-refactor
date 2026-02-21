@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.device_plugins.psa_horiba.file_processor import FileProcessorPSAHoriba
-from ipat_watchdog.device_plugins.psa_horiba.settings import build_config
+from dpost.device_plugins.psa_horiba.file_processor import FileProcessorPSAHoriba
+from dpost.device_plugins.psa_horiba.settings import build_config
 
 
 @pytest.fixture

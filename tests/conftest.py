@@ -18,6 +18,10 @@ if str(SRC_ROOT) not in sys.path:
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.config.runtime import (
+    reset_service as reset_dpost_service,
+    set_service as set_dpost_service,
+)
 from ipat_watchdog.core.config import current, init_config, reset_service
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from ipat_watchdog.device_plugins.test_device.settings import (
@@ -74,8 +78,10 @@ def config_service(tmp_path):
     )
 
     service = init_config(pc_config, [device_config])
+    set_dpost_service(cast(Any, service))
     init_dirs()
     yield service
+    reset_dpost_service()
     reset_service()
 
 

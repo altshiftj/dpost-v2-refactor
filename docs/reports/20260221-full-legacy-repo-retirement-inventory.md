@@ -87,6 +87,20 @@
   - `tests/unit/pc_plugins/test_pc_plugins.py`
   - `tests/unit/pc_plugins/test_test_pc_plugin.py`
   - `tests/unit/pc_plugins/test_haake_pc_plugin.py`
+- Migrated selected device-plugin unit tests to canonical dpost modules:
+  - `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py`
+  - `tests/unit/device_plugins/erm_hioki/test_file_processor.py`
+  - `tests/unit/device_plugins/extr_haake/test_plugin.py`
+  - `tests/unit/device_plugins/mix_eirich/test_file_processor.py`
+  - `tests/unit/device_plugins/psa_horiba/test_file_processor.py`
+  - `tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py`
+  - `tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py`
+  - `tests/unit/device_plugins/rhe_kinexus/test_file_processor.py`
+  - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py`
+  - `tests/unit/device_plugins/utm_zwick/test_file_processor.py`
+- Added runtime-service bridge in shared test fixture:
+  - `tests/conftest.py` now registers the fixture-created config service with
+    both legacy and dpost runtime registries and resets both during teardown.
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -104,7 +118,8 @@
     `8 passed` (green), then `1 failed, 8 passed` (red after
     observability-import guard), then `9 passed` (green), then
     `1 failed, 9 passed` (red after loader-plugin guard), then
-    `10 passed` (green)
+    `10 passed` (green), then `1 failed, 10 passed` (red after device-plugin
+    guard), then `11 passed` (green)
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
@@ -117,6 +132,8 @@
     -> `31 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/plugin_system/test_plugin_loader.py tests/unit/plugin_system/test_no_double_logging.py tests/unit/pc_plugins/test_pc_plugins.py tests/unit/pc_plugins/test_test_pc_plugin.py tests/unit/pc_plugins/test_haake_pc_plugin.py`
     -> `28 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/extr_haake/test_plugin.py tests/unit/device_plugins/mix_eirich/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor.py`
+    -> `7 failed, 47 passed, 2 errors` (red), then `56 passed` (green)
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -125,10 +142,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `171 passed, 302 deselected`
+      -> `172 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `472 passed, 1 skipped`
+      -> `473 passed, 1 skipped`
