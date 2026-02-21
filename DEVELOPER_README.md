@@ -118,5 +118,9 @@ Marker intent:
   - `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
 - Active progress report:
   - `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`
+- Full legacy retirement inventory/roadmap/checklist:
+  - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+  - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
+  - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
 - Architecture ADRs:
   - `docs/architecture/adr/`

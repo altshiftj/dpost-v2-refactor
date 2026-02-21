@@ -27,6 +27,9 @@ artifacts.
 - `docs/planning/20260219-dpost-phase9-13-full-strangler-plan.md`
 - `docs/checklists/20260219-dpost-phase9-13-full-strangler-checklist.md`
 - `docs/reports/20260219-phase9-native-bootstrap-boundary-inventory.md`
+- `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+- `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
+- `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
 
 ## Test Split
 - Legacy behavior contract tests: `python -m pytest -m legacy`
