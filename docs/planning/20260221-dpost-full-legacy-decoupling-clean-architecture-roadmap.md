@@ -46,6 +46,11 @@
   - Processing helper ownership rehosted under
     `src/dpost/application/processing/` and canonical processing manager imports
     decoupled from `ipat_watchdog.core.processing.*`.
+  - Added canonical dpost processing helper modules for staged/batched plugin
+    flows:
+    `src/dpost/application/processing/batch_models.py`,
+    `src/dpost/application/processing/staging_utils.py`,
+    `src/dpost/application/processing/text_utils.py`.
   - Storage utility boundary rehosted under
     `src/dpost/infrastructure/storage/filesystem_utils.py` with dpost-boundary
     imports.
@@ -70,14 +75,16 @@
     `src/dpost/device_plugins/sem_phenomxl2/` and
     `src/dpost/device_plugins/rmx_eirich_el1/` and
     `src/dpost/device_plugins/rmx_eirich_r01/` and
-    `src/dpost/device_plugins/dsv_horiba/`.
+    `src/dpost/device_plugins/dsv_horiba/` and
+    `src/dpost/device_plugins/rhe_kinexus/`.
   - Concrete PC plugins migrated to canonical dpost namespace:
     `src/dpost/pc_plugins/zwick_blb/` and
     `src/dpost/pc_plugins/haake_blb/` and
     `src/dpost/pc_plugins/hioki_blb/` and
     `src/dpost/pc_plugins/tischrem_blb/` and
     `src/dpost/pc_plugins/eirich_blb/` and
-    `src/dpost/pc_plugins/horiba_blb/`.
+    `src/dpost/pc_plugins/horiba_blb/` and
+    `src/dpost/pc_plugins/kinexus_blb/`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +

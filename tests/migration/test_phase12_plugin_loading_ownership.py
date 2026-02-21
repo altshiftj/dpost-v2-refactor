@@ -347,3 +347,39 @@ def test_concrete_horiba_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -
 
     assert plugin.__class__.__module__ == "dpost.pc_plugins.horiba_blb.plugin"
     assert "dpost.pc_plugins.horiba_blb.plugin" in sys.modules
+
+
+def test_concrete_rhe_kinexus_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete RHE KINEXUS plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.rhe_kinexus.plugin",
+        "ipat_watchdog.device_plugins.rhe_kinexus.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("rhe_kinexus")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.rhe_kinexus.plugin"
+    assert "dpost.device_plugins.rhe_kinexus.plugin" in sys.modules
+
+
+def test_concrete_kinexus_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete KINEXUS BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.kinexus_blb.plugin",
+        "ipat_watchdog.pc_plugins.kinexus_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("kinexus_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.kinexus_blb.plugin"
+    assert "dpost.pc_plugins.kinexus_blb.plugin" in sys.modules
