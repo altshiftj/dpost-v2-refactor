@@ -233,6 +233,8 @@
   reconstruction policy, and `LocalRecord` are now domain-owned under
   `src/dpost/domain/`; application paths retain orchestration and mutation
   helpers.
+- Domain ownership paths now avoid direct `dpost.application` and
+  `dpost.infrastructure` imports for type/logging concerns.
 - Transition runtime dependency shims have been retired from canonical dpost
   paths (`runtime_dependencies.py`, `config_dependencies.py`).
 - dpost plugin profile support remains reference-first for kernel validation.

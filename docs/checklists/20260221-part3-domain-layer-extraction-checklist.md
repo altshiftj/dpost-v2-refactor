@@ -89,7 +89,9 @@
 - How it was done: Retired application-local processing model and batch model
   modules, updated responsibility catalog ownership rows, and refreshed Part 3
   roadmap/report progress snapshots, including
-  `ADR-0005-domain-processing-and-record-ownership-extraction.md`.
+  `ADR-0005-domain-processing-and-record-ownership-extraction.md`; followed by
+  domain purity hardening (`test_part3_domain_purity_boundaries.py`) to remove
+  residual domain imports of application/infrastructure modules.
 
 ---
 

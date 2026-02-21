@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field, fields as dc_fields
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-from dpost.infrastructure.logging import setup_logger
-
-logger = setup_logger(__name__)
+logger = logging.getLogger(__name__)
 
 _DEFAULT_ID_SEPARATOR = "-"
 _KNOWN_ID_SEPARATORS: tuple[str, ...] = ("-", ":", "|")

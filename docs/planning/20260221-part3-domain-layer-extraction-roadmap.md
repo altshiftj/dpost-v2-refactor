@@ -26,6 +26,13 @@
   - architecture baseline/responsibility docs updated for final ownership state
   - ADR captured at
     `docs/architecture/adr/ADR-0005-domain-processing-and-record-ownership-extraction.md`
+- Wave 3.6 is complete:
+  - domain modules no longer import `dpost.application`/`dpost.infrastructure`
+    for type/logging concerns
+  - domain processing now uses domain-local protocols for appendability/device
+    references
+  - purity guard added at
+    `tests/migration/test_part3_domain_purity_boundaries.py`
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

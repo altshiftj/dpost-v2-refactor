@@ -5,12 +5,25 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Protocol
 
 if TYPE_CHECKING:
-    from dpost.application.config import DeviceConfig
-    from dpost.application.processing.file_processor_abstract import FileProcessorABS
     from dpost.domain.records.local_record import LocalRecord
+
+
+class DeviceRef(Protocol):
+    """Minimal device reference carried by domain processing request/candidate."""
+
+
+class AppendabilityPolicy(Protocol):
+    """Protocol for appendability checks used by domain routing policy."""
+
+    def is_appendable(
+        self,
+        record: "LocalRecord",
+        filename_prefix: str,
+        extension: str,
+    ) -> bool: ...
 
 
 class RoutingDecision(Enum):
@@ -34,7 +47,7 @@ class ProcessingRequest:
     """Minimal information needed to start processing an item."""
 
     source: Path
-    device: DeviceConfig
+    device: DeviceRef
 
 
 @dataclass(frozen=True)
@@ -45,8 +58,8 @@ class ProcessingCandidate:
     effective_path: Path
     prefix: str
     extension: str
-    processor: FileProcessorABS
-    device: DeviceConfig
+    processor: AppendabilityPolicy
+    device: DeviceRef
     preprocessed_path: Optional[Path] = None
 
 

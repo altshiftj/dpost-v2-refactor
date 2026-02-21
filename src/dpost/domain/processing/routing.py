@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
-from dpost.domain.processing.models import RoutingDecision
-
-if TYPE_CHECKING:
-    from dpost.application.processing.file_processor_abstract import FileProcessorABS
-    from dpost.domain.records.local_record import LocalRecord
+from dpost.domain.processing.models import AppendabilityPolicy, RoutingDecision
+from dpost.domain.records.local_record import LocalRecord
 
 
 def determine_routing_decision(
@@ -16,7 +13,7 @@ def determine_routing_decision(
     is_valid_format: bool,
     filename_prefix: str,
     extension: str,
-    processor: FileProcessorABS,
+    processor: AppendabilityPolicy,
 ) -> RoutingDecision:
     """Determine routing decision based on record state and processor capabilities."""
     if record is None:

@@ -45,6 +45,16 @@
     `docs/architecture/adr/ADR-0005-domain-processing-and-record-ownership-extraction.md`.
 - Remaining closure work is manual workflow validation.
 
+## Update (Wave 3.6 Complete)
+- Domain purity hardening is complete:
+  - `src/dpost/domain/records/local_record.py` now uses stdlib logging instead
+    of infrastructure logger imports.
+  - `src/dpost/domain/processing/models.py` and
+    `src/dpost/domain/processing/routing.py` no longer import application-layer
+    types for domain contracts.
+- Migration guard added:
+  - `tests/migration/test_part3_domain_purity_boundaries.py`.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:
