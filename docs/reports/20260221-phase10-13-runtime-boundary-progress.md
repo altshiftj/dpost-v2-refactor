@@ -430,17 +430,54 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `13 passed`
 
+## Deep-Core Increment: Concrete SEM PHENOM XL2 Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost SEM PHENOM XL2 plugin package:
+    - `src/dpost/device_plugins/sem_phenomxl2/`
+  - added dpost-owned SEM PHENOM XL2 modules:
+    - `src/dpost/device_plugins/sem_phenomxl2/plugin.py`
+    - `src/dpost/device_plugins/sem_phenomxl2/settings.py`
+    - `src/dpost/device_plugins/sem_phenomxl2/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.sem_phenomxl2` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `15 passed`
+
+## Deep-Core Increment: Concrete TISCHREM BLB PC Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost TISCHREM BLB PC plugin package:
+    - `src/dpost/pc_plugins/tischrem_blb/`
+  - added dpost-owned TISCHREM BLB PC modules:
+    - `src/dpost/pc_plugins/tischrem_blb/plugin.py`
+    - `src/dpost/pc_plugins/tischrem_blb/settings.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.pc_plugins.tischrem_blb` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `15 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `144 passed, 302 deselected`
+  -> `146 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `117 files would be left unchanged.`
+  -> `124 files would be left unchanged.`
 - `python -m pytest`
-  -> `445 passed, 1 skipped`
+  -> `447 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -454,6 +491,11 @@
   `src/dpost/device_plugins/erm_hioki/file_processor.py` before
   `python -m black --check .` returned
   `117 files would be left unchanged`.
+- SEM concrete-plugin slice required formatter passes on
+  `src/dpost/device_plugins/sem_phenomxl2/settings.py` and
+  `src/dpost/device_plugins/sem_phenomxl2/file_processor.py` before
+  `python -m black --check .` returned
+  `124 files would be left unchanged`.
 
 ## Remaining Risk / Open Work
 - Most plugin implementation packages remain in legacy namespaces during
@@ -462,9 +504,10 @@
   packages under `src/dpost/device_plugins/test_device/`,
   `src/dpost/device_plugins/utm_zwick/`,
   `src/dpost/device_plugins/extr_haake/`,
-  `src/dpost/device_plugins/erm_hioki/`, `src/dpost/pc_plugins/test_pc/`,
+  `src/dpost/device_plugins/erm_hioki/`,
+  `src/dpost/device_plugins/sem_phenomxl2/`, `src/dpost/pc_plugins/test_pc/`,
   `src/dpost/pc_plugins/zwick_blb/`, `src/dpost/pc_plugins/haake_blb/`, and
-  `src/dpost/pc_plugins/hioki_blb/`.
+  `src/dpost/pc_plugins/hioki_blb/`, `src/dpost/pc_plugins/tischrem_blb/`.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

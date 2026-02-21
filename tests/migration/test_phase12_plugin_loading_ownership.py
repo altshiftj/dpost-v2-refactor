@@ -213,3 +213,43 @@ def test_concrete_hioki_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) ->
 
     assert plugin.__class__.__module__ == "dpost.pc_plugins.hioki_blb.plugin"
     assert "dpost.pc_plugins.hioki_blb.plugin" in sys.modules
+
+
+def test_concrete_sem_phenomxl2_plugin_loads_from_dpost_namespace(
+    monkeypatch,
+) -> None:
+    """Require concrete SEM PHENOM XL2 plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.sem_phenomxl2.plugin",
+        "ipat_watchdog.device_plugins.sem_phenomxl2.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("sem_phenomxl2")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.sem_phenomxl2.plugin"
+    assert "dpost.device_plugins.sem_phenomxl2.plugin" in sys.modules
+
+
+def test_concrete_tischrem_blb_pc_plugin_loads_from_dpost_namespace(
+    monkeypatch,
+) -> None:
+    """Require concrete TISCHREM BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.tischrem_blb.plugin",
+        "ipat_watchdog.pc_plugins.tischrem_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("tischrem_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.tischrem_blb.plugin"
+    assert "dpost.pc_plugins.tischrem_blb.plugin" in sys.modules

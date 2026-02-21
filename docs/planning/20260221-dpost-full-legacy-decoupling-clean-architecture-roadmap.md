@@ -66,11 +66,13 @@
   - Concrete device plugins migrated to canonical dpost namespace:
     `src/dpost/device_plugins/utm_zwick/` and
     `src/dpost/device_plugins/extr_haake/` and
-    `src/dpost/device_plugins/erm_hioki/`.
+    `src/dpost/device_plugins/erm_hioki/` and
+    `src/dpost/device_plugins/sem_phenomxl2/`.
   - Concrete PC plugins migrated to canonical dpost namespace:
     `src/dpost/pc_plugins/zwick_blb/` and
     `src/dpost/pc_plugins/haake_blb/` and
-    `src/dpost/pc_plugins/hioki_blb/`.
+    `src/dpost/pc_plugins/hioki_blb/` and
+    `src/dpost/pc_plugins/tischrem_blb/`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +
