@@ -18,7 +18,6 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from dpost.application.processing.staging_utils import create_unique_stage_dir
 from dpost.domain.processing.batch_models import (
     CsvNgbPair as _Pair,
     FlushBatch as _FlushBatch,
@@ -32,6 +31,7 @@ from dpost.domain.processing.text import read_text_prefix
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import move_item
+from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir
 
 logger = setup_logger(__name__)
 

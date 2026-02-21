@@ -100,7 +100,12 @@
   extracted filename parsing and record/file identifier policy to
   `src/dpost/domain/naming/identifiers.py`, rewired processing/records flows
   to app naming facade helpers, and added guard
-  `tests/migration/test_part3_domain_naming_identifier_ownership.py`.
+  `tests/migration/test_part3_domain_naming_identifier_ownership.py`; then
+  moved filesystem stage-dir helper ownership to
+  `src/dpost/infrastructure/storage/staging_dirs.py`, retired
+  `src/dpost/application/processing/staging_utils.py`, and tightened staging
+  ownership guard expectations in
+  `tests/migration/test_part3_domain_batch_staging_ownership.py`.
 
 ---
 

@@ -38,6 +38,10 @@
   - canonical ownership is now:
     `src/dpost/domain/naming/identifiers.py` and
     `src/dpost/application/naming/policy.py`
+- Stage-directory helper ownership moved out of application processing:
+  - `src/dpost/application/processing/staging_utils.py` has been removed
+  - canonical ownership is now:
+    `src/dpost/infrastructure/storage/staging_dirs.py`
 
 ## Required Contributor Updates
 1. Replace legacy imports with canonical `dpost` imports.

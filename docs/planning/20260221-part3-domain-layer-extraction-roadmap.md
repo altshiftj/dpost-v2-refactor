@@ -63,6 +63,13 @@
     application/domain naming identifier helpers
   - ownership guard added at
     `tests/migration/test_part3_domain_naming_identifier_ownership.py`
+- Wave 3.10 is complete:
+  - filesystem stage-directory helper ownership moved to
+    `src/dpost/infrastructure/storage/staging_dirs.py`
+  - `src/dpost/application/processing/staging_utils.py` retired
+  - PSA/Kinexus processors now consume infrastructure staging-dir helper import
+  - `tests/migration/test_part3_domain_batch_staging_ownership.py` now
+    enforces module retirement and infrastructure ownership
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

@@ -17,6 +17,9 @@ DPOST_APPLICATION_BATCH_MODELS_PATH = (
 DPOST_APPLICATION_STAGING_UTILS_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "application" / "processing" / "staging_utils.py"
 )
+DPOST_INFRA_STAGING_DIRS_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "infrastructure" / "storage" / "staging_dirs.py"
+)
 DPOST_PSA_PROCESSOR_PATH = (
     PROJECT_ROOT
     / "src"
@@ -50,10 +53,14 @@ def test_application_batch_models_module_is_retired() -> None:
     assert DPOST_APPLICATION_BATCH_MODELS_PATH.exists() is False
 
 
-def test_application_staging_utils_retires_pair_reconstruction_policy() -> None:
-    """Require pair reconstruction policy extraction out of application helper module."""
-    staging_contents = DPOST_APPLICATION_STAGING_UTILS_PATH.read_text(encoding="utf-8")
-    assert "def reconstruct_pairs_from_stage(" not in staging_contents
+def test_application_staging_utils_module_is_retired() -> None:
+    """Require application staging helper module retirement."""
+    assert DPOST_APPLICATION_STAGING_UTILS_PATH.exists() is False
+
+
+def test_infrastructure_staging_dirs_module_exists() -> None:
+    """Require filesystem staging directory helper ownership under infrastructure."""
+    assert DPOST_INFRA_STAGING_DIRS_PATH.exists()
 
 
 def test_batch_processors_import_domain_owned_batch_and_staging_modules() -> None:
@@ -63,6 +70,14 @@ def test_batch_processors_import_domain_owned_batch_and_staging_modules() -> Non
 
     assert "from dpost.domain.processing.batch_models import (" in psa_contents
     assert "from dpost.domain.processing.staging import (" in psa_contents
+    assert (
+        "from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir"
+        in psa_contents
+    )
 
     assert "from dpost.domain.processing.batch_models import (" in rhe_contents
     assert "from dpost.domain.processing.staging import (" in rhe_contents
+    assert (
+        "from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir"
+        in rhe_contents
+    )

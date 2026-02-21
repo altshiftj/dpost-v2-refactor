@@ -88,6 +88,17 @@
 - Migration guard added:
   - `tests/migration/test_part3_domain_naming_identifier_ownership.py`.
 
+## Update (Wave 3.10 Complete)
+- Staging directory helper ownership is now established under infrastructure:
+  - `src/dpost/infrastructure/storage/staging_dirs.py` owns unique stage-dir
+    creation behavior.
+  - `src/dpost/application/processing/staging_utils.py` has been removed.
+- PSA/Kinexus processors now consume infrastructure staging-dir helper imports.
+- Migration guard updates:
+  - `tests/migration/test_part3_domain_batch_staging_ownership.py` now
+    requires application staging helper retirement plus infrastructure staging
+    helper ownership.
+
 ## Findings
 - Domain ownership is now established for:
   - processing value/routing models (`src/dpost/domain/processing/models.py`,
@@ -103,6 +114,8 @@
   `src/dpost/application/naming/policy.py`.
 - Infrastructure storage utilities now focus on filesystem/record persistence
   concerns and no longer define prefix/identifier naming policy functions.
+- Stage directory creation now lives under infrastructure storage boundaries
+  instead of application helper modules.
 - Remaining Part 3 work is manual workflow validation only.
 
 ## Evidence
@@ -116,6 +129,7 @@
 - `src/dpost/domain/naming/prefix_policy.py`
 - `src/dpost/domain/naming/identifiers.py`
 - `src/dpost/application/naming/policy.py`
+- `src/dpost/infrastructure/storage/staging_dirs.py`
 - `src/dpost/application/processing/routing.py`
 - `src/dpost/application/processing/rename_flow.py`
 - `src/dpost/device_plugins/erm_hioki/file_processor.py`

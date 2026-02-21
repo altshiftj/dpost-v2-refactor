@@ -1,4 +1,4 @@
-"""Shared staging helpers for preprocessors that batch related files."""
+"""Filesystem helpers for staged preprocessor directory management."""
 
 from __future__ import annotations
 

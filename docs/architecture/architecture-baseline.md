@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through Part 3 domain extraction Wave 3.9 naming identifier extraction)
+- 2026-02-21 (updated through Part 3 domain extraction Wave 3.10 staging helper infrastructure ownership)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -107,7 +107,7 @@
 - `src/dpost/domain/naming/prefix_policy.py`
 - `src/dpost/domain/naming/identifiers.py`
 - `src/dpost/application/naming/policy.py`
-- `src/dpost/application/processing/staging_utils.py`
+- `src/dpost/infrastructure/storage/staging_dirs.py`
 - Phase 5 decomposition status:
 - `_ProcessingPipeline` now exposes explicit resolve/stabilize/preprocess stage
   hooks (`_resolve_device_stage`, `_stabilize_artifact_stage`,
@@ -251,6 +251,9 @@
   config-aware application facade usage in
   `src/dpost/application/naming/policy.py`; infrastructure storage no longer
   owns prefix or identifier policy functions.
+- Stage-directory creation helper ownership now lives under infrastructure
+  storage (`src/dpost/infrastructure/storage/staging_dirs.py`); application
+  staging helper module has been retired.
 - Domain ownership paths now avoid direct `dpost.application` and
   `dpost.infrastructure` imports for type/logging concerns.
 - Transition runtime dependency shims have been retired from canonical dpost
