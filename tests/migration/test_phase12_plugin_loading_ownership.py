@@ -10,8 +10,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DPOST_RUNTIME_BOOTSTRAP_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "runtime" / "bootstrap.py"
 )
+DPOST_SOURCE_ROOT = PROJECT_ROOT / "src" / "dpost"
 DPOST_PLUGIN_LOADING_PATH = PROJECT_ROOT / "src" / "dpost" / "plugins" / "loading.py"
 DPOST_PLUGIN_SYSTEM_PATH = PROJECT_ROOT / "src" / "dpost" / "plugins" / "system.py"
+DPOST_PLUGIN_LEGACY_COMPAT_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "plugins" / "legacy_compat.py"
+)
 
 
 def test_runtime_bootstrap_has_no_direct_legacy_loader_dependency() -> None:
@@ -36,8 +40,26 @@ def test_plugin_system_uses_dpost_owned_plugin_namespace_groups() -> None:
     """Require plugin discovery/runtime groups to be dpost-owned by default."""
     system_contents = DPOST_PLUGIN_SYSTEM_PATH.read_text(encoding="utf-8")
 
+    assert '_PLUGIN_NAMESPACE = "dpost"' in system_contents
     assert 'DEVICE_ENTRYPOINT_GROUP = "dpost.device_plugins"' in system_contents
     assert 'PC_ENTRYPOINT_GROUP = "dpost.pc_plugins"' in system_contents
+
+
+def test_legacy_namespace_literals_are_isolated_to_legacy_compat_module() -> None:
+    """Require legacy namespace literals to remain isolated to compat module."""
+    files_with_legacy_namespace: list[str] = []
+    for python_path in DPOST_SOURCE_ROOT.rglob("*.py"):
+        contents = python_path.read_text(encoding="utf-8")
+        if "ipat_watchdog" in contents:
+            files_with_legacy_namespace.append(
+                str(python_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
+            )
+
+    assert files_with_legacy_namespace == [
+        str(DPOST_PLUGIN_LEGACY_COMPAT_PATH.relative_to(PROJECT_ROOT)).replace(
+            "\\", "/"
+        )
+    ]
 
 
 def test_dpost_plugin_loading_resolves_reference_pc_devices() -> None:

@@ -270,21 +270,42 @@
   - `python -m pytest -m migration`
     -> `136 passed, 302 deselected`
 
+## Deep-Core Increment: Plugin Hook Namespace Canonicalization
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - rewired `src/dpost/plugins/system.py` to set canonical plugin hook
+    namespace marker to `dpost` while preserving legacy marker compatibility
+    through isolated dual-plugin-manager orchestration.
+  - updated `src/dpost/plugins/legacy_compat.py` with explicit
+    `LEGACY_PLUGIN_NAMESPACE`.
+  - reduced source-level legacy literal spread by updating `src/dpost/__init__.py`
+    and isolating `ipat_watchdog` literals to
+    `src/dpost/plugins/legacy_compat.py`.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `6 passed`
+  - `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_reference_plugin_flow.py tests/migration/test_sync_adapter_selection.py`
+    -> `31 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `136 passed, 302 deselected`
+  -> `137 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `89 files would be left unchanged.`
 - `python -m pytest`
-  -> `437 passed, 1 skipped`
+  -> `438 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
-  and later on 9 files and 5 files after additional runtime-boundary
+  and later on 9 files, 5 files, and 1 file after additional runtime-boundary
   implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
@@ -293,5 +314,5 @@
 - Plugin implementation packages remain in legacy namespaces during migration
   (`src/ipat_watchdog/device_plugins/`, `src/ipat_watchdog/pc_plugins/`).
 - Remaining intentional legacy compatibility seams are now limited to:
-  - hook namespace marker compatibility in `src/dpost/plugins/system.py`
+  - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

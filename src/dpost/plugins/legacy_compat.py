@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+LEGACY_PLUGIN_NAMESPACE = "ipat_watchdog"
 LEGACY_DEVICE_ENTRYPOINT_GROUP = "ipat_watchdog.device_plugins"
 LEGACY_PC_ENTRYPOINT_GROUP = "ipat_watchdog.pc_plugins"
 

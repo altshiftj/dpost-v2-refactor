@@ -69,6 +69,10 @@
 - Canonical plugin discovery groups should use `dpost.device_plugins` and
   `dpost.pc_plugins`; legacy namespace compatibility fallback must be isolated
   to dedicated plugin compatibility modules.
+- Canonical plugin hook namespace should use `dpost`; legacy hook namespace
+  support (if required) must be isolated to explicit compatibility
+  orchestration and must not leak direct legacy imports beyond approved
+  compatibility modules.
 - Kernel composition paths must not import concrete backend SDK modules directly.
 - Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
 

@@ -214,9 +214,12 @@
   canonical plugin discovery groups now use `dpost.device_plugins` and
   `dpost.pc_plugins`, with isolated legacy-namespace fallback mappings in
   `src/dpost/plugins/legacy_compat.py` during plugin migration.
+- dpost plugin loading now uses canonical hook namespace marker `dpost` and
+  keeps legacy hook-namespace compatibility through isolated orchestration in
+  `src/dpost/plugins/system.py`.
 - Remaining intentional legacy boundaries in canonical dpost runtime paths are
-  plugin hook-namespace compatibility marker wiring in
-  `src/dpost/plugins/system.py` and legacy namespace fallback mappings in
+  plugin hook compatibility orchestration in `src/dpost/plugins/system.py` and
+  legacy namespace fallback mappings in
   `src/dpost/plugins/legacy_compat.py`.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`

@@ -65,7 +65,7 @@
 ## Temporary Legacy Import Exceptions (Phase 9-13)
 - Temporary legacy imports are allowed only in explicit transition boundary
   modules listed below:
-- `src/dpost/plugins/system.py` (legacy pluggy hook namespace compatibility marker only)
+- `src/dpost/plugins/system.py` (legacy pluggy hook compatibility orchestration only)
 - `src/dpost/plugins/legacy_compat.py` (legacy plugin namespace discovery fallback only)
 - No other `src/dpost/**` modules may add new direct `ipat_watchdog.*` imports
   without explicit human approval and documentation rationale in active

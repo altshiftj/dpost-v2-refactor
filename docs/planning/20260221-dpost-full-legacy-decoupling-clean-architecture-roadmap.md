@@ -62,7 +62,7 @@
     `src/dpost/infrastructure/runtime/dialogs.py`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
-    (`dpost.plugins.system` hook namespace marker +
+    (`dpost.plugins.system` hook compatibility orchestration +
     `dpost.plugins.legacy_compat` fallback mappings).
 - Next deep-core migration target:
   - Execute plugin-namespace compatibility retirement/import sweep after dpost
