@@ -139,9 +139,11 @@
 - Canonical concrete plugin package (migration wave):
 - `src/dpost/device_plugins/utm_zwick/`
 - `src/dpost/device_plugins/extr_haake/`
+- `src/dpost/device_plugins/erm_hioki/`
 - Canonical concrete PC plugin package (migration wave):
 - `src/dpost/pc_plugins/zwick_blb/`
 - `src/dpost/pc_plugins/haake_blb/`
+- `src/dpost/pc_plugins/hioki_blb/`
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
@@ -229,10 +231,14 @@
   (`dpost.device_plugins.utm_zwick`) before any legacy fallback path.
 - Concrete EXTR HAAKE plugin now loads from canonical dpost namespace
   (`dpost.device_plugins.extr_haake`) before any legacy fallback path.
+- Concrete ERM HIOKI plugin now loads from canonical dpost namespace
+  (`dpost.device_plugins.erm_hioki`) before any legacy fallback path.
 - Concrete Zwick BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.zwick_blb`) before any legacy fallback path.
 - Concrete HAAKE BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.haake_blb`) before any legacy fallback path.
+- Concrete HIOKI BLB PC plugin now loads from canonical dpost namespace
+  (`dpost.pc_plugins.hioki_blb`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   keeps legacy hook-namespace compatibility through isolated orchestration in
   `src/dpost/plugins/system.py`.

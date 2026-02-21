@@ -393,17 +393,54 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `11 passed`
 
+## Deep-Core Increment: Concrete ERM HIOKI Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost ERM HIOKI plugin package:
+    - `src/dpost/device_plugins/erm_hioki/`
+  - added dpost-owned ERM HIOKI modules:
+    - `src/dpost/device_plugins/erm_hioki/plugin.py`
+    - `src/dpost/device_plugins/erm_hioki/settings.py`
+    - `src/dpost/device_plugins/erm_hioki/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.erm_hioki` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `13 passed`
+
+## Deep-Core Increment: Concrete HIOKI BLB PC Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost HIOKI BLB PC plugin package:
+    - `src/dpost/pc_plugins/hioki_blb/`
+  - added dpost-owned HIOKI BLB PC modules:
+    - `src/dpost/pc_plugins/hioki_blb/plugin.py`
+    - `src/dpost/pc_plugins/hioki_blb/settings.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.pc_plugins.hioki_blb` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `13 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `142 passed, 302 deselected`
+  -> `144 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `110 files would be left unchanged.`
+  -> `117 files would be left unchanged.`
 - `python -m pytest`
-  -> `443 passed, 1 skipped`
+  -> `445 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -413,6 +450,10 @@
   were re-run to final green.
 - Current concrete-plugin rehost slice completed with Black check green on
   first pass (`110 files would be left unchanged`).
+- Hioki concrete-plugin slice required one formatter pass on
+  `src/dpost/device_plugins/erm_hioki/file_processor.py` before
+  `python -m black --check .` returned
+  `117 files would be left unchanged`.
 
 ## Remaining Risk / Open Work
 - Most plugin implementation packages remain in legacy namespaces during
@@ -420,9 +461,10 @@
   `src/ipat_watchdog/pc_plugins/`), excluding rehosted reference/concrete
   packages under `src/dpost/device_plugins/test_device/`,
   `src/dpost/device_plugins/utm_zwick/`,
-  `src/dpost/device_plugins/extr_haake/`, `src/dpost/pc_plugins/test_pc/`,
-  `src/dpost/pc_plugins/zwick_blb/`, and
-  `src/dpost/pc_plugins/haake_blb/`.
+  `src/dpost/device_plugins/extr_haake/`,
+  `src/dpost/device_plugins/erm_hioki/`, `src/dpost/pc_plugins/test_pc/`,
+  `src/dpost/pc_plugins/zwick_blb/`, `src/dpost/pc_plugins/haake_blb/`, and
+  `src/dpost/pc_plugins/hioki_blb/`.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

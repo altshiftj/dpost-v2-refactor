@@ -177,3 +177,39 @@ def test_concrete_haake_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) ->
 
     assert plugin.__class__.__module__ == "dpost.pc_plugins.haake_blb.plugin"
     assert "dpost.pc_plugins.haake_blb.plugin" in sys.modules
+
+
+def test_concrete_erm_hioki_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete ERM HIOKI plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.erm_hioki.plugin",
+        "ipat_watchdog.device_plugins.erm_hioki.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("erm_hioki")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.erm_hioki.plugin"
+    assert "dpost.device_plugins.erm_hioki.plugin" in sys.modules
+
+
+def test_concrete_hioki_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete HIOKI BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.hioki_blb.plugin",
+        "ipat_watchdog.pc_plugins.hioki_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("hioki_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.hioki_blb.plugin"
+    assert "dpost.pc_plugins.hioki_blb.plugin" in sys.modules
