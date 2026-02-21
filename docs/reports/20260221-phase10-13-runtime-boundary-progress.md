@@ -719,7 +719,7 @@
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `2 failed`, then `1 failed, 2 passed`, then `1 failed, 3 passed`, then
     `1 failed, 4 passed`, then `1 failed, 5 passed`, then `1 failed, 6 passed`,
-    then `1 failed, 7 passed`
+    then `1 failed, 7 passed`, then `1 failed, 8 passed`
 - Implementation:
   - migrated shared helper boundaries away from direct legacy interaction/sync
     imports:
@@ -751,11 +751,15 @@
     `FileProcessManager` into migrated runtime app fixtures where required:
     - `tests/integration/test_device_integrations.py`
     - `tests/integration/test_extr_haake_safesave.py`
+  - migrated observability unit tests to canonical dpost infrastructure module:
+    - `tests/unit/test_observability.py`
 - Green-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
-    -> `8 passed`
+    -> `9 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
     -> `8 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/test_observability.py`
+    -> `15 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/integration/test_integration.py tests/integration/test_device_integrations.py tests/integration/test_multi_processor_app_flow.py tests/integration/test_extr_haake_safesave.py`
     -> `29 passed`
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
@@ -769,13 +773,13 @@
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `169 passed, 302 deselected`
+  -> `170 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `157 files would be left unchanged.`
 - `python -m pytest`
-  -> `470 passed, 1 skipped`
+  -> `471 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,

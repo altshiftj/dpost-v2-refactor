@@ -13,6 +13,7 @@ FAKE_PROCESS_MANAGER_PATH = (
 FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
 LEGACY_METRICS_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "metrics.py"
+UNIT_OBSERVABILITY_TEST_PATH = PROJECT_ROOT / "tests" / "unit" / "test_observability.py"
 INTEGRATION_RUNTIME_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
     PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
@@ -88,3 +89,10 @@ def test_integration_runtime_tests_avoid_legacy_watchdog_runtime_paths() -> None
         assert "import ipat_watchdog.core.app.device_watchdog_app as app_mod" not in (
             contents
         )
+
+
+def test_unit_observability_tests_avoid_legacy_package_root_import() -> None:
+    """Require observability unit tests to import canonical dpost observability module."""
+    contents = UNIT_OBSERVABILITY_TEST_PATH.read_text(encoding="utf-8")
+
+    assert "from ipat_watchdog import observability" not in contents

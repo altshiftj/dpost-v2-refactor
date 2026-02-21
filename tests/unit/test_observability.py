@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 
-from ipat_watchdog import observability
+from dpost.infrastructure import observability
 
 
 def test_health_endpoint_ok():

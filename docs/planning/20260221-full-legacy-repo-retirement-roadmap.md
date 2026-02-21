@@ -43,6 +43,9 @@
     - `tests/integration/test_multi_processor_app_flow.py`
     - `tests/integration/test_device_integrations.py`
     - `tests/integration/test_extr_haake_safesave.py`
+  - observability unit migration increment landed:
+    `tests/unit/test_observability.py` now imports canonical
+    `dpost.infrastructure.observability`.
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate

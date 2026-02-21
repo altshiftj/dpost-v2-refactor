@@ -61,6 +61,8 @@
   - explicit legacy processing manager injection retained in
     `test_device_integrations.py` and `test_extr_haake_safesave.py` to preserve
     existing behavior while runtime/config convergence continues
+  - observability unit test migration to canonical dpost infrastructure module:
+    - `tests/unit/test_observability.py`
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 
