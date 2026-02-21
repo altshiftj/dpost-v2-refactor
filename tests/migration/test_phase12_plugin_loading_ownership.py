@@ -123,3 +123,21 @@ def test_concrete_utm_zwick_plugin_loads_from_dpost_namespace(monkeypatch) -> No
 
     assert plugin.__class__.__module__ == "dpost.device_plugins.utm_zwick.plugin"
     assert "dpost.device_plugins.utm_zwick.plugin" in sys.modules
+
+
+def test_concrete_zwick_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete Zwick BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.zwick_blb.plugin",
+        "ipat_watchdog.pc_plugins.zwick_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("zwick_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.zwick_blb.plugin"
+    assert "dpost.pc_plugins.zwick_blb.plugin" in sys.modules

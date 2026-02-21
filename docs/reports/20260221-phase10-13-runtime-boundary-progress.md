@@ -336,22 +336,42 @@
   - `python -m pytest tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/integration/test_utm_zwick_integration.py`
     -> `9 passed`
 
+## Deep-Core Increment: Concrete Zwick BLB PC Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `1 failed`
+- Implementation:
+  - added canonical dpost Zwick BLB PC plugin package:
+    - `src/dpost/pc_plugins/zwick_blb/`
+  - added dpost-owned Zwick BLB modules:
+    - `src/dpost/pc_plugins/zwick_blb/plugin.py`
+    - `src/dpost/pc_plugins/zwick_blb/settings.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.pc_plugins.zwick_blb` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `9 passed`
+  - `python -m pytest tests/unit/pc_plugins/test_pc_plugins.py tests/unit/plugin_system/test_plugin_loader.py`
+    -> `12 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `139 passed, 302 deselected`
+  -> `140 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `100 files would be left unchanged.`
+  -> `103 files would be left unchanged.`
 - `python -m pytest`
-  -> `440 passed, 1 skipped`
+  -> `441 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
-  and later on 9 files, 5 files, 1 file, 7 files, 1 file, and 4 files after
-  additional runtime-boundary implementation.
+  and later on 9 files, 5 files, 1 file, 7 files, 1 file, 4 files, and 3 files
+  after additional runtime-boundary implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
 
