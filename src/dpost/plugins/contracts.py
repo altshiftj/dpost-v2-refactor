@@ -12,6 +12,9 @@ class DevicePlugin(Protocol):
     def get_config(self) -> object:
         """Return the device configuration model."""
 
+    def get_file_processor(self) -> object:
+        """Return the processor instance used for device-specific file handling."""
+
 
 @runtime_checkable
 class PCPlugin(Protocol):

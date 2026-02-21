@@ -660,17 +660,69 @@
   - `python -m pytest tests/migration/test_phase13_records_sync_parity.py`
     -> `3 passed`
 
+## Deep-Core Increment: Transition Glue Retirement Hardening
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase10_runtime_app_rehost.py`
+  - `tests/migration/test_phase13_legacy_runtime_retirement.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase10_runtime_app_rehost.py::test_dpost_processing_pipeline_retired_prepare_request_transition_helper`
+    -> `1 failed`
+- Implementation:
+  - removed transition-only helper from canonical dpost processing pipeline:
+    - deleted `_ProcessingPipeline._prepare_request()` in
+      `src/dpost/application/processing/file_process_manager.py`
+  - added explicit migration assertion enforcing no legacy namespace literals in
+    canonical dpost source tree:
+    - `test_all_dpost_source_modules_have_no_legacy_namespace_literals` in
+      `tests/migration/test_phase13_legacy_runtime_retirement.py`
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase13_legacy_runtime_retirement.py tests/migration/test_phase10_runtime_app_rehost.py::test_dpost_processing_pipeline_retired_prepare_request_transition_helper`
+    -> `6 passed`
+
+## Deep-Core Increment: Plugin Contract Boundary Finalization
+- Tests-first contract:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py::test_device_plugin_contract_requires_file_processor_accessor`
+    -> `1 failed`
+- Implementation:
+  - tightened canonical plugin protocol contract in
+    `src/dpost/plugins/contracts.py`:
+    - `DevicePlugin` now requires `get_file_processor()` in addition to
+      `get_config()`
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py::test_device_plugin_contract_requires_file_processor_accessor`
+    -> `1 passed`
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py tests/migration/test_phase13_legacy_runtime_retirement.py tests/migration/test_phase13_records_sync_parity.py tests/migration/test_phase10_runtime_app_rehost.py`
+    -> `56 passed`
+
+## Deep-Core Increment: Extension Contract and Contributor Surface Hardening
+- Architecture/governance implementation:
+  - added canonical extension contract reference:
+    - `docs/architecture/extension-contracts.md`
+  - added ADR for canonical extension contracts and legacy namespace
+    retirement:
+    - `docs/architecture/adr/ADR-0003-canonical-extension-contracts-and-legacy-namespace-retirement.md`
+  - updated architecture and contributor docs:
+    - `docs/architecture/README.md`
+    - `docs/architecture/architecture-contract.md`
+    - `docs/architecture/architecture-baseline.md`
+    - `docs/architecture/responsibility-catalog.md`
+    - `DEVELOPER_README.md`
+    - `docs/reports/20260221-full-legacy-decoupling-functional-architecture-audit.md`
+    - `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `158 passed, 302 deselected`
+  -> `161 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `156 files would be left unchanged.`
 - `python -m pytest`
-  -> `459 passed, 1 skipped`
+  -> `462 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,

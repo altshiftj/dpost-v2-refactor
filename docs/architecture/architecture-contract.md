@@ -71,6 +71,10 @@
   namespace fallback mappings.
 - Canonical plugin hook namespace must use `dpost` only in dpost-owned runtime
   paths.
+- Public contributor extension contracts must remain aligned with
+  `docs/architecture/extension-contracts.md`.
+- Device plugin contract in canonical dpost paths includes both configuration
+  access (`get_config`) and processor construction (`get_file_processor`).
 - Kernel composition paths must not import concrete backend SDK modules directly.
 - Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
 

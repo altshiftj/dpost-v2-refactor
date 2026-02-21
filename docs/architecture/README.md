@@ -9,6 +9,8 @@
 - `docs/architecture/architecture-baseline.md`
 - Dependency and layering rules:
 - `docs/architecture/architecture-contract.md`
+- Public extension contracts:
+- `docs/architecture/extension-contracts.md`
 - Object and module responsibilities:
 - `docs/architecture/responsibility-catalog.md`
 - Architecture decisions:

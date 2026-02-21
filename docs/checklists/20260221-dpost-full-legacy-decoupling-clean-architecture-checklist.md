@@ -27,14 +27,17 @@
 - [x] Build a capability inventory for startup, processing, plugin/config,
       records, and sync paths.
 - [x] Link each legacy capability to a target `dpost` module owner.
-- [ ] Mark unsupported/deprecated behavior explicitly with migration rationale.
+- [x] Mark unsupported/deprecated behavior explicitly with migration rationale.
 - [x] Add migration tests for unresolved capability gaps.
 - [x] Freeze the capability map as baseline before adapter deletion.
 
 ### Completion Notes
 - How it was done: Inventory baseline captured in
   `docs/reports/20260221-full-legacy-decoupling-functional-architecture-audit.md`
-  and linked to ownership targets in roadmap/checklist artifacts.
+  and linked to ownership targets in roadmap/checklist artifacts. The audit now
+  also captures explicit deprecated/unsupported behavior rationale for retired
+  plugin namespace fallback, legacy runtime CLI usage in canonical paths, and
+  transition-only processing helper removal.
 
 ---
 
@@ -137,9 +140,9 @@
 ### Checklist
 - [x] Add failing migration tests asserting no canonical runtime dependency on
       `src/ipat_watchdog/core/...`.
-- [ ] Remove remaining runtime dependency surfaces and transition-only glue.
-- [ ] Finalize stable module boundaries and public extension contracts.
-- [ ] Update contributor docs for architecture, testing, and extension points.
+- [x] Remove remaining runtime dependency surfaces and transition-only glue.
+- [x] Finalize stable module boundaries and public extension contracts.
+- [x] Update contributor docs for architecture, testing, and extension points.
 - [x] Verify migration and full gates are green.
 
 ### Completion Notes
@@ -149,9 +152,17 @@
   manager, and config/storage imports through dpost-owned modules. Deep-core
   follow-up rehosted processing/storage/config/metrics ownership under dpost,
   retired `runtime_dependencies.py` + `config_dependencies.py`, and moved
-  desktop UI implementation into `src/dpost/infrastructure/runtime/`.
-  Remaining work is final plugin-namespace/hook compatibility retirement and
-  contributor-surface hardening.
+  desktop UI implementation into `src/dpost/infrastructure/runtime/`. Follow-up
+  retirement removed `src/dpost/plugins/legacy_compat.py`, removed transition
+  helper `_ProcessingPipeline._prepare_request` from dpost processing, and
+  added migration assertions in
+  `tests/migration/test_phase13_legacy_runtime_retirement.py` confirming no
+  `ipat_watchdog` namespace literals remain in `src/dpost/**`. Public
+  extension contracts were finalized in
+  `docs/architecture/extension-contracts.md` and architecture policy was
+  captured in ADR-0003. Contributor guidance was updated in
+  `DEVELOPER_README.md` to reflect canonical dpost architecture, testing, and
+  extension points.
 
 ---
 

@@ -82,13 +82,6 @@ class _ProcessingPipeline:
             return prepared
         return self._execute_pipeline(prepared)
 
-    def _prepare_request(self, path: Path) -> ProcessingRequest | ProcessingResult:
-        """Backward-compatible helper retained while stage extraction is in progress."""
-        resolved = self._resolve_device_stage(path)
-        if isinstance(resolved, ProcessingResult):
-            return resolved
-        return self._stabilize_artifact_stage(resolved)
-
     def _resolve_device_stage(self, path: Path) -> ProcessingRequest | ProcessingResult:
         manager = self._manager
 

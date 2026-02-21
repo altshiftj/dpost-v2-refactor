@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from dpost.application.processing.file_process_manager import _ProcessingPipeline
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DPOST_BOOTSTRAP_DEPENDENCIES_PATH = (
     PROJECT_ROOT
@@ -258,6 +260,11 @@ def test_dpost_processing_helper_modules_exist_for_ownership_seams() -> None:
     """Require dpost processing helper modules to exist for deep-core ownership."""
     for helper_path in DPOST_PROCESSING_HELPER_PATHS:
         assert helper_path.exists()
+
+
+def test_dpost_processing_pipeline_retired_prepare_request_transition_helper() -> None:
+    """Require transition-only request-prep helper to be retired from dpost pipeline."""
+    assert hasattr(_ProcessingPipeline, "_prepare_request") is False
 
 
 def test_dpost_config_boundary_module_avoids_direct_legacy_config_imports() -> None:

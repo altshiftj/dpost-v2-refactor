@@ -65,6 +65,18 @@ def test_legacy_plugin_compat_module_is_retired() -> None:
     assert not DPOST_PLUGIN_LEGACY_COMPAT_PATH.exists()
 
 
+def test_device_plugin_contract_requires_file_processor_accessor() -> None:
+    """Require device plugin protocol to include processor-construction contract."""
+
+    class MissingProcessorPlugin:
+        def get_config(self) -> object:
+            return object()
+
+    from dpost.plugins.contracts import DevicePlugin
+
+    assert isinstance(MissingProcessorPlugin(), DevicePlugin) is False
+
+
 def test_dpost_plugin_loading_resolves_reference_pc_devices() -> None:
     """Require dpost plugin-loading boundary to resolve reference PC devices."""
     from dpost.plugins.loading import get_devices_for_pc

@@ -129,6 +129,8 @@
 - `FileProcessManager` now exposes `_post_persist_side_effects_stage()` and
   `add_item_to_record()` delegates bookkeeping/metrics/immediate-sync side
   effects through this seam.
+- Transition-only `_ProcessingPipeline._prepare_request()` helper has been
+  retired from canonical dpost processing paths.
 - `add_item_to_record()` no longer exposes the legacy `notify` flag and no
   longer dispatches the legacy success-notification helper.
 - `_invoke_rename_flow()` now uses iterative retry evaluation, removing
@@ -275,6 +277,9 @@
   (`dpost.pc_plugins.kinexus_blb`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   no longer orchestrates legacy hook namespaces in canonical dpost paths.
+- Canonical extension contracts are now explicitly documented in
+  `docs/architecture/extension-contracts.md`; `DevicePlugin` contract
+  expectations include both configuration access and file-processor access.
 - Remaining intentional legacy boundaries in canonical dpost runtime paths are
   now outside plugin loading; plugin namespace/hook compatibility seams are
   retired from `src/dpost/plugins/`.

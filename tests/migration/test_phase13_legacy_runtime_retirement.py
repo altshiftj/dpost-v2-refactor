@@ -49,3 +49,17 @@ def test_dpost_logging_adapter_has_no_legacy_logging_import() -> None:
     )
 
     assert "ipat_watchdog.core.logging.logger" not in logging_contents
+
+
+def test_all_dpost_source_modules_have_no_legacy_namespace_literals() -> None:
+    """Require full retirement of legacy namespace usage in dpost source tree."""
+    dpost_root = PROJECT_ROOT / "src" / "dpost"
+    offenders: list[str] = []
+
+    for python_path in dpost_root.rglob("*.py"):
+        if "ipat_watchdog" in _read_utf8(python_path):
+            offenders.append(
+                str(python_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
+            )
+
+    assert offenders == []

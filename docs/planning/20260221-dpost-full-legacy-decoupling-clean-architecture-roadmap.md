@@ -94,10 +94,16 @@
     user-visible sync failure surfacing via
     `tests/migration/test_phase13_records_sync_parity.py` and
     `src/dpost/application/processing/file_process_manager.py`.
+  - Transition-only dpost processing helper
+    (`_ProcessingPipeline._prepare_request`) retired and migration assertions
+    now enforce no `ipat_watchdog` namespace literals in `src/dpost/**`.
+  - Public extension contracts finalized in
+    `docs/architecture/extension-contracts.md` with ADR governance in
+    `docs/architecture/adr/ADR-0003-canonical-extension-contracts-and-legacy-namespace-retirement.md`.
 - In progress:
   - Legacy package retirement planning for `src/ipat_watchdog/device_plugins/`
-    and `src/ipat_watchdog/pc_plugins/` now that canonical dpost plugin
-    packages are complete.
+  and `src/ipat_watchdog/pc_plugins/` now that canonical dpost plugin
+  packages are complete.
 - Next deep-core migration target:
   - Execute legacy package deprecation and cleanup plan while preserving test
     parity and contributor migration guidance.

@@ -26,8 +26,7 @@
 - Canonical runtime modules now use dpost-owned config/processing/session/
   storage imports without transition shim modules.
 - Plugin discovery/loading and PC-device mapping are now dpost-owned boundary
-  modules, while plugin package compatibility fallback remains during
-  migration.
+  modules with canonical-only dpost hook/namespace loading paths.
 - Record persistence and sync execution remain legacy-owned, including the
   primary Kadi implementation path.
 - Current test posture is strong (`migration` and full suites green), which
@@ -48,7 +47,6 @@
   - `src/dpost/plugins/profile_selection.py`
   - `src/dpost/plugins/loading.py`
   - `src/dpost/plugins/system.py`
-  - `src/dpost/plugins/legacy_compat.py`
   - `src/dpost/plugins/contracts.py`
   - `src/dpost/infrastructure/runtime/ui_factory.py`
   - `src/dpost/infrastructure/runtime/ui_adapters.py`
@@ -63,6 +61,22 @@
 - Legacy plugin implementation packages still active:
   - `src/ipat_watchdog/device_plugins/`
   - `src/ipat_watchdog/pc_plugins/`
+
+## Deprecated/Unsupported Behavior Rationale
+- Legacy plugin namespace compatibility in canonical dpost paths is deprecated
+  and retired.
+  - Rationale: all in-repo plugins now have canonical dpost package ownership,
+    so keeping dual namespace/hook fallback increases complexity with no parity
+    benefit.
+- Legacy runtime CLI startup (`python -m ipat_watchdog`) is deprecated for
+  canonical operation.
+  - Rationale: `dpost` is the single canonical runtime identity and composition
+    root; split startup paths increase maintenance cost and contributor
+    confusion.
+- Transition-only request-preparation helper in dpost processing pipeline is
+  deprecated and retired (`_ProcessingPipeline._prepare_request`).
+  - Rationale: it was an unused stage-extraction bridge that obscured the final
+    processing seam structure.
 
 ## Risks
 - Rehosting runtime/bootstrap behavior can drift startup error semantics or
