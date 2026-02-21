@@ -1,6 +1,6 @@
-from ipat_watchdog.core.session.session_manager import SessionManager
-from ipat_watchdog.core.config import current
-from ipat_watchdog.core.records.local_record import LocalRecord
+from dpost.application.config import current
+from dpost.application.records.local_record import LocalRecord
+from dpost.application.session.session_manager import SessionManager
 
 
 def _make_record(identifier: str = "udr_01-mus-ipat-sample_a") -> LocalRecord:
@@ -152,7 +152,7 @@ def test_reset_timer_ignores_disabled_timeout(fake_ui, monkeypatch):
     session_manager.session_active = True
 
     stub = type("StubConfig", (), {"session_timeout": -1})()
-    monkeypatch.setattr("ipat_watchdog.core.session.session_manager.current", lambda: stub)
+    monkeypatch.setattr("dpost.application.session.session_manager.current", lambda: stub)
 
     session_manager.reset_timer()
 

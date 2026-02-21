@@ -112,6 +112,13 @@ INTEGRATION_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_settings_integration.py",
     PROJECT_ROOT / "tests" / "integration" / "test_utm_zwick_integration.py",
 )
+CORE_DATAFLOW_UNIT_TEST_PATHS = (
+    PROJECT_ROOT / "tests" / "unit" / "core" / "records" / "test_local_record.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "records" / "test_record_manager.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "session" / "test_session_manager.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "storage" / "test_filesystem_utils.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "sync" / "test_sync_kadi.py",
+)
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -293,6 +300,14 @@ def test_device_plugin_unit_tests_avoid_legacy_plugin_import_paths() -> None:
 def test_integration_tests_avoid_legacy_import_paths() -> None:
     """Require integration tests to import canonical dpost boundaries only."""
     for path in INTEGRATION_TEST_PATHS:
+        contents = path.read_text(encoding="utf-8")
+        assert "from ipat_watchdog" not in contents
+        assert "import ipat_watchdog" not in contents
+
+
+def test_core_dataflow_unit_tests_avoid_legacy_import_paths() -> None:
+    """Require core data-flow unit tests to import canonical dpost boundaries."""
+    for path in CORE_DATAFLOW_UNIT_TEST_PATHS:
         contents = path.read_text(encoding="utf-8")
         assert "from ipat_watchdog" not in contents
         assert "import ipat_watchdog" not in contents

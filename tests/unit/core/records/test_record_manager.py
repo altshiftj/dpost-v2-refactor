@@ -3,15 +3,18 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from ipat_watchdog.core.records.record_manager import RecordManager
-from ipat_watchdog.core.records.local_record import LocalRecord
+from dpost.application.records.local_record import LocalRecord
+from dpost.application.records.record_manager import RecordManager
 
 pytestmark = pytest.mark.usefixtures("config_service")
 
 
 @pytest.fixture
 def record_manager(fake_sync, tmp_settings):
-    with patch("ipat_watchdog.core.records.record_manager.load_persisted_records", return_value={}):
+    with patch(
+        "dpost.application.records.record_manager.load_persisted_records",
+        return_value={},
+    ):
         return RecordManager(sync_manager=fake_sync)
 
 
@@ -21,7 +24,10 @@ def sample_record():
 
 
 def test_create_record_generates_proper_id_and_sample(record_manager):
-    with patch("ipat_watchdog.core.records.record_manager.generate_record_id", return_value="dev-usr-ipat-sample_a"):
+    with patch(
+        "dpost.application.records.record_manager.generate_record_id",
+        return_value="dev-usr-ipat-sample_a",
+    ):
         record = record_manager.create_record("usr-ipat-sample_A")
 
     assert isinstance(record, LocalRecord)
@@ -40,7 +46,9 @@ def test_add_item_to_record_saves_it(tmp_path, record_manager):
     file_path.write_text("fake content")
 
     record = LocalRecord(identifier="dev-usr-ipat-samplex", sample_name="sampleX", date="20240101")
-    with patch("ipat_watchdog.core.records.record_manager.save_persisted_records") as mock_save:
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
         record_manager.add_item_to_record(str(file_path), record)
 
     resolved_path = str(file_path.resolve())
@@ -57,7 +65,9 @@ def test_remove_item_from_record_persists_state(tmp_path, record_manager):
     record.files_uploaded = {str(file_path): False, "f2.txt": False}
     record_manager._persist_records_dict = {record.identifier: record}
 
-    with patch("ipat_watchdog.core.records.record_manager.save_persisted_records") as mock_save:
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
         record_manager.remove_item_from_record(str(file_path), record)
 
     mock_save.assert_called_once()
@@ -100,7 +110,7 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
     record.files_uploaded = {"f": False}
     record_manager._persist_records_dict = {record.identifier: record}
 
-    with patch("ipat_watchdog.core.records.record_manager.save_persisted_records"):
+    with patch("dpost.application.records.record_manager.save_persisted_records"):
         with patch.object(record_manager.sync, "sync_record_to_database", return_value=False) as mock_sync:
             record_manager.sync_records_to_database()
             mock_sync.assert_called_once_with(record)
@@ -108,7 +118,7 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
 
 def test_persist_records_dict_lazy_loads_once(fake_sync):
     with patch(
-        "ipat_watchdog.core.records.record_manager.load_persisted_records",
+        "dpost.application.records.record_manager.load_persisted_records",
         return_value={"x": LocalRecord(identifier="x")},
     ) as mock_load:
         manager = RecordManager(sync_manager=fake_sync)
@@ -124,7 +134,9 @@ def test_sync_record_deletes_if_no_files_remain(record_manager):
     record_manager._persist_records_dict = {"dev-usr-ipat-sample": record}
     record_manager.sync.sync_record_to_database = MagicMock(return_value=False)
 
-    with patch("ipat_watchdog.core.records.record_manager.save_persisted_records") as mock_save:
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
         record_manager._sync_record(record)
 
     assert "dev-usr-ipat-sample" not in record_manager._persist_records_dict
@@ -142,14 +154,14 @@ def test_get_num_records_counts_loaded(record_manager):
 
 def test_reload_records_refreshes_cache(fake_sync):
     with patch(
-        "ipat_watchdog.core.records.record_manager.load_persisted_records",
+        "dpost.application.records.record_manager.load_persisted_records",
         return_value={"initial": LocalRecord(identifier="initial")},
     ):
         manager = RecordManager(sync_manager=fake_sync)
         assert set(manager.persist_records_dict) == {"initial"}
 
     with patch(
-        "ipat_watchdog.core.records.record_manager.load_persisted_records",
+        "dpost.application.records.record_manager.load_persisted_records",
         return_value={"fresh": LocalRecord(identifier="fresh")},
     ):
         manager.reload_records()

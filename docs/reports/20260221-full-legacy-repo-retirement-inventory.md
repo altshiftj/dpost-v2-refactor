@@ -112,6 +112,16 @@
   - `tests/integration/test_multi_processor_app_flow.py`
   - `tests/integration/test_settings_integration.py`
   - `tests/integration/test_utm_zwick_integration.py`
+- Added core data-flow unit legacy-import retirement guard:
+  - `tests/migration/test_full_legacy_repo_retirement_harness.py` now asserts
+    selected records/storage/session/sync unit suites avoid
+    `ipat_watchdog` import paths.
+- Migrated core data-flow unit suites to canonical dpost boundaries:
+  - `tests/unit/core/records/test_local_record.py`
+  - `tests/unit/core/records/test_record_manager.py`
+  - `tests/unit/core/session/test_session_manager.py`
+  - `tests/unit/core/storage/test_filesystem_utils.py`
+  - `tests/unit/core/sync/test_sync_kadi.py`
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -132,7 +142,9 @@
     `10 passed` (green), then `1 failed, 10 passed` (red after device-plugin
     guard), then `11 passed` (green), then
     `1 failed, 11 passed` (red after integration-import guard), then
-    `12 passed` (green)
+    `12 passed` (green), then
+    `1 failed, 12 passed` (red after core-dataflow guard), then
+    `13 passed` (green)
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
@@ -149,6 +161,8 @@
     -> `7 failed, 47 passed, 2 errors` (red), then `56 passed` (green)
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/integration/test_integration.py tests/integration/test_multi_device_integration.py tests/integration/test_multi_processor_app_flow.py tests/integration/test_device_integrations.py tests/integration/test_settings_integration.py tests/integration/test_utm_zwick_integration.py tests/integration/test_extr_haake_safesave.py`
     -> `45 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/core/records/test_local_record.py tests/unit/core/records/test_record_manager.py tests/unit/core/storage/test_filesystem_utils.py tests/unit/core/session/test_session_manager.py tests/unit/core/sync/test_sync_kadi.py`
+    -> `67 passed, 1 skipped`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -157,10 +171,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `173 passed, 302 deselected`
+      -> `174 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `474 passed, 1 skipped`
+      -> `475 passed, 1 skipped`

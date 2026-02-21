@@ -56,6 +56,17 @@
   - migration guard scope expanded:
     `tests/migration/test_full_legacy_repo_retirement_harness.py` now enforces
     integration-wide prohibition of `ipat_watchdog` imports.
+  - core data-flow unit migration increment landed:
+    records/storage/session/sync unit suites now resolve canonical dpost
+    boundaries in:
+    - `tests/unit/core/records/test_local_record.py`
+    - `tests/unit/core/records/test_record_manager.py`
+    - `tests/unit/core/session/test_session_manager.py`
+    - `tests/unit/core/storage/test_filesystem_utils.py`
+    - `tests/unit/core/sync/test_sync_kadi.py`
+  - migration guard scope expanded again:
+    retirement harness now enforces core data-flow unit prohibition of
+    `ipat_watchdog` imports for those suites.
   - observability unit migration increment landed:
     `tests/unit/test_observability.py` now imports canonical
     `dpost.infrastructure.observability`.

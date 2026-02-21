@@ -4,8 +4,8 @@ import json
 import shutil
 from pathlib import Path
 
-from ipat_watchdog.core.records.local_record import LocalRecord
-from ipat_watchdog.core.storage import filesystem_utils
+from dpost.application.records.local_record import LocalRecord
+from dpost.infrastructure.storage import filesystem_utils
 
 
 def test_move_item_removes_empty_placeholder(tmp_path: Path):

@@ -2,8 +2,8 @@ import pytest
 pytest.importorskip("kadi_apy")
 from unittest.mock import MagicMock, call
 
-from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
-from ipat_watchdog.core.records.local_record import LocalRecord
+from dpost.application.records.local_record import LocalRecord
+from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 
 pytestmark = pytest.mark.usefixtures("config_service")
 
@@ -105,7 +105,7 @@ def local_record(tmp_path):
 
 @pytest.fixture
 def sync_mgr(fake_ui, monkeypatch):
-    import ipat_watchdog.core.sync.sync_kadi as _mod
+    import dpost.infrastructure.sync.kadi_manager as _mod
     monkeypatch.setattr(_mod, "KadiManager", DummyKadiManager)
     return KadiSyncManager(interactions=fake_ui)
 

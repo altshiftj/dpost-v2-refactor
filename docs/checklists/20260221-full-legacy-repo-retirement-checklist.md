@@ -95,6 +95,14 @@
     - `tests/integration/test_utm_zwick_integration.py`
   - migration harness now includes integration-wide retirement guard:
     `test_integration_tests_avoid_legacy_import_paths`.
+  - core data-flow unit suite migration to canonical dpost boundaries:
+    - `tests/unit/core/records/test_local_record.py`
+    - `tests/unit/core/records/test_record_manager.py`
+    - `tests/unit/core/session/test_session_manager.py`
+    - `tests/unit/core/storage/test_filesystem_utils.py`
+    - `tests/unit/core/sync/test_sync_kadi.py`
+  - migration harness now includes core data-flow unit retirement guard:
+    `test_core_dataflow_unit_tests_avoid_legacy_import_paths`.
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 
