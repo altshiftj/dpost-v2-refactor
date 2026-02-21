@@ -105,3 +105,21 @@ def test_dpost_plugin_loader_unknown_plugin_message_is_actionable() -> None:
     assert "missing-device" in error_message
     assert "available device plugins" in error_message.lower()
     assert "test_device" in error_message
+
+
+def test_concrete_utm_zwick_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete UTM plugin loading to resolve canonical dpost module."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.utm_zwick.plugin",
+        "ipat_watchdog.device_plugins.utm_zwick.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("utm_zwick")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.utm_zwick.plugin"
+    assert "dpost.device_plugins.utm_zwick.plugin" in sys.modules

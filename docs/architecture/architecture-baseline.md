@@ -136,6 +136,8 @@
 - Canonical reference plugin packages for migration/runtime validation:
 - `src/dpost/device_plugins/test_device/`
 - `src/dpost/pc_plugins/test_pc/`
+- Canonical concrete plugin package (migration wave):
+- `src/dpost/device_plugins/utm_zwick/`
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
@@ -219,6 +221,8 @@
   `src/dpost/plugins/legacy_compat.py` during plugin migration.
 - Canonical reference profile plugins (`test_device`, `test_pc`) now load from
   dpost plugin namespaces before any legacy fallback path.
+- Concrete UTM Zwick plugin now loads from canonical dpost namespace
+  (`dpost.device_plugins.utm_zwick`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   keeps legacy hook-namespace compatibility through isolated orchestration in
   `src/dpost/plugins/system.py`.

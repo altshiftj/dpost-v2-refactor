@@ -63,6 +63,8 @@
   - Reference plugin packages migrated to canonical dpost namespaces:
     `src/dpost/device_plugins/test_device/` and
     `src/dpost/pc_plugins/test_pc/`.
+  - First concrete device plugin migrated to canonical dpost namespace:
+    `src/dpost/device_plugins/utm_zwick/`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +

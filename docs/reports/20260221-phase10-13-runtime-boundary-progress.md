@@ -315,22 +315,43 @@
   - `python -m pytest tests/migration/test_phase12_plugin_config_boundary_migration.py tests/migration/test_reference_plugin_flow.py tests/migration/test_runtime_mode_selection.py tests/migration/test_sync_adapter_selection.py`
     -> `21 passed`
 
+## Deep-Core Increment: Concrete UTM Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `1 failed`
+- Implementation:
+  - added canonical dpost UTM plugin package:
+    - `src/dpost/device_plugins/utm_zwick/`
+  - added dpost-owned UTM plugin modules:
+    - `src/dpost/device_plugins/utm_zwick/plugin.py`
+    - `src/dpost/device_plugins/utm_zwick/settings.py`
+    - `src/dpost/device_plugins/utm_zwick/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.utm_zwick` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `8 passed`
+  - `python -m pytest tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/integration/test_utm_zwick_integration.py`
+    -> `9 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `138 passed, 302 deselected`
+  -> `139 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `96 files would be left unchanged.`
+  -> `100 files would be left unchanged.`
 - `python -m pytest`
-  -> `439 passed, 1 skipped`
+  -> `440 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
-  and later on 9 files, 5 files, 1 file, 7 files, and 1 file after additional
-  runtime-boundary implementation.
+  and later on 9 files, 5 files, 1 file, 7 files, 1 file, and 4 files after
+  additional runtime-boundary implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
 
