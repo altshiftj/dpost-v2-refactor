@@ -99,6 +99,14 @@
     requires application staging helper retirement plus infrastructure staging
     helper ownership.
 
+## Update (Wave 3.11 Complete)
+- Canonical source wording cleanup is complete:
+  - removed stale "legacy" wording from canonical dpost runtime sources
+    (`src/dpost/infrastructure/sync/kadi.py`,
+    `src/dpost/application/processing/file_process_manager.py`).
+- Migration guard added:
+  - `tests/migration/test_part3_canonical_wording_cleanup.py`.
+
 ## Findings
 - Domain ownership is now established for:
   - processing value/routing models (`src/dpost/domain/processing/models.py`,

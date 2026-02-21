@@ -429,7 +429,7 @@ class FileProcessManager:
         file_processor: Optional[FileProcessorABS],
         source_path: str,
     ) -> FileProcessorABS:
-        """Resolve processor for record persistence or fail with legacy routing behavior."""
+        """Resolve processor for record persistence or fail with routing fallback behavior."""
         processor = file_processor or self.file_processor
         if processor is None:
             move_to_exception_folder(source_path)

@@ -200,6 +200,7 @@
 - `tests/migration/test_part3_domain_text_policy_ownership.py`
 - `tests/migration/test_part3_domain_naming_policy_ownership.py`
 - `tests/migration/test_part3_domain_naming_identifier_ownership.py`
+- `tests/migration/test_part3_canonical_wording_cleanup.py`
 - Manual script portability retirement test currently lives in:
 - `tests/migration/test_manual_script_portability.py`
 - Phase 5 stage-boundary decomposition tests currently live in:

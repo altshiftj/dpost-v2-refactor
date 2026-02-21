@@ -70,6 +70,12 @@
   - PSA/Kinexus processors now consume infrastructure staging-dir helper import
   - `tests/migration/test_part3_domain_batch_staging_ownership.py` now
     enforces module retirement and infrastructure ownership
+- Wave 3.11 is complete:
+  - stale legacy wording removed from canonical dpost runtime sources
+    (`src/dpost/infrastructure/sync/kadi.py`,
+    `src/dpost/application/processing/file_process_manager.py`)
+  - wording guard added at
+    `tests/migration/test_part3_canonical_wording_cleanup.py`
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

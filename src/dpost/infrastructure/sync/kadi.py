@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class KadiSyncAdapter(SyncAdapterPort):
-    """Lazy wrapper around the legacy Kadi sync manager implementation."""
+    """Lazy wrapper around the optional Kadi sync manager implementation."""
 
     def __init__(self) -> None:
         """Load Kadi manager class lazily so dependency stays optional."""
@@ -22,7 +22,7 @@ class KadiSyncAdapter(SyncAdapterPort):
         self.interactions: UserInteractionPort | None = None
 
     def sync_record_to_database(self, local_record: object) -> bool:
-        """Forward sync calls to the legacy Kadi manager."""
+        """Forward sync calls to the Kadi sync manager implementation."""
         if self._delegate is None:
             if self.interactions is None:
                 raise RuntimeError(

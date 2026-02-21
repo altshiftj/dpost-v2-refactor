@@ -105,7 +105,9 @@
   `src/dpost/infrastructure/storage/staging_dirs.py`, retired
   `src/dpost/application/processing/staging_utils.py`, and tightened staging
   ownership guard expectations in
-  `tests/migration/test_part3_domain_batch_staging_ownership.py`.
+  `tests/migration/test_part3_domain_batch_staging_ownership.py`; then removed
+  stale legacy wording from canonical runtime sources and added wording guard
+  `tests/migration/test_part3_canonical_wording_cleanup.py`.
 
 ---
 
