@@ -20,6 +20,21 @@ UNIT_PC_DEVICE_MAPPING_TEST_PATH = (
 UNIT_TEST_PLUGINS_INTEGRATION_PATH = (
     PROJECT_ROOT / "tests" / "unit" / "plugins" / "test_test_plugins_integration.py"
 )
+UNIT_PLUGIN_LOADER_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "plugin_system" / "test_plugin_loader.py"
+)
+UNIT_PLUGIN_NO_DOUBLE_LOGGING_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "plugin_system" / "test_no_double_logging.py"
+)
+UNIT_PC_PLUGINS_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "pc_plugins" / "test_pc_plugins.py"
+)
+UNIT_TEST_PC_PLUGIN_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "pc_plugins" / "test_test_pc_plugin.py"
+)
+UNIT_HAAKE_PC_PLUGIN_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "pc_plugins" / "test_haake_pc_plugin.py"
+)
 INTEGRATION_RUNTIME_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
     PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
@@ -123,4 +138,45 @@ def test_loader_plugin_unit_tests_avoid_legacy_loader_and_test_plugin_imports() 
     )
     assert "from ipat_watchdog.pc_plugins.test_pc.settings import" not in (
         plugin_contents
+    )
+
+    plugin_loader_contents = UNIT_PLUGIN_LOADER_TEST_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.plugin_system import PluginLoader, hookimpl" not in (
+        plugin_loader_contents
+    )
+
+    plugin_logging_contents = UNIT_PLUGIN_NO_DOUBLE_LOGGING_TEST_PATH.read_text(
+        encoding="utf-8"
+    )
+    assert "from ipat_watchdog.plugin_system import PluginLoader" not in (
+        plugin_logging_contents
+    )
+
+    pc_plugins_contents = UNIT_PC_PLUGINS_TEST_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.loader import load_pc_plugin" not in (
+        pc_plugins_contents
+    )
+    assert "from ipat_watchdog.core.config import PCConfig" not in (pc_plugins_contents)
+    assert "from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin" not in (
+        pc_plugins_contents
+    )
+
+    test_pc_contents = UNIT_TEST_PC_PLUGIN_TEST_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin" not in (
+        test_pc_contents
+    )
+    assert (
+        "from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config"
+        not in test_pc_contents
+    )
+
+    haake_contents = UNIT_HAAKE_PC_PLUGIN_TEST_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.pc_plugins.haake_blb.plugin import" not in (
+        haake_contents
+    )
+    assert "from ipat_watchdog.pc_plugins.haake_blb.settings import" not in (
+        haake_contents
+    )
+    assert "from ipat_watchdog.plugin_system import PCPluginRegistry" not in (
+        haake_contents
     )

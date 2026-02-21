@@ -1,8 +1,8 @@
 import pytest
 
-from ipat_watchdog.core.config import PCConfig
-from ipat_watchdog.loader import load_pc_plugin
-from ipat_watchdog.pc_plugins.pc_plugin import PCPlugin
+from dpost.application.config import PCConfig
+from dpost.plugins.contracts import PCPlugin
+from dpost.plugins.loading import load_pc_plugin
 
 
 @pytest.mark.parametrize(

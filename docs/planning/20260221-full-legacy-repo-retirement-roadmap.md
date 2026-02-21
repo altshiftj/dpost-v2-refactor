@@ -51,6 +51,13 @@
       `dpost.plugins.loading.get_devices_for_pc`
     - `tests/unit/plugins/test_test_plugins_integration.py` now imports
       canonical dpost test plugin modules/settings.
+    - `tests/unit/plugin_system/test_plugin_loader.py` and
+      `tests/unit/plugin_system/test_no_double_logging.py` now import canonical
+      dpost plugin system ownership (`dpost.plugins.system`).
+    - `tests/unit/pc_plugins/test_pc_plugins.py`,
+      `tests/unit/pc_plugins/test_test_pc_plugin.py`, and
+      `tests/unit/pc_plugins/test_haake_pc_plugin.py` now import canonical
+      dpost plugin modules/contracts/loading boundaries.
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate

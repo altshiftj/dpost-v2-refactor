@@ -66,6 +66,11 @@
   - loader/plugin unit migration to canonical dpost plugin loading boundaries:
     - `tests/unit/loader/test_pc_device_mapping.py`
     - `tests/unit/plugins/test_test_plugins_integration.py`
+    - `tests/unit/plugin_system/test_plugin_loader.py`
+    - `tests/unit/plugin_system/test_no_double_logging.py`
+    - `tests/unit/pc_plugins/test_pc_plugins.py`
+    - `tests/unit/pc_plugins/test_test_pc_plugin.py`
+    - `tests/unit/pc_plugins/test_haake_pc_plugin.py`
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

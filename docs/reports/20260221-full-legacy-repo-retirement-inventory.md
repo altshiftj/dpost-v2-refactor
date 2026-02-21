@@ -82,6 +82,11 @@
 - Migrated selected loader/plugin unit tests to canonical dpost modules:
   - `tests/unit/loader/test_pc_device_mapping.py`
   - `tests/unit/plugins/test_test_plugins_integration.py`
+  - `tests/unit/plugin_system/test_plugin_loader.py`
+  - `tests/unit/plugin_system/test_no_double_logging.py`
+  - `tests/unit/pc_plugins/test_pc_plugins.py`
+  - `tests/unit/pc_plugins/test_test_pc_plugin.py`
+  - `tests/unit/pc_plugins/test_haake_pc_plugin.py`
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -110,6 +115,8 @@
     -> `15 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/loader/test_pc_device_mapping.py tests/unit/plugins/test_test_plugins_integration.py`
     -> `31 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/plugin_system/test_plugin_loader.py tests/unit/plugin_system/test_no_double_logging.py tests/unit/pc_plugins/test_pc_plugins.py tests/unit/pc_plugins/test_test_pc_plugin.py tests/unit/pc_plugins/test_haake_pc_plugin.py`
+    -> `28 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`

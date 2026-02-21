@@ -1,8 +1,8 @@
 """Tests for the test PC plugin to ensure it provides proper isolation."""
 from pathlib import Path
 
-from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.pc_plugins.test_pc.plugin import TestPCPlugin
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 
 def test_test_pc_plugin_basic_functionality():

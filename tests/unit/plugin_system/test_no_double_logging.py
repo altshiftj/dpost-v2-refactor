@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from ipat_watchdog.plugin_system import PluginLoader
+from dpost.plugins.system import PluginLoader
 
 
 def test_lazy_load_device_does_not_relog_pc_registration(caplog):
@@ -10,7 +10,7 @@ def test_lazy_load_device_does_not_relog_pc_registration(caplog):
     loader = PluginLoader(load_entrypoints=False, load_builtins=False)
 
     # Capture plugin system debug logs
-    caplog.set_level(logging.DEBUG, logger="ipat_watchdog.plugin_system")
+    caplog.set_level(logging.DEBUG, logger="dpost.plugins.system")
 
     # Act: lazily load a PC plugin, then a device plugin
     loader.load_pc("test_pc")

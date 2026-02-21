@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from ipat_watchdog.pc_plugins.haake_blb.plugin import PCHaakePlugin, register_pc_plugins
-from ipat_watchdog.pc_plugins.haake_blb.settings import build_config
-from ipat_watchdog.plugin_system import PCPluginRegistry
+from dpost.pc_plugins.haake_blb.plugin import PCHaakePlugin, register_pc_plugins
+from dpost.pc_plugins.haake_blb.settings import build_config
+from dpost.plugins.system import PCPluginRegistry
 
 
 def test_haake_pc_config_defaults():

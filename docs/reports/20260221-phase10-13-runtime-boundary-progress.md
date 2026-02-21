@@ -755,9 +755,14 @@
   - migrated observability unit tests to canonical dpost infrastructure module:
     - `tests/unit/test_observability.py`
   - migrated loader/plugin unit tests to canonical dpost plugin loading
-    boundaries:
+  boundaries:
     - `tests/unit/loader/test_pc_device_mapping.py`
     - `tests/unit/plugins/test_test_plugins_integration.py`
+    - `tests/unit/plugin_system/test_plugin_loader.py`
+    - `tests/unit/plugin_system/test_no_double_logging.py`
+    - `tests/unit/pc_plugins/test_pc_plugins.py`
+    - `tests/unit/pc_plugins/test_test_pc_plugin.py`
+    - `tests/unit/pc_plugins/test_haake_pc_plugin.py`
 - Green-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `10 passed`
@@ -767,6 +772,8 @@
     -> `15 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/loader/test_pc_device_mapping.py tests/unit/plugins/test_test_plugins_integration.py`
     -> `31 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/plugin_system/test_plugin_loader.py tests/unit/plugin_system/test_no_double_logging.py tests/unit/pc_plugins/test_pc_plugins.py tests/unit/pc_plugins/test_test_pc_plugin.py tests/unit/pc_plugins/test_haake_pc_plugin.py`
+    -> `28 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/integration/test_integration.py tests/integration/test_device_integrations.py tests/integration/test_multi_processor_app_flow.py tests/integration/test_extr_haake_safesave.py`
     -> `29 passed`
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
