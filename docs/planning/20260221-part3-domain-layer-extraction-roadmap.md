@@ -76,6 +76,11 @@
     `src/dpost/application/processing/file_process_manager.py`)
   - wording guard added at
     `tests/migration/test_part3_canonical_wording_cleanup.py`
+- Wave 3.12 is complete:
+  - transitional `_ProcessingPipeline._route_with_prefix()` helper retired
+    from canonical processing pipeline
+  - stage-boundary migration contracts now verify direct rename-flow seam usage
+    without `_route_with_prefix` indirection
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

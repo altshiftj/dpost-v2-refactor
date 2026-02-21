@@ -769,13 +769,18 @@ def test_pipeline_declares_route_decision_stage_hook() -> None:
     assert hasattr(_ProcessingPipeline, "_route_decision_stage")
 
 
-def test_route_with_prefix_delegates_accept_without_dispatch(
+def test_pipeline_retires_route_with_prefix_helper() -> None:
+    """Retire transitional helper once rename flow uses direct stage seams."""
+    assert hasattr(_ProcessingPipeline, "_route_with_prefix") is False
+
+
+def test_invoke_rename_flow_accept_path_delegates_without_dispatch(
     process_manager: FileProcessManager,
     config_service,
     tmp_settings,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Resolve route decision and persist without redispatching through `_dispatch_route`."""
+    """Resolve ACCEPT rename path via stage seams without `_dispatch_route` indirection."""
     pipeline = process_manager._pipeline
     source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
     source.write_text("payload")
@@ -796,6 +801,12 @@ def test_route_with_prefix_delegates_accept_without_dispatch(
     )
     calls: list[str] = []
 
+    def obtain_valid_prefix(
+        _current_prefix: str,
+        _contextual_reason: str | None = None,
+    ) -> RenameOutcome:
+        return RenameOutcome("abc-ipat-sample", cancelled=False)
+
     def route_decision_stage(route_candidate: ProcessingCandidate) -> RouteContext:
         calls.append("route_decision")
         assert route_candidate.prefix == "abc-ipat-sample"
@@ -807,6 +818,11 @@ def test_route_with_prefix_delegates_accept_without_dispatch(
         return ProcessingResult(ProcessingStatus.PROCESSED, "processed")
 
     monkeypatch.setattr(
+        process_manager._rename_service,
+        "obtain_valid_prefix",
+        obtain_valid_prefix,
+    )
+    monkeypatch.setattr(
         pipeline,
         "_route_decision_stage",
         route_decision_stage,
@@ -817,11 +833,13 @@ def test_route_with_prefix_delegates_accept_without_dispatch(
         pipeline,
         "_dispatch_route",
         lambda *_args, **_kwargs: pytest.fail(
-            "_route_with_prefix should not redispatch through _dispatch_route."
+            "_invoke_rename_flow should not redispatch through _dispatch_route."
         ),
     )
 
-    result = pipeline._route_with_prefix(candidate, "abc-ipat-sample")
+    result = pipeline._invoke_rename_flow(
+        candidate, candidate.prefix, candidate.extension
+    )
 
     assert result.status is ProcessingStatus.PROCESSED
     assert calls == ["route_decision", "persist"]
@@ -832,76 +850,13 @@ def test_pipeline_declares_non_accept_route_stage_hook() -> None:
     assert hasattr(_ProcessingPipeline, "_non_accept_route_stage")
 
 
-def test_route_with_prefix_delegates_non_accept_without_dispatch(
+def test_non_accept_route_stage_require_rename_avoids_recursive_non_accept_reentry(
     process_manager: FileProcessManager,
     config_service,
     tmp_settings,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Resolve non-ACCEPT decision and delegate without redispatching."""
-    pipeline = process_manager._pipeline
-    source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
-    source.write_text("payload")
-    candidate = ProcessingCandidate(
-        original_path=source,
-        effective_path=source,
-        prefix="abc-ipat-sample",
-        extension=".txt",
-        processor=DummyProcessor(),
-        device=config_service.devices[0],
-        preprocessed_path=None,
-    )
-    expected_context = RouteContext(
-        candidate=candidate,
-        sanitized_prefix="abc-ipat-sample",
-        existing_record=None,
-        decision=RoutingDecision.REQUIRE_RENAME,
-    )
-    calls: list[str] = []
-
-    def route_decision_stage(route_candidate: ProcessingCandidate) -> RouteContext:
-        calls.append("route_decision")
-        assert route_candidate.prefix == "abc-ipat-sample"
-        return expected_context
-
-    def non_accept_stage(route_context: RouteContext) -> ProcessingResult:
-        calls.append("non_accept")
-        assert route_context is expected_context
-        return ProcessingResult(ProcessingStatus.REJECTED, "rename-required")
-
-    monkeypatch.setattr(
-        pipeline,
-        "_route_decision_stage",
-        route_decision_stage,
-        raising=False,
-    )
-    monkeypatch.setattr(
-        pipeline,
-        "_non_accept_route_stage",
-        non_accept_stage,
-        raising=False,
-    )
-    monkeypatch.setattr(
-        pipeline,
-        "_dispatch_route",
-        lambda *_args, **_kwargs: pytest.fail(
-            "_route_with_prefix should not redispatch through _dispatch_route."
-        ),
-    )
-
-    result = pipeline._route_with_prefix(candidate, "abc-ipat-sample")
-
-    assert result.status is ProcessingStatus.REJECTED
-    assert calls == ["route_decision", "non_accept"]
-
-
-def test_non_accept_route_stage_require_rename_avoids_recursive_route_with_prefix_reentry(
-    process_manager: FileProcessManager,
-    config_service,
-    tmp_settings,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Keep rename retries from recursively re-entering `_route_with_prefix`."""
+    """Keep rename retries from recursively re-entering `_non_accept_route_stage`."""
     pipeline = process_manager._pipeline
     source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
     source.write_text("payload")
@@ -941,21 +896,20 @@ def test_non_accept_route_stage_require_rename_avoids_recursive_route_with_prefi
     def persist_stage(_route_context: RouteContext) -> ProcessingResult:
         return ProcessingResult(ProcessingStatus.PROCESSED, "processed")
 
-    original_route_with_prefix = pipeline._route_with_prefix
+    original_non_accept_route_stage = pipeline._non_accept_route_stage
     is_active = False
 
-    def guarded_route_with_prefix(
-        route_candidate: ProcessingCandidate,
-        prefix_override: str,
+    def guarded_non_accept_route_stage(
+        route_context: RouteContext,
     ) -> ProcessingResult:
         nonlocal is_active
         if is_active:
             pytest.fail(
-                "Rename retries should not recursively re-enter _route_with_prefix."
+                "Rename retries should not recursively re-enter _non_accept_route_stage."
             )
         is_active = True
         try:
-            return original_route_with_prefix(route_candidate, prefix_override)
+            return original_non_accept_route_stage(route_context)
         finally:
             is_active = False
 
@@ -968,8 +922,8 @@ def test_non_accept_route_stage_require_rename_avoids_recursive_route_with_prefi
     monkeypatch.setattr(pipeline, "_persist_and_sync_stage", persist_stage)
     monkeypatch.setattr(
         pipeline,
-        "_route_with_prefix",
-        guarded_route_with_prefix,
+        "_non_accept_route_stage",
+        guarded_non_accept_route_stage,
         raising=False,
     )
 
@@ -978,13 +932,13 @@ def test_non_accept_route_stage_require_rename_avoids_recursive_route_with_prefi
     assert result.status is ProcessingStatus.PROCESSED
 
 
-def test_non_accept_route_stage_unappendable_avoids_recursive_route_with_prefix_reentry(
+def test_non_accept_route_stage_unappendable_avoids_recursive_non_accept_reentry(
     process_manager: FileProcessManager,
     config_service,
     tmp_settings,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Keep unappendable rename retries from recursively re-entering `_route_with_prefix`."""
+    """Keep unappendable retries from recursively re-entering `_non_accept_route_stage`."""
     pipeline = process_manager._pipeline
     source = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
     source.write_text("payload")
@@ -1024,21 +978,20 @@ def test_non_accept_route_stage_unappendable_avoids_recursive_route_with_prefix_
     def persist_stage(_route_context: RouteContext) -> ProcessingResult:
         return ProcessingResult(ProcessingStatus.PROCESSED, "processed")
 
-    original_route_with_prefix = pipeline._route_with_prefix
+    original_non_accept_route_stage = pipeline._non_accept_route_stage
     is_active = False
 
-    def guarded_route_with_prefix(
-        route_candidate: ProcessingCandidate,
-        prefix_override: str,
+    def guarded_non_accept_route_stage(
+        route_context: RouteContext,
     ) -> ProcessingResult:
         nonlocal is_active
         if is_active:
             pytest.fail(
-                "Rename retries should not recursively re-enter _route_with_prefix."
+                "Rename retries should not recursively re-enter _non_accept_route_stage."
             )
         is_active = True
         try:
-            return original_route_with_prefix(route_candidate, prefix_override)
+            return original_non_accept_route_stage(route_context)
         finally:
             is_active = False
 
@@ -1051,8 +1004,8 @@ def test_non_accept_route_stage_unappendable_avoids_recursive_route_with_prefix_
     monkeypatch.setattr(pipeline, "_persist_and_sync_stage", persist_stage)
     monkeypatch.setattr(
         pipeline,
-        "_route_with_prefix",
-        guarded_route_with_prefix,
+        "_non_accept_route_stage",
+        guarded_non_accept_route_stage,
         raising=False,
     )
 

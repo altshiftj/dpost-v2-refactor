@@ -107,6 +107,13 @@
 - Migration guard added:
   - `tests/migration/test_part3_canonical_wording_cleanup.py`.
 
+## Update (Wave 3.12 Complete)
+- Transitional rename-routing helper retirement is complete:
+  - `_ProcessingPipeline._route_with_prefix()` has been removed from
+    canonical processing pipeline code.
+- Stage-boundary migration tests now assert direct rename-flow seam behavior
+  and no longer depend on `_route_with_prefix()` re-entry guards.
+
 ## Findings
 - Domain ownership is now established for:
   - processing value/routing models (`src/dpost/domain/processing/models.py`,
@@ -124,6 +131,8 @@
   concerns and no longer define prefix/identifier naming policy functions.
 - Stage directory creation now lives under infrastructure storage boundaries
   instead of application helper modules.
+- Rename-loop orchestration now uses direct stage seams only and no longer
+  carries transitional `_route_with_prefix()` helper indirection.
 - Remaining Part 3 work is manual workflow validation only.
 
 ## Evidence

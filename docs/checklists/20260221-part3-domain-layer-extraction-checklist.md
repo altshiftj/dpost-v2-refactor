@@ -107,7 +107,9 @@
   ownership guard expectations in
   `tests/migration/test_part3_domain_batch_staging_ownership.py`; then removed
   stale legacy wording from canonical runtime sources and added wording guard
-  `tests/migration/test_part3_canonical_wording_cleanup.py`.
+  `tests/migration/test_part3_canonical_wording_cleanup.py`; then retired
+  `_ProcessingPipeline._route_with_prefix()` and updated stage-boundary
+  migration tests to assert direct rename-flow seam behavior.
 
 ---
 

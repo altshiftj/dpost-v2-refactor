@@ -137,8 +137,9 @@
   retired from canonical dpost processing paths.
 - `add_item_to_record()` no longer exposes the legacy `notify` flag and no
   longer dispatches the legacy success-notification helper.
-- `_invoke_rename_flow()` now uses iterative retry evaluation, removing
-  recursive `_route_with_prefix()` re-entry during non-ACCEPT rename loops.
+- `_invoke_rename_flow()` now uses iterative retry evaluation for non-ACCEPT
+  rename loops, and transitional `_route_with_prefix()` helper indirection has
+  been retired from canonical paths.
 - `_rename_retry_policy_stage()` now defines non-ACCEPT retry warning/context
   policy for the rename loop.
 - Plugin loading and registration:
@@ -304,9 +305,9 @@
   `docs/architecture/extension-contracts.md`; `DevicePlugin` contract
   expectations include both configuration access and file-processor access.
 - Legacy source package `src/ipat_watchdog/` is retired from the repository.
-- Rename retries no longer recurse through `_route_with_prefix()`, but rename
-  prompts and retry loop orchestration still live in `file_process_manager`
-  and remain active decomposition targets.
+- Rename retries now evaluate directly through `_route_decision_stage()` within
+  `_invoke_rename_flow()`; legacy `_route_with_prefix()` helper indirection is
+  retired from canonical runtime code.
 - `add_item_to_record()` now delegates record-context resolution, processor
   selection, invocation, datatype assignment, output finalization, and
   post-persist side effects; stage-call ordering remains coupled there and is

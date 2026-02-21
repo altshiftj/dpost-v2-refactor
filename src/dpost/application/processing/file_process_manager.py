@@ -307,15 +307,6 @@ class _ProcessingPipeline:
             )
         return context.candidate.prefix, None
 
-    def _route_with_prefix(
-        self, candidate: ProcessingCandidate, prefix_override: str
-    ) -> ProcessingResult:
-        updated = replace(candidate, prefix=prefix_override)
-        context = self._route_decision_stage(updated)
-        if context.decision is RoutingDecision.ACCEPT:
-            return self._persist_and_sync_stage(context)
-        return self._non_accept_route_stage(context)
-
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         manager = self._manager
         if manager._is_internal_staging_path(path):
