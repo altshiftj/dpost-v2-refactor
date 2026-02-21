@@ -45,10 +45,14 @@
   - `src/ipat_watchdog/metrics.py` (legacy metric symbols now re-export the
     canonical dpost metric objects to prevent duplicate collector
     registration).
-  Conftest follow-up started by removing hardcoded legacy observer monkeypatch
-  literals in `tests/conftest.py`. Full conftest import migration still
-  requires follow-up slices because runtime/config/storage boundaries are not
-  yet fully converged.
+  Conftest follow-up now includes:
+  - hardcoded legacy observer monkeypatch literal removal
+  - watchdog fixture migration to
+    `dpost.application.runtime.device_watchdog_app.DeviceWatchdogApp`
+  - matching unit app test import migration in
+    `tests/unit/core/app/test_device_watchdog_app.py`
+  Full conftest import migration still requires follow-up slices because
+  runtime/config/storage boundaries are not yet fully converged.
 
 ---
 

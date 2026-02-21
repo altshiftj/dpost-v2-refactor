@@ -17,7 +17,7 @@ if str(SRC_ROOT) not in sys.path:
 # Also add project root for any relative test package imports
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import current, init_config, reset_service
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
 from ipat_watchdog.device_plugins.test_device.settings import (

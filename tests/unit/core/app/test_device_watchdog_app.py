@@ -4,7 +4,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp, QueueingEventHandler
+from dpost.application.runtime.device_watchdog_app import (
+    DeviceWatchdogApp,
+    QueueingEventHandler,
+)
 
 
 

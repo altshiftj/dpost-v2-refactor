@@ -718,7 +718,7 @@
 - Red-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `2 failed`, then `1 failed, 2 passed`, then `1 failed, 3 passed`, then
-    `1 failed, 4 passed`, then `1 failed, 5 passed`
+    `1 failed, 4 passed`, then `1 failed, 5 passed`, then `1 failed, 6 passed`
 - Implementation:
   - migrated shared helper boundaries away from direct legacy interaction/sync
     imports:
@@ -736,9 +736,15 @@
   - removed hardcoded legacy observer monkeypatch literal in conftest by
     deriving target module dynamically from `DeviceWatchdogApp.__module__`:
     - `tests/conftest.py`
+  - migrated shared watchdog fixture and unit app test imports to canonical
+    dpost runtime app ownership:
+    - `tests/conftest.py`
+    - `tests/unit/core/app/test_device_watchdog_app.py`
 - Green-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
-    -> `6 passed`
+    -> `7 passed`
+  - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
+    -> `8 passed`
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
@@ -750,13 +756,13 @@
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `167 passed, 302 deselected`
+  -> `168 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `157 files would be left unchanged.`
 - `python -m pytest`
-  -> `468 passed, 1 skipped`
+  -> `469 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -787,6 +793,10 @@
 - Conftest full import migration remains staged after exploratory attempts
   exposed runtime/config/storage coupling in legacy tests; the migration
   proceeds in bounded slices with metrics ownership now unified first.
+- Latest checkpoint required one formatter pass on
+  `tests/migration/test_full_legacy_repo_retirement_harness.py` before
+  `python -m black --check .` returned
+  `157 files would be left unchanged`.
 - Kinexus concrete-plugin slice required one formatter pass on
   `src/dpost/device_plugins/rhe_kinexus/file_processor.py` before
   `python -m black --check .` returned

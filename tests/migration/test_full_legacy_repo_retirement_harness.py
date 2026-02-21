@@ -50,6 +50,16 @@ def test_conftest_observer_patch_avoids_hardcoded_legacy_module_path() -> None:
     assert "ipat_watchdog.core.app.device_watchdog_app.Observer" not in contents
 
 
+def test_conftest_watchdog_app_fixture_avoids_legacy_runtime_import() -> None:
+    """Require shared watchdog fixture to import DeviceWatchdogApp from dpost runtime."""
+    contents = CONFTEST_PATH.read_text(encoding="utf-8")
+
+    assert (
+        "from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp"
+        not in (contents)
+    )
+
+
 def test_legacy_metrics_module_reexports_dpost_metrics() -> None:
     """Require legacy metrics module to re-export canonical dpost metrics."""
     contents = LEGACY_METRICS_PATH.read_text(encoding="utf-8")
