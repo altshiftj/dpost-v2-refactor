@@ -1,4 +1,4 @@
-from ipat_watchdog.core.processing.file_processor_abstract import (
+from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
     PreprocessingResult,
     ProcessingOutput,

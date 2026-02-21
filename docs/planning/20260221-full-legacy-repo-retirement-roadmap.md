@@ -28,7 +28,8 @@
     `tests/migration/test_full_legacy_repo_retirement_harness.py`
   - shared helper decoupling landed for:
     `tests/helpers/fake_ui.py`, `tests/helpers/fake_sync.py`, and
-    `tests/helpers/fake_process_manager.py`
+    `tests/helpers/fake_process_manager.py`, and
+    `tests/helpers/fake_processor.py`
   - conftest coupling reduction landed:
     observer monkeypatch target now resolves from
     `DeviceWatchdogApp.__module__` instead of a hardcoded legacy literal.

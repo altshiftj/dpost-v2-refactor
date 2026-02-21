@@ -10,6 +10,7 @@ FAKE_SYNC_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_sync.py"
 FAKE_PROCESS_MANAGER_PATH = (
     PROJECT_ROOT / "tests" / "helpers" / "fake_process_manager.py"
 )
+FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
 
 
@@ -32,6 +33,13 @@ def test_fake_process_manager_helper_avoids_legacy_processing_imports() -> None:
     contents = FAKE_PROCESS_MANAGER_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.processing.models" not in contents
+
+
+def test_fake_processor_helper_avoids_legacy_processing_abstract_imports() -> None:
+    """Require shared fake processor helper to avoid legacy abstract imports."""
+    contents = FAKE_PROCESSOR_PATH.read_text(encoding="utf-8")
+
+    assert "ipat_watchdog.core.processing.file_processor_abstract" not in contents
 
 
 def test_conftest_observer_patch_avoids_hardcoded_legacy_module_path() -> None:

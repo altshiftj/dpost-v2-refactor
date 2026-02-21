@@ -41,9 +41,10 @@
   - `tests/helpers/fake_ui.py`
   - `tests/helpers/fake_sync.py`
   - `tests/helpers/fake_process_manager.py`
+  - `tests/helpers/fake_processor.py`
   Conftest follow-up started by removing hardcoded legacy observer monkeypatch
-  literals in `tests/conftest.py`; full conftest import migration and remaining
-  helper modules still require follow-up slices.
+  literals in `tests/conftest.py`; full conftest import migration still
+  requires follow-up slices.
 
 ---
 
