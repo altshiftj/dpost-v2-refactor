@@ -1,0 +1,48 @@
+# Full Legacy Retirement Migration Notes
+
+## Date
+- 2026-02-21
+
+## Audience
+- Maintainers and contributors updating local workflows after full
+  `ipat_watchdog` source retirement.
+- Any downstream automation that previously referenced legacy module paths.
+
+## Summary
+- Legacy source package `src/ipat_watchdog/**` is retired.
+- Canonical runtime and import target is `dpost` only.
+- Domain ownership extraction is complete for processing and records:
+  - `src/dpost/domain/processing/**`
+  - `src/dpost/domain/records/**`
+
+## Breaking Changes
+- `ipat_watchdog.*` imports are no longer valid in this repository.
+- Legacy runtime entrypoints and package paths are retired.
+- Application-local modules superseded by domain ownership were removed:
+  - `src/dpost/application/processing/models.py`
+  - `src/dpost/application/processing/batch_models.py`
+  - `src/dpost/application/records/local_record.py`
+
+## Required Contributor Updates
+1. Replace legacy imports with canonical `dpost` imports.
+2. Start runtime via `python -m dpost` (or console script `dpost`).
+3. Use migration/full quality gates:
+   - `python -m pytest -m migration`
+   - `python -m pytest`
+4. Treat `-m legacy` tests as archived compatibility characterization only.
+
+## Manual Script Portability Note
+- `tests/manual/test_plugin_import.py` now uses ASCII markers (`[OK]`, `[FAIL]`)
+  to run in default Windows cp1252 terminals.
+
+## Validation Evidence (Latest Checkpoint)
+- `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+- `python -m pytest -m migration`
+- `python -m ruff check .`
+- `python -m black --check .`
+- `python -m pytest`
+
+## Remaining Work
+- Human-run manual workflow validation in:
+  - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+  - `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`

@@ -56,6 +56,17 @@
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
 - Checklist:
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+- Migration notes:
+  - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
+
+## Progress Update (Closure Hardening)
+- Added manual-script portability migration guard:
+  - `tests/migration/test_manual_script_portability.py`
+- Updated manual plugin import helper to ASCII-safe output markers for default
+  Windows console compatibility:
+  - `tests/manual/test_plugin_import.py`
+- Captured downstream release communication/migration guidance in:
+  - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
 
 ## Progress Update (Kickoff Increment)
 - Added migration guard test coverage for shared harness retirement:

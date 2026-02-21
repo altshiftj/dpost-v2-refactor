@@ -120,6 +120,7 @@ Marker intent:
   - `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
 - Full legacy retirement inventory/roadmap/checklist:
   - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+  - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
 - Historical migration docs:

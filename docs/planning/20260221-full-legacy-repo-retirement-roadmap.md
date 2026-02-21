@@ -146,8 +146,10 @@
 ## Current Status (Post-Retirement Checkpoint)
 - `src/ipat_watchdog/**` has been removed from source control.
 - Canonical runtime/test paths execute from `src/dpost/**` only.
-- Remaining retirement work is manual validation and release communication
-  closure, not additional source migration.
+- Release communication closure is captured in:
+  `docs/reports/20260221-full-legacy-retirement-migration-notes.md`.
+- Remaining retirement work is manual validation only, not additional source
+  migration.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

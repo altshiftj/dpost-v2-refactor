@@ -204,6 +204,8 @@
     slice.
   - retirement gate evidence captured in
     `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
+  - downstream migration/release communication captured in
+    `docs/reports/20260221-full-legacy-retirement-migration-notes.md`.
 
 ---
 
@@ -226,4 +228,6 @@
 5. Perform a cold-read of contributor docs and extension contracts.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Automated prechecks were executed (`tests/manual/`
+  automation path + `tests/manual/test_plugin_import.py` script run with ASCII
+  console-safe output), while human operator workflow checks remain pending.
