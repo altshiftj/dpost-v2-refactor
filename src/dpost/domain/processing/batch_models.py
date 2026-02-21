@@ -1,4 +1,4 @@
-"""Shared batch models for staged preprocessing flows."""
+"""Domain batch value models for staged preprocessing flows."""
 
 from __future__ import annotations
 

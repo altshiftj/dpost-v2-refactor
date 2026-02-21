@@ -16,7 +16,13 @@
   - `src/dpost/application/records/local_record.py` retired
   - record parsing no longer depends on direct runtime config accessors inside
     the domain entity
-- Next active target is Wave 3.4 (batch/staging policy extraction).
+- Wave 3.4 is complete:
+  - staged batch value models now owned by
+    `src/dpost/domain/processing/batch_models.py`
+  - pair-reconstruction/stale-stage policies now owned by
+    `src/dpost/domain/processing/staging.py`
+  - `src/dpost/application/processing/batch_models.py` retired
+- Next active target is Wave 3.5 (final contract cleanup/governance closure).
 
 ## Non-Goals
 - No runtime entrypoint redesign.

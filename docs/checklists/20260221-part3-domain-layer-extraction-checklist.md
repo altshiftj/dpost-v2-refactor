@@ -61,13 +61,17 @@
   coupling.
 
 ### Checklist
-- [ ] Move pure batch model/value types to domain processing modules.
-- [ ] Move pure staging pair-reconstruction policy to domain modules.
-- [ ] Keep filesystem mutation and logging concerns outside domain.
-- [ ] Verify plugin processor tests stay green after policy moves.
+- [x] Move pure batch model/value types to domain processing modules.
+- [x] Move pure staging pair-reconstruction policy to domain modules.
+- [x] Keep filesystem mutation and logging concerns outside domain.
+- [x] Verify plugin processor tests stay green after policy moves.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Moved shared batch value models to
+  `src/dpost/domain/processing/batch_models.py`, moved pair reconstruction and
+  stale-stage policies to `src/dpost/domain/processing/staging.py`, rewired
+  PSA/Kinexus processors to consume domain modules, and kept stage-dir creation
+  in application helpers.
 
 ---
 
@@ -77,13 +81,14 @@
 
 ### Checklist
 - [x] Remove superseded application-local model/policy duplicates.
-- [ ] Update architecture baseline/contract/responsibility docs.
+- [x] Update architecture baseline/contract/responsibility docs.
 - [ ] Record major extraction decisions in ADRs as needed.
-- [ ] Capture checkpoint evidence in roadmap/report artifacts.
+- [x] Capture checkpoint evidence in roadmap/report artifacts.
 
 ### Completion Notes
-- How it was done: Application-local processing models module was deleted;
-  remaining cleanup/governance items continue in subsequent waves.
+- How it was done: Retired application-local processing model and batch model
+  modules, updated responsibility catalog ownership rows, and refreshed Part 3
+  roadmap/report progress snapshots.
 
 ---
 

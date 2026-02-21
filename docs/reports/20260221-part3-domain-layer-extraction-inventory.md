@@ -27,6 +27,17 @@
 - Application/infrastructure boundaries now provide separator context where
   required for persistence/rehydration parity.
 
+## Update (Wave 3.4 Complete)
+- Batch/staging policy ownership is now established under domain:
+  - `src/dpost/domain/processing/batch_models.py` owns staged batch value
+    models.
+  - `src/dpost/domain/processing/staging.py` owns pair reconstruction and
+    stale-stage policy helpers.
+  - `src/dpost/application/processing/batch_models.py` has been removed.
+- Application staging helpers now retain stage directory creation only.
+- PSA/Kinexus processor tests and migration ownership tests are green after
+  import rewiring.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:

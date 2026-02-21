@@ -11,11 +11,6 @@ from pathlib import Path
 from typing import Deque, Dict, List, Optional
 
 from dpost.application.config import DeviceConfig, current
-from dpost.application.processing.batch_models import (
-    CsvNgbPair as _Pair,
-    FlushBatch as _FlushBatch,
-    PendingPath as _PendingNGB,
-)
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.file_processor_abstract import (
     FileProbeResult,
@@ -23,12 +18,17 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from dpost.application.processing.staging_utils import (
-    create_unique_stage_dir,
+from dpost.application.processing.staging_utils import create_unique_stage_dir
+from dpost.application.processing.text_utils import read_text_prefix
+from dpost.domain.processing.batch_models import (
+    CsvNgbPair as _Pair,
+    FlushBatch as _FlushBatch,
+    PendingPath as _PendingNGB,
+)
+from dpost.domain.processing.staging import (
     find_stale_stage_dirs,
     reconstruct_pairs_from_stage,
 )
-from dpost.application.processing.text_utils import read_text_prefix
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import move_item
