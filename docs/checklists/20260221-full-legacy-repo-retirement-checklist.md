@@ -214,11 +214,11 @@
   that can still regress despite broad automated coverage.
 
 ### Checklist
-- [ ] Desktop runtime manual check after legacy package deletion.
-- [ ] Headless runtime manual check after legacy package deletion.
-- [ ] Plugin family spot checks across representative instruments.
-- [ ] Records/sync side-effect check with a failing-sync scenario.
-- [ ] Contributor usability check: docs are sufficient without legacy tracing.
+- [x] Desktop runtime manual check after legacy package deletion.
+- [x] Headless runtime manual check after legacy package deletion.
+- [x] Plugin family spot checks across representative instruments.
+- [x] Records/sync side-effect check with a failing-sync scenario.
+- [x] Contributor usability check: docs are sufficient without legacy tracing.
 
 ### Manual Validation Steps
 1. Run `python -m dpost` in `desktop` mode and process valid/invalid files.
@@ -230,6 +230,6 @@
 ### Completion Notes
 - How it was done: Automated prechecks were executed (`tests/manual/`
   automation path + `tests/manual/test_plugin_import.py` script run with ASCII
-  console-safe output), while human operator workflow checks remain pending.
-  Consolidated operator steps are captured in:
+  console-safe output), followed by human operator workflow validation reported
+  complete on 2026-02-21. Consolidated operator steps are captured in:
   `docs/checklists/20260221-final-manual-validation-runbook.md`.

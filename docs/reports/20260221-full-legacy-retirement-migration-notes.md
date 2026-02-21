@@ -63,6 +63,4 @@
 - `python -m pytest`
 
 ## Remaining Work
-- Human-run manual workflow validation in:
-  - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
-  - `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
+- Manual workflow validation closure was reported complete on 2026-02-21.

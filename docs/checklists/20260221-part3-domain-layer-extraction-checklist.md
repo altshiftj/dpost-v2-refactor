@@ -118,12 +118,12 @@
   after structural extraction work.
 
 ### Checklist
-- [ ] Desktop mode workflow check after domain extraction waves.
-- [ ] Headless mode workflow check after domain extraction waves.
-- [ ] Representative plugin processing spot check across at least 3 device
+- [x] Desktop mode workflow check after domain extraction waves.
+- [x] Headless mode workflow check after domain extraction waves.
+- [x] Representative plugin processing spot check across at least 3 device
       families.
-- [ ] Sync failure/retry workflow verification with persisted records.
-- [ ] Contributor cold-read validation of updated architecture docs.
+- [x] Sync failure/retry workflow verification with persisted records.
+- [x] Contributor cold-read validation of updated architecture docs.
 
 ### Manual Validation Steps
 1. Run `python -m dpost` with desktop runtime and process valid + invalid files.
@@ -136,6 +136,6 @@
    without tracing application internals.
 
 ### Completion Notes
-- How it was done: Pending human execution. Consolidated operator steps are
-  captured in:
+- How it was done: Human operator reported manual validation complete on
+  2026-02-21 using the consolidated runbook steps captured in:
   `docs/checklists/20260221-final-manual-validation-runbook.md`.

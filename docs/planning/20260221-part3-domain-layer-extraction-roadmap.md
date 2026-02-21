@@ -81,7 +81,9 @@
     from canonical processing pipeline
   - stage-boundary migration contracts now verify direct rename-flow seam usage
     without `_route_with_prefix` indirection
-- Remaining Part 3 closure item: manual validation checklist execution.
+- Part 3 closure status:
+  - human manual validation checklist execution reported complete on
+    2026-02-21.
 
 ## Non-Goals
 - No runtime entrypoint redesign.

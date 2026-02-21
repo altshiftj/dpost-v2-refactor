@@ -133,7 +133,7 @@
   instead of application helper modules.
 - Rename-loop orchestration now uses direct stage seams only and no longer
   carries transitional `_route_with_prefix()` helper indirection.
-- Remaining Part 3 work is manual workflow validation only.
+- Human manual workflow validation was reported complete on 2026-02-21.
 
 ## Evidence
 - `src/dpost/domain/__init__.py`
@@ -164,5 +164,6 @@
 
 ## Open Questions
 - No open technical blockers remain for Part 3 code extraction.
-- Pending closure is manual operator/contributor validation from the runbook:
+- Manual operator/contributor validation closure was reported complete on
+  2026-02-21 using:
   - `docs/checklists/20260221-final-manual-validation-runbook.md`.
