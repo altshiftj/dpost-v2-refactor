@@ -34,15 +34,11 @@ from tests.helpers.fake_ui import HeadlessUI
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
-    """Assign `legacy`/`migration` markers automatically from test paths."""
+    """Assign the `legacy` marker automatically for archived test paths."""
     for item in items:
         path_obj = Path(str(getattr(item, "path", item.fspath)))
-        marker = (
-            pytest.mark.migration
-            if "migration" in path_obj.parts
-            else pytest.mark.legacy
-        )
-        item.add_marker(marker)
+        if "legacy" in path_obj.parts:
+            item.add_marker(pytest.mark.legacy)
 
 
 @pytest.fixture

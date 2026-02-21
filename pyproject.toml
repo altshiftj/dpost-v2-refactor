@@ -58,12 +58,11 @@ where = ["src"]
 addopts = "--strict-markers"
 markers = [
     "legacy: Archived compatibility characterization tests.",
-    "migration: Tests validating dpost migration scaffolding and cutover paths.",
 ]
 
 [tool.black]
 line-length = 88
-# Keep Black enforcement focused on active migration/runtime surfaces.
+# Keep Black enforcement focused on active runtime surfaces.
 extend-exclude = '''
 (
   ^/tests/unit/

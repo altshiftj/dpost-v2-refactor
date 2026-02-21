@@ -40,10 +40,10 @@
 - Positive:
   - clearer layer boundaries with explicit domain ownership for pure behavior.
   - lower risk of orchestration concerns leaking into core policy/entity code.
-  - simpler migration guardrails through ownership-focused migration tests.
+  - simpler guardrails through ownership-focused boundary tests.
 - Negative:
   - broad import rewiring across plugins/tests was required.
-  - additional migration test surfaces increase maintenance overhead.
+  - additional boundary test surfaces increase maintenance overhead.
 - Neutral:
   - manual workflow checks remain required at phase closure.
 
@@ -54,10 +54,7 @@
   - `src/dpost/domain/processing/batch_models.py`
   - `src/dpost/domain/processing/staging.py`
   - `src/dpost/domain/records/local_record.py`
-- Added migration ownership guards:
-  - `tests/migration/test_part3_domain_processing_ownership.py`
-  - `tests/migration/test_part3_domain_record_ownership.py`
-  - `tests/migration/test_part3_domain_batch_staging_ownership.py`
+- Added ownership guards in canonical test suites.
 - Updated architecture governance docs and Part 3 roadmap/checklist/report in
   the same change windows.
 

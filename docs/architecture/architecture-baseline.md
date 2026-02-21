@@ -32,7 +32,7 @@
 - `src/dpost/runtime/bootstrap.py`
 - Runtime bootstrap infrastructure dependencies boundary:
 - `src/dpost/infrastructure/runtime/bootstrap_dependencies.py`
-- New migration composition scaffold:
+- New runtime composition scaffold:
 - `src/dpost/runtime/composition.py`
 - Runtime orchestration application service:
 - `src/dpost/application/services/runtime_startup.py`
@@ -144,10 +144,10 @@
   policy for the rename loop.
 - Plugin loading and registration:
 - `src/dpost/plugins/system.py`
-- Canonical reference plugin packages for migration/runtime validation:
+- Canonical reference plugin packages for runtime validation:
 - `src/dpost/device_plugins/test_device/`
 - `src/dpost/pc_plugins/test_pc/`
-- Canonical concrete plugin package (migration wave):
+- Canonical concrete plugin package:
 - `src/dpost/device_plugins/utm_zwick/`
 - `src/dpost/device_plugins/extr_haake/`
 - `src/dpost/device_plugins/erm_hioki/`
@@ -157,7 +157,7 @@
 - `src/dpost/device_plugins/dsv_horiba/`
 - `src/dpost/device_plugins/rhe_kinexus/`
 - `src/dpost/device_plugins/psa_horiba/`
-- Canonical concrete PC plugin package (migration wave):
+- Canonical concrete PC plugin package:
 - `src/dpost/pc_plugins/zwick_blb/`
 - `src/dpost/pc_plugins/haake_blb/`
 - `src/dpost/pc_plugins/hioki_blb/`
@@ -178,52 +178,15 @@
 - `src/dpost/infrastructure/sync/kadi_manager.py`
 
 ## Current Test Isolation Baseline
-- Pytest markers enforce split test intent:
+- Pytest markers and suites enforce split test intent:
 - `legacy` marker reserved for archived compatibility characterization suites.
-- `migration` marker for `dpost` migration and cutover tests.
-- New migration entrypoint tests currently live in:
-- `tests/migration/test_dpost_main.py`
-- Phase 3 sync adapter selection tests currently live in:
-- `tests/migration/test_sync_adapter_selection.py`
-- Phase 3 optional Kadi packaging contract test currently lives in:
-- `tests/migration/test_optional_kadi_packaging.py`
-- Phase 3 reference plugin flow test currently lives in:
-- `tests/migration/test_reference_plugin_flow.py`
-- Phase 4 config consolidation tests currently live in:
-- `tests/migration/test_configuration_consolidation.py`
-- Phase 4 naming/constants consolidation tests currently live in:
-- `tests/migration/test_naming_constants_consolidation.py`
-- Part 3 domain ownership tests currently live in:
-- `tests/migration/test_part3_domain_processing_ownership.py`
-- `tests/migration/test_part3_domain_record_ownership.py`
-- `tests/migration/test_part3_domain_batch_staging_ownership.py`
-- `tests/migration/test_part3_domain_purity_boundaries.py`
-- `tests/migration/test_part3_domain_text_policy_ownership.py`
-- `tests/migration/test_part3_domain_naming_policy_ownership.py`
-- `tests/migration/test_part3_domain_naming_identifier_ownership.py`
-- `tests/migration/test_part3_canonical_wording_cleanup.py`
-- Manual script portability retirement test currently lives in:
-- `tests/migration/test_manual_script_portability.py`
-- Phase 5 stage-boundary decomposition tests currently live in:
-- `tests/migration/test_processing_pipeline_stage_boundaries.py`
-- Phase 7 runtime mode + desktop parity tests currently live in:
-- `tests/migration/test_runtime_mode_selection.py`
-- Phase 9 native runtime bootstrap boundary tests currently live in:
-- `tests/migration/test_phase9_native_bootstrap_boundary.py`
-- Phase 10 application orchestration extraction tests currently live in:
-- `tests/migration/test_phase10_application_orchestration_extraction.py`
-- Phase 10 runtime app rehost tests currently live in:
-- `tests/migration/test_phase10_runtime_app_rehost.py`
-- Phase 11 runtime infrastructure boundary tests currently live in:
-- `tests/migration/test_phase11_runtime_infrastructure_boundary.py`
-- Phase 12 plugin/config boundary migration tests currently live in:
-- `tests/migration/test_phase12_plugin_config_boundary_migration.py`
-- Phase 12 plugin loading ownership tests currently live in:
-- `tests/migration/test_phase12_plugin_loading_ownership.py`
-- Phase 13 canonical startup retirement tests currently live in:
-- `tests/migration/test_phase13_legacy_runtime_retirement.py`
-- Phase 13 native bootstrap service retirement tests currently live in:
-- `tests/migration/test_phase13_native_bootstrap_service_retirement.py`
+- Canonical behavior and boundary coverage lives in:
+  - `tests/unit/`
+  - `tests/integration/`
+  - `tests/manual/`
+- Contract assertions formerly housed in transitional suites are now maintained
+  in canonical test modules co-located with runtime, processing, plugin, and
+  architecture ownership code paths.
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -313,8 +276,8 @@
   post-persist side effects; stage-call ordering remains coupled there and is
   an active decomposition target.
 
-## Migration Notes
-- Headless-first migration is the current execution posture.
+## Runtime Notes
+- Headless-first runtime is the current execution posture.
 - Framework-first sequencing is active: kernel and contracts are prioritized before concrete integrations.
 - Sync is being moved toward optional adapter architecture for multi-ELN/database support.
 - Default `dpost` install path no longer requires `kadi_apy`; Kadi is enabled via

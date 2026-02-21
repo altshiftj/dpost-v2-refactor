@@ -81,7 +81,7 @@ errors through dpost interaction messages when sync fails.
 ### Add a Sync Adapter
 1. Implement adapter against `SyncAdapterPort` in `src/dpost/infrastructure/sync/`.
 2. Wire selection in `src/dpost/runtime/composition.py`.
-3. Add migration tests for adapter selection and startup failure messaging.
+3. Add unit/integration tests for adapter selection and startup failure messaging.
 
 ## Local Development
 ```powershell
@@ -102,31 +102,13 @@ Run from repository root:
 ```powershell
 python -m ruff check .
 python -m black --check .
-python -m pytest -m migration
 python -m pytest -m legacy
 python -m pytest
 ```
 
 Marker intent:
-- `migration`: canonical dpost migration/cutover contracts.
 - `legacy`: archived compatibility characterization contracts.
 
-## Migration and Architecture Docs
-- Phase 9-13 closure PR package:
-  - `docs/reports/20260221-phase9-13-closure-pr-package.md`
-- Part 3 extraction closure docs:
-  - `docs/planning/archive/20260221-part3-domain-layer-extraction-roadmap.md`
-  - `docs/checklists/archive/20260221-part3-domain-layer-extraction-checklist.md`
-  - `docs/reports/archive/20260221-part3-domain-layer-extraction-inventory.md`
-- Full legacy retirement closure docs:
-  - `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
-  - `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`
-  - `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
-  - `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
-  - `docs/checklists/archive/20260221-final-manual-validation-runbook.md`
-- Historical migration docs:
-  - `docs/reports/archive/`
-  - `docs/planning/archive/`
-  - `docs/checklists/archive/`
+## Architecture Docs
 - Architecture ADRs:
   - `docs/architecture/adr/`

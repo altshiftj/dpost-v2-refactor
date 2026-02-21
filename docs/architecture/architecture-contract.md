@@ -1,8 +1,8 @@
 # Architecture Contract
 
 ## Purpose
-- Define enforceable dependency and ownership rules for the `ipat_watchdog` -> `dpost` migration.
-- Prevent architecture drift while modules are moved and decomposed.
+- Define enforceable dependency and ownership rules for the canonical `dpost` architecture.
+- Prevent architecture drift while modules evolve and are decomposed.
 
 ## Layer Dependency Rules
 1. Domain layer:
@@ -83,9 +83,9 @@
 - Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
 
 ## Framework-first Sequencing Rules
-- Build framework kernel contracts before migrating concrete integrations.
+- Build framework kernel contracts before adopting concrete integrations.
 - Validate framework with reference implementations first (for example noop adapter, test plugin flow).
-- Migrate concrete adapters/plugins only after kernel contract tests are green.
+- Adopt concrete adapters/plugins only after kernel contract tests are green.
 
 ## Sync Adapter Rules
 - Application code uses sync adapter port abstractions.
@@ -115,11 +115,13 @@
 - glossary updates for new project-defined terms
 
 ## Test Isolation Rules
-- Migration-cutover tests live under `tests/migration/` and are tagged `migration`.
 - Archived compatibility characterization tests use the `legacy` marker.
-- Changes that affect both paths should include marker-specific verification runs.
+- Canonical behavior, boundary, and contract tests live under
+  `tests/unit/`, `tests/integration/`, and `tests/manual/`.
+- Changes that affect archived compatibility paths should include
+  marker-specific verification runs.
 
 ## Compliance Gate
-- A migration phase cannot close until impacted contract rules are either:
+- A delivery phase cannot close until impacted contract rules are either:
 - satisfied, or
 - explicitly amended in this contract with rationale and ADR reference.

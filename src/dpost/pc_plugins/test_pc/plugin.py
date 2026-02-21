@@ -1,4 +1,4 @@
-"""Reference dpost PC plugin used for migration/runtime validation paths."""
+"""Reference dpost PC plugin used for runtime validation paths."""
 
 from __future__ import annotations
 

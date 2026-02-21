@@ -58,15 +58,14 @@
   - `ipat_watchdog` hook namespace markers.
   - legacy plugin namespace fallback in `src/dpost/**`.
   - legacy runtime startup identity as canonical contributor target.
-- Compatibility wrappers may exist under `src/ipat_watchdog/**` during migration
-  retention windows, but they are not part of the canonical extension contract.
+- Compatibility wrappers under `src/ipat_watchdog/**` are retired and are not
+  part of the canonical extension contract.
 
 ## Extension Test Expectations
 - Minimum verification for extension changes:
   - targeted unit tests for plugin/sync behavior.
-  - migration tests for boundary ownership where architecture is affected.
+  - boundary tests where architecture ownership is affected.
   - full required gates:
-    - `python -m pytest -m migration`
     - `python -m ruff check .`
     - `python -m black --check .`
     - `python -m pytest`

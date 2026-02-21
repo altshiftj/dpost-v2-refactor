@@ -1,4 +1,4 @@
-# ADR-0001: Headless-first Migration and Optional Sync Adapters
+# ADR-0001: Headless-first Runtime and Optional Sync Adapters
 
 ## Status
 - Accepted
@@ -7,17 +7,17 @@
 - 2026-02-18
 
 ## Context
-- The migration from `ipat_watchdog` to `dpost` needs architectural tightening while preserving behavior.
+- The cutover from `ipat_watchdog` to `dpost` needed architectural tightening while preserving behavior.
 - Current runtime and sync flows are tightly coupled to desktop/UI defaults and a Kadi-specific backend.
 - The project goal is broader open-source usability and support for multiple ELN/database sync backends.
 
 ## Decision
-- Execute migration in a headless-first order.
+- Execute the runtime cutover in a headless-first order.
 - Introduce a sync adapter boundary so backend integrations are optional and pluggable.
 - Keep desktop runtime integration as a later phase after headless core is stable.
 
 ## Alternatives Considered
-- Desktop-first migration:
+- Desktop-first cutover:
 - rejected because UI coupling can hide core architecture issues and slow adapterization.
 - Keep Kadi as mandatory core dependency:
 - rejected because it limits extensibility and portability for users with other ELN/database targets.

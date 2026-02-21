@@ -25,7 +25,7 @@ def build_config() -> DeviceConfig:
             device_abbr="TEST",
             record_tags=("Test Data", "Unit Testing"),
             default_record_description=(
-                "Reference test record used for migration and runtime validation."
+                "Reference test record used for runtime validation."
             ),
         ),
         files=DeviceFileSelectors(

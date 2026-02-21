@@ -7,7 +7,7 @@
 - 2026-02-21
 
 ## Context
-- Phase 9-13 migration work moved canonical runtime composition, plugin loading,
+- Phase 9-13 runtime work moved canonical runtime composition, plugin loading,
   and concrete plugin packages under `src/dpost/**`.
 - Legacy plugin namespace/hook compatibility seams increased complexity and
   obscured the canonical contributor surface.
@@ -27,9 +27,9 @@
 - Keep dual namespace compatibility indefinitely:
   - rejected because it increases maintenance burden and slows clean-architecture
     closure.
-- Defer extension-contract documentation until post-migration:
+- Defer extension-contract documentation until after cutover:
   - rejected because unclear contributor boundaries would continue to create
-    architectural drift risk during active migration.
+    architectural drift risk during active delivery.
 
 ## Consequences
 - Positive:
@@ -38,7 +38,7 @@
   - stronger type/contract alignment between plugin loader and processor factory.
 - Negative:
   - external extensions that still target legacy namespace/hook conventions must
-    migrate to dpost contracts.
+    adopt dpost contracts.
 - Neutral:
   - superseded by ADR-0004 retirement closure: `src/ipat_watchdog/**` is now
     removed from source control.
@@ -47,7 +47,7 @@
 - Retire canonical plugin compatibility seams:
   - remove `src/dpost/plugins/legacy_compat.py`
   - keep `src/dpost/plugins/system.py` canonical-only.
-- Enforce migration tests:
+- Enforce boundary tests:
   - no `ipat_watchdog` namespace literals in `src/dpost/**`.
   - device plugin protocol requires processor accessor contract.
 - Update contributor-facing architecture docs and developer guide.

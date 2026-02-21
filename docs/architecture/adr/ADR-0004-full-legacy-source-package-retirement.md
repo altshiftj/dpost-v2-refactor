@@ -9,7 +9,7 @@
 ## Context
 - Canonical runtime, processing, sync, and plugin ownership had already moved
   to `src/dpost/**`.
-- Migration and unit/integration/manual suites were migrated to canonical
+- Unit/integration/manual suites were updated to canonical
   `dpost` imports.
 - Remaining legacy source tree under `src/ipat_watchdog/**` duplicated
   implementation and increased maintenance risk with no runtime requirement.
@@ -17,7 +17,7 @@
 ## Decision
 - Retire the legacy source package tree by removing `src/ipat_watchdog/**`.
 - Treat `src/dpost/**` as the only executable source of truth.
-- Update migration guards so retirement criteria assert legacy source absence
+- Update retirement guards so retirement criteria assert legacy source absence
   and canonical `dpost` ownership directly.
 
 ## Alternatives Considered
@@ -34,17 +34,15 @@
   - reduces architectural drift risk and contributor confusion.
   - simplifies future refactor and dependency analysis to a single source tree.
 - Negative:
-  - any out-of-repo consumers importing `ipat_watchdog.*` must migrate.
+  - any out-of-repo consumers importing `ipat_watchdog.*` must update imports.
 - Neutral:
-  - historical migration/report documents still reference legacy paths as
+  - historical delivery/report documents still reference legacy paths as
     archived context.
 
 ## Implementation Notes
 - Removed legacy package:
   - `src/ipat_watchdog/**`
-- Updated migration retirement guards:
-  - `tests/migration/test_full_legacy_repo_retirement_harness.py`
-  - `tests/migration/test_phase8_cutover_identity.py`
+- Updated retirement contract coverage in canonical test suites.
 - Updated architecture governance + retirement planning artifacts in the same
   change set.
 

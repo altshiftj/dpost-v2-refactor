@@ -1,7 +1,7 @@
 # Architecture Documentation Guide
 
 ## Purpose
-- Keep architecture decisions, component boundaries, and domain vocabulary explicit throughout the `ipat_watchdog` -> `dpost` migration.
+- Keep architecture decisions, component boundaries, and domain vocabulary explicit for the canonical `dpost` runtime.
 - Ensure every major change is discussed, documented, and traceable.
 
 ## Canonical Artifacts
@@ -15,14 +15,13 @@
 - `docs/architecture/responsibility-catalog.md`
 - Architecture decisions:
 - `docs/architecture/adr/`
-- Migration-level findings and plans:
+- Change-level findings and plans:
 - `docs/reports/`
 - `docs/planning/`
 - `docs/checklists/`
 - Test contract split:
-- `tests/migration/` for `dpost` migration/cutover tests
 - `tests/unit/`, `tests/integration/`, `tests/manual/` for canonical `dpost`
-  behavior tests
+  behavior and boundary tests
 - Vocabulary and term definitions:
 - `GLOSSARY.csv`
 
@@ -48,15 +47,13 @@
 - Vocabulary changes are reflected in `GLOSSARY.csv`.
 
 ## Sequencing Guard
-- Migration delivery is framework-first:
+- Framework delivery is framework-first:
 - implement framework kernel/contracts first
 - validate with reference implementations second
-- migrate concrete plugins/adapters third
+- adopt concrete plugins/adapters third
 
 ## Test Isolation Commands
 - Full suite:
 - `python -m pytest`
 - Archived compatibility-only:
 - `python -m pytest -m legacy`
-- Migration-only:
-- `python -m pytest -m migration`

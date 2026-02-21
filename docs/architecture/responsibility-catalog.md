@@ -2,7 +2,7 @@
 
 ## Purpose
 - Define clear ownership boundaries for major objects/modules.
-- Reduce overlap and ambiguity during migration refactors.
+- Reduce overlap and ambiguity during runtime refactors.
 
 ## Catalog
 | Object/Module | Layer | Primary Responsibility | Owns | Must Not Own |

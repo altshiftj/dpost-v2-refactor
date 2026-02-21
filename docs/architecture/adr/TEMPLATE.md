@@ -23,7 +23,7 @@
 
 ## Implementation Notes
 - What modules are impacted?
-- What migration/testing steps are required?
+- What delivery/testing steps are required?
 
 ## References
 - Related plans/checklists/reports/PRs.

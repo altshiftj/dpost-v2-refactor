@@ -12,25 +12,13 @@ artifacts.
   - `headless` (default): uses non-interactive `HeadlessRuntimeUI`.
   - `desktop`: uses `TKinterUI` to preserve desktop dialog/session behavior.
 - `DPOST_SYNC_ADAPTER` selects sync adapter (`noop` default, `kadi` optional).
-- `DPOST_PLUGIN_PROFILE=reference` is available for migration-safe startup
-  smoke paths.
+- `DPOST_PLUGIN_PROFILE=reference` is available for startup smoke paths.
 
 ## Key Docs
 - `docs/architecture/README.md`
-- `docs/reports/20260221-phase9-13-closure-pr-package.md`
-- `docs/planning/archive/20260221-part3-domain-layer-extraction-roadmap.md`
-- `docs/checklists/archive/20260221-part3-domain-layer-extraction-checklist.md`
-- `docs/reports/archive/20260221-part3-domain-layer-extraction-inventory.md`
-- `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
-- `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`
-- `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
-- `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
-- `docs/checklists/archive/20260221-final-manual-validation-runbook.md`
-- `docs/reports/archive/`
-- `docs/planning/archive/`
-- `docs/checklists/archive/`
+- `DEVELOPER_README.md`
+- `USER_README.md`
 
 ## Test Split
 - Archived compatibility characterization tests: `python -m pytest -m legacy`
-- Migration/cutover tests: `python -m pytest -m migration`
 - Full suite: `python -m pytest`
