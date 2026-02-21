@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from ipat_watchdog.core.config.schema import (
+from dpost.application.config import (
     DeviceConfig,
     DeviceFileSelectors,
     SessionSettings,

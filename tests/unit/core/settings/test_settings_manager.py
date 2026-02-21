@@ -5,8 +5,8 @@ import threading
 
 import pytest
 
-from ipat_watchdog.core.config import ConfigService
-from ipat_watchdog.core.config.schema import (
+from dpost.application.config import (
+    ConfigService,
     DeviceConfig,
     DeviceFileSelectors,
     DeviceMetadata,

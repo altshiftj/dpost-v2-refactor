@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.core.config.schema import DeviceConfig, StabilityOverride, WatcherSettings
-from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
+from dpost.application.config import DeviceConfig, StabilityOverride, WatcherSettings
+from dpost.application.processing.stability_tracker import FileStabilityTracker
 
 
 def test_wait_rejects_disappeared_path(tmp_path: Path):

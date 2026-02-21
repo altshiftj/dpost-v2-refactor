@@ -2,15 +2,18 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.core.config import activate_device
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.models import ProcessingCandidate, ProcessingStatus
-from ipat_watchdog.core.processing.stability_tracker import StabilityOutcome, FileStabilityTracker
-from ipat_watchdog.core.processing.file_processor_abstract import (
+from dpost.application.config import activate_device
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from ipat_watchdog.core.storage.filesystem_utils import (
+from dpost.application.processing.models import ProcessingCandidate, ProcessingStatus
+from dpost.application.processing.stability_tracker import (
+    FileStabilityTracker,
+    StabilityOutcome,
+)
+from dpost.infrastructure.storage.filesystem_utils import (
     generate_file_id,
     generate_record_id,
     get_record_path,
@@ -266,7 +269,7 @@ def test_process_item_preserves_source_extension_on_effective_path_fallback(
         moves.append((path_like, prefix or "", extension or ""))
 
     monkeypatch.setattr(
-        "ipat_watchdog.core.processing.file_process_manager.safe_move_to_exception",
+        "dpost.application.processing.file_process_manager.safe_move_to_exception",
         record_move,
     )
 

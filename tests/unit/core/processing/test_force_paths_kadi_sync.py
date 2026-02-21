@@ -3,16 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.file_processor_abstract import ProcessingOutput
-from ipat_watchdog.core.storage.filesystem_utils import (
+from dpost.application.config import activate_device
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.file_processor_abstract import ProcessingOutput
+from dpost.infrastructure.storage.filesystem_utils import (
     generate_record_id,
     generate_file_id,
     get_record_path,
     get_unique_filename,
 )
-from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
-from ipat_watchdog.core.config import activate_device
+from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 from tests.helpers.fake_processor import DummyProcessor
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
@@ -24,7 +24,10 @@ def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, m
         def __init__(self):
             pass
 
-    monkeypatch.setattr("ipat_watchdog.core.sync.sync_kadi.KadiManager", DummyKadiManager)
+    monkeypatch.setattr(
+        "dpost.infrastructure.sync.kadi_manager.KadiManager",
+        DummyKadiManager,
+    )
 
     ui = HeadlessUI()
     sync_mgr = DummySyncManager(ui)

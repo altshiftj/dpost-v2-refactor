@@ -103,6 +103,22 @@
     - `tests/unit/core/sync/test_sync_kadi.py`
   - migration harness now includes core data-flow unit retirement guard:
     `test_core_dataflow_unit_tests_avoid_legacy_import_paths`.
+  - core processing/settings unit suite migration to canonical dpost
+    boundaries:
+    - `tests/unit/core/processing/test_device_resolver.py`
+    - `tests/unit/core/processing/test_device_resolver_eirich_variants.py`
+    - `tests/unit/core/processing/test_error_handling.py`
+    - `tests/unit/core/processing/test_file_process_manager.py`
+    - `tests/unit/core/processing/test_force_paths_kadi_sync.py`
+    - `tests/unit/core/processing/test_modified_event_gate.py`
+    - `tests/unit/core/processing/test_stability_tracker.py`
+    - `tests/unit/core/settings/test_composite_settings.py`
+    - `tests/unit/core/settings/test_device_settings_base.py`
+    - `tests/unit/core/settings/test_settings_classes.py`
+    - `tests/unit/core/settings/test_settings_manager.py`
+    - `tests/unit/core/settings/test_stability_tracker_overrides.py`
+  - migration harness now includes processing/settings unit retirement guard:
+    `test_core_processing_and_settings_unit_tests_avoid_legacy_import_paths`.
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

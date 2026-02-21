@@ -3,23 +3,23 @@ from __future__ import annotations
 from pathlib import Path
 import logging
 
-from ipat_watchdog.core.config import ConfigService, DeviceConfig, PCConfig
-from ipat_watchdog.core.processing.device_resolver import DeviceResolver
-from ipat_watchdog.core.processing.file_processor_abstract import (
+from dpost.application.config import ConfigService, DeviceConfig, PCConfig
+from dpost.application.processing.device_resolver import DeviceResolver
+from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
     FileProbeResult,
     ProcessingOutput,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_el1.file_processor import (
+from dpost.device_plugins.rmx_eirich_el1.file_processor import (
     FileProcessorEirich as FileProcessorEirichEL1,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.file_processor import (
+from dpost.device_plugins.rmx_eirich_r01.file_processor import (
     FileProcessorEirich as FileProcessorEirichR01,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_el1.settings import (
+from dpost.device_plugins.rmx_eirich_el1.settings import (
     build_config as build_el1_config,
 )
-from ipat_watchdog.device_plugins.rmx_eirich_r01.settings import (
+from dpost.device_plugins.rmx_eirich_r01.settings import (
     build_config as build_r01_config,
 )
 
@@ -108,7 +108,7 @@ def test_device_resolver_logs_confidence_tie(tmp_path: Path, caplog) -> None:
     target = tmp_path / "Eirich_EL1_TrendFile_20250924_095653.txt"
     target.write_text("payload", encoding="utf-8")
 
-    caplog.set_level(logging.DEBUG, logger="ipat_watchdog.core.processing.device_resolver")
+    caplog.set_level(logging.DEBUG, logger="dpost.application.processing.device_resolver")
     resolution = resolver.resolve(target)
 
     assert resolution.selected == config_el1

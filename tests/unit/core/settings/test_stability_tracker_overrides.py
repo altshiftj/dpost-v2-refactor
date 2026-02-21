@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.core.config import (
+from dpost.application.config import (
     DeviceConfig,
     DeviceFileSelectors,
     DeviceMetadata,
@@ -10,7 +10,7 @@ from ipat_watchdog.core.config import (
     StabilityOverride,
     WatcherSettings,
 )
-from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker
+from dpost.application.processing.stability_tracker import FileStabilityTracker
 
 
 def _build_config(*overrides: StabilityOverride) -> DeviceConfig:

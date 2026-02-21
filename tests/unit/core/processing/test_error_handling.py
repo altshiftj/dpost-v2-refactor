@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 
-from ipat_watchdog.core.interactions import WarningMessages
-from ipat_watchdog.core.processing import error_handling
+from dpost.application.interactions import WarningMessages
+from dpost.application.processing import error_handling
 from tests.helpers.fake_ui import HeadlessUI
 
 

@@ -3,8 +3,8 @@ from dataclasses import replace
 
 import pytest
 
-from ipat_watchdog.core.config.service import ActiveConfig
-from ipat_watchdog.core.config.schema import (
+from dpost.application.config import (
+    ActiveConfig,
     DeviceConfig,
     DeviceFileSelectors,
     DeviceMetadata,

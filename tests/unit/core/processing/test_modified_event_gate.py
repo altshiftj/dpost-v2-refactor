@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 
-from ipat_watchdog.core.processing.modified_event_gate import ModifiedEventGate
+from dpost.application.processing.modified_event_gate import ModifiedEventGate
 
 
 class DummyConfigService:

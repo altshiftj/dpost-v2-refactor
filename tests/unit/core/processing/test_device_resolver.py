@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ipat_watchdog.core.config.schema import DeviceConfig, WatcherSettings
-from ipat_watchdog.core.processing.device_resolver import DeviceResolver
-from ipat_watchdog.core.processing.file_processor_abstract import FileProbeResult
+from dpost.application.config import DeviceConfig, WatcherSettings
+from dpost.application.processing.device_resolver import DeviceResolver
+from dpost.application.processing.file_processor_abstract import FileProbeResult
 
 
 class DummyConfigService:

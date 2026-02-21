@@ -67,6 +67,24 @@
   - migration guard scope expanded again:
     retirement harness now enforces core data-flow unit prohibition of
     `ipat_watchdog` imports for those suites.
+  - core processing/settings unit migration increment landed:
+    processing + config/settings unit suites now resolve canonical dpost
+    boundaries in:
+    - `tests/unit/core/processing/test_device_resolver.py`
+    - `tests/unit/core/processing/test_device_resolver_eirich_variants.py`
+    - `tests/unit/core/processing/test_error_handling.py`
+    - `tests/unit/core/processing/test_file_process_manager.py`
+    - `tests/unit/core/processing/test_force_paths_kadi_sync.py`
+    - `tests/unit/core/processing/test_modified_event_gate.py`
+    - `tests/unit/core/processing/test_stability_tracker.py`
+    - `tests/unit/core/settings/test_composite_settings.py`
+    - `tests/unit/core/settings/test_device_settings_base.py`
+    - `tests/unit/core/settings/test_settings_classes.py`
+    - `tests/unit/core/settings/test_settings_manager.py`
+    - `tests/unit/core/settings/test_stability_tracker_overrides.py`
+  - migration guard scope expanded again:
+    retirement harness now enforces processing/settings unit prohibition of
+    `ipat_watchdog` imports for those suites.
   - observability unit migration increment landed:
     `tests/unit/test_observability.py` now imports canonical
     `dpost.infrastructure.observability`.
