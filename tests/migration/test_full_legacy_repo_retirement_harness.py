@@ -12,6 +12,7 @@ FAKE_PROCESS_MANAGER_PATH = (
 )
 FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
+LEGACY_METRICS_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "metrics.py"
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -47,3 +48,13 @@ def test_conftest_observer_patch_avoids_hardcoded_legacy_module_path() -> None:
     contents = CONFTEST_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.app.device_watchdog_app.Observer" not in contents
+
+
+def test_legacy_metrics_module_reexports_dpost_metrics() -> None:
+    """Require legacy metrics module to re-export canonical dpost metrics."""
+    contents = LEGACY_METRICS_PATH.read_text(encoding="utf-8")
+
+    assert "from dpost.application.metrics import (" in contents
+    assert "Counter(" not in contents
+    assert "Gauge(" not in contents
+    assert "Histogram(" not in contents

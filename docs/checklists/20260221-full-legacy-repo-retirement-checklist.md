@@ -42,9 +42,13 @@
   - `tests/helpers/fake_sync.py`
   - `tests/helpers/fake_process_manager.py`
   - `tests/helpers/fake_processor.py`
+  - `src/ipat_watchdog/metrics.py` (legacy metric symbols now re-export the
+    canonical dpost metric objects to prevent duplicate collector
+    registration).
   Conftest follow-up started by removing hardcoded legacy observer monkeypatch
-  literals in `tests/conftest.py`; full conftest import migration still
-  requires follow-up slices.
+  literals in `tests/conftest.py`. Full conftest import migration still
+  requires follow-up slices because runtime/config/storage boundaries are not
+  yet fully converged.
 
 ---
 

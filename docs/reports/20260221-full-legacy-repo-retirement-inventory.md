@@ -68,13 +68,20 @@
 - Removed hardcoded legacy module literal from conftest observer patch:
   - `tests/conftest.py` now resolves observer patch target from
     `DeviceWatchdogApp.__module__`.
+- Retired direct Prometheus collector definitions from legacy metrics module:
+  - `src/ipat_watchdog/metrics.py` now re-exports canonical
+    `dpost.application.metrics` symbols.
 - Verification snapshots:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
     -> `2 failed` (red), then `2 passed` (green), then
     `1 failed, 2 passed` (red after added process-manager guard), then
     `3 passed` (green), then `1 failed, 3 passed` (red after conftest guard),
     then `4 passed` (green), then `1 failed, 4 passed` (red after
-    fake-processor guard), then `5 passed` (green)
+    fake-processor guard), then `5 passed` (green), then
+    `1 failed, 5 passed` (red after legacy-metrics guard), then
+    `6 passed` (green)
+  - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
+    -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -83,10 +90,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `166 passed, 302 deselected`
+      -> `167 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `467 passed, 1 skipped`
+      -> `468 passed, 1 skipped`

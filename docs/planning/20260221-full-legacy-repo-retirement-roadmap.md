@@ -33,6 +33,13 @@
   - conftest coupling reduction landed:
     observer monkeypatch target now resolves from
     `DeviceWatchdogApp.__module__` instead of a hardcoded legacy literal.
+  - legacy metrics compatibility boundary landed:
+    `src/ipat_watchdog/metrics.py` now re-exports canonical
+    `dpost.application.metrics` symbols instead of defining duplicate
+    collectors.
+  - conftest import migration remains staged:
+    runtime/config/storage imports cannot all migrate in one slice without
+    additional boundary convergence.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.
