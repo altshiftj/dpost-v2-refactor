@@ -103,8 +103,8 @@
 - dpost processing domain/application helper split:
 - `src/dpost/domain/processing/batch_models.py`
 - `src/dpost/domain/processing/staging.py`
+- `src/dpost/domain/processing/text.py`
 - `src/dpost/application/processing/staging_utils.py`
-- `src/dpost/application/processing/text_utils.py`
 - Phase 5 decomposition status:
 - `_ProcessingPipeline` now exposes explicit resolve/stabilize/preprocess stage
   hooks (`_resolve_device_stage`, `_stabilize_artifact_stage`,
@@ -194,6 +194,7 @@
 - `tests/migration/test_part3_domain_record_ownership.py`
 - `tests/migration/test_part3_domain_batch_staging_ownership.py`
 - `tests/migration/test_part3_domain_purity_boundaries.py`
+- `tests/migration/test_part3_domain_text_policy_ownership.py`
 - Manual script portability retirement test currently lives in:
 - `tests/migration/test_manual_script_portability.py`
 - Phase 5 stage-boundary decomposition tests currently live in:

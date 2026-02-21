@@ -55,6 +55,14 @@
 - Migration guard added:
   - `tests/migration/test_part3_domain_purity_boundaries.py`.
 
+## Update (Wave 3.7 Complete)
+- Text decode policy ownership is now established under domain:
+  - `src/dpost/domain/processing/text.py` owns `read_text_prefix`.
+  - `src/dpost/application/processing/text_utils.py` has been removed.
+- PSA, Kinexus, and DSV processors now reuse the shared domain text helper.
+- Migration guard added:
+  - `tests/migration/test_part3_domain_text_policy_ownership.py`.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:

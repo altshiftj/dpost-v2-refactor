@@ -19,6 +19,7 @@ from dpost.domain.processing.staging import (
     find_stale_stage_dirs,
     reconstruct_pairs_from_stage,
 )
+from dpost.domain.processing.text import read_text_prefix
 
 __all__ = [
     "CsvNgbPair",
@@ -33,5 +34,6 @@ __all__ = [
     "RoutingDecision",
     "determine_routing_decision",
     "find_stale_stage_dirs",
+    "read_text_prefix",
     "reconstruct_pairs_from_stage",
 ]

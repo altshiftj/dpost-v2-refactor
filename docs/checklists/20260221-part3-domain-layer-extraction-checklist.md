@@ -70,8 +70,9 @@
 - How it was done: Moved shared batch value models to
   `src/dpost/domain/processing/batch_models.py`, moved pair reconstruction and
   stale-stage policies to `src/dpost/domain/processing/staging.py`, rewired
-  PSA/Kinexus processors to consume domain modules, and kept stage-dir creation
-  in application helpers.
+  PSA/Kinexus processors to consume domain modules, moved shared text decode
+  policy to `src/dpost/domain/processing/text.py`, rewired PSA/Kinexus/DSV to
+  consume the domain helper, and kept stage-dir creation in application helpers.
 
 ---
 

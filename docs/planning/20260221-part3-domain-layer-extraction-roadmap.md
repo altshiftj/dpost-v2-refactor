@@ -33,6 +33,13 @@
     references
   - purity guard added at
     `tests/migration/test_part3_domain_purity_boundaries.py`
+- Wave 3.7 is complete:
+  - text-prefix decode policy now owned by
+    `src/dpost/domain/processing/text.py`
+  - `src/dpost/application/processing/text_utils.py` retired
+  - PSA/Kinexus/DSV processors now consume shared domain text policy helper
+  - ownership guard added at
+    `tests/migration/test_part3_domain_text_policy_ownership.py`
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

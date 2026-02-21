@@ -1,4 +1,4 @@
-"""Text decoding helpers for preprocessing."""
+"""Domain policy helpers for text-prefix decoding behavior."""
 
 from __future__ import annotations
 

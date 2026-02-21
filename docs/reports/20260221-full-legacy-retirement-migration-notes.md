@@ -21,6 +21,7 @@
 - Application-local modules superseded by domain ownership were removed:
   - `src/dpost/application/processing/models.py`
   - `src/dpost/application/processing/batch_models.py`
+  - `src/dpost/application/processing/text_utils.py`
   - `src/dpost/application/records/local_record.py`
 
 ## Required Contributor Updates

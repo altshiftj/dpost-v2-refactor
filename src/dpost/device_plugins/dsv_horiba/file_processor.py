@@ -14,6 +14,7 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
+from dpost.domain.processing.text import read_text_prefix
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
@@ -23,16 +24,6 @@ from dpost.infrastructure.storage.filesystem_utils import (
 )
 
 logger = setup_logger(__name__)
-
-
-def _read_text_prefix(path: Path, bytes_limit: int = 4096) -> str:
-    raw = path.read_bytes()[:bytes_limit]
-    for encoding in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
-        try:
-            return raw.decode(encoding, errors="ignore")
-        except Exception:  # noqa: BLE001
-            continue
-    return raw.decode(errors="ignore")
 
 
 class FileProcessorDSVHoriba(FileProcessorABS):
@@ -85,7 +76,11 @@ class FileProcessorDSVHoriba(FileProcessorABS):
             return FileProbeResult.mismatch("Not a dissolver export text file")
 
         try:
-            snippet = _read_text_prefix(path)
+            snippet = read_text_prefix(
+                path,
+                encodings=("utf-8-sig", "utf-8", "latin-1", "cp1252"),
+                errors="ignore",
+            )
         except Exception as exc:  # noqa: BLE001
             logger.debug("DSV probe failed to read '%s': %s", path, exc)
             return FileProbeResult.unknown(str(exc))
