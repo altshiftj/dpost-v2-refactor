@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from dpost.application.ports import SyncAdapterPort
 
 if TYPE_CHECKING:
-    from ipat_watchdog.core.interactions import UserInteractionPort
+    from dpost.application.ports import UserInteractionPort
 
 
 class KadiSyncAdapter(SyncAdapterPort):
@@ -15,7 +15,7 @@ class KadiSyncAdapter(SyncAdapterPort):
 
     def __init__(self) -> None:
         """Load Kadi manager class lazily so dependency stays optional."""
-        from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
+        from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 
         self._manager_cls = KadiSyncManager
         self._delegate = None

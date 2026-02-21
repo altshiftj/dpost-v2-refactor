@@ -43,6 +43,15 @@
 ## Execution Rules
 - Inspect existing code and active architecture docs before editing.
 - Use small, targeted diffs that fit the current migration phase.
+- Keep implementation scope to one capability slice per change set whenever
+  feasible:
+- processing core rehost
+- record lifecycle rehost
+- sync core rehost
+- config runtime rehost
+- shim retirement/import sweep
+- Do not combine multiple capability slices in one implementation change unless
+  the extra scope is documentation-only synchronization.
 - Prefer `python -m ...` invocations to avoid PATH issues on Windows.
 - Avoid compatibility shims unless explicitly requested or clearly required for transition safety.
 - Apply framework-first sequencing:
@@ -52,6 +61,48 @@
 - Keep test intent isolated:
 - place `ipat_watchdog` contract tests in legacy paths (`tests/unit`, `tests/integration`, `tests/manual`)
 - place new `dpost` migration/cutover tests in `tests/migration`
+
+## Temporary Legacy Import Exceptions (Phase 9-13)
+- Temporary legacy imports are allowed only in explicit transition boundary
+  modules listed below:
+- `src/dpost/application/config/__init__.py`
+- `src/dpost/application/metrics.py`
+- `src/dpost/infrastructure/storage/filesystem_utils.py`
+- `src/dpost/infrastructure/runtime/desktop_ui.py`
+- `src/dpost/plugins/system.py` (legacy plugin package namespace discovery only)
+- No other `src/dpost/**` modules may add new direct `ipat_watchdog.*` imports
+  without explicit human approval and documentation rationale in active
+  migration reports/checklists.
+- Exception modules must remain thin boundaries (import/export, adapter wiring,
+  or lazy loading); do not add orchestration/business logic to them.
+
+## Shim Retirement Exit Criteria (Required)
+- `src/dpost/application/runtime/runtime_dependencies.py` may be retired only
+  when all are true:
+- runtime app and processing ownership paths resolve through dpost-owned modules
+  (`dpost.application.processing`, `dpost.application.records`,
+  `dpost.application.session`, `dpost.application.config`,
+  `dpost.application.metrics`)
+- no direct `ipat_watchdog.core.*` imports remain in canonical runtime/app
+  ownership paths (`src/dpost/application/runtime/`,
+  `src/dpost/application/processing/`)
+- migration contracts for runtime app rehost/boundaries are green
+  (`tests/migration/test_phase10_runtime_app_rehost.py` and
+  `tests/migration/test_phase13_legacy_runtime_retirement.py`)
+- required global gates are green (`python -m pytest -m migration`,
+  `python -m ruff check .`, `python -m black --check .`, `python -m pytest`)
+- `src/dpost/infrastructure/runtime/config_dependencies.py` may be retired only
+  when all are true:
+- runtime bootstrap config/storage wiring resolves through native dpost modules
+  (not legacy-backed boundary wrappers)
+- no direct `ipat_watchdog.core.config*` or
+  `ipat_watchdog.core.storage.filesystem_utils` imports remain under
+  `src/dpost/infrastructure/runtime/` except approved UI boundary paths
+- migration contracts for runtime infrastructure boundaries are green
+  (`tests/migration/test_phase11_runtime_infrastructure_boundary.py` and
+  `tests/migration/test_phase13_legacy_runtime_retirement.py`)
+- required global gates are green (`python -m pytest -m migration`,
+  `python -m ruff check .`, `python -m black --check .`, `python -m pytest`)
 
 ## Autonomous TDD (Novel Code)
 - For Phase 9+ behavior changes or non-trivial architectural changes, run full

@@ -38,7 +38,6 @@ def _install_missing_kadi_module(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_composition_import_does_not_eagerly_import_kadi() -> None:
     """Ensure framework composition can load without eager Kadi imports."""
-    sys.modules.pop("ipat_watchdog.core.app.bootstrap", None)
     sys.modules.pop("ipat_watchdog.core.sync.sync_kadi", None)
 
     _reload_composition_module()
@@ -58,7 +57,7 @@ def test_default_sync_adapter_selection_uses_noop(monkeypatch) -> None:
 
 def test_unknown_sync_adapter_name_raises_startup_error() -> None:
     """Raise a startup error when a configured adapter name is unknown."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
+    from dpost.runtime.bootstrap import StartupError
 
     composition = _reload_composition_module()
 
@@ -70,7 +69,7 @@ def test_compose_bootstrap_wires_noop_sync_factory(monkeypatch) -> None:
     """Wire noop sync adapter factory into legacy bootstrap composition."""
     composition = _reload_composition_module()
     captured: dict[str, object] = {}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     def fake_bootstrap(*args, **kwargs):
         captured["kwargs"] = kwargs
@@ -93,7 +92,7 @@ def test_compose_bootstrap_default_noop_when_kadi_dependency_missing(
     """Keep default startup on noop even when `kadi_apy` cannot be imported."""
     composition = _reload_composition_module()
     captured: dict[str, object] = {}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     def fake_bootstrap(*args, **kwargs):
         captured["kwargs"] = kwargs
@@ -114,11 +113,11 @@ def test_compose_bootstrap_unknown_adapter_from_env_raises_startup_error(
     monkeypatch,
 ) -> None:
     """Raise startup error when env-selected sync adapter is unknown."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
+    from dpost.runtime.bootstrap import StartupError
 
     composition = _reload_composition_module()
     called = {"bootstrap_called": False}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     def fake_bootstrap(*args, **kwargs):
         called["bootstrap_called"] = True
@@ -137,7 +136,7 @@ def test_compose_bootstrap_wires_kadi_sync_factory_from_env(monkeypatch) -> None
     """Wire Kadi sync adapter factory into startup when selected from env."""
     composition = _reload_composition_module()
     captured: dict[str, object] = {}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
     fake_kadi_module = ModuleType("dpost.infrastructure.sync.kadi")
 
     class KadiSyncAdapter:
@@ -168,11 +167,11 @@ def test_compose_bootstrap_kadi_without_dependency_raises_clear_startup_error(
     monkeypatch,
 ) -> None:
     """Fail startup with actionable error when `kadi` is selected but unavailable."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
+    from dpost.runtime.bootstrap import StartupError
 
     composition = _reload_composition_module()
     called = {"bootstrap_called": False}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     def fake_bootstrap(*args, **kwargs):
         called["bootstrap_called"] = True
@@ -192,7 +191,7 @@ def test_kadi_sync_adapter_missing_dependency_raises_startup_error(
     monkeypatch,
 ) -> None:
     """Raise startup error when the Kadi optional dependency is unavailable."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
+    from dpost.runtime.bootstrap import StartupError
 
     composition = _reload_composition_module()
     fake_kadi_module = ModuleType("dpost.infrastructure.sync.kadi")

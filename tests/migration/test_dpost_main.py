@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import importlib
 from pathlib import Path
 from types import SimpleNamespace
 
 from dpost import __main__ as main_module
-from ipat_watchdog.core.app.bootstrap import MissingConfiguration, StartupError
+from dpost.runtime.bootstrap import MissingConfiguration, StartupError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DPOST_MAIN_PATH = PROJECT_ROOT / "src" / "dpost" / "__main__.py"
@@ -80,17 +79,8 @@ def test_main_run_error(monkeypatch) -> None:
 def test_main_unknown_sync_adapter_from_env(monkeypatch) -> None:
     """Return one when env-selected sync adapter name is unknown."""
     from dpost.runtime.composition import compose_bootstrap
-    from ipat_watchdog.core.app.bootstrap import StartupError as CurrentStartupError
-
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
 
     monkeypatch.setenv("DPOST_SYNC_ADAPTER", "missing-adapter")
-    monkeypatch.setattr(
-        bootstrap_module,
-        "bootstrap",
-        lambda *args, **kwargs: SimpleNamespace(app=DummyApp()),
-    )
-    monkeypatch.setattr(main_module, "StartupError", CurrentStartupError)
     monkeypatch.setattr(main_module, "compose_bootstrap", compose_bootstrap)
 
     assert main_module.main() == 1

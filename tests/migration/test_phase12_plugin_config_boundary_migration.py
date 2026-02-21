@@ -78,9 +78,8 @@ def test_compose_bootstrap_uses_plugin_and_config_boundary_resolvers(
 
 def test_plugin_profile_boundary_keeps_actionable_unknown_profile_error() -> None:
     """Require plugin profile boundary to keep actionable unknown-profile errors."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
-
     from dpost.plugins.profile_selection import resolve_plugin_profile_selection
+    from dpost.runtime.bootstrap import StartupError
 
     with pytest.raises(StartupError, match="Unknown plugin profile"):
         resolve_plugin_profile_selection(

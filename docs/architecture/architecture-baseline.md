@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated runtime boundaries through Phase 13 increments)
+- 2026-02-21 (updated through deep-core processing/storage ownership slice)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -29,19 +29,21 @@
 
 ## Current Key Components
 - Bootstrap and startup wiring:
-- `src/ipat_watchdog/core/app/bootstrap.py`
+- `src/dpost/runtime/bootstrap.py`
+- Runtime bootstrap infrastructure dependencies boundary:
+- `src/dpost/infrastructure/runtime/bootstrap_dependencies.py`
 - New migration composition scaffold:
 - `src/dpost/runtime/composition.py`
 - Runtime orchestration application service:
 - `src/dpost/application/services/runtime_startup.py`
-- Native dpost runtime bootstrap contract:
-- `src/dpost/runtime/bootstrap.py`
-- Legacy bootstrap adapter owned by dpost infrastructure:
-- `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`
 - Runtime startup config boundary:
 - `src/dpost/runtime/startup_config.py`
 - Plugin profile selection boundary:
 - `src/dpost/plugins/profile_selection.py`
+- Plugin loading boundary + plugin contracts:
+- `src/dpost/plugins/loading.py`
+- `src/dpost/plugins/system.py`
+- `src/dpost/plugins/contracts.py`
 - dpost composition now validates selected sync adapter and injects a
   `sync_manager_factory` into runtime bootstrap wiring through
   `dpost.application.services.runtime_startup`.
@@ -61,10 +63,24 @@
 - `src/dpost/infrastructure/runtime/headless_ui.py`
 - dpost runtime UI factory adapter:
 - `src/dpost/infrastructure/runtime/ui_factory.py`
-- dpost canonical logging adapter:
+- dpost runtime desktop UI boundary:
+- `src/dpost/infrastructure/runtime/desktop_ui.py`
+- dpost runtime UI adapters boundary:
+- `src/dpost/infrastructure/runtime/ui_adapters.py`
+- dpost runtime config dependency boundary:
+- `src/dpost/infrastructure/runtime/config_dependencies.py`
+- dpost canonical logging infrastructure:
 - `src/dpost/infrastructure/logging.py`
+- dpost observability infrastructure:
+- `src/dpost/infrastructure/observability.py`
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
+- dpost runtime UI port contract:
+- `src/dpost/application/ports/ui.py`
+- dpost runtime interaction port contract:
+- `src/dpost/application/ports/interactions.py`
+- dpost runtime interaction message catalog:
+- `src/dpost/application/interactions/messages.py`
 - dpost reference sync adapter (noop):
 - `src/dpost/infrastructure/sync/noop.py`
 - dpost reference plugin profile contract:
@@ -74,9 +90,13 @@
 - dpost packaging split for optional Kadi backend dependency:
 - `pyproject.toml` (`[project.optional-dependencies].kadi`)
 - Runtime loop and event handling:
-- `src/ipat_watchdog/core/app/device_watchdog_app.py`
+- `src/dpost/application/runtime/device_watchdog_app.py`
+- Runtime app dependency boundary:
+- `src/dpost/application/runtime/runtime_dependencies.py`
 - Processing orchestration:
-- `src/ipat_watchdog/core/processing/file_process_manager.py`
+- `src/dpost/application/processing/file_process_manager.py`
+- dpost processing helper module set:
+- `src/dpost/application/processing/`
 - Phase 5 decomposition status:
 - `_ProcessingPipeline` now exposes explicit resolve/stabilize/preprocess stage
   hooks (`_resolve_device_stage`, `_stabilize_artifact_stage`,
@@ -109,7 +129,9 @@
 - `_rename_retry_policy_stage()` now defines non-ACCEPT retry warning/context
   policy for the rename loop.
 - Plugin loading and registration:
-- `src/ipat_watchdog/plugin_system.py`
+- `src/dpost/plugins/system.py`
+- dpost storage utility boundary:
+- `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
 - `src/ipat_watchdog/core/config/`
 - Local record persistence:
@@ -141,12 +163,18 @@
 - `tests/migration/test_phase9_native_bootstrap_boundary.py`
 - Phase 10 application orchestration extraction tests currently live in:
 - `tests/migration/test_phase10_application_orchestration_extraction.py`
+- Phase 10 runtime app rehost tests currently live in:
+- `tests/migration/test_phase10_runtime_app_rehost.py`
 - Phase 11 runtime infrastructure boundary tests currently live in:
 - `tests/migration/test_phase11_runtime_infrastructure_boundary.py`
 - Phase 12 plugin/config boundary migration tests currently live in:
 - `tests/migration/test_phase12_plugin_config_boundary_migration.py`
+- Phase 12 plugin loading ownership tests currently live in:
+- `tests/migration/test_phase12_plugin_loading_ownership.py`
 - Phase 13 canonical startup retirement tests currently live in:
 - `tests/migration/test_phase13_legacy_runtime_retirement.py`
+- Phase 13 native bootstrap service retirement tests currently live in:
+- `tests/migration/test_phase13_native_bootstrap_service_retirement.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -161,13 +189,24 @@
 - dpost composition default runtime mode is now explicit headless, with
   optional desktop mode wiring.
 - Sync backend is currently Kadi-coupled in core paths.
-- dpost runtime bootstrap now presents native dpost startup contracts and
-  delegates legacy bootstrap access through an infrastructure adapter while
-  full runtime extraction continues.
+- dpost runtime bootstrap is now native and no longer delegates through a
+  transition bootstrap adapter.
 - Canonical startup modules no longer import `ipat_watchdog.core` directly;
   some infrastructure adapters still delegate to legacy runtime modules.
+- Canonical startup modules also avoid direct `ipat_watchdog.observability`
+  imports and resolve observability through `dpost.infrastructure`.
+- Canonical runtime app/bootstrap modules now route config/session/metrics
+  dependencies through dedicated dpost boundary modules, and no longer import
+  legacy processing/storage modules directly in canonical dpost processing
+  paths.
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
+- dpost plugin loading now uses dpost-owned plugin protocol contracts;
+  plugin discovery still targets legacy plugin package namespaces during the
+  plugin migration period.
+- Runtime config and metrics boundaries remain legacy-backed through explicit
+  dpost boundary modules (`dpost.application.config`,
+  `dpost.application.metrics`) and are active deep-core retirement targets.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.

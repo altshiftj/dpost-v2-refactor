@@ -22,8 +22,10 @@
   runtime bootstrap contract extraction (Phase 9), runtime orchestration
   extraction to `dpost/application` (Phase 10), runtime UI infrastructure
   adapter extraction (Phase 11), plugin/config boundary extraction (Phase 12),
-  and canonical startup direct-import retirement increment (Phase 13). Per-
-  phase evidence is captured in reports and this checklist.
+  canonical startup direct-import retirement (Phase 13), native bootstrap
+  service retirement, plugin-loading ownership migration, and UI/observability
+  contract hardening. Per-phase evidence is captured in reports and this
+  checklist.
 
 ---
 
@@ -47,10 +49,10 @@
   `tests/migration/test_phase9_native_bootstrap_boundary.py` and confirmed red
   with `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 failed` before implementation. Implementation introduced native runtime
-  startup contracts in `src/dpost/runtime/bootstrap.py`, moved direct legacy
-  bootstrap module coupling into
-  `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`, and removed
-  legacy bootstrap type coupling from `src/dpost/runtime/composition.py`.
+  startup contracts in `src/dpost/runtime/bootstrap.py` and removed legacy
+  bootstrap type coupling from `src/dpost/runtime/composition.py`. Follow-up
+  retirement increment removed transition bootstrap delegation and deleted
+  `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`.
   Post-change boundary verification:
   `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`.
@@ -61,13 +63,13 @@
   `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`;
   `python -m pytest -m migration`
-  -> `95 passed, 302 deselected`;
+  -> `113 passed, 302 deselected`;
   `python -m ruff check .`
   -> `All checks passed!`;
   `python -m black --check .`
-  -> `43 files would be left unchanged.`;
+  -> `60 files would be left unchanged.`;
   `python -m pytest`
-  -> `396 passed, 1 skipped`.
+  -> `414 passed, 1 skipped`.
 
 ---
 
@@ -92,6 +94,11 @@
   `compose_runtime_context()`. Green verification:
   `python -m pytest tests/migration/test_phase10_application_orchestration_extraction.py`
   -> `3 passed`, plus full migration/lint/format/full-suite gates green.
+  Follow-up runtime app decoupling increment added
+  `src/dpost/application/runtime/runtime_dependencies.py` and
+  `src/dpost/application/interactions/messages.py`, removing direct
+  legacy config/processing/session/message imports from
+  `src/dpost/application/runtime/device_watchdog_app.py`.
   Evidence summary is documented in:
   `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 
@@ -117,7 +124,16 @@
   and captured red-state (`3 failed`). Implemented
   `src/dpost/infrastructure/runtime/ui_factory.py` and rewired
   `src/dpost/runtime/composition.py` to delegate mode-specific UI selection
-  via `resolve_ui_factory()` instead of direct legacy Tk imports.
+  via `resolve_ui_factory()` instead of direct legacy Tk imports. Follow-up
+  hardening added `src/dpost/application/ports/ui.py` and removed direct
+  legacy UI-contract typing imports from
+  `src/dpost/infrastructure/runtime/headless_ui.py`.
+  Additional hardening added
+  `src/dpost/infrastructure/runtime/ui_adapters.py`,
+  `src/dpost/infrastructure/runtime/desktop_ui.py`, and
+  `src/dpost/infrastructure/runtime/config_dependencies.py`, removing direct
+  legacy UI adapter, desktop Tk, sync-manager, and config/storage imports from
+  canonical infrastructure runtime files.
   Green verification:
   `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py`
   -> `3 passed`, plus full migration/lint/format/full-suite gates green.
@@ -148,6 +164,11 @@
   `src/dpost/runtime/composition.py` to use
   `resolve_runtime_startup_settings()` and
   `resolve_plugin_profile_selection()` directly in canonical composition flow.
+  Follow-up ownership increment added
+  `tests/migration/test_phase12_plugin_loading_ownership.py`,
+  implemented canonical plugin loading modules (`src/dpost/plugins/loading.py`,
+  `src/dpost/plugins/system.py`), and introduced
+  `src/dpost/plugins/contracts.py` for dpost-owned plugin contract types.
   Green verification:
   `python -m pytest tests/migration/test_phase12_plugin_config_boundary_migration.py`
   -> `3 passed`, plus full migration/lint/format/full-suite gates green.
@@ -164,9 +185,9 @@
 - [x] Add failing migration tests asserting no runtime dependency on
       `src/ipat_watchdog/core/...` from canonical startup path.
 - [ ] Remove remaining runtime dependency surfaces and transition-only glue.
-- [ ] Confirm canonical startup path is concise and readable without legacy
+- [x] Confirm canonical startup path is concise and readable without legacy
       runtime context.
-- [ ] Update docs/checklists/execution board to reflect legacy runtime
+- [x] Update docs/checklists/execution board to reflect legacy runtime
       retirement completion.
 - [x] Verify migration + full gates are green.
 
@@ -174,14 +195,22 @@
 - How it was done: Added tests-first contract
   `tests/migration/test_phase13_legacy_runtime_retirement.py`
   and captured red-state (`2 failed`) for canonical startup direct-import
-  coupling. Implemented `src/dpost/infrastructure/logging.py` and rewired
-  `src/dpost/__main__.py` to use the dpost logging adapter, removing direct
-  `ipat_watchdog.core` imports from canonical startup modules.
-  Green verification:
+  coupling. Follow-up retirement increments:
+  - implemented native runtime bootstrap and deleted
+    `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`
+  - implemented dpost-owned logging and observability infrastructure modules
+    (`src/dpost/infrastructure/logging.py`,
+    `src/dpost/infrastructure/observability.py`)
+  - tightened boundary tests for direct legacy observability/logging and
+    canonical startup imports.
+  Green verification (final):
   `python -m pytest tests/migration/test_phase13_legacy_runtime_retirement.py`
-  -> `2 passed`, plus full migration/lint/format/full-suite gates green.
-  Remaining Phase 13 work: full retirement of legacy runtime dependency
-  surfaces behind infrastructure adapters.
+  -> `4 passed`;
+  `python -m pytest tests/migration/test_phase13_native_bootstrap_service_retirement.py`
+  -> `2 passed`;
+  plus full migration/lint/format/full-suite gates green.
+  Remaining Phase 13 work: retirement of deeper legacy-core internals behind
+  infrastructure/runtime boundaries (config, processing, records, sync).
   Evidence summary is documented in:
   `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 

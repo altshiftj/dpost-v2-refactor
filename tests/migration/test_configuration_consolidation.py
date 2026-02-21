@@ -63,10 +63,10 @@ def test_resolve_startup_settings_prefers_explicit_overrides(
 def test_compose_bootstrap_reads_env_driven_startup_settings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Pass env-driven startup settings through composition into legacy bootstrap."""
+    """Pass env-driven startup settings through composition into runtime bootstrap."""
     composition = _reload_composition_module()
     captured: dict[str, object] = {}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     def fake_bootstrap(*args, **kwargs):
         captured["kwargs"] = kwargs

@@ -29,3 +29,23 @@ def test_canonical_main_uses_dpost_logging_adapter() -> None:
     main_contents = _read_utf8(PROJECT_ROOT / "src" / "dpost" / "__main__.py")
 
     assert "from dpost.infrastructure.logging import setup_logger" in main_contents
+
+
+def test_runtime_bootstrap_has_no_direct_legacy_observability_import() -> None:
+    """Require runtime bootstrap to resolve observability via dpost infrastructure."""
+    bootstrap_contents = _read_utf8(
+        PROJECT_ROOT / "src" / "dpost" / "runtime" / "bootstrap.py"
+    )
+
+    assert "from ipat_watchdog.observability import start_observability_server" not in (
+        bootstrap_contents
+    )
+
+
+def test_dpost_logging_adapter_has_no_legacy_logging_import() -> None:
+    """Require dpost logging infrastructure to own logger setup implementation."""
+    logging_contents = _read_utf8(
+        PROJECT_ROOT / "src" / "dpost" / "infrastructure" / "logging.py"
+    )
+
+    assert "ipat_watchdog.core.logging.logger" not in logging_contents

@@ -8,8 +8,7 @@ import threading
 import time
 from typing import Any, Callable
 
-from ipat_watchdog.core.interactions import SessionPromptDetails
-from ipat_watchdog.core.ui.ui_abstract import UserInterface
+from dpost.application.ports import SessionPromptDetails, UserInterface
 
 
 class HeadlessRuntimeUI(UserInterface):

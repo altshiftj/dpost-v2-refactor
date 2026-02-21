@@ -37,10 +37,10 @@ def _clear_runtime_mode_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def _install_bootstrap_stub(
     monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[dict[str, object], dict[str, bool]]:
-    """Patch legacy bootstrap and capture bootstrap kwargs plus app run calls."""
+    """Patch runtime bootstrap and capture bootstrap kwargs plus app run calls."""
     captured: dict[str, object] = {}
     calls = {"run_called": False}
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     class AppStub:
         """App stub that marks whether the runtime loop was invoked."""
@@ -58,8 +58,8 @@ def _install_bootstrap_stub(
 
 
 def _install_bootstrap_runtime_stubs(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Patch legacy bootstrap dependencies for deterministic composition tests."""
-    bootstrap_module = importlib.import_module("ipat_watchdog.core.app.bootstrap")
+    """Patch runtime bootstrap dependencies for deterministic composition tests."""
+    bootstrap_module = importlib.import_module("dpost.runtime.bootstrap")
 
     monkeypatch.setattr(bootstrap_module, "_build_config_service", lambda *_: "config")
     monkeypatch.setattr(bootstrap_module, "init_dirs", lambda: None)
@@ -163,7 +163,7 @@ def test_default_runtime_mode_selection_is_headless() -> None:
 
 def test_unknown_runtime_mode_name_raises_startup_error() -> None:
     """Reject unknown runtime mode names with an actionable startup error."""
-    from ipat_watchdog.core.app.bootstrap import StartupError
+    from dpost.runtime.bootstrap import StartupError
 
     composition = _reload_composition_module()
 

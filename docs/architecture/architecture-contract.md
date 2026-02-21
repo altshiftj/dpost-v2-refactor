@@ -37,9 +37,28 @@
 - `src/dpost/application/ports/sync.py` (sync adapter port contract)
 - `src/dpost/plugins/reference.py` (reference plugin profile contract)
 - `src/dpost/plugins/profile_selection.py` (plugin profile selection boundary)
+- `src/dpost/plugins/loading.py` (plugin loading boundary)
+- `src/dpost/plugins/contracts.py` (plugin protocol contract types)
+- `src/dpost/application/ports/ui.py` (runtime UI contract types)
+- `src/dpost/application/ports/interactions.py` (runtime interaction contract types)
+- `src/dpost/infrastructure/runtime/ui_adapters.py` (runtime UI adapter boundary)
+- `src/dpost/infrastructure/runtime/desktop_ui.py` (desktop UI boundary)
+- `src/dpost/infrastructure/runtime/config_dependencies.py` (runtime config/storage dependency boundary)
+- `src/dpost/application/runtime/runtime_dependencies.py` (runtime app dependency boundary)
 - Kernel composition paths can map explicit profile names to startup settings.
 - Kernel runtime modules should depend on dpost-owned bootstrap contracts, not
   direct legacy bootstrap module imports.
+- Canonical startup modules should resolve logging and observability through
+  `dpost.infrastructure` boundaries, not direct legacy module imports.
+- Canonical runtime app/bootstrap modules should use dpost-owned dependency
+  boundary modules for legacy-backed config/processing/session/storage
+  integrations instead of direct legacy imports in canonical runtime files.
+- Canonical processing modules under `src/dpost/application/processing/` must
+  not import `ipat_watchdog.core.processing.*` directly; processing helper
+  dependencies must resolve through dpost-owned modules.
+- Canonical dpost application/runtime modules must consume filesystem utility
+  helpers through `src/dpost/infrastructure/storage/filesystem_utils.py`
+  instead of direct `ipat_watchdog.core.storage.filesystem_utils` imports.
 - Runtime composition should delegate plugin/config resolution to explicit
   boundary helpers and orchestration services instead of embedding env parsing.
 - Kernel composition paths must not import concrete backend SDK modules directly.
