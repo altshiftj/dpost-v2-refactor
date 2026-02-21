@@ -37,8 +37,6 @@
     `src/dpost/application/runtime/device_watchdog_app.py`.
   - Runtime app/infrastructure dependency boundaries added to isolate legacy
     config/processing/session/storage imports from canonical runtime files:
-    `src/dpost/application/runtime/runtime_dependencies.py`,
-    `src/dpost/infrastructure/runtime/config_dependencies.py`,
     `src/dpost/infrastructure/runtime/desktop_ui.py`,
     `src/dpost/infrastructure/runtime/ui_adapters.py`.
   - Canonical plugin loading boundaries implemented in
@@ -51,13 +49,24 @@
   - Storage utility boundary rehosted under
     `src/dpost/infrastructure/storage/filesystem_utils.py` with dpost-boundary
     imports.
+  - Config runtime lifecycle ownership rehosted under
+    `src/dpost/application/config/` and dpost config boundary now avoids direct
+    legacy imports.
+  - Metrics registry ownership rehosted under
+    `src/dpost/application/metrics.py` with registry-safe collector reuse.
+  - Transition shim modules retired from canonical runtime path:
+    `src/dpost/application/runtime/runtime_dependencies.py` and
+    `src/dpost/infrastructure/runtime/config_dependencies.py`.
+  - Desktop UI implementation rehosted under dpost runtime infrastructure:
+    `src/dpost/infrastructure/runtime/tkinter_ui.py` and
+    `src/dpost/infrastructure/runtime/dialogs.py`.
 - In progress:
-  - Retirement of remaining legacy core dependencies behind explicit dpost
-    config/metrics boundaries (`dpost.application.config`,
-    `dpost.application.metrics`) and intentional UI/plugin namespace seams.
+  - Retirement of remaining intentional legacy plugin compatibility seams
+    (`dpost.plugins.system` hook namespace marker +
+    `dpost.plugins.legacy_compat` fallback mappings).
 - Next deep-core migration target:
-  - Rehost config runtime + metrics ownership into native dpost modules, then
-    retire transition shims/import exceptions by contract.
+  - Execute plugin-namespace compatibility retirement/import sweep after dpost
+    plugin package migration criteria are satisfied.
 
 ## Deep-Core Planning Artifacts
 - Detailed deep-core execution plan:

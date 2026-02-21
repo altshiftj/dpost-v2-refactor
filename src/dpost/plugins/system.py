@@ -13,12 +13,17 @@ import pluggy
 
 from dpost.infrastructure.logging import setup_logger
 from dpost.plugins.contracts import DevicePlugin, PCPlugin
+from dpost.plugins.legacy_compat import (
+    legacy_builtin_module_name,
+    legacy_builtin_packages,
+    legacy_entrypoint_groups,
+)
 
 logger = setup_logger(__name__)
 
 _PLUGIN_NAMESPACE = "ipat_watchdog"
-DEVICE_ENTRYPOINT_GROUP = "ipat_watchdog.device_plugins"
-PC_ENTRYPOINT_GROUP = "ipat_watchdog.pc_plugins"
+DEVICE_ENTRYPOINT_GROUP = "dpost.device_plugins"
+PC_ENTRYPOINT_GROUP = "dpost.pc_plugins"
 
 _PLUGIN_LOADER_SINGLETON: PluginLoader | None = None
 
@@ -190,19 +195,22 @@ class PluginLoader:
         self.refresh()
 
     def _load_entrypoints(self, group: str) -> None:
-        for entry_point in _iter_entry_points(group):
-            module_name, _, _ = entry_point.value.partition(":")
-            self._register_module(
-                module_name=module_name,
-                registration_name=f"{group}:{entry_point.name}",
-                log_context=f"entry point '{entry_point.name}'",
-            )
+        groups = (group, *legacy_entrypoint_groups(group))
+        for selected_group in groups:
+            for entry_point in _iter_entry_points(selected_group):
+                module_name, _, _ = entry_point.value.partition(":")
+                self._register_module(
+                    module_name=module_name,
+                    registration_name=f"{selected_group}:{entry_point.name}",
+                    log_context=f"entry point '{entry_point.name}'",
+                )
         self.refresh()
 
     def _load_builtin_plugins(self) -> None:
         packages = (
-            ("ipat_watchdog.device_plugins", DEVICE_ENTRYPOINT_GROUP),
-            ("ipat_watchdog.pc_plugins", PC_ENTRYPOINT_GROUP),
+            ("dpost.device_plugins", DEVICE_ENTRYPOINT_GROUP),
+            ("dpost.pc_plugins", PC_ENTRYPOINT_GROUP),
+            *legacy_builtin_packages(),
         )
         for package_name, group in packages:
             try:
@@ -230,55 +238,62 @@ class PluginLoader:
 
     def _lazy_load_builtin(self, group: str, name: str) -> bool:
         if group == DEVICE_ENTRYPOINT_GROUP:
-            module_name = f"ipat_watchdog.device_plugins.{name}.plugin"
+            module_name = f"dpost.device_plugins.{name}.plugin"
         elif group == PC_ENTRYPOINT_GROUP:
-            module_name = f"ipat_watchdog.pc_plugins.{name}.plugin"
+            module_name = f"dpost.pc_plugins.{name}.plugin"
         else:
             return False
 
-        if module_name in self._registered_modules:
-            return False
+        module_candidates = [module_name]
+        legacy_module_name = legacy_builtin_module_name(group, name)
+        if legacy_module_name is not None:
+            module_candidates.append(legacy_module_name)
 
-        self._register_module(
-            module_name=module_name,
-            registration_name=f"lazy:{group}:{name}",
-            log_context=f"lazy {group} plugin '{name}'",
-        )
-        if module_name in self._registered_modules:
-            if group == DEVICE_ENTRYPOINT_GROUP:
-                self.refresh_devices()
-            else:
-                self.refresh_pcs()
-            logger.debug(
-                "Lazily loaded %s plugin '%s'",
-                "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
-                name,
-            )
-            return True
-        return False
-
-    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
-        for entry_point in _iter_entry_points(group):
-            if entry_point.name != name:
+        for candidate_name in module_candidates:
+            if candidate_name in self._registered_modules:
                 continue
-            module_name, _, _ = entry_point.value.partition(":")
+
             self._register_module(
-                module_name=module_name,
-                registration_name=f"entrypoint:{group}:{name}",
-                log_context=f"entry point '{name}'",
+                module_name=candidate_name,
+                registration_name=f"lazy:{group}:{name}",
+                log_context=f"lazy {group} plugin '{name}'",
             )
-            if module_name in self._registered_modules:
+            if candidate_name in self._registered_modules:
                 if group == DEVICE_ENTRYPOINT_GROUP:
                     self.refresh_devices()
                 else:
                     self.refresh_pcs()
                 logger.debug(
-                    "Lazily loaded %s plugin '%s' via entry point",
+                    "Lazily loaded %s plugin '%s'",
                     "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
                     name,
                 )
                 return True
-            return False
+        return False
+
+    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
+        groups = (group, *legacy_entrypoint_groups(group))
+        for selected_group in groups:
+            for entry_point in _iter_entry_points(selected_group):
+                if entry_point.name != name:
+                    continue
+                module_name, _, _ = entry_point.value.partition(":")
+                self._register_module(
+                    module_name=module_name,
+                    registration_name=f"entrypoint:{selected_group}:{name}",
+                    log_context=f"entry point '{name}'",
+                )
+                if module_name in self._registered_modules:
+                    if group == DEVICE_ENTRYPOINT_GROUP:
+                        self.refresh_devices()
+                    else:
+                        self.refresh_pcs()
+                    logger.debug(
+                        "Lazily loaded %s plugin '%s' via entry point",
+                        "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
+                        name,
+                    )
+                    return True
         return False
 
     def _register_module(

@@ -1,19 +1,47 @@
-"""dpost config boundary exports for runtime and application modules."""
+"""dpost-owned configuration schemas, services, and runtime helpers."""
 
-from ipat_watchdog.core.config import (
-    ConfigService,
-    DeviceConfig,
-    StabilityOverride,
+from dpost.application.config.runtime import (
+    activate_device,
     current,
     get_service,
     init_config,
+    reset_service,
+    set_service,
+)
+from dpost.application.config.schema import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    NamingSettings,
+    PathSettings,
+    PCConfig,
+    SessionSettings,
+    StabilityOverride,
+    WatcherSettings,
+)
+from dpost.application.config.service import (
+    ActiveConfig,
+    ConfigService,
+    DeviceLookupError,
 )
 
 __all__ = [
+    "ActiveConfig",
     "ConfigService",
     "DeviceConfig",
+    "DeviceFileSelectors",
+    "DeviceLookupError",
+    "DeviceMetadata",
+    "NamingSettings",
+    "PathSettings",
+    "PCConfig",
+    "SessionSettings",
     "StabilityOverride",
+    "WatcherSettings",
+    "activate_device",
     "current",
     "get_service",
     "init_config",
+    "reset_service",
+    "set_service",
 ]

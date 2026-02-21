@@ -46,6 +46,12 @@ DPOST_RECORD_MANAGER_PATH = (
 DPOST_SESSION_MANAGER_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "application" / "session" / "session_manager.py"
 )
+DPOST_APPLICATION_CONFIG_BOUNDARY_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "application" / "config" / "__init__.py"
+)
+DPOST_APPLICATION_METRICS_BOUNDARY_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "application" / "metrics.py"
+)
 DPOST_PROCESSING_HELPER_PATHS = (
     PROJECT_ROOT
     / "src"
@@ -130,31 +136,29 @@ def test_dpost_runtime_app_avoids_direct_legacy_runtime_dependency_imports() -> 
 
 
 def test_runtime_dependency_module_avoids_direct_legacy_processing_imports() -> None:
-    """Require runtime dependency shims to resolve processing via dpost modules."""
-    dependencies_contents = DPOST_RUNTIME_DEPENDENCIES_PATH.read_text(encoding="utf-8")
-
-    assert "ipat_watchdog.core.processing" not in dependencies_contents
+    """Require runtime dependency shim retirement after dpost processing rehost."""
+    assert DPOST_RUNTIME_DEPENDENCIES_PATH.exists() is False
 
 
 def test_runtime_dependency_module_avoids_direct_legacy_session_imports() -> None:
-    """Require runtime dependency shims to resolve session through dpost modules."""
-    dependencies_contents = DPOST_RUNTIME_DEPENDENCIES_PATH.read_text(encoding="utf-8")
+    """Require runtime app module to avoid runtime dependency shim imports."""
+    runtime_app_contents = DPOST_RUNTIME_APP_PATH.read_text(encoding="utf-8")
 
-    assert "ipat_watchdog.core.session" not in dependencies_contents
+    assert "application.runtime.runtime_dependencies" not in runtime_app_contents
 
 
 def test_runtime_dependency_module_avoids_direct_legacy_config_imports() -> None:
-    """Require runtime dependency shims to resolve config through dpost modules."""
-    dependencies_contents = DPOST_RUNTIME_DEPENDENCIES_PATH.read_text(encoding="utf-8")
+    """Require runtime app module to resolve config from dpost-owned boundaries."""
+    runtime_app_contents = DPOST_RUNTIME_APP_PATH.read_text(encoding="utf-8")
 
-    assert "ipat_watchdog.core.config" not in dependencies_contents
+    assert "from dpost.application.config import ConfigService" in runtime_app_contents
 
 
 def test_runtime_dependency_module_avoids_direct_legacy_metrics_imports() -> None:
-    """Require runtime dependency shims to resolve metrics through dpost boundaries."""
-    dependencies_contents = DPOST_RUNTIME_DEPENDENCIES_PATH.read_text(encoding="utf-8")
+    """Require runtime app module to resolve metrics from dpost-owned boundaries."""
+    runtime_app_contents = DPOST_RUNTIME_APP_PATH.read_text(encoding="utf-8")
 
-    assert "ipat_watchdog.metrics" not in dependencies_contents
+    assert "from dpost.application.metrics import" in runtime_app_contents
 
 
 def test_dpost_processing_manager_module_exists_with_file_process_manager_class() -> (
@@ -254,3 +258,19 @@ def test_dpost_processing_helper_modules_exist_for_ownership_seams() -> None:
     """Require dpost processing helper modules to exist for deep-core ownership."""
     for helper_path in DPOST_PROCESSING_HELPER_PATHS:
         assert helper_path.exists()
+
+
+def test_dpost_config_boundary_module_avoids_direct_legacy_config_imports() -> None:
+    """Require dpost config boundary ownership to avoid direct legacy imports."""
+    config_contents = DPOST_APPLICATION_CONFIG_BOUNDARY_PATH.read_text(encoding="utf-8")
+
+    assert "ipat_watchdog.core.config" not in config_contents
+
+
+def test_dpost_metrics_boundary_module_avoids_direct_legacy_metrics_imports() -> None:
+    """Require dpost metrics boundary ownership to avoid direct legacy imports."""
+    metrics_contents = DPOST_APPLICATION_METRICS_BOUNDARY_PATH.read_text(
+        encoding="utf-8"
+    )
+
+    assert "ipat_watchdog.metrics" not in metrics_contents

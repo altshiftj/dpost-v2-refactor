@@ -88,16 +88,21 @@
   startup and processing behavior.
 
 ### Checklist
-- [ ] Add migration contracts for config runtime ownership.
-- [ ] Introduce dpost-owned config runtime lifecycle module.
-- [ ] Rehost init/current/activation behavior with parity.
-- [ ] Remove legacy config/storage imports from
+- [x] Add migration contracts for config runtime ownership.
+- [x] Introduce dpost-owned config runtime lifecycle module.
+- [x] Rehost init/current/activation behavior with parity.
+- [x] Remove legacy config/storage imports from
       `src/dpost/infrastructure/runtime/config_dependencies.py`.
-- [ ] Retire or reduce config dependency shim module.
-- [ ] Verify migration and full gates are green.
+- [x] Retire or reduce config dependency shim module.
+- [x] Verify migration and full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added config/metrics boundary migration assertions in
+  `tests/migration/test_phase10_runtime_app_rehost.py`, rehosted dpost config
+  internals under `src/dpost/application/config/`, rehosted dpost metrics
+  definitions under `src/dpost/application/metrics.py` with registry-safe
+  collector reuse, and validated required migration/lint/format/full-suite
+  gates.
 
 ---
 
@@ -106,16 +111,22 @@
   proving canonical imports are legacy-free.
 
 ### Checklist
-- [ ] Add migration contracts asserting no direct legacy core imports in
+- [x] Add migration contracts asserting no direct legacy core imports in
       canonical runtime modules.
-- [ ] Retire `runtime_dependencies.py` once processing/records/sync are rehosted.
-- [ ] Retire `config_dependencies.py` once config runtime is rehosted.
-- [ ] Keep only explicitly approved legacy implementation boundaries and
+- [x] Retire `runtime_dependencies.py` once processing/records/sync are rehosted.
+- [x] Retire `config_dependencies.py` once config runtime is rehosted.
+- [x] Keep only explicitly approved legacy implementation boundaries and
       document rationale.
-- [ ] Verify migration and full gates are green.
+- [x] Verify migration and full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Tightened migration contracts in
+  `tests/migration/test_phase10_runtime_app_rehost.py` and
+  `tests/migration/test_phase11_runtime_infrastructure_boundary.py`, retired
+  `src/dpost/application/runtime/runtime_dependencies.py` and
+  `src/dpost/infrastructure/runtime/config_dependencies.py`, rewired canonical
+  runtime app/bootstrap paths to direct dpost-owned modules, and verified
+  migration/lint/format/full-suite gates.
 
 ---
 

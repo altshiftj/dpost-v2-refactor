@@ -13,22 +13,24 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import BaseObserver
 
-from dpost.application.ports import SyncAdapterPort, UserInterface
+from dpost.application.config import ConfigService
 from dpost.application.interactions import ErrorMessages
-from dpost.application.runtime.runtime_dependencies import (
-    ConfigService,
+from dpost.application.metrics import (
     EVENTS_PROCESSED,
     EXCEPTIONS_THROWN,
     FILE_PROCESS_TIME,
     FILES_FAILED,
     FILES_PROCESSED,
+    SESSION_DURATION,
+    SESSION_EXIT_STATUS,
+)
+from dpost.application.ports import SyncAdapterPort, UserInterface
+from dpost.application.processing import (
     FileProcessManager,
     ProcessingResult,
     ProcessingStatus,
-    SESSION_DURATION,
-    SESSION_EXIT_STATUS,
-    SessionManager,
 )
+from dpost.application.session import SessionManager
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.runtime import UiInteractionAdapter, UiTaskScheduler
 

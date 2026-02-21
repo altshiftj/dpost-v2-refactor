@@ -142,9 +142,12 @@
 - How it was done: Canonical startup now uses dpost-owned bootstrap/logging/
   observability paths and no longer depends on transition bootstrap adapters.
   Canonical runtime infrastructure now routes UI adapter, desktop UI, sync
-  manager, and config/storage imports through dpost dependency boundary
-  modules. Remaining work is deeper legacy-core retirement behind these
-  boundaries (config/processing/records/sync internals).
+  manager, and config/storage imports through dpost-owned modules. Deep-core
+  follow-up rehosted processing/storage/config/metrics ownership under dpost,
+  retired `runtime_dependencies.py` + `config_dependencies.py`, and moved
+  desktop UI implementation into `src/dpost/infrastructure/runtime/`.
+  Remaining work is final plugin-namespace/hook compatibility retirement and
+  contributor-surface hardening.
 
 ---
 

@@ -65,11 +65,8 @@
 ## Temporary Legacy Import Exceptions (Phase 9-13)
 - Temporary legacy imports are allowed only in explicit transition boundary
   modules listed below:
-- `src/dpost/application/config/__init__.py`
-- `src/dpost/application/metrics.py`
-- `src/dpost/infrastructure/storage/filesystem_utils.py`
-- `src/dpost/infrastructure/runtime/desktop_ui.py`
-- `src/dpost/plugins/system.py` (legacy plugin package namespace discovery only)
+- `src/dpost/plugins/system.py` (legacy pluggy hook namespace compatibility marker only)
+- `src/dpost/plugins/legacy_compat.py` (legacy plugin namespace discovery fallback only)
 - No other `src/dpost/**` modules may add new direct `ipat_watchdog.*` imports
   without explicit human approval and documentation rationale in active
   migration reports/checklists.
@@ -77,6 +74,7 @@
   or lazy loading); do not add orchestration/business logic to them.
 
 ## Shim Retirement Exit Criteria (Required)
+- Status (2026-02-21): criteria satisfied and both shim modules are retired.
 - `src/dpost/application/runtime/runtime_dependencies.py` may be retired only
   when all are true:
 - runtime app and processing ownership paths resolve through dpost-owned modules
@@ -176,6 +174,12 @@
 
 ## Git Safety Rules
 - Primary goal: prevent destructive repository operations during autonomous execution.
+- Checkpoint commit policy (experiment/autonomous-tdd):
+- at major autonomous checkpoints, stage all current migration work with
+  `git add .` and create a normal commit with a clear scope/result message
+  before continuing further slices
+- do not wait for extra human approval to create these checkpoint commits
+  unless requirements become ambiguous or unsafe
 - Allowed git write operations:
 - `git add ...`
 - `git commit ...`

@@ -8,12 +8,15 @@ from pathlib import Path
 from types import ModuleType
 
 from dpost.infrastructure.runtime import HeadlessRuntimeUI
-from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from dpost.infrastructure.runtime.tkinter_ui import TKinterRuntimeUI
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DPOST_COMPOSITION_PATH = PROJECT_ROOT / "src" / "dpost" / "runtime" / "composition.py"
 DPOST_HEADLESS_UI_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "infrastructure" / "runtime" / "headless_ui.py"
+)
+DPOST_DESKTOP_UI_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "infrastructure" / "runtime" / "desktop_ui.py"
 )
 DPOST_UI_FACTORY_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "infrastructure" / "runtime" / "ui_factory.py"
@@ -81,6 +84,13 @@ def test_ui_factory_and_bootstrap_dependencies_have_no_direct_legacy_tk_import()
     assert "ipat_watchdog.core.ui.ui_tkinter" not in dependency_contents
 
 
+def test_desktop_runtime_ui_boundary_has_no_direct_legacy_ui_imports() -> None:
+    """Require desktop runtime UI boundary to resolve dpost-owned UI module."""
+    desktop_ui_contents = DPOST_DESKTOP_UI_PATH.read_text(encoding="utf-8")
+
+    assert "ipat_watchdog.core.ui.ui_tkinter" not in desktop_ui_contents
+
+
 def test_bootstrap_dependencies_has_no_direct_legacy_sync_manager_import() -> None:
     """Require sync manager construction to flow through dpost sync adapters."""
     dependency_contents = DPOST_BOOTSTRAP_DEPENDENCIES_PATH.read_text(encoding="utf-8")
@@ -99,17 +109,15 @@ def test_bootstrap_dependencies_avoid_direct_legacy_config_and_storage_imports()
 
 
 def test_config_dependency_module_avoids_direct_legacy_config_imports() -> None:
-    """Require config dependency shim to resolve config service via dpost config boundary."""
-    dependency_contents = DPOST_CONFIG_DEPENDENCIES_PATH.read_text(encoding="utf-8")
-
-    assert "ipat_watchdog.core.config" not in dependency_contents
+    """Require config dependency shim retirement after dpost config rehost."""
+    assert DPOST_CONFIG_DEPENDENCIES_PATH.exists() is False
 
 
 def test_config_dependency_module_avoids_direct_legacy_storage_imports() -> None:
-    """Require config dependency shim to resolve storage init via dpost storage boundary."""
-    dependency_contents = DPOST_CONFIG_DEPENDENCIES_PATH.read_text(encoding="utf-8")
+    """Require bootstrap dependencies to avoid config-dependency shim import path."""
+    dependency_contents = DPOST_BOOTSTRAP_DEPENDENCIES_PATH.read_text(encoding="utf-8")
 
-    assert "ipat_watchdog.core.storage.filesystem_utils" not in dependency_contents
+    assert "infrastructure.runtime.config_dependencies" not in dependency_contents
 
 
 def test_sync_kadi_adapter_avoids_direct_legacy_sync_manager_import() -> None:
@@ -151,4 +159,4 @@ def test_infrastructure_ui_factory_resolves_headless_and_desktop_modes() -> None
     from dpost.infrastructure.runtime.ui_factory import resolve_ui_factory
 
     assert resolve_ui_factory("headless") is HeadlessRuntimeUI
-    assert resolve_ui_factory("desktop") is TKinterUI
+    assert resolve_ui_factory("desktop") is TKinterRuntimeUI

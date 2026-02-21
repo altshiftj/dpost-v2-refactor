@@ -23,12 +23,11 @@
   anchor points for deeper extraction.
 - Runtime app loop ownership has been rehosted into
   `dpost.application.runtime.DeviceWatchdogApp`.
-- Canonical runtime modules now isolate legacy config/processing/session/
-  storage imports through explicit dpost dependency-boundary modules.
+- Canonical runtime modules now use dpost-owned config/processing/session/
+  storage imports without transition shim modules.
 - Plugin discovery/loading and PC-device mapping are now dpost-owned boundary
-  modules, while plugin package namespaces remain legacy during migration.
-- Config assembly and runtime service wiring still rely on legacy config
-  runtime modules.
+  modules, while plugin package compatibility fallback remains during
+  migration.
 - Record persistence and sync execution remain legacy-owned, including the
   primary Kadi implementation path.
 - Current test posture is strong (`migration` and full suites green), which
@@ -45,16 +44,17 @@
   - `src/dpost/runtime/composition.py`
   - `src/dpost/application/services/runtime_startup.py`
   - `src/dpost/application/runtime/device_watchdog_app.py`
-  - `src/dpost/application/runtime/runtime_dependencies.py`
   - `src/dpost/runtime/startup_config.py`
   - `src/dpost/plugins/profile_selection.py`
   - `src/dpost/plugins/loading.py`
   - `src/dpost/plugins/system.py`
+  - `src/dpost/plugins/legacy_compat.py`
   - `src/dpost/plugins/contracts.py`
   - `src/dpost/infrastructure/runtime/ui_factory.py`
   - `src/dpost/infrastructure/runtime/ui_adapters.py`
   - `src/dpost/infrastructure/runtime/desktop_ui.py`
-  - `src/dpost/infrastructure/runtime/config_dependencies.py`
+  - `src/dpost/infrastructure/runtime/tkinter_ui.py`
+  - `src/dpost/infrastructure/runtime/dialogs.py`
 - Legacy runtime/application behavior still active:
   - `src/ipat_watchdog/core/processing/file_process_manager.py`
   - `src/ipat_watchdog/core/config/runtime.py`

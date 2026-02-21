@@ -60,12 +60,14 @@
 - Preserve lazy optional dependency behavior and actionable error messages.
 - Keep `SyncAdapterPort` authoritative in application paths.
 
-4. Config Runtime Rehost (P2) - status: in progress
+4. Config Runtime Rehost (P2) - status: completed
 - Add migration contracts for config runtime service ownership.
 - Introduce dpost-owned config runtime lifecycle module.
-- Retire `config_dependencies.py` legacy imports when parity is green.
+- Rehost dpost metrics ownership and preserve collector-registry compatibility.
+- Retire `config_dependencies.py` dependency shim when parity + retirement
+  criteria are green.
 
-5. Boundary Shim Retirement + Import Sweep (P3) - status: pending
+5. Boundary Shim Retirement + Import Sweep (P3) - status: completed
 - Remove now-empty shim modules (`runtime_dependencies.py`,
   `config_dependencies.py`) after ownership migration is complete.
 - Add final import-sweep migration contracts ensuring canonical runtime paths
@@ -119,8 +121,8 @@
 
 ## Definition of Done
 - Canonical runtime modules in `src/dpost` contain no direct
-  `ipat_watchdog.core.*` imports except intentionally preserved UI implementation
-  boundaries documented by policy.
+  `ipat_watchdog.core.*` imports; any remaining legacy compatibility is limited
+  to plugin namespace fallback boundaries documented by policy.
 - All required gates are green.
 - Architecture baseline/contract/responsibility catalog and glossary reflect the
   final ownership state.

@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through deep-core processing/storage ownership slice)
+- 2026-02-21 (updated through deep-core processing/storage/config/metrics ownership slices)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -57,7 +57,7 @@
   `DPOST_RUNTIME_MODE` (`headless` default, `desktop` optional) and validates
   unknown runtime mode values at startup.
 - Runtime UI factory infrastructure adapter now resolves explicit mode-specific
-  UI factories (`HeadlessRuntimeUI` for headless mode, `TKinterUI` for
+  UI factories (`HeadlessRuntimeUI` for headless mode, `TKinterRuntimeUI` for
   desktop mode).
 - dpost headless runtime UI adapter:
 - `src/dpost/infrastructure/runtime/headless_ui.py`
@@ -65,10 +65,12 @@
 - `src/dpost/infrastructure/runtime/ui_factory.py`
 - dpost runtime desktop UI boundary:
 - `src/dpost/infrastructure/runtime/desktop_ui.py`
+- dpost runtime desktop UI implementation:
+- `src/dpost/infrastructure/runtime/tkinter_ui.py`
+- dpost runtime desktop rename-dialog boundary:
+- `src/dpost/infrastructure/runtime/dialogs.py`
 - dpost runtime UI adapters boundary:
 - `src/dpost/infrastructure/runtime/ui_adapters.py`
-- dpost runtime config dependency boundary:
-- `src/dpost/infrastructure/runtime/config_dependencies.py`
 - dpost canonical logging infrastructure:
 - `src/dpost/infrastructure/logging.py`
 - dpost observability infrastructure:
@@ -91,8 +93,9 @@
 - `pyproject.toml` (`[project.optional-dependencies].kadi`)
 - Runtime loop and event handling:
 - `src/dpost/application/runtime/device_watchdog_app.py`
-- Runtime app dependency boundary:
-- `src/dpost/application/runtime/runtime_dependencies.py`
+- Transition dependency shim retirement:
+- `src/dpost/application/runtime/runtime_dependencies.py` (retired)
+- `src/dpost/infrastructure/runtime/config_dependencies.py` (retired)
 - Processing orchestration:
 - `src/dpost/application/processing/file_process_manager.py`
 - dpost processing helper module set:
@@ -133,7 +136,9 @@
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
-- `src/ipat_watchdog/core/config/`
+- `src/dpost/application/config/`
+- dpost metrics boundary:
+- `src/dpost/application/metrics.py`
 - Local record persistence:
 - `src/ipat_watchdog/core/records/`
 - Current Kadi backend implementation:
@@ -199,14 +204,20 @@
   dependencies through dedicated dpost boundary modules, and no longer import
   legacy processing/storage modules directly in canonical dpost processing
   paths.
+- Canonical dpost config and metrics boundaries are now dpost-owned and no
+  longer import legacy config/metrics modules directly.
+- Transition runtime dependency shims have been retired from canonical dpost
+  paths (`runtime_dependencies.py`, `config_dependencies.py`).
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
 - dpost plugin loading now uses dpost-owned plugin protocol contracts;
-  plugin discovery still targets legacy plugin package namespaces during the
-  plugin migration period.
-- Runtime config and metrics boundaries remain legacy-backed through explicit
-  dpost boundary modules (`dpost.application.config`,
-  `dpost.application.metrics`) and are active deep-core retirement targets.
+  canonical plugin discovery groups now use `dpost.device_plugins` and
+  `dpost.pc_plugins`, with isolated legacy-namespace fallback mappings in
+  `src/dpost/plugins/legacy_compat.py` during plugin migration.
+- Remaining intentional legacy boundaries in canonical dpost runtime paths are
+  plugin hook-namespace compatibility marker wiring in
+  `src/dpost/plugins/system.py` and legacy namespace fallback mappings in
+  `src/dpost/plugins/legacy_compat.py`.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.

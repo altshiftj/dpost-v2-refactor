@@ -215,31 +215,83 @@
   - `python -m pytest tests/migration/test_phase10_runtime_app_rehost.py tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_sync_adapter_selection.py tests/migration/test_phase13_legacy_runtime_retirement.py`
     -> `53 passed`
 
+## Deep-Core Increment: Native Config + Metrics Boundary Ownership
+- Tests-first contract tightening:
+  - `tests/migration/test_phase10_runtime_app_rehost.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase10_runtime_app_rehost.py`
+    -> `2 failed`
+- Implementation:
+  - added native dpost config internals under `src/dpost/application/config/`:
+    - `schema.py`
+    - `service.py`
+    - `runtime.py`
+    - updated `__init__.py` exports to dpost-owned modules
+  - added native dpost metrics ownership under
+    `src/dpost/application/metrics.py`
+  - implemented registry-safe metric collector reuse in dpost metrics boundary
+    to avoid duplicate Prometheus collector registration during mixed legacy +
+    migration test runs
+  - tightened `AGENTS.md` temporary legacy import allowlist to remove
+    config/metrics/storage exceptions now that these boundaries are dpost-owned
+- Green-state verification:
+  - `python -m pytest tests/migration/test_configuration_consolidation.py tests/migration/test_phase10_runtime_app_rehost.py`
+    -> `27 passed`
+  - `python -m pytest tests/migration/test_naming_constants_consolidation.py tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_sync_adapter_selection.py tests/migration/test_phase13_legacy_runtime_retirement.py tests/integration/test_settings_integration.py tests/unit/core/settings/test_settings_manager.py tests/unit/core/processing/test_file_process_manager.py tests/unit/core/session/test_session_manager.py`
+    -> `73 passed`
+
+## Deep-Core Increment: Shim Retirement + Desktop UI Rehost + Plugin Group Canonicalization
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase11_runtime_infrastructure_boundary.py`
+  - `tests/migration/test_runtime_mode_selection.py`
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 errors` (missing `dpost.infrastructure.runtime.tkinter_ui`)
+- Implementation:
+  - added dpost-owned desktop UI implementation modules:
+    - `src/dpost/infrastructure/runtime/tkinter_ui.py`
+    - `src/dpost/infrastructure/runtime/dialogs.py`
+  - rewired `src/dpost/infrastructure/runtime/desktop_ui.py` to resolve
+    `TKinterRuntimeUI` from dpost-owned runtime infrastructure module.
+  - updated runtime mode and infrastructure migration tests to use dpost-owned
+    desktop UI contracts.
+  - added canonical plugin namespace packages:
+    - `src/dpost/device_plugins/__init__.py`
+    - `src/dpost/pc_plugins/__init__.py`
+  - added `src/dpost/plugins/legacy_compat.py` to isolate temporary legacy
+    plugin namespace fallback mapping.
+  - rewired `src/dpost/plugins/system.py` to use canonical dpost entrypoint
+    groups (`dpost.device_plugins`, `dpost.pc_plugins`) while preserving
+    compatibility fallback via `legacy_compat`.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `26 passed`
+  - `python -m pytest -m migration`
+    -> `136 passed, 302 deselected`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `132 passed, 302 deselected`
+  -> `136 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `83 files would be left unchanged.`
+  -> `89 files would be left unchanged.`
 - `python -m pytest`
-  -> `433 passed, 1 skipped`
+  -> `437 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
-  and later on 9 files after additional runtime-boundary implementation.
+  and later on 9 files and 5 files after additional runtime-boundary
+  implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
 
 ## Remaining Risk / Open Work
-- Runtime config/session/metrics internals still depend on legacy modules
-  behind dependency-boundary shims:
-  - `src/ipat_watchdog/core/config/`
-  - `src/ipat_watchdog/metrics.py`
-- Desktop UI implementation is intentionally still legacy-backed behind dpost
-  boundary import:
-  - `src/dpost/infrastructure/runtime/desktop_ui.py`
 - Plugin implementation packages remain in legacy namespaces during migration
   (`src/ipat_watchdog/device_plugins/`, `src/ipat_watchdog/pc_plugins/`).
+- Remaining intentional legacy compatibility seams are now limited to:
+  - hook namespace marker compatibility in `src/dpost/plugins/system.py`
+  - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

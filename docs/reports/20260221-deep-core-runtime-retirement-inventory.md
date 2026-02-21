@@ -24,21 +24,21 @@
 - Record lifecycle and Kadi manager ownership seams are now dpost modules:
   - `src/dpost/application/records/record_manager.py`
   - `src/dpost/infrastructure/sync/kadi_manager.py`
+- Config and metrics ownership are now rehosted in dpost:
+  - `src/dpost/application/config/`
+  - `src/dpost/application/metrics.py`
 - Remaining direct legacy imports under canonical dpost runtime/app paths are
-  now concentrated in boundary modules for config/metrics and intentional UI/
-  plugin namespace transition seams.
+  now limited to intentional UI/plugin namespace transition seams.
 - Existing migration coverage is already strong and can support strict
   tests-first extraction.
 
 ## Evidence
 - Remaining `ipat_watchdog` imports under `src/dpost`:
-  - `src/dpost/application/config/__init__.py`
-  - `src/dpost/application/metrics.py`
-  - `src/dpost/infrastructure/runtime/desktop_ui.py`
-  - `src/dpost/plugins/system.py`
+  - `src/dpost/plugins/system.py` (legacy hook namespace compatibility marker)
+  - `src/dpost/plugins/legacy_compat.py` (legacy namespace fallback mappings)
 - Legacy module complexity indicators:
-  - `src/ipat_watchdog/core/config/runtime.py`
-  - `src/ipat_watchdog/metrics.py`
+  - `src/ipat_watchdog/device_plugins/`
+  - `src/ipat_watchdog/pc_plugins/`
 - Existing migration gates currently green:
   - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   - `python -m pytest -m migration`
@@ -53,9 +53,9 @@
 | Processing helper services/models | rehosted under dpost | `dpost/application/processing/*` | maintain and decompose within dpost ownership | done |
 | Record lifecycle orchestration | rehosted under dpost | `dpost/application/records/record_manager.py` | maintain and decompose within `dpost/application/records/*` | done |
 | Sync orchestration + Kadi implementation | rehosted manager seam under dpost | `dpost/infrastructure/sync/kadi.py`, `dpost/infrastructure/sync/kadi_manager.py` | maintain and decompose within dpost sync ownership | done |
-| Config runtime lifecycle service | `core/config/runtime.py` | `infrastructure/runtime/config_dependencies.py` | `dpost/infrastructure/runtime/config_runtime.py` | P2 |
-| Metrics registry ownership | `metrics.py` | `dpost/application/metrics.py` | native `dpost` metrics module with shared registry compatibility | P2 |
-| Desktop UI concrete class | `core/ui/ui_tkinter.py` | `infrastructure/runtime/desktop_ui.py` | keep as legacy implementation until dedicated UI migration phase | P3 |
+| Config runtime lifecycle service | rehosted under dpost | `dpost/application/config/` | maintain dpost ownership; shim retired | done |
+| Metrics registry ownership | rehosted under dpost | `dpost/application/metrics.py` | maintain dpost ownership with registry-safe reuse behavior | done |
+| Desktop UI concrete class | rehosted under dpost | `infrastructure/runtime/desktop_ui.py` + `infrastructure/runtime/tkinter_ui.py` + `infrastructure/runtime/dialogs.py` | maintain dpost ownership and parity | done |
 
 ## Risks
 - Processing refactor can introduce silent behavioral drift in route/retry/
@@ -74,5 +74,5 @@
   - Answer: yes, but only after area-specific migration contracts and global
     gates are green in the same change set.
 - Should desktop UI class migration be included in deep-core runtime wave?
-  - Answer: no. Keep desktop UI implementation stable for now; only maintain
-    the import boundary during deep-core runtime retirement.
+  - Answer: completed. Desktop UI implementation now lives under dpost
+    infrastructure runtime modules with parity-focused migration tests green.

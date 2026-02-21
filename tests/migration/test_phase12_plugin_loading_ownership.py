@@ -32,6 +32,14 @@ def test_plugin_loading_boundaries_use_dpost_owned_plugin_contract_types() -> No
     assert "ipat_watchdog.pc_plugins.pc_plugin" not in system_contents
 
 
+def test_plugin_system_uses_dpost_owned_plugin_namespace_groups() -> None:
+    """Require plugin discovery/runtime groups to be dpost-owned by default."""
+    system_contents = DPOST_PLUGIN_SYSTEM_PATH.read_text(encoding="utf-8")
+
+    assert 'DEVICE_ENTRYPOINT_GROUP = "dpost.device_plugins"' in system_contents
+    assert 'PC_ENTRYPOINT_GROUP = "dpost.pc_plugins"' in system_contents
+
+
 def test_dpost_plugin_loading_resolves_reference_pc_devices() -> None:
     """Require dpost plugin-loading boundary to resolve reference PC devices."""
     from dpost.plugins.loading import get_devices_for_pc

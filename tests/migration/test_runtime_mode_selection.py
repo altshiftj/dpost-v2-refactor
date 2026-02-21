@@ -9,8 +9,8 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from dpost import __main__ as main_module
-from ipat_watchdog.core.interactions import RenamePrompt, SessionPromptDetails
-from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
+from dpost.application.ports import RenamePrompt, SessionPromptDetails
+from dpost.infrastructure.runtime.tkinter_ui import TKinterRuntimeUI
 
 
 def _reload_composition_module() -> ModuleType:
@@ -184,7 +184,7 @@ def test_compose_bootstrap_headless_mode_wires_explicit_non_tk_ui_factory(
 
     kwargs = captured["kwargs"]
     assert "ui_factory" in kwargs
-    assert kwargs["ui_factory"] is not TKinterUI
+    assert kwargs["ui_factory"] is not TKinterRuntimeUI
 
 
 def test_compose_bootstrap_desktop_mode_wires_explicit_tk_ui_factory(
@@ -200,7 +200,7 @@ def test_compose_bootstrap_desktop_mode_wires_explicit_tk_ui_factory(
 
     kwargs = captured["kwargs"]
     assert "ui_factory" in kwargs
-    assert kwargs["ui_factory"] is TKinterUI
+    assert kwargs["ui_factory"] is TKinterRuntimeUI
 
 
 def test_main_smoke_headless_runtime_mode_uses_mode_specific_composition(
@@ -217,7 +217,7 @@ def test_main_smoke_headless_runtime_mode_uses_mode_specific_composition(
     assert calls["run_called"] is True
     kwargs = captured["kwargs"]
     assert "ui_factory" in kwargs
-    assert kwargs["ui_factory"] is not TKinterUI
+    assert kwargs["ui_factory"] is not TKinterRuntimeUI
 
 
 def test_main_smoke_desktop_runtime_mode_uses_mode_specific_composition(
@@ -234,7 +234,7 @@ def test_main_smoke_desktop_runtime_mode_uses_mode_specific_composition(
     assert calls["run_called"] is True
     kwargs = captured["kwargs"]
     assert "ui_factory" in kwargs
-    assert kwargs["ui_factory"] is TKinterUI
+    assert kwargs["ui_factory"] is TKinterRuntimeUI
 
 
 def test_desktop_mode_bootstrap_preserves_interaction_and_scheduler_wiring(
@@ -244,8 +244,8 @@ def test_desktop_mode_bootstrap_preserves_interaction_and_scheduler_wiring(
     composition = _reload_composition_module()
     _install_bootstrap_runtime_stubs(monkeypatch)
 
-    tkinter_module = importlib.import_module("ipat_watchdog.core.ui.ui_tkinter")
-    monkeypatch.setattr(tkinter_module, "TKinterUI", DesktopUIProbe)
+    tkinter_module = importlib.import_module("dpost.infrastructure.runtime.tkinter_ui")
+    monkeypatch.setattr(tkinter_module, "TKinterRuntimeUI", DesktopUIProbe)
     monkeypatch.setenv("DPOST_RUNTIME_MODE", "desktop")
     monkeypatch.setenv("DPOST_SYNC_ADAPTER", "noop")
     monkeypatch.setenv("DPOST_PLUGIN_PROFILE", "reference")
@@ -264,8 +264,8 @@ def test_desktop_mode_preserves_interaction_adapter_behavior(
     composition = _reload_composition_module()
     _install_bootstrap_runtime_stubs(monkeypatch)
 
-    tkinter_module = importlib.import_module("ipat_watchdog.core.ui.ui_tkinter")
-    monkeypatch.setattr(tkinter_module, "TKinterUI", DesktopUIProbe)
+    tkinter_module = importlib.import_module("dpost.infrastructure.runtime.tkinter_ui")
+    monkeypatch.setattr(tkinter_module, "TKinterRuntimeUI", DesktopUIProbe)
     monkeypatch.setenv("DPOST_RUNTIME_MODE", "desktop")
     monkeypatch.setenv("DPOST_SYNC_ADAPTER", "noop")
     monkeypatch.setenv("DPOST_PLUGIN_PROFILE", "reference")

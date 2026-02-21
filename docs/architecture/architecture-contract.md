@@ -43,16 +43,21 @@
 - `src/dpost/application/ports/interactions.py` (runtime interaction contract types)
 - `src/dpost/infrastructure/runtime/ui_adapters.py` (runtime UI adapter boundary)
 - `src/dpost/infrastructure/runtime/desktop_ui.py` (desktop UI boundary)
-- `src/dpost/infrastructure/runtime/config_dependencies.py` (runtime config/storage dependency boundary)
-- `src/dpost/application/runtime/runtime_dependencies.py` (runtime app dependency boundary)
+- `src/dpost/infrastructure/runtime/tkinter_ui.py` (desktop UI implementation)
+- `src/dpost/infrastructure/runtime/dialogs.py` (desktop rename dialog boundary)
+- `src/dpost/application/config/` (runtime/application config ownership boundary)
+- `src/dpost/application/metrics.py` (runtime/application metrics ownership boundary)
 - Kernel composition paths can map explicit profile names to startup settings.
 - Kernel runtime modules should depend on dpost-owned bootstrap contracts, not
   direct legacy bootstrap module imports.
 - Canonical startup modules should resolve logging and observability through
   `dpost.infrastructure` boundaries, not direct legacy module imports.
 - Canonical runtime app/bootstrap modules should use dpost-owned dependency
-  boundary modules for legacy-backed config/processing/session/storage
-  integrations instead of direct legacy imports in canonical runtime files.
+  boundary modules for staged session/UI/runtime integrations instead of
+  direct legacy imports in canonical runtime files.
+- Canonical dpost config and metrics boundaries must remain dpost-owned and
+  must not directly import `ipat_watchdog.core.config*` or
+  `ipat_watchdog.metrics`.
 - Canonical processing modules under `src/dpost/application/processing/` must
   not import `ipat_watchdog.core.processing.*` directly; processing helper
   dependencies must resolve through dpost-owned modules.
@@ -61,6 +66,9 @@
   instead of direct `ipat_watchdog.core.storage.filesystem_utils` imports.
 - Runtime composition should delegate plugin/config resolution to explicit
   boundary helpers and orchestration services instead of embedding env parsing.
+- Canonical plugin discovery groups should use `dpost.device_plugins` and
+  `dpost.pc_plugins`; legacy namespace compatibility fallback must be isolated
+  to dedicated plugin compatibility modules.
 - Kernel composition paths must not import concrete backend SDK modules directly.
 - Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
 
