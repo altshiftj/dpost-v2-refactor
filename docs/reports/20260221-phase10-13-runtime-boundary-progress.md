@@ -291,28 +291,55 @@
   - `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py tests/migration/test_runtime_mode_selection.py tests/migration/test_reference_plugin_flow.py tests/migration/test_sync_adapter_selection.py`
     -> `31 passed`
 
+## Deep-Core Increment: Reference Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `1 failed`
+- Implementation:
+  - added canonical dpost reference plugin packages:
+    - `src/dpost/device_plugins/test_device/`
+    - `src/dpost/pc_plugins/test_pc/`
+  - added dpost-owned reference plugin modules/settings/processor:
+    - `src/dpost/device_plugins/test_device/plugin.py`
+    - `src/dpost/device_plugins/test_device/settings.py`
+    - `src/dpost/device_plugins/test_device/file_processor.py`
+    - `src/dpost/pc_plugins/test_pc/plugin.py`
+    - `src/dpost/pc_plugins/test_pc/settings.py`
+  - retained legacy fallback compatibility while preferring canonical dpost
+    reference plugin modules.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `7 passed`
+  - `python -m pytest tests/migration/test_phase12_plugin_config_boundary_migration.py tests/migration/test_reference_plugin_flow.py tests/migration/test_runtime_mode_selection.py tests/migration/test_sync_adapter_selection.py`
+    -> `21 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `137 passed, 302 deselected`
+  -> `138 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `89 files would be left unchanged.`
+  -> `96 files would be left unchanged.`
 - `python -m pytest`
-  -> `438 passed, 1 skipped`
+  -> `439 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
-  and later on 9 files, 5 files, and 1 file after additional runtime-boundary
-  implementation.
+  and later on 9 files, 5 files, 1 file, 7 files, and 1 file after additional
+  runtime-boundary implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
 
 ## Remaining Risk / Open Work
-- Plugin implementation packages remain in legacy namespaces during migration
-  (`src/ipat_watchdog/device_plugins/`, `src/ipat_watchdog/pc_plugins/`).
+- Most plugin implementation packages remain in legacy namespaces during
+  migration (`src/ipat_watchdog/device_plugins/`,
+  `src/ipat_watchdog/pc_plugins/`), excluding rehosted reference packages
+  under `src/dpost/device_plugins/test_device/` and
+  `src/dpost/pc_plugins/test_pc/`.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

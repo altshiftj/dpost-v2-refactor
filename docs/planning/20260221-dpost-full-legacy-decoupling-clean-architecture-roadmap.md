@@ -60,6 +60,9 @@
   - Desktop UI implementation rehosted under dpost runtime infrastructure:
     `src/dpost/infrastructure/runtime/tkinter_ui.py` and
     `src/dpost/infrastructure/runtime/dialogs.py`.
+  - Reference plugin packages migrated to canonical dpost namespaces:
+    `src/dpost/device_plugins/test_device/` and
+    `src/dpost/pc_plugins/test_pc/`.
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +

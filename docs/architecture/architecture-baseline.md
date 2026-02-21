@@ -133,6 +133,9 @@
   policy for the rename loop.
 - Plugin loading and registration:
 - `src/dpost/plugins/system.py`
+- Canonical reference plugin packages for migration/runtime validation:
+- `src/dpost/device_plugins/test_device/`
+- `src/dpost/pc_plugins/test_pc/`
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
@@ -214,6 +217,8 @@
   canonical plugin discovery groups now use `dpost.device_plugins` and
   `dpost.pc_plugins`, with isolated legacy-namespace fallback mappings in
   `src/dpost/plugins/legacy_compat.py` during plugin migration.
+- Canonical reference profile plugins (`test_device`, `test_pc`) now load from
+  dpost plugin namespaces before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   keeps legacy hook-namespace compatibility through isolated orchestration in
   `src/dpost/plugins/system.py`.

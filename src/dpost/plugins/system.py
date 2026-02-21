@@ -76,6 +76,23 @@ class _BaseRegistry:
         if not normalized:
             raise ValueError(f"{self.kind} plugin name must not be empty")
         if normalized in self._factories:
+            existing_factory = self._factories[normalized]
+            existing_module = getattr(existing_factory, "__module__", "")
+            incoming_module = getattr(factory, "__module__", "")
+            existing_root = existing_module.split(".", 1)[0]
+            incoming_root = incoming_module.split(".", 1)[0]
+            if {existing_root, incoming_root} == {
+                _PLUGIN_NAMESPACE,
+                LEGACY_PLUGIN_NAMESPACE,
+            }:
+                logger.debug(
+                    "Skipping compatibility duplicate for %s plugin '%s' (%s kept, %s ignored)",
+                    self.kind,
+                    normalized,
+                    existing_module,
+                    incoming_module,
+                )
+                return
             raise ValueError(
                 f"{self.kind} plugin '{normalized}' registered multiple times"
             )

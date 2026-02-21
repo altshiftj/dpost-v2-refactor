@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+import sys
 from pathlib import Path
 
 import pytest
@@ -67,6 +69,29 @@ def test_dpost_plugin_loading_resolves_reference_pc_devices() -> None:
     from dpost.plugins.loading import get_devices_for_pc
 
     assert get_devices_for_pc("test_pc") == ["test_device"]
+
+
+def test_reference_plugins_load_from_dpost_namespaces(monkeypatch) -> None:
+    """Require reference plugin loading to resolve canonical dpost plugin modules."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.test_device.plugin",
+        "dpost.pc_plugins.test_pc.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin, load_pc_plugin
+
+    pc_plugin = load_pc_plugin("test_pc")
+    device_plugin = load_device_plugin("test_device")
+
+    assert "dpost.pc_plugins.test_pc.plugin" in sys.modules
+    assert "dpost.device_plugins.test_device.plugin" in sys.modules
+    assert pc_plugin.__class__.__module__ == "dpost.pc_plugins.test_pc.plugin"
+    assert (
+        device_plugin.__class__.__module__ == "dpost.device_plugins.test_device.plugin"
+    )
 
 
 def test_dpost_plugin_loader_unknown_plugin_message_is_actionable() -> None:
