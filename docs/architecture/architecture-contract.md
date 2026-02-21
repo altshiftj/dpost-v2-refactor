@@ -8,6 +8,8 @@
 1. Domain layer:
 - can depend on Python standard library and pure domain models/utilities.
 - must not depend on infrastructure SDKs, UI frameworks, or runtime wiring.
+- must not import application/infrastructure modules even for typing-only
+  references; use domain-local protocols/contracts instead.
 
 2. Application layer:
 - can depend on domain and application ports.

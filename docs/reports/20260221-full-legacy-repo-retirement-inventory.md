@@ -67,6 +67,8 @@
   - `tests/manual/test_plugin_import.py`
 - Captured downstream release communication/migration guidance in:
   - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
+- Added consolidated operator validation runbook:
+  - `docs/checklists/20260221-final-manual-validation-runbook.md`
 
 ## Progress Update (Kickoff Increment)
 - Added migration guard test coverage for shared harness retirement:

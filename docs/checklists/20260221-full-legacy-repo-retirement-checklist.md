@@ -200,8 +200,8 @@
     - `docs/architecture/architecture-contract.md`
     - `docs/architecture/responsibility-catalog.md`
     - `docs/architecture/adr/ADR-0004-full-legacy-source-package-retirement.md`
-  - `GLOSSARY.csv` remains valid without new internal-term additions for this
-    slice.
+  - `GLOSSARY.csv` is maintained as the canonical terminology source; later
+    Part 3 hardening introduced additional domain-purity terms.
   - retirement gate evidence captured in
     `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
   - downstream migration/release communication captured in

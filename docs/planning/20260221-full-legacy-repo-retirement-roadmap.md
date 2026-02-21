@@ -148,6 +148,8 @@
 - Canonical runtime/test paths execute from `src/dpost/**` only.
 - Release communication closure is captured in:
   `docs/reports/20260221-full-legacy-retirement-migration-notes.md`.
+- Consolidated operator closure steps are captured in:
+  `docs/checklists/20260221-final-manual-validation-runbook.md`.
 - Remaining retirement work is manual validation only, not additional source
   migration.
 

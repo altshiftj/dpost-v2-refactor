@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through Part 3 domain extraction Waves 3.2-3.4)
+- 2026-02-21 (updated through Part 3 domain extraction Wave 3.6 hardening)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -189,6 +189,13 @@
 - `tests/migration/test_configuration_consolidation.py`
 - Phase 4 naming/constants consolidation tests currently live in:
 - `tests/migration/test_naming_constants_consolidation.py`
+- Part 3 domain ownership tests currently live in:
+- `tests/migration/test_part3_domain_processing_ownership.py`
+- `tests/migration/test_part3_domain_record_ownership.py`
+- `tests/migration/test_part3_domain_batch_staging_ownership.py`
+- `tests/migration/test_part3_domain_purity_boundaries.py`
+- Manual script portability retirement test currently lives in:
+- `tests/migration/test_manual_script_portability.py`
 - Phase 5 stage-boundary decomposition tests currently live in:
 - `tests/migration/test_processing_pipeline_stage_boundaries.py`
 - Phase 7 runtime mode + desktop parity tests currently live in:
