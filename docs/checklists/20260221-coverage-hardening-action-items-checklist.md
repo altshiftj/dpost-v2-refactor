@@ -79,6 +79,7 @@ How it was done:
 - Built from iterative red/green coverage runs during 2026-02-21 autonomous TDD sessions.
 - Derived priorities from latest full coverage snapshot:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `427 passed, 1 skipped, total 88%`.
+  - `503 passed, 1 skipped, 1 warning, total 92%`.
 - Captured deeper rationale in:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`.
+  - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`.

@@ -1,6 +1,7 @@
 from dpost.application.config import current
 from dpost.domain.records.local_record import LocalRecord
 from dpost.application.session.session_manager import SessionManager
+from types import SimpleNamespace
 
 
 def _make_record(identifier: str = "udr_01-mus-ipat-sample_a") -> LocalRecord:
@@ -158,3 +159,100 @@ def test_reset_timer_ignores_disabled_timeout(fake_ui, monkeypatch):
 
     assert session_manager.timer_id is None
     assert fake_ui.scheduled_tasks == []
+
+
+def test_session_manager_properties_and_summary(fake_ui, config_service):
+    """Expose active/interactive state and immutable summary snapshot."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+
+    assert manager.is_active is False
+    assert manager.interactive is False
+    assert manager.get_summary().to_dict() == {
+        "active": False,
+        "users": (),
+        "records": (),
+    }
+
+
+def test_set_interactive_noop_when_value_unchanged(fake_ui, config_service):
+    """Keep state unchanged without refreshing prompt when mode already matches."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=True)
+    manager.session_active = True
+    manager.set_interactive(True)
+
+    assert manager.interactive is True
+    assert fake_ui.session_details_history == []
+
+
+def test_set_interactive_refreshes_prompt_when_enabling_active_session(
+    fake_ui,
+    config_service,
+):
+    """Refresh done-prompt when interactive mode is re-enabled mid-session."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+    manager.session_active = True
+    manager._session_users = ["mus-ipat"]
+    manager._session_records = ["sample_a"]
+
+    manager.set_interactive(True)
+
+    assert manager.interactive is True
+    assert fake_ui.session_details_history[-1].users == ("mus-ipat",)
+    assert fake_ui.session_details_history[-1].records == ("sample_a",)
+
+
+def test_note_activity_headless_mode_suppresses_prompt_history(fake_ui, config_service):
+    """Track activity in headless mode without showing done prompts."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+    record = _make_record("udr_01-mus-ipat-sample_a")
+
+    manager.note_activity(record)
+
+    assert manager.session_active is True
+    assert fake_ui.session_details_history == []
+    assert manager.get_summary().users == ("mus-ipat",)
+    assert manager.get_summary().records == ("sample_a",)
+
+
+def test_format_record_label_returns_unknown_for_empty_label(fake_ui, config_service):
+    """Normalize missing labels to human-readable placeholder text."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    assert manager._format_record_label(None) == "Unknown Sample"  # noqa: SLF001
+    assert manager._format_record_label("") == "Unknown Sample"  # noqa: SLF001
+
+
+def test_derive_user_tag_handles_missing_or_partial_identity(fake_ui, config_service):
+    """Return None when user missing, user-only when institute missing, or both when present."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+
+    no_user = SimpleNamespace(user="null", institute="ipat")
+    user_only = SimpleNamespace(user="mus", institute=None)
+    full = SimpleNamespace(user="mus", institute="ipat")
+
+    assert manager._derive_user_tag(no_user) is None  # noqa: SLF001
+    assert manager._derive_user_tag(user_only) == "mus"  # noqa: SLF001
+    assert manager._derive_user_tag(full) == "mus-ipat"  # noqa: SLF001
+
+
+def test_derive_sample_label_falls_back_to_identifier_and_none(
+    fake_ui,
+    config_service,
+):
+    """Derive sample from identifier parts, identifier value, or None."""
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+
+    from_identifier = SimpleNamespace(
+        sample_name="null",
+        identifier="dev-mus-ipat-sample_a",
+        id_separator="-",
+    )
+    short_identifier = SimpleNamespace(
+        sample_name="null",
+        identifier="invalid",
+        id_separator="-",
+    )
+    missing_identifier = SimpleNamespace(sample_name="null", identifier="null", id_separator="-")
+
+    assert manager._derive_sample_label(from_identifier) == "sample_a"  # noqa: SLF001
+    assert manager._derive_sample_label(short_identifier) == "invalid"  # noqa: SLF001
+    assert manager._derive_sample_label(missing_identifier) is None  # noqa: SLF001

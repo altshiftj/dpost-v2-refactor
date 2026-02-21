@@ -12,8 +12,8 @@ Latest validated baseline in this run:
 - Command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Result:
-  - `427 passed, 1 skipped, 1 warning`
-  - total coverage: `88%` (`4932 stmts, 581 miss`)
+  - `503 passed, 1 skipped, 1 warning`
+  - total coverage: `92%` (`4932 stmts, 414 miss`)
 
 Additional quality gate:
 
@@ -48,8 +48,8 @@ Most low/medium complexity modules are at or near 100%. Remaining misses cluster
 
 - `src/dpost/application/processing/file_process_manager.py` (79%)
 - `src/dpost/application/runtime/device_watchdog_app.py` (79%)
-- `src/dpost/application/processing/stability_tracker.py` (68%)
 - `src/dpost/infrastructure/sync/kadi_manager.py` (63%)
+- `src/dpost/plugins/system.py` (74%)
 - larger device processors (`rhe_kinexus`, portions of `psa_horiba`, etc.)
 
 These modules combine timing, filesystem, retry/deferred behavior, and integration edges.
@@ -74,6 +74,7 @@ to avoid import mismatch during full-suite collection.
 Detailed execution steps are tracked in:
 
 - `docs/checklists/20260221-coverage-hardening-action-items-checklist.md`
+- `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`
 
 Top priorities:
 
@@ -108,3 +109,147 @@ Top priorities:
 
 - Coverage improvements in this effort were test-only and docs-only changes.
 - No production behavior refactors were applied in this report cycle.
+
+## In-Flight Slice Notes (Append-Only)
+
+### Slice 1: Runtime/profile/adapter/unit helper expansion
+
+- Intended action:
+  - cover plugin registration wrappers and startup/runtime helper boundaries
+    (`composition`, `startup_config`, `runtime_startup`, UI adapters/factory,
+    headless UI, bootstrap dependency helpers)
+- Expected outcome:
+  - remove low-hanging 0-60% helper gaps and improve global unit baseline
+- Observed outcome:
+  - targeted suites green
+  - global baseline moved from ~79% to ~85%
+
+### Slice 2: Naming + sync adapter + storage staging + processing helper policies
+
+- Intended action:
+  - cover pure naming/domain helpers, application naming wrappers,
+    processor factory/record flow, sync no-op + kadi adapter wrappers,
+    staging-dir helpers, and additional bootstrap branches
+- Expected outcome:
+  - raise low/medium helper modules to near/full coverage
+- Observed outcome:
+  - targeted suites green
+  - global baseline moved from ~85% to ~87%
+
+### Slice 3: Medium helper gaps + runtime entrypoint + dialog edges
+
+- Intended action:
+  - close remaining small misses in abstract processor defaults, test-device processor,
+    record manager/local record edges, modified-event prune branch, dialogs,
+    and `dpost.__main__` execution branch
+- Expected outcome:
+  - convert several 96-99% modules to 100% and reduce residual helper risk
+- Observed outcome:
+  - targeted suites green after resolving collection conflicts
+  - full baseline: `427 passed, 1 skipped`, total `88%`
+
+### Slice 4: Filesystem utils branch/error hardening
+
+- Intended action:
+  - add explicit tests for:
+    - `init_dirs` explicit-dir branch
+    - record path invalid/active-device branches
+    - move-item dir cleanup + fallback failure
+    - record-folder wrapper call path
+    - persisted-records success/error paths
+- Expected outcome:
+  - significantly reduce misses in `infrastructure/storage/filesystem_utils.py`
+  - improve global baseline by ~1%
+- Observed outcome:
+  - `python -m ruff check tests/unit/infrastructure/storage/test_filesystem_utils.py` -> pass
+  - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `14 passed`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `436 passed, 1 skipped, 1 warning`
+    - total coverage: `89%`
+    - `filesystem_utils.py` improved to `93%` (10 misses remaining)
+
+### Slice 5: Device resolver branch-completion pass
+
+- Intended action:
+  - close remaining `device_resolver` helper branches:
+    - retry-delay fallback
+    - empty-dir branch variants (missing/file/permission/os-error/non-empty)
+    - probe exception wrapping
+    - chooser and reason helper edge paths
+    - no-candidate regular-file unmatched path
+- Expected outcome:
+  - raise `application/processing/device_resolver.py` to 100%
+  - push global suite baseline to 90%
+- Observed outcome:
+  - targeted resolver gate:
+    - `python -m pytest --cov=dpost.application.processing.device_resolver --cov-report=term-missing -q tests/unit/application/processing/test_device_resolver.py tests/unit/application/processing/test_device_resolver_eirich_variants.py`
+    - `24 passed`
+    - `device_resolver.py` -> `100%`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `460 passed, 1 skipped, 1 warning`
+    - total coverage: `90%`
+
+### Slice 6: Stability tracker branch-completion pass
+
+- Intended action:
+  - cover synchronous wait-loop edge paths and helper branches:
+    - disappear/reappear grace handling
+    - sentinel wait loop continuation
+    - snapshot aggregation/file-missing tolerance
+    - default/fallback polling and reappear settings
+    - sleep no-op behavior for non-positive intervals
+- Expected outcome:
+  - raise `application/processing/stability_tracker.py` from 68% to near/full
+  - improve global baseline by ~1%
+- Observed outcome:
+  - targeted gate:
+    - `python -m pytest --cov=dpost.application.processing.stability_tracker --cov-report=term-missing -q tests/unit/application/processing/test_stability_tracker.py`
+    - `18 passed`
+    - `stability_tracker.py` -> `100%`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `473 passed, 1 skipped, 1 warning`
+    - total coverage: `91%`
+
+### Slice 7: Config schema/service edge hardening
+
+- Intended action:
+  - close residual branches in:
+    - `application/config/schema.py`
+    - `application/config/service.py`
+  - with focused tests for:
+    - override coercion/validation
+    - defer/match guards and directory edge handling
+    - activation/device lookup error paths and context behavior
+    - ActiveConfig property pass-throughs
+- Expected outcome:
+  - push both config modules to full coverage and reduce hidden config-branch risk
+- Observed outcome:
+  - targeted gate:
+    - `python -m pytest --cov=dpost.application.config.schema --cov=dpost.application.config.service --cov-report=term-missing -q tests/unit/application/config/test_schema_service_edges.py ...`
+    - `53 passed`
+    - `schema.py` -> `100%`
+    - `service.py` -> `100%`
+
+### Slice 8: Tkinter UI runtime branch-completion pass
+
+- Intended action:
+  - close remaining desktop UI adapter misses:
+    - prompt-rename direct path
+    - done-dialog replacement path
+    - cancel-task no-handle/error guards
+    - `run_on_ui` scheduling and `run_main_loop` delegation
+- Expected outcome:
+  - raise `infrastructure/runtime/tkinter_ui.py` to 100%
+  - push global suite to 92%
+- Observed outcome:
+  - targeted gate:
+    - `python -m pytest --cov=dpost.infrastructure.runtime.tkinter_ui --cov-report=term-missing -q tests/unit/infrastructure/runtime/test_ui_tkinter.py`
+    - `21 passed`
+    - `tkinter_ui.py` -> `100%`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `503 passed, 1 skipped, 1 warning`
+    - total coverage: `92%`

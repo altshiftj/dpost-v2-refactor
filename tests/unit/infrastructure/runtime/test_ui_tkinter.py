@@ -49,6 +49,17 @@ def test_show_rename_dialog(ui_instance):
         assert result == {"name": "alice", "institute": "lab", "sample_ID": "abc123"}
 
 
+def test_prompt_rename_returns_dialog_result(ui_instance):
+    """prompt_rename should return the RenameDialog result payload."""
+
+    with patch("dpost.infrastructure.runtime.tkinter_ui.RenameDialog") as MockDialog:
+        MockDialog.return_value.result = {"name": "alice"}
+
+        result = ui_instance.prompt_rename()
+
+    assert result == {"name": "alice"}
+
+
 def test_prompt_append_record(ui_instance):
     with patch.object(messagebox, "askyesno", return_value=True) as mock_ask:
         result = ui_instance.prompt_append_record("rec1")
@@ -71,6 +82,24 @@ def test_schedule_and_cancel_task(ui_instance):
     ui_instance.root.after_cancel.assert_called_once_with("task-id-1")
 
 
+def test_cancel_task_ignores_none_handle(ui_instance):
+    """cancel_task should be a no-op when no handle is provided."""
+
+    ui_instance.cancel_task(None)
+
+    ui_instance.root.after_cancel.assert_not_called()
+
+
+def test_cancel_task_ignores_value_error(ui_instance):
+    """cancel_task should swallow ValueError from stale handles."""
+
+    ui_instance.root.after_cancel.side_effect = ValueError("stale handle")
+
+    ui_instance.cancel_task("task-id-2")
+
+    ui_instance.root.after_cancel.assert_called_once_with("task-id-2")
+
+
 def test_set_close_handler(ui_instance):
     cb = MagicMock()
     ui_instance.set_close_handler(cb)
@@ -85,6 +114,14 @@ def test_set_exception_handler(ui_instance):
 
 def test_get_root(ui_instance):
     assert ui_instance.get_root() == ui_instance.root
+
+
+def test_run_main_loop_delegates_to_root(ui_instance):
+    """run_main_loop should call the Tk root mainloop."""
+
+    ui_instance.run_main_loop()
+
+    ui_instance.root.mainloop.assert_called_once()
 
 
 def test_destroy(ui_instance):
@@ -150,6 +187,30 @@ def test_show_done_dialog_requires_callable(ui_instance):
             ui_instance.show_done_dialog(details, on_done_callback=None)
 
 
+def test_show_done_dialog_replaces_existing_dialog(ui_instance):
+    """show_done_dialog should replace stale dialog handles and register the new one."""
+
+    details = SessionPromptDetails(users=["alice"], records=["record-1"])
+    old_dialog = MagicMock()
+    old_dialog.winfo_exists.return_value = True
+    ui_instance._active_dialogs["done_dialog"] = old_dialog
+
+    new_dialog = MagicMock()
+    label = MagicMock()
+    button = MagicMock()
+
+    with patch("dpost.infrastructure.runtime.tkinter_ui.tk.Toplevel", return_value=new_dialog), patch(
+        "dpost.infrastructure.runtime.tkinter_ui.tk.Label", return_value=label
+    ), patch("dpost.infrastructure.runtime.tkinter_ui.tk.Button", return_value=button):
+        ui_instance.show_done_dialog(details, on_done_callback=lambda: None)
+
+    old_dialog.destroy.assert_called_once()
+    assert ui_instance._active_dialogs["done_dialog"] is new_dialog
+    protocol_args = new_dialog.protocol.call_args[0]
+    assert protocol_args[0] == "WM_DELETE_WINDOW"
+    assert callable(protocol_args[1])
+
+
 def test_handle_done_clicked_invokes_callback(ui_instance):
     dialog = MagicMock()
     dialog.winfo_exists.return_value = True
@@ -163,3 +224,20 @@ def test_handle_done_clicked_invokes_callback(ui_instance):
 
     assert called["count"] == 1
     assert "done_dialog" not in ui_instance._active_dialogs
+
+
+def test_run_on_ui_schedules_callable_with_arguments(ui_instance):
+    """run_on_ui should enqueue callback execution on the Tk event loop."""
+
+    calls = []
+
+    def _callback(name, institute=None):
+        calls.append((name, institute))
+
+    ui_instance.run_on_ui(_callback, "alice", institute="lab")
+
+    after_args = ui_instance.root.after.call_args[0]
+    assert after_args[0] == 0
+    scheduled = after_args[1]
+    scheduled()
+    assert calls == [("alice", "lab")]
