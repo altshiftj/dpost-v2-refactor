@@ -31,9 +31,17 @@
 ## Framework Kernel Boundary (Phase 3)
 - The dpost kernel boundary is currently limited to these framework surfaces:
 - `src/dpost/runtime/composition.py` (startup composition and adapter/profile selection)
+- `src/dpost/runtime/bootstrap.py` (native startup contracts and runtime bootstrap boundary API)
+- `src/dpost/application/services/runtime_startup.py` (application-level runtime startup orchestration)
+- `src/dpost/runtime/startup_config.py` (startup config/env-to-settings boundary)
 - `src/dpost/application/ports/sync.py` (sync adapter port contract)
 - `src/dpost/plugins/reference.py` (reference plugin profile contract)
+- `src/dpost/plugins/profile_selection.py` (plugin profile selection boundary)
 - Kernel composition paths can map explicit profile names to startup settings.
+- Kernel runtime modules should depend on dpost-owned bootstrap contracts, not
+  direct legacy bootstrap module imports.
+- Runtime composition should delegate plugin/config resolution to explicit
+  boundary helpers and orchestration services instead of embedding env parsing.
 - Kernel composition paths must not import concrete backend SDK modules directly.
 - Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
 

@@ -1,7 +1,7 @@
 # Phase 9 Native dpost Bootstrap Boundary Inventory
 
 ## Date
-- 2026-02-19
+- 2026-02-19 (updated 2026-02-21)
 
 ## Context
 - Phase 8 cutover/release gate tasks are prepared.
@@ -44,6 +44,43 @@
 ## Red-State Verification
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 failed`
+
+## Implementation Increment (2026-02-21)
+- Added a native dpost runtime bootstrap contract in:
+  - `src/dpost/runtime/bootstrap.py`
+  - introduced `StartupSettings` dataclass contract
+  - introduced `BootstrapContext` protocol contract
+  - retained startup exception semantics through boundary helpers
+- Moved direct legacy bootstrap module coupling into an infrastructure adapter:
+  - `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`
+- Removed legacy bootstrap module/type coupling from composition boundary:
+  - `src/dpost/runtime/composition.py`
+  - composition now imports startup contracts from `dpost.runtime.bootstrap`
+
+## Green-State Verification
+- `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `2 passed`
+
+## Gate Verification Snapshot (Post-implementation)
+- `python -m pytest -m migration`
+  -> `3 failed, 81 passed, 302 deselected`
+- `python -m pytest`
+  -> `3 failed, 382 passed, 1 skipped`
+- failing tests were unchanged plugin-hygiene checks in:
+  `tests/migration/test_plugin_discovery_hardening.py`
+  (`pca_granupack`, `granupack_blb` expectations)
+
+## Gate Recovery Update (2026-02-21)
+- Removed stale plugin directories that blocked global migration/full gates:
+  - `src/ipat_watchdog/device_plugins/pca_granupack`
+  - `src/ipat_watchdog/pc_plugins/granupack_blb`
+- Verification after recovery:
+  - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+    -> `2 passed`
+  - `python -m pytest -m migration`
+    -> `95 passed, 302 deselected`
+  - `python -m pytest`
+    -> `396 passed, 1 skipped`
 
 ## Risks
 - Runtime bootstrap decoupling can affect startup exception/context contracts

@@ -5,19 +5,25 @@
   and cleaner, open-source-grade architecture quality.
 
 ### Checklist
-- [ ] Define/confirm functional-equivalence assertions before each
+- [x] Define/confirm functional-equivalence assertions before each
       implementation increment.
-- [ ] Define targeted syntactic simplifications before each increment (for
+- [x] Define targeted syntactic simplifications before each increment (for
       example wrapper removal, call-path flattening, intent naming cleanup).
-- [ ] Reject changes that add new indirection without clear contract or
+- [x] Reject changes that add new indirection without clear contract or
       boundary value.
-- [ ] Capture per-phase before/after simplification evidence in the phase
+- [x] Capture per-phase before/after simplification evidence in the phase
       report.
-- [ ] Keep architecture baseline/contract/responsibility docs aligned with
+- [x] Keep architecture baseline/contract/responsibility docs aligned with
       ownership and boundary shifts.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Each Phase 9-13 increment used tests-first red/green loops
+  with explicit simplification targets:
+  runtime bootstrap contract extraction (Phase 9), runtime orchestration
+  extraction to `dpost/application` (Phase 10), runtime UI infrastructure
+  adapter extraction (Phase 11), plugin/config boundary extraction (Phase 12),
+  and canonical startup direct-import retirement increment (Phase 13). Per-
+  phase evidence is captured in reports and this checklist.
 
 ---
 
@@ -26,18 +32,42 @@
   boundary needed for a truly native `dpost` runtime.
 
 ### Checklist
-- [ ] Add/confirm migration tests that fail when runtime bootstrap/composition
+- [x] Add/confirm migration tests that fail when runtime bootstrap/composition
       depend on `ipat_watchdog.core.app.bootstrap`.
-- [ ] Introduce native `dpost` bootstrap context/settings/error contract.
-- [ ] Remove legacy bootstrap-module dependency from `src/dpost/runtime/bootstrap.py`.
-- [ ] Remove legacy bootstrap type/module dependency from
+- [x] Introduce native `dpost` bootstrap context/settings/error contract.
+- [x] Remove legacy bootstrap-module dependency from `src/dpost/runtime/bootstrap.py`.
+- [x] Remove legacy bootstrap type/module dependency from
       `src/dpost/runtime/composition.py`.
-- [ ] Remove transition-only bootstrap indirection and keep startup behavior
+- [x] Remove transition-only bootstrap indirection and keep startup behavior
       equivalent to current baseline.
-- [ ] Verify migration + full gates are green.
+- [x] Verify migration + full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Tests-first contract was already in place via
+  `tests/migration/test_phase9_native_bootstrap_boundary.py` and confirmed red
+  with `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `2 failed` before implementation. Implementation introduced native runtime
+  startup contracts in `src/dpost/runtime/bootstrap.py`, moved direct legacy
+  bootstrap module coupling into
+  `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`, and removed
+  legacy bootstrap type coupling from `src/dpost/runtime/composition.py`.
+  Post-change boundary verification:
+  `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `2 passed`.
+  Follow-up gate recovery removed stale plugin directories
+  `src/ipat_watchdog/device_plugins/pca_granupack` and
+  `src/ipat_watchdog/pc_plugins/granupack_blb`.
+  Final Phase 9 gate verification:
+  `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+  -> `2 passed`;
+  `python -m pytest -m migration`
+  -> `95 passed, 302 deselected`;
+  `python -m ruff check .`
+  -> `All checks passed!`;
+  `python -m black --check .`
+  -> `43 files would be left unchanged.`;
+  `python -m pytest`
+  -> `396 passed, 1 skipped`.
 
 ---
 
@@ -46,15 +76,24 @@
   services/ports instead of legacy monolith wiring.
 
 ### Checklist
-- [ ] Add failing migration tests for `dpost/application` orchestration usage.
-- [ ] Extract orchestration entrypoints into `dpost/application` services.
-- [ ] Keep behavior parity for processing/session runtime paths.
-- [ ] Flatten orchestration call paths and replace legacy alias naming with
+- [x] Add failing migration tests for `dpost/application` orchestration usage.
+- [x] Extract orchestration entrypoints into `dpost/application` services.
+- [x] Keep behavior parity for processing/session runtime paths.
+- [x] Flatten orchestration call paths and replace legacy alias naming with
       intention-revealing `dpost` names.
-- [ ] Verify migration + full gates are green.
+- [x] Verify migration + full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added tests-first contract
+  `tests/migration/test_phase10_application_orchestration_extraction.py`
+  and captured red-state (`3 failed`). Implemented
+  `src/dpost/application/services/runtime_startup.py` and rewired
+  `src/dpost/runtime/composition.py` to delegate runtime orchestration through
+  `compose_runtime_context()`. Green verification:
+  `python -m pytest tests/migration/test_phase10_application_orchestration_extraction.py`
+  -> `3 passed`, plus full migration/lint/format/full-suite gates green.
+  Evidence summary is documented in:
+  `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 
 ---
 
@@ -63,17 +102,27 @@
   drifting back into concrete integration dependencies.
 
 ### Checklist
-- [ ] Add failing migration tests for application-to-infrastructure boundary
+- [x] Add failing migration tests for application-to-infrastructure boundary
       enforcement.
-- [ ] Move runtime/filesystem/observability glue behind `dpost/infrastructure`
+- [x] Move runtime/filesystem/observability glue behind `dpost/infrastructure`
       adapters and ports.
-- [ ] Ensure composition root owns adapter selection/wiring.
-- [ ] Narrow adapter APIs to explicit ports and remove transition-era helper
+- [x] Ensure composition root owns adapter selection/wiring.
+- [x] Narrow adapter APIs to explicit ports and remove transition-era helper
       sprawl.
-- [ ] Verify migration + full gates are green.
+- [x] Verify migration + full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added tests-first contract
+  `tests/migration/test_phase11_runtime_infrastructure_boundary.py`
+  and captured red-state (`3 failed`). Implemented
+  `src/dpost/infrastructure/runtime/ui_factory.py` and rewired
+  `src/dpost/runtime/composition.py` to delegate mode-specific UI selection
+  via `resolve_ui_factory()` instead of direct legacy Tk imports.
+  Green verification:
+  `python -m pytest tests/migration/test_phase11_runtime_infrastructure_boundary.py`
+  -> `3 passed`, plus full migration/lint/format/full-suite gates green.
+  Evidence summary is documented in:
+  `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 
 ---
 
@@ -82,16 +131,28 @@
   long-term extensibility and open-source maintainability.
 
 ### Checklist
-- [ ] Add failing migration tests for plugin/config boundary ownership in
+- [x] Add failing migration tests for plugin/config boundary ownership in
       `dpost`.
-- [ ] Migrate plugin/config startup contracts to `dpost` boundary modules.
-- [ ] Keep plugin discovery errors actionable and regression-tested.
-- [ ] Normalize plugin/config boundary naming to canonical `dpost` terms and
+- [x] Migrate plugin/config startup contracts to `dpost` boundary modules.
+- [x] Keep plugin discovery errors actionable and regression-tested.
+- [x] Normalize plugin/config boundary naming to canonical `dpost` terms and
       remove alias indirection.
-- [ ] Verify migration + full gates are green.
+- [x] Verify migration + full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added tests-first contract
+  `tests/migration/test_phase12_plugin_config_boundary_migration.py`
+  and captured red-state (`3 failed`). Implemented
+  `src/dpost/runtime/startup_config.py` and
+  `src/dpost/plugins/profile_selection.py`, then rewired
+  `src/dpost/runtime/composition.py` to use
+  `resolve_runtime_startup_settings()` and
+  `resolve_plugin_profile_selection()` directly in canonical composition flow.
+  Green verification:
+  `python -m pytest tests/migration/test_phase12_plugin_config_boundary_migration.py`
+  -> `3 passed`, plus full migration/lint/format/full-suite gates green.
+  Evidence summary is documented in:
+  `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 
 ---
 
@@ -100,17 +161,29 @@
   to run without legacy core runtime module dependency.
 
 ### Checklist
-- [ ] Add failing migration tests asserting no runtime dependency on
+- [x] Add failing migration tests asserting no runtime dependency on
       `src/ipat_watchdog/core/...` from canonical startup path.
 - [ ] Remove remaining runtime dependency surfaces and transition-only glue.
 - [ ] Confirm canonical startup path is concise and readable without legacy
       runtime context.
 - [ ] Update docs/checklists/execution board to reflect legacy runtime
       retirement completion.
-- [ ] Verify migration + full gates are green.
+- [x] Verify migration + full gates are green.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added tests-first contract
+  `tests/migration/test_phase13_legacy_runtime_retirement.py`
+  and captured red-state (`2 failed`) for canonical startup direct-import
+  coupling. Implemented `src/dpost/infrastructure/logging.py` and rewired
+  `src/dpost/__main__.py` to use the dpost logging adapter, removing direct
+  `ipat_watchdog.core` imports from canonical startup modules.
+  Green verification:
+  `python -m pytest tests/migration/test_phase13_legacy_runtime_retirement.py`
+  -> `2 passed`, plus full migration/lint/format/full-suite gates green.
+  Remaining Phase 13 work: full retirement of legacy runtime dependency
+  surfaces behind infrastructure adapters.
+  Evidence summary is documented in:
+  `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`.
 
 ---
 

@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-19
+- 2026-02-21 (updated runtime boundaries through Phase 13 increments)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -32,22 +32,37 @@
 - `src/ipat_watchdog/core/app/bootstrap.py`
 - New migration composition scaffold:
 - `src/dpost/runtime/composition.py`
+- Runtime orchestration application service:
+- `src/dpost/application/services/runtime_startup.py`
+- Native dpost runtime bootstrap contract:
+- `src/dpost/runtime/bootstrap.py`
+- Legacy bootstrap adapter owned by dpost infrastructure:
+- `src/dpost/infrastructure/runtime/legacy_bootstrap_adapter.py`
+- Runtime startup config boundary:
+- `src/dpost/runtime/startup_config.py`
+- Plugin profile selection boundary:
+- `src/dpost/plugins/profile_selection.py`
 - dpost composition now validates selected sync adapter and injects a
-  `sync_manager_factory` into legacy bootstrap wiring.
+  `sync_manager_factory` into runtime bootstrap wiring through
+  `dpost.application.services.runtime_startup`.
 - dpost composition now supports an explicit reference plugin profile path via
   `DPOST_PLUGIN_PROFILE=reference`, mapping to startup settings without direct
   concrete plugin/backend coupling.
-- dpost composition now includes a startup settings resolver for optional
+- dpost runtime startup config boundary now resolves optional
   `DPOST_PC_NAME`, `DPOST_DEVICE_PLUGINS`, `DPOST_PROMETHEUS_PORT`, and
-  `DPOST_OBSERVABILITY_PORT` overrides before delegating to legacy bootstrap.
+  `DPOST_OBSERVABILITY_PORT` overrides before runtime bootstrap.
 - dpost composition now includes explicit runtime mode selection via
   `DPOST_RUNTIME_MODE` (`headless` default, `desktop` optional) and validates
   unknown runtime mode values at startup.
-- dpost composition now wires explicit mode-specific UI factories into legacy
-  bootstrap (`HeadlessRuntimeUI` for headless mode, `TKinterUI` for desktop
-  mode).
+- Runtime UI factory infrastructure adapter now resolves explicit mode-specific
+  UI factories (`HeadlessRuntimeUI` for headless mode, `TKinterUI` for
+  desktop mode).
 - dpost headless runtime UI adapter:
 - `src/dpost/infrastructure/runtime/headless_ui.py`
+- dpost runtime UI factory adapter:
+- `src/dpost/infrastructure/runtime/ui_factory.py`
+- dpost canonical logging adapter:
+- `src/dpost/infrastructure/logging.py`
 - dpost sync adapter port contract:
 - `src/dpost/application/ports/sync.py`
 - dpost reference sync adapter (noop):
@@ -122,6 +137,16 @@
 - `tests/migration/test_processing_pipeline_stage_boundaries.py`
 - Phase 7 runtime mode + desktop parity tests currently live in:
 - `tests/migration/test_runtime_mode_selection.py`
+- Phase 9 native runtime bootstrap boundary tests currently live in:
+- `tests/migration/test_phase9_native_bootstrap_boundary.py`
+- Phase 10 application orchestration extraction tests currently live in:
+- `tests/migration/test_phase10_application_orchestration_extraction.py`
+- Phase 11 runtime infrastructure boundary tests currently live in:
+- `tests/migration/test_phase11_runtime_infrastructure_boundary.py`
+- Phase 12 plugin/config boundary migration tests currently live in:
+- `tests/migration/test_phase12_plugin_config_boundary_migration.py`
+- Phase 13 canonical startup retirement tests currently live in:
+- `tests/migration/test_phase13_legacy_runtime_retirement.py`
 
 ## Notable Constraints in Current Baseline
 - Some global/singleton patterns are still present in runtime wiring.
@@ -136,8 +161,11 @@
 - dpost composition default runtime mode is now explicit headless, with
   optional desktop mode wiring.
 - Sync backend is currently Kadi-coupled in core paths.
-- dpost composition still delegates full runtime bootstrap to legacy wiring while
-  sync adapter kernel contracts are being introduced incrementally.
+- dpost runtime bootstrap now presents native dpost startup contracts and
+  delegates legacy bootstrap access through an infrastructure adapter while
+  full runtime extraction continues.
+- Canonical startup modules no longer import `ipat_watchdog.core` directly;
+  some infrastructure adapters still delegate to legacy runtime modules.
 - dpost plugin profile support is currently reference-only and intended for
   kernel validation until concrete plugin migration begins.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename

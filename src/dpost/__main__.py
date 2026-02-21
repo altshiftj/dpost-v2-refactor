@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import sys
 
+from dpost.infrastructure.logging import setup_logger
 from dpost.runtime.bootstrap import MissingConfiguration, StartupError
 from dpost.runtime.composition import compose_bootstrap
-from ipat_watchdog.core.logging.logger import setup_logger
 
 logger = setup_logger(__name__)
 
