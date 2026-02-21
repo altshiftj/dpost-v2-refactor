@@ -1,15 +1,16 @@
-"""Lightweight domain models that unify the processing pipeline."""
+"""Domain value models for processing workflow decisions and outcomes."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-from dpost.application.config import DeviceConfig
-from dpost.application.processing.file_processor_abstract import FileProcessorABS
-from dpost.application.records import LocalRecord
+if TYPE_CHECKING:
+    from dpost.application.config import DeviceConfig
+    from dpost.application.processing.file_processor_abstract import FileProcessorABS
+    from dpost.application.records import LocalRecord
 
 
 class RoutingDecision(Enum):

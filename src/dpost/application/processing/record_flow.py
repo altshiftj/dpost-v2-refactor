@@ -6,7 +6,7 @@ from typing import Callable
 
 from dpost.application.interactions import DialogPrompts, WarningMessages
 from dpost.application.ports import UserInteractionPort
-from dpost.application.processing.models import ProcessingResult, RouteContext
+from dpost.domain.processing.models import ProcessingResult, RouteContext
 
 
 def handle_unappendable_record(

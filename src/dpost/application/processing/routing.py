@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import Optional
 
 from dpost.application.config import DeviceConfig
-from dpost.application.processing.file_processor_abstract import FileProcessorABS
-from dpost.application.processing.models import RoutingDecision
 from dpost.application.records import LocalRecord, RecordManager
 from dpost.infrastructure.storage.filesystem_utils import (
     generate_record_id,
@@ -31,27 +29,3 @@ def fetch_record_for_prefix(
 
     record = records.get_record_by_id(record_id)
     return sanitized_prefix, is_valid_format, record
-
-
-def determine_routing_state(
-    record: Optional[LocalRecord],
-    is_valid_format: bool,
-    filename_prefix: str,
-    extension: str,
-    processor: FileProcessorABS,
-) -> RoutingDecision:
-    """Determine routing decision based on record state and processor capabilities."""
-    if record is None:
-        return (
-            RoutingDecision.REQUIRE_RENAME
-            if not is_valid_format
-            else RoutingDecision.ACCEPT
-        )
-
-    if not is_valid_format:
-        return RoutingDecision.REQUIRE_RENAME
-
-    if processor.is_appendable(record, filename_prefix, extension):
-        return RoutingDecision.ACCEPT
-
-    return RoutingDecision.UNAPPENDABLE

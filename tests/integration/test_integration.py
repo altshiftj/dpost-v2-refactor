@@ -8,7 +8,7 @@ import pytest
 
 from dpost.application.interactions.messages import InfoMessages
 from dpost.application.processing.file_process_manager import FileProcessManager
-from dpost.application.processing.models import ProcessingStatus
+from dpost.domain.processing.models import ProcessingStatus
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from dpost.infrastructure.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_observer import FakeObserver

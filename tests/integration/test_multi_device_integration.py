@@ -5,7 +5,7 @@ from typing import Any, cast
 import pytest
 
 from dpost.application.processing.file_process_manager import FileProcessManager
-from dpost.application.processing.models import ProcessingStatus
+from dpost.domain.processing.models import ProcessingStatus
 from dpost.infrastructure.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager

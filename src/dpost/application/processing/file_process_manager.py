@@ -17,7 +17,7 @@ from dpost.application.interactions import (
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
 from dpost.application.ports import SyncAdapterPort
 from dpost.application.ports import UserInteractionPort
-from dpost.application.processing.models import (
+from dpost.domain.processing.models import (
     ProcessingCandidate,
     ProcessingRequest,
     ProcessingResult,
@@ -25,6 +25,7 @@ from dpost.application.processing.models import (
     RouteContext,
     RoutingDecision,
 )
+from dpost.domain.processing.routing import determine_routing_decision
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     generate_file_id,
@@ -49,10 +50,7 @@ from dpost.application.processing.record_utils import (
     update_record,
 )
 from dpost.application.processing.rename_flow import RenameService
-from dpost.application.processing.routing import (
-    determine_routing_state,
-    fetch_record_for_prefix,
-)
+from dpost.application.processing.routing import fetch_record_for_prefix
 from dpost.application.processing.stability_tracker import FileStabilityTracker
 from dpost.application.records import LocalRecord, RecordManager
 
@@ -211,7 +209,7 @@ class _ProcessingPipeline:
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
             manager.records, candidate.prefix, candidate.device
         )
-        decision = determine_routing_state(
+        decision = determine_routing_decision(
             record,
             is_valid_format,
             candidate.prefix,

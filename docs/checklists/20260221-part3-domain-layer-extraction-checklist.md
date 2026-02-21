@@ -5,12 +5,14 @@
   dependency cycles later in the extraction.
 
 ### Checklist
-- [ ] Create domain subpackage structure for records and processing ownership.
-- [ ] Add initial domain characterization tests before moving implementations.
-- [ ] Define explicit import rules for domain/application/infrastructure usage.
+- [x] Create domain subpackage structure for processing ownership.
+- [ ] Expand domain subpackage structure for records ownership.
+- [x] Add initial domain characterization tests before moving implementations.
+- [x] Define explicit import rules for domain/application/infrastructure usage.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Added `src/dpost/domain/processing/` modules and Part 3
+  migration ownership tests to lock extraction boundaries before broader moves.
 
 ---
 
@@ -19,14 +21,17 @@
   business rules that should not depend on infrastructure code.
 
 ### Checklist
-- [ ] Move processing enums/dataclasses from application to domain modules.
-- [ ] Extract pure routing decision policy into domain helper(s).
-- [ ] Keep application orchestration focused on lookups, side effects, and
+- [x] Move processing enums/dataclasses from application to domain modules.
+- [x] Extract pure routing decision policy into domain helper(s).
+- [x] Keep application orchestration focused on lookups, side effects, and
       workflow sequencing.
-- [ ] Update tests for moved imports and behavioral parity.
+- [x] Update tests for moved imports and behavioral parity.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Retired
+  `src/dpost/application/processing/models.py`, moved value models to
+  `src/dpost/domain/processing/models.py`, moved routing policy to
+  `src/dpost/domain/processing/routing.py`, and rewired application/test imports.
 
 ---
 
@@ -66,13 +71,14 @@
   are removed and governance docs reflect actual architecture.
 
 ### Checklist
-- [ ] Remove superseded application-local model/policy duplicates.
+- [x] Remove superseded application-local model/policy duplicates.
 - [ ] Update architecture baseline/contract/responsibility docs.
 - [ ] Record major extraction decisions in ADRs as needed.
 - [ ] Capture checkpoint evidence in roadmap/report artifacts.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Application-local processing models module was deleted;
+  remaining cleanup/governance items continue in subsequent waves.
 
 ---
 

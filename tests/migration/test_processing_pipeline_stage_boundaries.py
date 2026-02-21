@@ -13,7 +13,7 @@ from dpost.application.processing.file_process_manager import (
     _ProcessingPipeline,
 )
 from dpost.application.processing.file_processor_abstract import ProcessingOutput
-from dpost.application.processing.models import (
+from dpost.domain.processing.models import (
     ProcessingCandidate,
     ProcessingRequest,
     ProcessingResult,

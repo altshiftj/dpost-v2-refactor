@@ -8,7 +8,7 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from dpost.application.processing.models import ProcessingCandidate, ProcessingStatus
+from dpost.domain.processing.models import ProcessingCandidate, ProcessingStatus
 from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
     StabilityOutcome,

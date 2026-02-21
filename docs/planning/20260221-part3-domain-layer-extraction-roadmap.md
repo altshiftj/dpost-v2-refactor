@@ -5,6 +5,15 @@
   domain policies, while preserving functional behavior and keeping full test
   gates green.
 
+## Progress Snapshot (2026-02-21)
+- Wave 3.2 is complete:
+  - processing value models/enums now owned by
+    `src/dpost/domain/processing/models.py`
+  - routing policy now owned by `src/dpost/domain/processing/routing.py`
+  - `src/dpost/application/processing/models.py` retired
+- Next active target is Wave 3.3 (`LocalRecord` domain extraction) with
+  dependency-cycle hardening during module moves.
+
 ## Non-Goals
 - No runtime entrypoint redesign.
 - No plugin behavior redesign.

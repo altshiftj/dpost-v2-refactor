@@ -11,6 +11,14 @@
 - Next objective is to populate `src/dpost/domain/` with pure business/data
   rules while preserving runtime behavior and test parity.
 
+## Update (Wave 3.2 Complete)
+- Domain processing ownership is now established:
+  - `src/dpost/domain/processing/models.py` owns processing value models/enums.
+  - `src/dpost/domain/processing/routing.py` owns routing decision policy.
+  - `src/dpost/application/processing/models.py` has been removed.
+- Application processing routing now focuses on record-prefix lookup helpers.
+- Integration, migration, and full-suite gates are green after the move.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:

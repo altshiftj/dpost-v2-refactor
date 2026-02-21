@@ -10,16 +10,20 @@ Keep functions small and predictable; prefer returning strings/paths and let
 callers handle higher-level orchestration.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import re
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from dpost.application.config import current
 from dpost.application.interactions import ValidationMessages
-from dpost.application.records import LocalRecord
 from dpost.infrastructure.logging import setup_logger
+
+if TYPE_CHECKING:
+    from dpost.application.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -334,6 +338,8 @@ def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) ->
 
 def load_persisted_records() -> dict[str, LocalRecord]:
     """Load persisted daily records from JSON into LocalRecord instances."""
+
+    from dpost.application.records.local_record import LocalRecord
 
     json_path = _daily_records_path()
     if not json_path.exists():

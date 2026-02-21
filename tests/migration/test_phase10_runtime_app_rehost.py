@@ -39,8 +39,8 @@ DPOST_PROCESSING_MANAGER_PATH = (
     / "processing"
     / "file_process_manager.py"
 )
-DPOST_PROCESSING_MODELS_PATH = (
-    PROJECT_ROOT / "src" / "dpost" / "application" / "processing" / "models.py"
+DPOST_DOMAIN_PROCESSING_MODELS_PATH = (
+    PROJECT_ROOT / "src" / "dpost" / "domain" / "processing" / "models.py"
 )
 DPOST_RECORD_MANAGER_PATH = (
     PROJECT_ROOT / "src" / "dpost" / "application" / "records" / "record_manager.py"
@@ -175,7 +175,7 @@ def test_dpost_processing_manager_module_exists_with_file_process_manager_class(
 def test_dpost_processing_modules_avoid_direct_legacy_record_imports() -> None:
     """Require dpost processing paths to resolve records through dpost ownership seams."""
     processing_contents = DPOST_PROCESSING_MANAGER_PATH.read_text(encoding="utf-8")
-    models_contents = DPOST_PROCESSING_MODELS_PATH.read_text(encoding="utf-8")
+    models_contents = DPOST_DOMAIN_PROCESSING_MODELS_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.records.record_manager" not in processing_contents
     assert "ipat_watchdog.core.records.local_record" not in processing_contents
@@ -250,7 +250,7 @@ def test_dpost_processing_and_records_modules_avoid_direct_legacy_metrics_import
 def test_dpost_processing_modules_avoid_direct_legacy_processing_imports() -> None:
     """Require dpost processing surfaces to avoid direct legacy processing imports."""
     processing_contents = DPOST_PROCESSING_MANAGER_PATH.read_text(encoding="utf-8")
-    models_contents = DPOST_PROCESSING_MODELS_PATH.read_text(encoding="utf-8")
+    models_contents = DPOST_DOMAIN_PROCESSING_MODELS_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.processing" not in processing_contents
     assert "ipat_watchdog.core.processing" not in models_contents
