@@ -253,3 +253,61 @@ def test_concrete_tischrem_blb_pc_plugin_loads_from_dpost_namespace(
 
     assert plugin.__class__.__module__ == "dpost.pc_plugins.tischrem_blb.plugin"
     assert "dpost.pc_plugins.tischrem_blb.plugin" in sys.modules
+
+
+def test_concrete_rmx_eirich_el1_plugin_loads_from_dpost_namespace(
+    monkeypatch,
+) -> None:
+    """Require concrete RMX EIRICH EL1 plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.rmx_eirich_el1.plugin",
+        "ipat_watchdog.device_plugins.rmx_eirich_el1.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("rmx_eirich_el1")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.rmx_eirich_el1.plugin"
+    assert "dpost.device_plugins.rmx_eirich_el1.plugin" in sys.modules
+
+
+def test_concrete_rmx_eirich_r01_plugin_loads_from_dpost_namespace(
+    monkeypatch,
+) -> None:
+    """Require concrete RMX EIRICH R01 plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.rmx_eirich_r01.plugin",
+        "ipat_watchdog.device_plugins.rmx_eirich_r01.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("rmx_eirich_r01")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.rmx_eirich_r01.plugin"
+    assert "dpost.device_plugins.rmx_eirich_r01.plugin" in sys.modules
+
+
+def test_concrete_eirich_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete EIRICH BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.eirich_blb.plugin",
+        "ipat_watchdog.pc_plugins.eirich_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("eirich_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.eirich_blb.plugin"
+    assert "dpost.pc_plugins.eirich_blb.plugin" in sys.modules

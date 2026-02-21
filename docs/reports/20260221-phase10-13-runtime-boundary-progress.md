@@ -467,17 +467,73 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `15 passed`
 
+## Deep-Core Increment: Concrete RMX EIRICH EL1 Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `3 failed`
+- Implementation:
+  - added canonical dpost RMX EIRICH EL1 plugin package:
+    - `src/dpost/device_plugins/rmx_eirich_el1/`
+  - added dpost-owned RMX EIRICH EL1 modules:
+    - `src/dpost/device_plugins/rmx_eirich_el1/plugin.py`
+    - `src/dpost/device_plugins/rmx_eirich_el1/settings.py`
+    - `src/dpost/device_plugins/rmx_eirich_el1/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.rmx_eirich_el1` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `18 passed`
+
+## Deep-Core Increment: Concrete RMX EIRICH R01 Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `3 failed`
+- Implementation:
+  - added canonical dpost RMX EIRICH R01 plugin package:
+    - `src/dpost/device_plugins/rmx_eirich_r01/`
+  - added dpost-owned RMX EIRICH R01 modules:
+    - `src/dpost/device_plugins/rmx_eirich_r01/plugin.py`
+    - `src/dpost/device_plugins/rmx_eirich_r01/settings.py`
+    - `src/dpost/device_plugins/rmx_eirich_r01/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.rmx_eirich_r01` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `18 passed`
+
+## Deep-Core Increment: Concrete EIRICH BLB PC Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `3 failed`
+- Implementation:
+  - added canonical dpost EIRICH BLB PC plugin package:
+    - `src/dpost/pc_plugins/eirich_blb/`
+  - added dpost-owned EIRICH BLB PC modules:
+    - `src/dpost/pc_plugins/eirich_blb/plugin.py`
+    - `src/dpost/pc_plugins/eirich_blb/settings.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.pc_plugins.eirich_blb` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `18 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `146 passed, 302 deselected`
+  -> `149 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `124 files would be left unchanged.`
+  -> `135 files would be left unchanged.`
 - `python -m pytest`
-  -> `447 passed, 1 skipped`
+  -> `450 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -496,6 +552,11 @@
   `src/dpost/device_plugins/sem_phenomxl2/file_processor.py` before
   `python -m black --check .` returned
   `124 files would be left unchanged`.
+- Eirich concrete-plugin slice required formatter passes on
+  `src/dpost/device_plugins/rmx_eirich_el1/file_processor.py` and
+  `src/dpost/device_plugins/rmx_eirich_r01/file_processor.py` before
+  `python -m black --check .` returned
+  `135 files would be left unchanged`.
 
 ## Remaining Risk / Open Work
 - Most plugin implementation packages remain in legacy namespaces during
@@ -505,9 +566,13 @@
   `src/dpost/device_plugins/utm_zwick/`,
   `src/dpost/device_plugins/extr_haake/`,
   `src/dpost/device_plugins/erm_hioki/`,
-  `src/dpost/device_plugins/sem_phenomxl2/`, `src/dpost/pc_plugins/test_pc/`,
+  `src/dpost/device_plugins/sem_phenomxl2/`,
+  `src/dpost/device_plugins/rmx_eirich_el1/`,
+  `src/dpost/device_plugins/rmx_eirich_r01/`,
+  `src/dpost/pc_plugins/test_pc/`,
   `src/dpost/pc_plugins/zwick_blb/`, `src/dpost/pc_plugins/haake_blb/`, and
-  `src/dpost/pc_plugins/hioki_blb/`, `src/dpost/pc_plugins/tischrem_blb/`.
+  `src/dpost/pc_plugins/hioki_blb/`, `src/dpost/pc_plugins/tischrem_blb/`,
+  `src/dpost/pc_plugins/eirich_blb/`.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`
