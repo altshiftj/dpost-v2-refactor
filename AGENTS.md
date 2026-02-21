@@ -30,6 +30,19 @@
 - Do not introduce human-in-the-loop wait points inside normal TDD cycles for
   Phase 9-13 execution.
 
+## Execution Tempo (Bold by Default)
+- Default to bold, subsystem-oriented migration slices when requirements are
+  clear.
+- Prefer retiring meaningful legacy surface per checkpoint commit over
+  micro-edits (for example an entire harness seam, runtime seam, or plugin
+  family seam).
+- Keep changes reviewable, but do not split tightly coupled edits into separate
+  commits solely for caution.
+- During implementation, use focused tests for fast feedback; run required
+  full gates once per checkpoint before commit.
+- Avoid repetitive full-suite reruns mid-slice unless a failure indicates broad
+  regression risk.
+
 ## Current Migration Decisions (Locked)
 - Runtime posture: headless-first.
 - Migration sequencing: framework-first (kernel/contracts/reference implementations before concrete integrations).
@@ -42,16 +55,16 @@
 
 ## Execution Rules
 - Inspect existing code and active architecture docs before editing.
-- Use small, targeted diffs that fit the current migration phase.
-- Keep implementation scope to one capability slice per change set whenever
-  feasible:
+- Use bounded but substantial diffs that fit the current migration phase.
+- Prefer grouped vertical slices across tightly coupled capabilities whenever
+  that accelerates retirement safely:
 - processing core rehost
 - record lifecycle rehost
 - sync core rehost
 - config runtime rehost
 - shim retirement/import sweep
-- Do not combine multiple capability slices in one implementation change unless
-  the extra scope is documentation-only synchronization.
+- Do not split tightly coupled capability updates only to preserve an
+  artificially small diff.
 - Prefer `python -m ...` invocations to avoid PATH issues on Windows.
 - Avoid compatibility shims unless explicitly requested or clearly required for transition safety.
 - Apply framework-first sequencing:
@@ -104,6 +117,8 @@
 - implement until tests pass
 - refactor while tests stay green
 - report red/green verification evidence and rationale
+- maintain a fast cadence: one explicit red-to-green loop per migration slice,
+  then run required full gates before checkpoint commit
 - Do not pause for human approval between red and green unless requirements are ambiguous or unsafe.
 
 ## Reasoning Effort Policy
@@ -173,6 +188,8 @@
 - at major autonomous checkpoints, stage all current migration work with
   `git add .` and create a normal commit with a clear scope/result message
   before continuing further slices
+- checkpoint scope should be meaningful (subsystem or boundary-level), not
+  micro-step commits unless needed to recover from risk
 - do not wait for extra human approval to create these checkpoint commits
   unless requirements become ambiguous or unsafe
 - Allowed git write operations:
