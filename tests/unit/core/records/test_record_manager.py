@@ -68,10 +68,32 @@ def test_remove_item_from_record_persists_state(tmp_path, record_manager):
     with patch(
         "dpost.application.records.record_manager.save_persisted_records"
     ) as mock_save:
-        record_manager.remove_item_from_record(str(file_path), record)
+        removed = record_manager.remove_item_from_record(str(file_path), record)
 
     mock_save.assert_called_once()
-    assert str(file_path.resolve()) in record.files_uploaded  # removal deferred (see TODO in implementation)
+    assert removed == 1
+    assert str(file_path.resolve()) not in record.files_uploaded
+
+
+def test_remove_item_from_record_clears_force_flag(tmp_path, record_manager):
+    file_path = tmp_path / "f1.txt"
+    file_path.write_text("faux")
+
+    resolved = str(file_path.resolve())
+    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record.files_uploaded = {resolved: False, "f2.txt": False}
+    record.files_require_force = {resolved}
+    record_manager._persist_records_dict = {record.identifier: record}
+
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
+        removed = record_manager.remove_item_from_record(str(file_path), record)
+
+    mock_save.assert_called_once()
+    assert removed == 1
+    assert resolved not in record.files_uploaded
+    assert resolved not in record.files_require_force
 
 
 def test_get_record_by_id_case_insensitive(record_manager):

@@ -1,6 +1,8 @@
 """Manages LocalRecord lifecycle, persistence, and sync orchestration."""
 
 import datetime
+import os
+from pathlib import Path
 from typing import Dict, Optional
 
 from dpost.application.config import DeviceConfig
@@ -134,15 +136,35 @@ class RecordManager:
         self.save_records()
         return new_count
 
-    def remove_item_from_record(self, path: str, record: LocalRecord):
-        """
-        Remove a file path from a record.
+    def remove_item_from_record(self, path: str, record: LocalRecord) -> int:
+        """Remove one tracked path (or directory subtree) from a record and persist."""
+        target = Path(path).resolve()
+        normalized_target = str(target)
+        removed = 0
 
-        Note: Implementation appears incomplete - should call record.remove_item()
-        and handle metrics update if needed.
-        """
-        # TODO: Add actual removal logic
+        candidates = [normalized_target]
+        if target.is_dir():
+            prefix = f"{normalized_target}{os.sep}"
+            candidates = [
+                tracked
+                for tracked in list(record.files_uploaded.keys())
+                if tracked == normalized_target or tracked.startswith(prefix)
+            ]
+
+        for candidate in candidates:
+            if candidate in record.files_uploaded:
+                del record.files_uploaded[candidate]
+                removed += 1
+            record.files_require_force.discard(candidate)
+
+        logger.debug(
+            "Removed %s tracked item(s) from record '%s' for path '%s'.",
+            removed,
+            record.identifier,
+            path,
+        )
         self.save_records()
+        return removed
 
     def save_records(self):
         """
