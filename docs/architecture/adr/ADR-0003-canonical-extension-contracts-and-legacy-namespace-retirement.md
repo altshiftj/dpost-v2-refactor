@@ -40,8 +40,8 @@
   - external extensions that still target legacy namespace/hook conventions must
     migrate to dpost contracts.
 - Neutral:
-  - legacy compatibility wrappers may still exist under `src/ipat_watchdog/**`
-    during retention windows, but are no longer canonical.
+  - superseded by ADR-0004 retirement closure: `src/ipat_watchdog/**` is now
+    removed from source control.
 
 ## Implementation Notes
 - Retire canonical plugin compatibility seams:
@@ -55,5 +55,5 @@
 ## References
 - `docs/architecture/extension-contracts.md`
 - `docs/architecture/architecture-contract.md`
-- `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`
-- `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
+- `docs/reports/archive/20260221-phase10-13-runtime-boundary-progress.md`
+- `docs/checklists/archive/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`

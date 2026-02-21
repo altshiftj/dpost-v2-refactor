@@ -40,7 +40,7 @@
 
 ## References
 - `docs/architecture/adr/ADR-0001-headless-first-and-optional-sync-adapters.md`
-- `docs/planning/20260218-dpost-architecture-tightening-plan.md`
-- `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
-- `docs/planning/20260218-dpost-execution-board.md`
+- `docs/planning/archive/20260218-dpost-architecture-tightening-plan.md`
+- `docs/checklists/archive/20260218-dpost-architecture-tightening-checklist.md`
+- `docs/planning/archive/20260218-dpost-execution-board.md`
 

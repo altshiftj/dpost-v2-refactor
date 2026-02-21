@@ -217,5 +217,5 @@
 - Execute as checkpointed autonomous slices.
 - Keep progress evidence in:
   - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
-  - `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`
+  - `docs/reports/archive/20260221-phase10-13-runtime-boundary-progress.md`
   - new retirement progress reports as slices land.

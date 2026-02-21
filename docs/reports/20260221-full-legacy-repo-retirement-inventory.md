@@ -25,9 +25,9 @@
 
 ## Existing Documentation Coverage
 - Strong coverage exists for canonical runtime decoupling through Phase 9-13:
-  - `docs/planning/20260221-dpost-full-legacy-decoupling-clean-architecture-roadmap.md`
-  - `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
-  - `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`
+  - `docs/planning/archive/20260221-dpost-full-legacy-decoupling-clean-architecture-roadmap.md`
+  - `docs/checklists/archive/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
+  - `docs/reports/archive/20260221-phase10-13-runtime-boundary-progress.md`
 - Existing docs do not yet provide a full, end-to-end retirement execution plan
   for deleting the legacy package tree and migrating legacy test ownership.
 

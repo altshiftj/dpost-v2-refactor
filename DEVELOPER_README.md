@@ -113,18 +113,18 @@ Marker intent:
 
 ## Migration and Architecture Docs
 - Active roadmap:
-  - `docs/planning/20260221-dpost-full-legacy-decoupling-clean-architecture-roadmap.md`
+  - `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
 - Active checklist:
-  - `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
+  - `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
 - Active progress report:
-  - `docs/reports/20260221-phase10-13-runtime-boundary-progress.md`
+  - `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
 - Full legacy retirement inventory/roadmap/checklist:
   - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
-- Part 3 domain extraction inventory/roadmap/checklist:
-  - `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
-  - `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
-  - `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
+- Historical migration docs:
+  - `docs/reports/archive/`
+  - `docs/planning/archive/`
+  - `docs/checklists/archive/`
 - Architecture ADRs:
   - `docs/architecture/adr/`

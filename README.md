@@ -17,21 +17,17 @@ artifacts.
 
 ## Key Docs
 - `docs/architecture/README.md`
-- `docs/planning/20260218-dpost-architecture-tightening-plan.md`
-- `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
-- `docs/planning/20260218-dpost-execution-board.md`
-- `docs/reports/20260219-phase8-cutover-migration-notes.md`
-- `docs/planning/20260219-post-sunset-compatibility-retirement-plan.md`
-- `docs/checklists/20260219-post-sunset-compatibility-retirement-checklist.md`
-- `docs/planning/20260219-post-sunset-compatibility-retirement-pr-runbook.md`
-- `docs/planning/20260219-dpost-phase9-13-full-strangler-plan.md`
-- `docs/checklists/20260219-dpost-phase9-13-full-strangler-checklist.md`
-- `docs/reports/20260219-phase9-native-bootstrap-boundary-inventory.md`
+- `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
+- `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
+- `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
 - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
 - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
 - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+- `docs/reports/archive/`
+- `docs/planning/archive/`
+- `docs/checklists/archive/`
 
 ## Test Split
-- Legacy behavior contract tests: `python -m pytest -m legacy`
+- Archived compatibility characterization tests: `python -m pytest -m legacy`
 - Migration/cutover tests: `python -m pytest -m migration`
 - Full suite: `python -m pytest`
