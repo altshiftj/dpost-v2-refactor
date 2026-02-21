@@ -6,10 +6,12 @@ from dataclasses import dataclass
 from typing import Optional
 
 from dpost.application.interactions import InfoMessages
-from dpost.application.ports import RenameDecision, RenamePrompt, UserInteractionPort
-from dpost.infrastructure.storage.filesystem_utils import (
+from dpost.application.naming.policy import (
     analyze_user_input,
     explain_filename_violation,
+)
+from dpost.application.ports import RenameDecision, RenamePrompt, UserInteractionPort
+from dpost.infrastructure.storage.filesystem_utils import (
     move_to_rename_folder,
 )
 

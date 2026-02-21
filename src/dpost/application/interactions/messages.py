@@ -3,6 +3,12 @@ Centralized message catalog for user-facing strings used within interaction flow
 Grouping them here keeps messaging consistent and simplifies future localization.
 """
 
+from dpost.domain.naming.prefix_policy import (
+    ValidationMessages as NamingValidationMessages,
+)
+
+ValidationMessages = NamingValidationMessages
+
 
 class ErrorMessages:
     """Error messages displayed to the user."""
@@ -89,15 +95,3 @@ class DialogPrompts:
     LABEL_NAME = "Name (Initials):"
     LABEL_INSTITUTE = "Institute (Initials):"
     LABEL_SAMPLE_NAME = "Sample Name:"
-
-
-class ValidationMessages:
-    """Validation feedback shown when filenames or fields break conventions."""
-
-    MISSING_SEPARATOR = "Filename must have exactly 3 parts separated by '-'."
-    USER_ONLY_LETTERS = "User ID must contain only letters."
-    INSTITUTE_ONLY_LETTERS = "Institute must contain only letters."
-    SAMPLE_TOO_LONG = "Sample name must be 30 characters or fewer."
-    SAMPLE_INVALID_CHARS = (
-        "Sample may only contain letters, digits, underscores/spaces."
-    )

@@ -23,6 +23,13 @@
   - `src/dpost/application/processing/batch_models.py`
   - `src/dpost/application/processing/text_utils.py`
   - `src/dpost/application/records/local_record.py`
+- Naming policy extraction moved prefix helpers out of infrastructure storage:
+  - `is_valid_prefix`, `sanitize_prefix`, `sanitize_and_validate`,
+    `explain_filename_violation`, and `analyze_user_input` are no longer
+    defined in `src/dpost/infrastructure/storage/filesystem_utils.py`
+  - canonical ownership is now:
+    `src/dpost/domain/naming/prefix_policy.py` and
+    `src/dpost/application/naming/policy.py`
 
 ## Required Contributor Updates
 1. Replace legacy imports with canonical `dpost` imports.

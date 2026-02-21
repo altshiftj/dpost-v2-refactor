@@ -63,37 +63,47 @@
 - Migration guard added:
   - `tests/migration/test_part3_domain_text_policy_ownership.py`.
 
+## Update (Wave 3.8 Complete)
+- Naming prefix policy ownership is now established under domain:
+  - `src/dpost/domain/naming/prefix_policy.py` owns prefix validation,
+    sanitation, and violation analysis policy.
+  - `src/dpost/application/naming/policy.py` owns config-aware policy facade.
+  - `src/dpost/infrastructure/storage/filesystem_utils.py` no longer owns
+    naming prefix policy functions.
+- Processing routing/rename and ERM Hioki processor now consume application
+  naming facade imports instead of infrastructure naming policy helpers.
+- Migration guard added:
+  - `tests/migration/test_part3_domain_naming_policy_ownership.py`.
+
 ## Findings
-- `src/dpost/domain/` is currently empty except `__init__.py`.
-- Core business objects still live in `application`:
-  - `LocalRecord` lifecycle behavior in
-    `src/dpost/application/records/local_record.py`.
-  - Routing state models in `src/dpost/application/processing/models.py`.
-- Domain decisions are partially mixed with infrastructure/application
-  dependencies:
-  - `src/dpost/application/processing/routing.py` imports
-    `dpost.infrastructure.storage.filesystem_utils`.
-  - `src/dpost/application/records/local_record.py` depends on runtime config
-    accessor (`current()`) and logging.
-- Several modules are strong candidates for immediate domain ownership with low
-  dependency friction:
-  - `src/dpost/application/processing/batch_models.py`
-  - `src/dpost/application/processing/staging_utils.py`
-  - `src/dpost/application/processing/text_utils.py` (after logger/adapter
-    concerns are isolated).
-- Config dataclasses in `src/dpost/application/config/schema.py` include
-  behavior (`matches_file`, `should_defer_dir`) that may become domain policy
-  once filesystem/runtime coupling seams are made explicit.
+- Domain ownership is now established for:
+  - processing value/routing models (`src/dpost/domain/processing/models.py`,
+    `src/dpost/domain/processing/routing.py`)
+  - records entity (`src/dpost/domain/records/local_record.py`)
+  - batch/staging/text processing policy
+    (`src/dpost/domain/processing/batch_models.py`,
+    `src/dpost/domain/processing/staging.py`,
+    `src/dpost/domain/processing/text.py`)
+  - naming prefix policy (`src/dpost/domain/naming/prefix_policy.py`)
+- Application now owns config-aware naming policy facade at
+  `src/dpost/application/naming/policy.py`.
+- Infrastructure storage utilities now focus on filesystem/record persistence
+  concerns and no longer define prefix validation/sanitization policy.
+- Remaining Part 3 work is manual workflow validation only.
 
 ## Evidence
 - `src/dpost/domain/__init__.py`
-- `src/dpost/application/records/local_record.py:19`
-- `src/dpost/application/records/local_record.py:42`
-- `src/dpost/application/processing/models.py:15`
-- `src/dpost/application/processing/models.py:32`
-- `src/dpost/application/processing/routing.py:11`
-- `src/dpost/application/processing/routing.py:17`
-- `src/dpost/application/processing/routing.py:36`
+- `src/dpost/domain/records/local_record.py`
+- `src/dpost/domain/processing/models.py`
+- `src/dpost/domain/processing/routing.py`
+- `src/dpost/domain/processing/batch_models.py`
+- `src/dpost/domain/processing/staging.py`
+- `src/dpost/domain/processing/text.py`
+- `src/dpost/domain/naming/prefix_policy.py`
+- `src/dpost/application/naming/policy.py`
+- `src/dpost/application/processing/routing.py`
+- `src/dpost/application/processing/rename_flow.py`
+- `src/dpost/device_plugins/erm_hioki/file_processor.py`
 - `src/dpost/application/config/schema.py:246`
 - `src/dpost/application/config/schema.py:259`
 - `src/dpost/application/config/schema.py:273`
@@ -107,13 +117,6 @@
   layer intent and reduce clarity.
 
 ## Open Questions
-- Which modules should move first for lowest-risk, highest-clarity gains?
-  - Answer: start with pure value/policy modules (`processing.models`,
-    `batch_models`, pure routing policy helpers), then migrate `LocalRecord`
-    once runtime-config coupling is removed.
-- Should config schema dataclasses move to `domain` in Part 3?
-  - Answer: partially; only pure validation/matching policy should move in
-    Part 3. Runtime/environment binding remains application/infrastructure.
-- Do we need compatibility shims during moves?
-  - Answer: no by default; update imports directly and keep slices small with
-    green tests at each checkpoint.
+- No open technical blockers remain for Part 3 code extraction.
+- Pending closure is manual operator/contributor validation from the runbook:
+  - `docs/checklists/20260221-final-manual-validation-runbook.md`.

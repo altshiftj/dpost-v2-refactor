@@ -40,6 +40,17 @@
   - PSA/Kinexus/DSV processors now consume shared domain text policy helper
   - ownership guard added at
     `tests/migration/test_part3_domain_text_policy_ownership.py`
+- Wave 3.8 is complete:
+  - filename-prefix validation/sanitization policy now owned by
+    `src/dpost/domain/naming/prefix_policy.py`
+  - config-aware naming facade now owned by
+    `src/dpost/application/naming/policy.py`
+  - `src/dpost/infrastructure/storage/filesystem_utils.py` retired direct
+    prefix policy ownership
+  - ERM Hioki + processing routing/rename flows now consume application/domain
+    naming policy modules
+  - ownership guard added at
+    `tests/migration/test_part3_domain_naming_policy_ownership.py`
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

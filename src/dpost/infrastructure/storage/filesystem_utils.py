@@ -14,12 +14,10 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from dpost.application.config import current
-from dpost.application.interactions import ValidationMessages
 from dpost.infrastructure.logging import setup_logger
 
 if TYPE_CHECKING:
@@ -54,14 +52,6 @@ def _daily_records_path() -> Path:
 
 def _id_sep() -> str:
     return _active_config().id_separator
-
-
-def _file_sep() -> str:
-    return _active_config().file_separator
-
-
-def _filename_pattern():
-    return _active_config().filename_pattern
 
 
 def _current_device():
@@ -370,124 +360,3 @@ def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
         logger.debug(f"JSON data saved to '{json_path}'.")
     except Exception as exc:
         logger.exception(f"Failed to write JSON file '{json_path}': {exc}")
-
-
-def is_valid_prefix(raw_prefix: str) -> bool:
-    """Quick validation check for a filename prefix against regex and segments."""
-
-    pattern = _filename_pattern()
-    if not pattern.match(raw_prefix):
-        logger.debug(f"Prefix '{raw_prefix}' failed regex match.")
-        return False
-    sep = _id_sep()
-    return raw_prefix.count(sep) >= 2
-
-
-def sanitize_prefix(raw_prefix: str) -> str:
-    """Normalize a raw prefix to lowercase and underscore-separated sample id."""
-
-    sep = _id_sep()
-    parts = raw_prefix.strip().split(sep)
-    if len(parts) < 3:
-        return raw_prefix
-    user_id = parts[0].strip()
-    institute = parts[1].strip()
-    sample_id = sep.join(part.strip() for part in parts[2:]).replace(" ", "_")
-    return f"{user_id.lower()}{sep}{institute.lower()}{sep}{sample_id}"
-
-
-def sanitize_and_validate(raw_prefix: str) -> tuple[str, bool]:
-    """Return (sanitized_prefix, is_valid) for a raw filename prefix."""
-    if not is_valid_prefix(raw_prefix):
-        return raw_prefix, False
-    return sanitize_prefix(raw_prefix), True
-
-
-def explain_filename_violation(filename: str) -> dict:
-    """Analyze a filename string and return reasons/highlights when invalid."""
-
-    result = {
-        "valid": True,
-        "reasons": [],
-        "highlight_spans": [],
-    }
-
-    pattern = _filename_pattern()
-    sep = _id_sep()
-    if not pattern.match(filename):
-        result["valid"] = False
-        segments = filename.split(sep)
-
-        if len(segments) != 3:
-            result["reasons"].append(ValidationMessages.MISSING_SEPARATOR)
-            for i, char in enumerate(filename):
-                if char == sep:
-                    result["highlight_spans"].append((i, i + 1))
-        else:
-            user, institute, sample = segments
-            user_start = 0
-            user_end = len(user)
-            inst_start = user_end + 1
-            inst_end = inst_start + len(institute)
-            sample_start = inst_end + 1
-
-            if not re.fullmatch(r"[A-Za-z]+", user):
-                result["reasons"].append(ValidationMessages.USER_ONLY_LETTERS)
-                for i, char in enumerate(user):
-                    if not re.match(r"[A-Za-z]", char):
-                        result["highlight_spans"].append(
-                            (user_start + i, user_start + i + 1)
-                        )
-
-            if not re.fullmatch(r"[A-Za-z]+", institute):
-                result["reasons"].append(ValidationMessages.INSTITUTE_ONLY_LETTERS)
-                for i, char in enumerate(institute):
-                    if not re.match(r"[A-Za-z]", char):
-                        result["highlight_spans"].append(
-                            (inst_start + i, inst_start + i + 1)
-                        )
-
-            if len(sample) > 30:
-                result["reasons"].append(ValidationMessages.SAMPLE_TOO_LONG)
-
-            if not re.fullmatch(r"^[A-Za-z0-9_ ]+", sample):
-                result["reasons"].append(ValidationMessages.SAMPLE_INVALID_CHARS)
-                for i, char in enumerate(sample):
-                    if not re.match(r"[A-Za-z0-9_ ]", char):
-                        result["highlight_spans"].append(
-                            (sample_start + i, sample_start + i + 1)
-                        )
-    return result
-
-
-def analyze_user_input(dialog_result: dict | None) -> dict:
-    """Validate and sanitize rename dialog input structure."""
-
-    output = {
-        "valid": True,
-        "sanitized": None,
-        "reasons": [],
-        "highlight_spans": [],
-    }
-
-    if dialog_result is None:
-        output["valid"] = False
-        output["reasons"].append("User cancelled the dialog.")
-        return output
-
-    user_id = dialog_result.get("name", "").strip()
-    institute = dialog_result.get("institute", "").strip()
-    sample_id = dialog_result.get("sample_ID", "").strip()
-    sep = _id_sep()
-    raw_prefix = f"{user_id}{sep}{institute}{sep}{sample_id}"
-    sanitized, is_valid = sanitize_and_validate(raw_prefix)
-
-    if is_valid:
-        output["sanitized"] = sanitized
-    else:
-        output["valid"] = False
-        violation_info = explain_filename_violation(raw_prefix)
-        output["reasons"].extend(violation_info["reasons"])
-        output["highlight_spans"].extend(violation_info["highlight_spans"])
-
-    return output

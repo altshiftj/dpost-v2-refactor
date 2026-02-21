@@ -92,7 +92,11 @@
   roadmap/report progress snapshots, including
   `ADR-0005-domain-processing-and-record-ownership-extraction.md`; followed by
   domain purity hardening (`test_part3_domain_purity_boundaries.py`) to remove
-  residual domain imports of application/infrastructure modules.
+  residual domain imports of application/infrastructure modules; then extracted
+  filename-prefix policy ownership to
+  `src/dpost/domain/naming/prefix_policy.py` with config-aware application
+  facade `src/dpost/application/naming/policy.py` and ownership guard
+  `tests/migration/test_part3_domain_naming_policy_ownership.py`.
 
 ---
 

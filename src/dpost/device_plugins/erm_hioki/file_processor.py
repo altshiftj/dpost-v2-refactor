@@ -7,6 +7,7 @@ import shutil
 from pathlib import Path
 
 from dpost.application.config import DeviceConfig
+from dpost.application.naming.policy import is_valid_prefix
 from dpost.application.processing.file_processor_abstract import (
     FileProbeResult,
     FileProcessorABS,
@@ -17,7 +18,6 @@ from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     get_unique_filename,
-    is_valid_prefix,
     move_item,
 )
 
