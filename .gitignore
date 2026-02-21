@@ -38,3 +38,9 @@ build/*
 
 # ─── Markdown Setup Files ────────────────────
 *_setup.md
+
+.coverage
+.dpost_test_tmp
+.dpost_test_tmp_probe
+.pytest_tmp
+.tmp
