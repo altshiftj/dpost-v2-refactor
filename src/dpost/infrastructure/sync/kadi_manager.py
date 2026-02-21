@@ -2,9 +2,8 @@
 
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Callable, Optional
 
-from dpost.application.config import current
 from dpost.application.interactions import ErrorMessages
 from dpost.application.ports import UserInteractionPort
 from dpost.domain.records.local_record import LocalRecord
@@ -17,11 +16,6 @@ from kadi_apy.lib.resources.collections import Collection as KadiCollection
 
 
 logger = setup_logger(__name__)
-
-
-def _id_separator() -> str:
-    """Resolve record identifier separator from active config."""
-    return current().id_separator
 
 
 @dataclass
@@ -41,9 +35,19 @@ class DataSyncContext:
 class KadiSyncManager:
     """Synchronise `LocalRecord` instances with the Kadi database."""
 
-    def __init__(self, interactions: UserInteractionPort) -> None:
+    _DEFAULT_ID_SEPARATOR = "-"
+    _KNOWN_ID_SEPARATORS: tuple[str, ...] = ("-", ":", "|")
+
+    def __init__(
+        self,
+        interactions: UserInteractionPort,
+        id_separator_resolver: Callable[[LocalRecord], str] | None = None,
+    ) -> None:
         """Initialise the sync manager with UI-agnostic collaborators."""
         self.interactions = interactions
+        self._id_separator_resolver = (
+            id_separator_resolver or self._infer_id_separator_from_record
+        )
         self.db_manager = KadiManager()
 
     def sync_record_to_database(self, local_record: LocalRecord) -> bool:
@@ -68,7 +72,7 @@ class KadiSyncManager:
         self, db_manager: KadiManager, local_record: LocalRecord
     ) -> DataSyncContext:
         record_id = local_record.identifier
-        id_separator = _id_separator()
+        id_separator = self._id_separator_for_record(local_record)
         device_user_id = f"{local_record.device_type}{id_separator}usr".replace(
             "_", "-"
         ).lower()
@@ -77,13 +81,16 @@ class KadiSyncManager:
         # Build per-user and per-device scaffolding so ownership metadata stays consistent in Kadi.
         db_user = self._get_db_user_from_local_record(db_manager, local_record)
         user_collection = self._get_or_create_db_user_rawdata_collection(
-            db_manager, local_record, db_user
+            db_manager, local_record, db_user, id_separator=id_separator
         )
         user_group = None
         device_user = db_manager.user(username=device_user_id, identity_type="local")
         device_record = db_manager.record(identifier=device_record_id)
         device_collection = self._get_or_create_db_device_rawdata_collection(
-            db_manager, device_user_id, device_record_id
+            db_manager,
+            device_user_id,
+            device_record_id,
+            id_separator=id_separator,
         )
         device_group = None
         db_record = self._get_or_create_db_record(db_manager, record_id)
@@ -124,11 +131,13 @@ class KadiSyncManager:
         db_manager: KadiManager,
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
+        *,
+        id_separator: str | None = None,
     ) -> KadiCollection:
-        id_separator = _id_separator()
+        separator = id_separator or self._id_separator_for_record(local_record)
         collection_id = (
-            f"{local_record.user}{id_separator}{local_record.institute}"
-            f"{id_separator}rawdata{id_separator}collection"
+            f"{local_record.user}{separator}{local_record.institute}"
+            f"{separator}rawdata{separator}collection"
         )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
@@ -141,9 +150,10 @@ class KadiSyncManager:
         db_manager: KadiManager,
         device_user_id: str,
         device_record_id: str,
+        *,
+        id_separator: str,
     ) -> KadiCollection:
         db_device_record = db_manager.record(identifier=device_record_id)
-        id_separator = _id_separator()
         collection_id = (
             f"{device_record_id.lower()}{id_separator}rawdata{id_separator}collection"
         )
@@ -179,11 +189,13 @@ class KadiSyncManager:
         db_manager: KadiManager,
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
+        *,
+        id_separator: str | None = None,
     ) -> KadiGroup:
-        id_separator = _id_separator()
+        separator = id_separator or self._id_separator_for_record(local_record)
         group_id = (
-            f"{local_record.user}{id_separator}{local_record.institute}"
-            f"{id_separator}rawdata{id_separator}group"
+            f"{local_record.user}{separator}{local_record.institute}"
+            f"{separator}rawdata{separator}group"
         )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
@@ -194,9 +206,10 @@ class KadiSyncManager:
         db_manager: KadiManager,
         device_user_id: str,
         device_record_id: str,
+        *,
+        id_separator: str,
     ) -> KadiGroup:
         db_device_record = db_manager.record(identifier=device_record_id)
-        id_separator = _id_separator()
         group_id = f"{device_record_id.lower()}{id_separator}rawdata{id_separator}group"
         title = f"{db_device_record.meta['title']}: Raw Data Records"
         add_user_info = {"user_id": device_user_id, "role": "admin"}
@@ -211,9 +224,11 @@ class KadiSyncManager:
         self,
         db_manager: KadiManager,
         local_record: LocalRecord,
+        *,
+        id_separator: str | None = None,
     ) -> Optional[KadiUser]:
-        id_separator = _id_separator()
-        user_id = f"{local_record.user}{id_separator}{local_record.institute}"
+        separator = id_separator or self._id_separator_for_record(local_record)
+        user_id = f"{local_record.user}{separator}{local_record.institute}"
         try:
             return db_manager.user(username=user_id, identity_type="local")
         except Exception:
@@ -289,3 +304,29 @@ class KadiSyncManager:
             )
 
         return any(not status for status in local_record.files_uploaded.values())
+
+    def _id_separator_for_record(self, local_record: LocalRecord) -> str:
+        """Resolve identifier separator through an explicit, injectable policy seam."""
+
+        try:
+            separator = self._id_separator_resolver(local_record)
+        except Exception:
+            separator = None
+        if isinstance(separator, str) and separator:
+            return separator
+        return self._DEFAULT_ID_SEPARATOR
+
+    @classmethod
+    def _infer_id_separator_from_record(cls, local_record: LocalRecord) -> str:
+        """Infer separator from record preference and identifier shape."""
+
+        preferred = getattr(local_record, "id_separator", cls._DEFAULT_ID_SEPARATOR)
+        identifier = str(getattr(local_record, "identifier", ""))
+        if isinstance(preferred, str) and preferred and identifier.count(preferred) >= 3:
+            return preferred
+        for candidate in cls._KNOWN_ID_SEPARATORS:
+            if candidate == preferred:
+                continue
+            if identifier.count(candidate) >= 3:
+                return candidate
+        return preferred if isinstance(preferred, str) and preferred else cls._DEFAULT_ID_SEPARATOR

@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `503 passed, 1 skipped, 1 warning`
-  - total coverage: `92%` (`4932 stmts, 414 miss`)
+  - `537 passed, 1 skipped, 1 warning`
+  - total coverage: `93%` (`4990 stmts, 341 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 

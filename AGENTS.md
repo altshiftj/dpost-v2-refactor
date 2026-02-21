@@ -134,42 +134,74 @@
 - Include only project-defined terms (exclude vendor/library terms).
 - Add entries when introducing new internal terms.
 
-## Coverage Hardening Playbook (Current Process)
-- Primary objective: raise `tests/unit` coverage for `src/dpost/**` while preserving behavior.
-- Target posture:
-  - prioritize branch and error/fallback paths, not just happy-path line execution
-  - prefer low-risk, high-yield modules first, then orchestration-heavy modules
-  - keep production code changes separate from test-only coverage work unless explicitly requested
-- Execution loop:
-  1. take baseline:
-     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  2. pick next slice from highest missed lines with manageable test seams
-  3. add focused unit tests (red/green) for selected branches
-  4. validate slice:
-     - `python -m ruff check tests/unit`
-     - `python -m pytest -q <targeted test paths>`
-  5. run checkpoint baseline again and update docs
-- Current coverage governance artifacts:
-  - findings report:
-    - `docs/reports/20260221-coverage-informed-architecture-findings.md`
-  - execution/action checklist:
-    - `docs/checklists/20260221-coverage-hardening-action-items-checklist.md`
-- Documentation requirement per checkpoint:
-  - record exact commands executed
-  - record pass/fail outcomes and known warnings
-  - record top uncovered modules and next planned slice
-  - maintain lightweight in-flight notes for each slice:
-    - intended action (what we are about to change/test)
-    - expected outcome (what should improve or be validated)
-    - observed outcome (what actually happened, including blockers)
-  - keep notes concise and append-only so progress is easy to audit
-- Priority modules for deeper follow-up refactoring/testing:
-  - `src/dpost/application/processing/file_process_manager.py`
-  - `src/dpost/application/processing/stability_tracker.py`
-  - `src/dpost/application/runtime/device_watchdog_app.py`
-  - `src/dpost/infrastructure/sync/kadi_manager.py`
-  - `src/dpost/plugins/system.py`
-- Test hygiene rules for this process:
-  - keep test module basenames unique across non-package test directories
-  - avoid introducing flaky time/thread dependencies without controllable clocks/events
-  - do not rely on global active config in tests unless explicitly validating that behavior
+## Refactor-First Playbook (Current Process)
+- Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
+- Current priority queue (in order):
+  1. `src/dpost/application/processing/file_process_manager.py`
+     - extract pure routing/rename/retry/force-path policy seams
+  2. `src/dpost/infrastructure/sync/kadi_manager.py`
+     - remove hidden global-config dependency and add explicit injected seams
+  3. `src/dpost/application/runtime/device_watchdog_app.py`
+     - separate lifecycle/event-loop control flow from side-effect handling
+  4. `src/dpost/plugins/system.py`
+     - isolate dynamic discovery/import behavior behind deterministic seams
+- Supporting reference docs:
+  - `docs/reports/20260221-coverage-informed-architecture-findings.md`
+  - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`
+  - `docs/checklists/20260221-coverage-hardening-action-items-checklist.md`
+  - `docs/planning/20260221-overnight-refactor-run-roadmap.md`
+  - `docs/checklists/20260221-overnight-refactor-execution-checklist.md`
+
+## Efficient Validation and Documentation Standard
+- Test enough, not excess:
+  - add focused red/green unit tests for changed behavior and extracted seams
+  - avoid broad speculative tests that do not protect current/next refactor slice
+  - run targeted test files during implementation
+  - run full `tests/unit` + coverage only at major checkpoints
+- Document enough, not excess:
+  - append one concise note per completed slice:
+    - intended action
+    - expected outcome
+    - observed outcome
+    - commands run and results
+  - avoid long narrative logs for minor intermediate edits
+
+## Autonomous Execution and Communication Cadence
+- Default mode: fully autonomous execution across analysis -> test -> refactor -> validate -> document.
+- Keep user in the loop at major section boundaries only:
+  - after completing a full refactor slice/module
+  - after full checkpoint validation
+  - when blocked by ambiguity/unsafe changes
+- Do not pause for approval between micro-steps when requirements are clear and safe.
+
+## Overnight Autonomous SOP (Active When Requested)
+- Execution posture:
+  - run continuously through queued refactor slices without waiting for chat acknowledgment
+  - prefer completing full subsystem slices before switching context
+  - keep momentum on highest-risk modules until checkpoint gates fail or scope is exhausted
+- Communication posture:
+  - suppress non-essential progress chatter during active overnight runs
+  - report only on:
+    - blocker/ambiguity requiring human decision
+    - major checkpoint completion
+    - end-of-run summary
+- Validation cadence:
+  - per slice:
+    - targeted `ruff` + targeted `pytest`
+  - every 2-3 slices (or after risky refactor moves):
+    - full `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - if coverage tool state conflicts:
+    - run `python -m coverage erase` and rerun checkpoint
+- Documentation cadence:
+  - append one concise slice note to active findings report after each completed slice
+  - update roadmap/checklist progress at each full checkpoint
+  - avoid long-form narrative unless architecture decisions materially change
+
+## Refactor Guardrails
+- Preserve external behavior and runtime contracts while restructuring internals.
+- Prefer extracting pure functions/classes before changing orchestration flow.
+- Keep dependency direction aligned with architecture contract (application -> ports, infrastructure -> adapters).
+- Avoid introducing new global singletons or hidden runtime context reads.
+- Maintain test hygiene:
+  - unique test module basenames in non-package directories
+  - deterministic time/thread tests via controllable fakes/stubs

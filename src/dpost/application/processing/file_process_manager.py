@@ -35,6 +35,7 @@ from dpost.infrastructure.storage.filesystem_utils import (
 from dpost.application.session import SessionManager
 from dpost.application.processing.device_resolver import DeviceResolver
 from dpost.application.processing.error_handling import safe_move_to_exception
+from dpost.application.processing.candidate_metadata import derive_candidate_metadata
 from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
     PreprocessingResult,
@@ -179,30 +180,18 @@ class _ProcessingPipeline:
         preprocessed: PreprocessingResult,
     ) -> tuple[str, str, Path, Optional[Path]]:
         """Resolve prefix/extension and effective paths for candidate routing."""
-        manager = self._manager
-        effective_path = Path(preprocessed.effective_path)
-
-        # Start from preprocessed path metadata so overrides can adjust it.
-        parse_target = manager._strip_internal_stage_suffix(effective_path)
-        prefix, extension = parse_filename(str(parse_target))
-        if preprocessed.prefix_override:
-            prefix = preprocessed.prefix_override
-        if preprocessed.extension_override:
-            extension = preprocessed.extension_override
-
-        if not effective_path.exists():
-            effective_path = request.source
-            # Keep metadata aligned with the true source path when preprocessing returns
-            # an alias path that does not exist (important for exception routing suffixes).
-            parse_target = manager._strip_internal_stage_suffix(effective_path)
-            prefix, extension = parse_filename(str(parse_target))
-
-        preprocessed_path = None
-        explicit_path = Path(preprocessed.effective_path)
-        if explicit_path != effective_path and explicit_path.exists():
-            preprocessed_path = explicit_path
-
-        return prefix, extension, effective_path, preprocessed_path
+        metadata = derive_candidate_metadata(
+            request.source,
+            preprocessed,
+            strip_internal_stage_suffix=self._manager._strip_internal_stage_suffix,
+            parse_filename_fn=parse_filename,
+        )
+        return (
+            metadata.prefix,
+            metadata.extension,
+            metadata.effective_path,
+            metadata.preprocessed_path,
+        )
 
     def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
         manager = self._manager

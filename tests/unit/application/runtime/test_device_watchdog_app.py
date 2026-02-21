@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from dpost.application.processing import ProcessingResult, ProcessingStatus
 from dpost.application.runtime.device_watchdog_app import (
     DeviceWatchdogApp,
     QueueingEventHandler,
@@ -77,6 +78,26 @@ def test_on_closing_stops_observer_and_destroys_ui(watchdog_app, fake_ui):
     assert fake_ui.destroyed is True
 
 
+def test_start_observer_is_noop_when_already_started(watchdog_app):
+    watchdog_app.initialize()
+    observer = watchdog_app._observer_stub
+
+    watchdog_app._start_observer()
+
+    observer.schedule.assert_called_once()
+    observer.start.assert_called_once()
+
+
+def test_stop_observer_is_noop_without_observer(watchdog_app):
+    watchdog_app.observer = None
+    watchdog_app.event_handler = None
+
+    watchdog_app._stop_observer()
+
+    assert watchdog_app.observer is None
+    assert watchdog_app.event_handler is None
+
+
 @pytest.mark.parametrize(
     "side_effect", [KeyboardInterrupt, RuntimeError("boom")], ids=["keyboard_interrupt", "generic_exception"]
 )
@@ -112,3 +133,81 @@ def test_modified_events_queue_only_when_callback_allows():
 
     handler.on_modified(DummyEvent("C:/tmp/changed.txt"))
     assert event_queue.empty()
+
+
+def test_modified_event_handler_on_created_and_guard_paths():
+    event_queue = queue.Queue()
+
+    class DummyEvent:
+        def __init__(self, src_path: str, is_directory: bool = False):
+            self.src_path = src_path
+            self.is_directory = is_directory
+
+    handler = QueueingEventHandler(event_queue)
+    handler.on_created(DummyEvent("C:/tmp/new-folder", is_directory=True))
+    assert event_queue.get_nowait() == "C:/tmp/new-folder"
+
+    handler.on_modified(DummyEvent("C:/tmp/dir", is_directory=True))
+    assert event_queue.empty()
+
+    handler.on_modified(DummyEvent("C:/tmp/no-callback.txt"))
+    assert event_queue.empty()
+
+
+def test_modified_event_handler_swallows_callback_errors():
+    event_queue = queue.Queue()
+    handler = QueueingEventHandler(
+        event_queue,
+        should_queue_modified=lambda _path: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+
+    class DummyEvent:
+        def __init__(self, src_path: str):
+            self.src_path = src_path
+            self.is_directory = False
+
+    handler.on_modified(DummyEvent("C:/tmp/changed.csv"))
+
+    assert event_queue.empty()
+
+
+def test_handle_processing_result_schedules_retry_with_default_delay(
+    watchdog_app, monkeypatch
+):
+    scheduled = []
+    monkeypatch.setattr(watchdog_app, "_default_retry_delay", lambda: 2.5)
+    monkeypatch.setattr(
+        watchdog_app, "_schedule_retry", lambda path, delay: scheduled.append((path, delay))
+    )
+    result = ProcessingResult(status=ProcessingStatus.DEFERRED, message="wait")
+
+    watchdog_app._handle_processing_result("C:/tmp/retry.txt", result)
+
+    assert scheduled == [("C:/tmp/retry.txt", 2.5)]
+
+
+def test_handle_processing_result_ignores_none_result(watchdog_app, monkeypatch):
+    called = {"scheduled": False}
+    monkeypatch.setattr(
+        watchdog_app, "_schedule_retry", lambda _path, _delay: called.__setitem__("scheduled", True)
+    )
+
+    watchdog_app._handle_processing_result("C:/tmp/retry.txt", None)
+
+    assert called["scheduled"] is False
+
+
+def test_default_retry_delay_falls_back_on_invalid_config(watchdog_app):
+    watchdog_app.config_service.pc.watcher.retry_delay_seconds = "invalid"
+    assert watchdog_app._default_retry_delay() == 2.0
+
+
+def test_enqueue_if_present_requeues_existing_and_skips_missing(watchdog_app, tmp_path: Path):
+    existing = tmp_path / "exists.txt"
+    existing.write_text("data")
+
+    watchdog_app._enqueue_if_present(str(existing))
+    assert watchdog_app.event_queue.get_nowait() == str(existing)
+
+    watchdog_app._enqueue_if_present(str(tmp_path / "missing.txt"))
+    assert watchdog_app.event_queue.empty()

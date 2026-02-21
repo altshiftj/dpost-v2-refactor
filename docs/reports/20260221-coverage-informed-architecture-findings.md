@@ -12,8 +12,8 @@ Latest validated baseline in this run:
 - Command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Result:
-  - `503 passed, 1 skipped, 1 warning`
-  - total coverage: `92%` (`4932 stmts, 414 miss`)
+  - `537 passed, 1 skipped, 1 warning`
+  - total coverage: `93%` (`4990 stmts, 341 miss`)
 
 Additional quality gate:
 
@@ -253,3 +253,124 @@ Top priorities:
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
     - `503 passed, 1 skipped, 1 warning`
     - total coverage: `92%`
+
+### Slice 9: File process manager seam extraction (candidate metadata)
+
+- Intended action:
+  - begin refactor-first work on `file_process_manager` by extracting
+    candidate metadata derivation into a dedicated helper seam
+    without behavior changes
+- Expected outcome:
+  - reduce orchestration density in `_ProcessingPipeline`
+  - create a deterministic, independently testable policy unit
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/candidate_metadata.py`
+    - `tests/unit/application/processing/test_candidate_metadata.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      to delegate candidate-metadata derivation
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/candidate_metadata.py tests/unit/application/processing/test_candidate_metadata.py src/dpost/application/processing/file_process_manager.py` -> pass
+    - `python -m pytest -q tests/unit/application/processing/test_candidate_metadata.py tests/unit/application/processing/test_file_process_manager.py` -> `19 passed`
+    - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.candidate_metadata --cov-report=term-missing -q tests/unit/application/processing/test_candidate_metadata.py tests/unit/application/processing/test_file_process_manager.py` ->
+      - `candidate_metadata.py` `100%`
+      - `file_process_manager.py` `78%` in targeted slice scope
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `507 passed, 1 skipped, 1 warning`
+      - total coverage: `92%` (`4947 stmts, 412 miss`)
+
+### Slice 10: Kadi sync manager separator seam extraction
+
+- Intended action:
+  - remove hidden global-config coupling in `kadi_manager` by replacing
+    ambient `current().id_separator` lookups with an explicit, injectable
+    separator resolver bound to each `LocalRecord`
+- Expected outcome:
+  - keep sync behavior stable while making separator policy explicit and testable
+  - improve unit determinism for sync identifier construction
+- Observed outcome:
+  - updated:
+    - `src/dpost/infrastructure/sync/kadi_manager.py`
+      - added injectable separator resolver seam
+      - threaded explicit separator through collection/group/user helper paths
+      - removed direct global config accessor dependency
+  - updated tests:
+    - `tests/unit/infrastructure/sync/test_sync_kadi.py`
+      - added inferred-separator behavior assertion
+      - added explicit resolver-injection assertion
+  - validation:
+    - `python -m ruff check src/dpost/infrastructure/sync/kadi_manager.py tests/unit/infrastructure/sync/test_sync_kadi.py` -> pass
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_kadi_adapter.py` -> `14 passed`
+    - `python -m pytest --cov=dpost.infrastructure.sync.kadi_manager --cov-report=term-missing -q tests/unit/infrastructure/sync/test_sync_kadi.py`
+      - `kadi_manager.py` -> `66%`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `509 passed, 1 skipped, 1 warning`
+    - total coverage: `92%` (`4965 stmts, 414 miss`)
+
+### Slice 11: Watchdog runtime seam extraction (observer + retry planning)
+
+- Intended action:
+  - reduce lifecycle coupling in `device_watchdog_app` by:
+    - injecting observer creation dependency
+    - extracting deferred retry planning into a pure helper
+- Expected outcome:
+  - simplify deterministic testing of lifecycle/retry branches
+  - preserve runtime behavior while reducing orchestration complexity
+- Observed outcome:
+  - added:
+    - `src/dpost/application/runtime/retry_planner.py`
+    - `tests/unit/application/runtime/test_retry_planner.py`
+  - updated:
+    - `src/dpost/application/runtime/device_watchdog_app.py`
+      - observer factory injection seam
+      - delegate retry decision to `build_retry_plan`
+    - `tests/unit/application/runtime/test_device_watchdog_app.py`
+      - expanded branch coverage for event handler/lifecycle/retry paths
+    - `tests/conftest.py`
+      - watchdog fixture now injects observer factory directly
+  - validation:
+    - `python -m ruff check src/dpost/application/runtime/retry_planner.py src/dpost/application/runtime/device_watchdog_app.py tests/unit/application/runtime/test_retry_planner.py tests/unit/application/runtime/test_device_watchdog_app.py tests/conftest.py` -> pass
+    - `python -m pytest -q tests/unit/application/runtime/test_retry_planner.py tests/unit/application/runtime/test_device_watchdog_app.py` -> `21 passed`
+    - `python -m pytest --cov=dpost.application.runtime.device_watchdog_app --cov=dpost.application.runtime.retry_planner --cov-report=term-missing -q tests/unit/application/runtime/test_retry_planner.py tests/unit/application/runtime/test_device_watchdog_app.py`
+      - `device_watchdog_app.py` -> `91%`
+      - `retry_planner.py` -> `100%`
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `522 passed, 1 skipped, 1 warning`
+    - total coverage: `92%` (`4987 stmts, 393 miss`)
+
+### Slice 12: Plugin loader discovery seam extraction
+
+- Intended action:
+  - isolate dynamic plugin discovery/import behavior behind injectable seams in
+    `plugins/system.py` to reduce environment-coupled test fragility
+- Expected outcome:
+  - improve deterministic unit coverage for lazy load and discovery/error paths
+  - preserve runtime plugin loading behavior
+- Observed outcome:
+  - updated:
+    - `src/dpost/plugins/system.py`
+      - added injected seam callables on `PluginLoader`:
+        - `module_importer`
+        - `iter_modules_fn`
+        - `iter_entry_points_fn`
+      - switched discovery internals to use injected seams
+  - added:
+    - `tests/unit/plugins/system/test_plugin_loader_discovery_edges.py`
+      - covers registry validation, lazy entrypoint aliases, builtin discovery,
+        module registration edge handling, and pre-3.10 entrypoint API branch
+  - validation:
+    - `python -m ruff check src/dpost/plugins/system.py tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_no_double_logging.py` -> pass
+    - `python -m pytest -q tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_no_double_logging.py` -> `19 passed`
+    - `python -m pytest --cov=dpost.plugins.system --cov-report=term-missing -q tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_no_double_logging.py`
+      - `plugins/system.py` -> `96%`
+  - full checkpoint:
+    - initial run hit coverage data-mode mismatch (statement vs branch)
+    - resolved via `python -m coverage erase`
+    - rerun:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `537 passed, 1 skipped, 1 warning`
+      - total coverage: `93%` (`4990 stmts, 341 miss`)

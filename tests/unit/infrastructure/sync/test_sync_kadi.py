@@ -285,3 +285,31 @@ def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
     assert result is False
     assert record.files_uploaded == {}
     assert record.files_require_force == set()
+
+
+def test_get_db_user_uses_inferred_separator_from_identifier(sync_mgr):
+    record = LocalRecord(identifier="dev:alice:ipat:sample", id_separator="-")
+    dummy_mgr = DummyKadiManager()
+
+    sync_mgr._get_db_user_from_local_record(dummy_mgr, record)
+
+    dummy_mgr.user.assert_called_once_with(
+        username="alice:ipat",
+        identity_type="local",
+    )
+
+
+def test_sync_manager_accepts_explicit_separator_resolver(fake_ui):
+    dummy_mgr = DummyKadiManager()
+    sync_mgr = KadiSyncManager(
+        interactions=fake_ui,
+        id_separator_resolver=lambda _record: "|",
+    )
+
+    record = LocalRecord(identifier="dev-user-ipat-sample", id_separator="-")
+    sync_mgr._get_db_user_from_local_record(dummy_mgr, record)
+
+    dummy_mgr.user.assert_called_once_with(
+        username="user|ipat",
+        identity_type="local",
+    )

@@ -121,8 +121,17 @@ class PluginLoader:
     """Discover and instantiate plugins with lazy-loading by default."""
 
     def __init__(
-        self, *, load_entrypoints: bool = False, load_builtins: bool = False
+        self,
+        *,
+        load_entrypoints: bool = False,
+        load_builtins: bool = False,
+        module_importer: Callable[[str], object] | None = None,
+        iter_modules_fn: Callable[[Iterable[str], str], Iterable] | None = None,
+        iter_entry_points_fn: Callable[[str], Iterable] | None = None,
     ) -> None:
+        self._module_importer = module_importer or import_module
+        self._iter_modules = iter_modules_fn or pkgutil.iter_modules
+        self._iter_entry_points = iter_entry_points_fn or _iter_entry_points
         self._pm = pluggy.PluginManager(_PLUGIN_NAMESPACE)
         self._pm.add_hookspecs(HookSpecifications)
         self._device_registry = DevicePluginRegistry()
@@ -192,7 +201,7 @@ class PluginLoader:
             self._pm.hook.register_pc_plugins(registry=self._pc_registry)
 
     def _load_entrypoints(self, group: str) -> None:
-        for entry_point in _iter_entry_points(group):
+        for entry_point in self._iter_entry_points(group):
             module_name, _, _ = entry_point.value.partition(":")
             self._register_module(
                 module_name=module_name,
@@ -208,7 +217,7 @@ class PluginLoader:
         )
         for package_name, group in packages:
             try:
-                package = import_module(package_name)
+                package = self._module_importer(package_name)
             except Exception as exc:  # noqa: BLE001
                 logger.error(
                     "Failed to import plugin package '%s': %s", package_name, exc
@@ -217,7 +226,7 @@ class PluginLoader:
             package_path = getattr(package, "__path__", None)
             if not package_path:
                 continue
-            for module_info in pkgutil.iter_modules(
+            for module_info in self._iter_modules(
                 package_path, prefix=f"{package_name}."
             ):
                 if not module_info.ispkg:
@@ -260,7 +269,7 @@ class PluginLoader:
         return False
 
     def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
-        for entry_point in _iter_entry_points(group):
+        for entry_point in self._iter_entry_points(group):
             if entry_point.name != name:
                 continue
             module_name, _, _ = entry_point.value.partition(":")
@@ -288,7 +297,7 @@ class PluginLoader:
         if module_name in self._registered_modules:
             return
         try:
-            module = import_module(module_name)
+            module = self._module_importer(module_name)
         except Exception as exc:  # noqa: BLE001
             logger.error("Failed to import %s (%s): %s", module_name, log_context, exc)
             return

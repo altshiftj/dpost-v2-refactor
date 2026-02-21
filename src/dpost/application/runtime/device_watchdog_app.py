@@ -8,6 +8,7 @@ import threading
 from datetime import datetime
 from functools import partial
 from pathlib import Path
+from typing import Callable
 
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
@@ -28,8 +29,8 @@ from dpost.application.ports import SyncAdapterPort, UserInterface
 from dpost.application.processing import (
     FileProcessManager,
     ProcessingResult,
-    ProcessingStatus,
 )
+from dpost.application.runtime.retry_planner import build_retry_plan
 from dpost.application.session import SessionManager
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.runtime import UiInteractionAdapter, UiTaskScheduler
@@ -79,6 +80,7 @@ class DeviceWatchdogApp:
         scheduler: UiTaskScheduler | None = None,
         session_manager_cls=SessionManager,
         file_process_manager_cls=FileProcessManager,
+        observer_factory: Callable[[], BaseObserver] = Observer,
     ) -> None:
         self.start_time = datetime.now()
         logger.info("WatchdogApp started at %s", self.start_time.isoformat())
@@ -113,6 +115,7 @@ class DeviceWatchdogApp:
         self.event_queue: queue.Queue[str] = queue.Queue()
         self.event_handler: QueueingEventHandler | None = None
         self.observer: BaseObserver | None = None
+        self._observer_factory = observer_factory
 
     def initialize(self) -> None:
         """Initialise the file observer and UI loop hooks."""
@@ -140,7 +143,7 @@ class DeviceWatchdogApp:
             self.event_queue,
             should_queue_modified=self.file_processing.should_queue_modified,
         )
-        observer = Observer()
+        observer = self._observer_factory()
         observer.schedule(handler, path=str(self.watch_dir), recursive=False)
         observer.start()
 
@@ -194,15 +197,13 @@ class DeviceWatchdogApp:
     def _handle_processing_result(
         self, src_path: str, result: ProcessingResult | None
     ) -> None:
-        if result is None:
-            return
-        if result.status is ProcessingStatus.DEFERRED:
-            delay = (
-                result.retry_delay
-                if result.retry_delay is not None
-                else self._default_retry_delay()
-            )
-            self._schedule_retry(src_path, delay)
+        retry_plan = build_retry_plan(
+            src_path,
+            result,
+            default_delay_seconds=self._default_retry_delay(),
+        )
+        if retry_plan is not None:
+            self._schedule_retry(retry_plan.path, retry_plan.delay_seconds)
 
     def _handle_rejections(self) -> None:
         for path_str, reason in self.file_processing.get_and_clear_rejected():
