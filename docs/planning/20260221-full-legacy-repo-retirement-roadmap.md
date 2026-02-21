@@ -27,7 +27,8 @@
   - migration guard test added:
     `tests/migration/test_full_legacy_repo_retirement_harness.py`
   - shared helper decoupling landed for:
-    `tests/helpers/fake_ui.py` and `tests/helpers/fake_sync.py`
+    `tests/helpers/fake_ui.py`, `tests/helpers/fake_sync.py`, and
+    `tests/helpers/fake_process_manager.py`
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

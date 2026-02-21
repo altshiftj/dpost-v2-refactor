@@ -63,19 +63,24 @@
 - Removed legacy imports from shared helper boundaries:
   - `tests/helpers/fake_ui.py`
   - `tests/helpers/fake_sync.py`
+  - `tests/helpers/fake_process_manager.py`
 - Verification snapshots:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
-    -> `2 failed` (red), then `2 passed` (green)
+    -> `2 failed` (red), then `2 passed` (green), then
+    `1 failed, 2 passed` (red after added process-manager guard), then
+    `3 passed` (green)
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
+  - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
+    -> `26 passed`
   - Required gates:
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `163 passed, 302 deselected`
+      -> `164 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `464 passed, 1 skipped`
+      -> `465 passed, 1 skipped`

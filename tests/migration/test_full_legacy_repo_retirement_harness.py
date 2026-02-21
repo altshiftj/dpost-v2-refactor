@@ -7,6 +7,9 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FAKE_UI_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_ui.py"
 FAKE_SYNC_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_sync.py"
+FAKE_PROCESS_MANAGER_PATH = (
+    PROJECT_ROOT / "tests" / "helpers" / "fake_process_manager.py"
+)
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -21,3 +24,10 @@ def test_fake_sync_helper_avoids_legacy_sync_imports() -> None:
     contents = FAKE_SYNC_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.sync.sync_abstract" not in contents
+
+
+def test_fake_process_manager_helper_avoids_legacy_processing_imports() -> None:
+    """Require shared fake process manager helper to avoid legacy model imports."""
+    contents = FAKE_PROCESS_MANAGER_PATH.read_text(encoding="utf-8")
+
+    assert "ipat_watchdog.core.processing.models" not in contents

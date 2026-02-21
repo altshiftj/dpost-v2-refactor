@@ -1,4 +1,15 @@
-from ipat_watchdog.core.processing.models import ProcessingResult, ProcessingStatus
+from dataclasses import dataclass
+from enum import Enum, auto
+
+
+class ProcessingStatus(Enum):
+    PROCESSED = auto()
+
+
+@dataclass(frozen=True)
+class ProcessingResult:
+    status: ProcessingStatus
+    message: str
 
 
 class FakeFileProcessManager:

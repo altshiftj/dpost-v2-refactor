@@ -723,23 +723,28 @@
     imports:
     - `tests/helpers/fake_ui.py`
     - `tests/helpers/fake_sync.py`
+  - added process-manager helper retirement guard and migrated helper away from
+    legacy processing model imports:
+    - `tests/helpers/fake_process_manager.py`
 - Green-state verification:
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
-    -> `2 passed`
+    -> `3 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
+  - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
+    -> `26 passed`
 
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `163 passed, 302 deselected`
+  -> `164 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
   -> `157 files would be left unchanged.`
 - `python -m pytest`
-  -> `464 passed, 1 skipped`
+  -> `465 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,

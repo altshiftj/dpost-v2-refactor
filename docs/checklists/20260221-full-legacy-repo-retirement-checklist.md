@@ -40,6 +40,7 @@
   legacy imports in:
   - `tests/helpers/fake_ui.py`
   - `tests/helpers/fake_sync.py`
+  - `tests/helpers/fake_process_manager.py`
   Conftest and remaining helper modules still require follow-up migration
   slices.
 
