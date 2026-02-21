@@ -122,5 +122,9 @@ Marker intent:
   - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+- Part 3 domain extraction inventory/roadmap/checklist:
+  - `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
+  - `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
+  - `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
 - Architecture ADRs:
   - `docs/architecture/adr/`
