@@ -8,7 +8,7 @@ from dpost.domain.processing.models import RoutingDecision
 
 if TYPE_CHECKING:
     from dpost.application.processing.file_processor_abstract import FileProcessorABS
-    from dpost.application.records import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
 
 def determine_routing_decision(

@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 
 pytestmark = pytest.mark.usefixtures("config_service")
 

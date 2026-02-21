@@ -24,7 +24,7 @@ from dpost.application.config import current
 from dpost.infrastructure.logging import setup_logger
 
 if TYPE_CHECKING:
-    from dpost.application.records.local_record import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -190,8 +190,9 @@ class SessionManager:
             return sample
         identifier = getattr(record, "identifier", None)
         if identifier and identifier != "null":
-            parts = identifier.split("-")
+            separator = getattr(record, "id_separator", "-")
+            parts = identifier.split(separator)
             if len(parts) >= 4:
-                return "-".join(parts[3:])
+                return separator.join(parts[3:])
             return identifier
         return None

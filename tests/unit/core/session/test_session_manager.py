@@ -1,5 +1,5 @@
 from dpost.application.config import current
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.application.session.session_manager import SessionManager
 
 

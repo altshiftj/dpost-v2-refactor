@@ -27,7 +27,7 @@ from dpost.application.processing.staging_utils import (
     reconstruct_pairs_from_stage,
 )
 from dpost.application.processing.text_utils import read_text_prefix
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     get_unique_filename,

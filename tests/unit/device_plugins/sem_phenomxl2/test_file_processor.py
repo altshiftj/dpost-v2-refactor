@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from dpost.device_plugins.sem_phenomxl2.settings import build_config
 

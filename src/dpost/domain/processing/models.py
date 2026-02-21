@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from dpost.application.config import DeviceConfig
     from dpost.application.processing.file_processor_abstract import FileProcessorABS
-    from dpost.application.records import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
 
 class RoutingDecision(Enum):

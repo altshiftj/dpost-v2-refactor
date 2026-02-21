@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.extr_haake.file_processor import (
     FileProcessorEXTRHaake,
 )

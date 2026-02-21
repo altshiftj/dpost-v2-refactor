@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.application.records.record_manager import RecordManager
 
 pytestmark = pytest.mark.usefixtures("config_service")

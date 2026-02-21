@@ -4,7 +4,7 @@ import json
 import shutil
 from pathlib import Path
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.storage import filesystem_utils
 
 

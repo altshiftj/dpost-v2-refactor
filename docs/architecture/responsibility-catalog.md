@@ -38,7 +38,7 @@
 | `FileProcessorABS` + concrete processors | Plugins | Apply device-specific preprocessing and processing | Device-format handling rules | Global runtime wiring |
 | `ConfigService` | Domain/Application support | Provide active PC/device configuration context | Config registration and activation scope | Filesystem mutation side effects |
 | `RecordManager` | Application | Manage local record lifecycle and persistence delegation | Record creation, lookup, sync trigger calls | Device-specific parsing |
-| `LocalRecord` | Domain model | Represent per-record metadata and file upload state | Record state and sync flags | Backend API operations |
+| `dpost.domain.records.local_record.LocalRecord` | Domain model | Represent per-record metadata and file upload state | Record state and sync flags | Backend API operations |
 | `ISyncManager` | Application port | Define sync backend contract | Sync abstraction boundary | UI event-loop concerns |
 | `SyncAdapterPort` | Application port | Define dpost sync adapter contract for framework composition paths | Adapter behavior contract for sync calls | Concrete backend SDK imports |
 | `PluginProfile` + `REFERENCE_PLUGIN_PROFILE` | Plugin reference contract | Define a backend-agnostic plugin profile for kernel validation startup paths | Test-safe PC/device plugin identifiers | Runtime orchestration and concrete backend coupling |

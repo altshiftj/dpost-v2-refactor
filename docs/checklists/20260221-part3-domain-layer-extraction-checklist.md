@@ -6,13 +6,14 @@
 
 ### Checklist
 - [x] Create domain subpackage structure for processing ownership.
-- [ ] Expand domain subpackage structure for records ownership.
+- [x] Expand domain subpackage structure for records ownership.
 - [x] Add initial domain characterization tests before moving implementations.
 - [x] Define explicit import rules for domain/application/infrastructure usage.
 
 ### Completion Notes
 - How it was done: Added `src/dpost/domain/processing/` modules and Part 3
-  migration ownership tests to lock extraction boundaries before broader moves.
+  migration ownership tests to lock extraction boundaries before broader moves,
+  then added `src/dpost/domain/records/` for entity ownership.
 
 ---
 
@@ -40,13 +41,17 @@
   remain testable without runtime/global state dependencies.
 
 ### Checklist
-- [ ] Move `LocalRecord` into domain ownership.
-- [ ] Remove runtime-config accessor coupling from record entity behavior.
-- [ ] Keep persistence and sync triggers in application record manager.
-- [ ] Verify record serialization and sync-state transitions remain unchanged.
+- [x] Move `LocalRecord` into domain ownership.
+- [x] Remove runtime-config accessor coupling from record entity behavior.
+- [x] Keep persistence and sync triggers in application record manager.
+- [x] Verify record serialization and sync-state transitions remain unchanged.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Moved entity to
+  `src/dpost/domain/records/local_record.py`, removed direct
+  `application.config.current()` accessor dependency, updated record loading
+  to pass separator explicitly at infrastructure boundary, and validated parity
+  via record/session/sync/unit + migration suites.
 
 ---
 

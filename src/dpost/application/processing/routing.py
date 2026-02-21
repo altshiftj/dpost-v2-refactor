@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Optional
 
 from dpost.application.config import DeviceConfig
-from dpost.application.records import LocalRecord, RecordManager
+from dpost.application.records.record_manager import RecordManager
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.storage.filesystem_utils import (
     generate_record_id,
     sanitize_and_validate,

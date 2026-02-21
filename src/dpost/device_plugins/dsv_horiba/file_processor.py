@@ -14,7 +14,7 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     get_unique_filename,

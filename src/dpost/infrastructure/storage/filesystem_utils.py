@@ -23,7 +23,7 @@ from dpost.application.interactions import ValidationMessages
 from dpost.infrastructure.logging import setup_logger
 
 if TYPE_CHECKING:
-    from dpost.application.records.local_record import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 
@@ -339,7 +339,7 @@ def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) ->
 def load_persisted_records() -> dict[str, LocalRecord]:
     """Load persisted daily records from JSON into LocalRecord instances."""
 
-    from dpost.application.records.local_record import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
     json_path = _daily_records_path()
     if not json_path.exists():
@@ -349,7 +349,7 @@ def load_persisted_records() -> dict[str, LocalRecord]:
         records = json.loads(raw_data)
         logger.debug(f"JSON data loaded from '{json_path}'.")
         return {
-            id: LocalRecord.from_dict(record_data)
+            id: LocalRecord.from_dict(record_data, id_separator=_id_sep())
             for id, record_data in records.items()
         }
     except Exception as exc:

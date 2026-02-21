@@ -6,7 +6,7 @@ from typing import Dict, Optional
 from dpost.application.config import DeviceConfig
 from dpost.application.metrics import FILES_PROCESSED_BY_RECORD
 from dpost.application.ports import SyncAdapterPort
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     generate_record_id,
@@ -89,13 +89,15 @@ class RecordManager:
             filename_prefix,
             dev_kadi_record_id=(device.metadata.record_kadi_id if device else None),
         )
-        sample_name = filename_prefix.split("-")[-1]  # Extract last part as sample name
+        id_separator = self._infer_id_separator(filename_prefix)
+        sample_name = filename_prefix.split(id_separator)[-1]
 
         # Create new record with current date
         record = LocalRecord(
             identifier=record_id,
             sample_name=sample_name,
             date=datetime.datetime.now().strftime("%Y%m%d"),
+            id_separator=id_separator,
         )
 
         # Store and persist the new record
@@ -262,3 +264,11 @@ class RecordManager:
         logger.debug(
             f"Persisted updated state for record '{record.identifier}' after sync."
         )
+
+    @staticmethod
+    def _infer_id_separator(filename_prefix: str) -> str:
+        """Infer record identifier separator from a normalized filename prefix."""
+        for char in filename_prefix:
+            if not char.isalnum():
+                return char
+        return "-"

@@ -84,7 +84,7 @@ def test_local_record_parses_identifier_using_active_config_separator(
     custom_separator_config,
 ) -> None:
     """Parse LocalRecord identifier using active config naming separator."""
-    from dpost.application.records.local_record import LocalRecord
+    from dpost.domain.records.local_record import LocalRecord
 
     record = LocalRecord(identifier="dev:usr:inst:sample_1")
 
@@ -93,19 +93,15 @@ def test_local_record_parses_identifier_using_active_config_separator(
     assert record.sample_name == "sample_1"
 
 
-def test_local_record_requires_active_config_for_separator_resolution(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Fail fast when LocalRecord separator is resolved without active config."""
-    local_record_module = importlib.import_module(
-        "dpost.application.records.local_record"
-    )
-    monkeypatch.setattr(local_record_module, "current", _missing_config_service)
+def test_local_record_separator_resolution_is_config_accessor_free() -> None:
+    """Resolve LocalRecord separator without reading global runtime config accessors."""
+    local_record_module = importlib.import_module("dpost.domain.records.local_record")
 
-    with pytest.raises(
-        RuntimeError, match="Configuration service has not been initialised"
-    ):
-        local_record_module.LocalRecord(identifier="dev-usr-inst-sample")
+    assert hasattr(local_record_module, "_resolve_id_separator")
+
+    record = local_record_module.LocalRecord(identifier="dev-usr-inst-sample")
+    assert record.user == "usr"
+    assert record.institute == "inst"
 
 
 def test_sync_kadi_uses_active_config_separator_for_user_lookup(

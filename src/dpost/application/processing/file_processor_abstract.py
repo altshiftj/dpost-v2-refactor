@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import Enum, auto
 
 from dpost.application.config import DeviceConfig
-from dpost.application.records import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 
 
 @dataclass(frozen=True)

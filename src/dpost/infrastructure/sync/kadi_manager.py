@@ -7,7 +7,7 @@ from typing import Optional
 from dpost.application.config import current
 from dpost.application.interactions import ErrorMessages
 from dpost.application.ports import UserInteractionPort
-from dpost.application.records import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from kadi_apy import KadiManager
 from kadi_apy.lib.resources.records import Record as KadiRecord

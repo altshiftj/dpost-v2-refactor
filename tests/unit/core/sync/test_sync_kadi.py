@@ -2,7 +2,7 @@ import pytest
 pytest.importorskip("kadi_apy")
 from unittest.mock import MagicMock, call
 
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 
 pytestmark = pytest.mark.usefixtures("config_service")

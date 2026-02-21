@@ -52,7 +52,8 @@ from dpost.application.processing.record_utils import (
 from dpost.application.processing.rename_flow import RenameService
 from dpost.application.processing.routing import fetch_record_for_prefix
 from dpost.application.processing.stability_tracker import FileStabilityTracker
-from dpost.application.records import LocalRecord, RecordManager
+from dpost.application.records.record_manager import RecordManager
+from dpost.domain.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
 

@@ -11,8 +11,12 @@
     `src/dpost/domain/processing/models.py`
   - routing policy now owned by `src/dpost/domain/processing/routing.py`
   - `src/dpost/application/processing/models.py` retired
-- Next active target is Wave 3.3 (`LocalRecord` domain extraction) with
-  dependency-cycle hardening during module moves.
+- Wave 3.3 is complete:
+  - `LocalRecord` now owned by `src/dpost/domain/records/local_record.py`
+  - `src/dpost/application/records/local_record.py` retired
+  - record parsing no longer depends on direct runtime config accessors inside
+    the domain entity
+- Next active target is Wave 3.4 (batch/staging policy extraction).
 
 ## Non-Goals
 - No runtime entrypoint redesign.

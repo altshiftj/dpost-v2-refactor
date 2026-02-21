@@ -8,7 +8,7 @@ import pytest
 
 from dpost.application.config import init_config, reset_service
 from dpost.application.processing.file_process_manager import FileProcessManager
-from dpost.application.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.utm_zwick.settings import build_config as build_utm_config
 from dpost.infrastructure.storage.filesystem_utils import get_record_path, init_dirs
 from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config

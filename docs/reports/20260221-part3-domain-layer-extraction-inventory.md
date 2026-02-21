@@ -19,6 +19,14 @@
 - Application processing routing now focuses on record-prefix lookup helpers.
 - Integration, migration, and full-suite gates are green after the move.
 
+## Update (Wave 3.3 Complete)
+- Record entity ownership is now established under domain:
+  - `src/dpost/domain/records/local_record.py` owns `LocalRecord`.
+  - `src/dpost/application/records/local_record.py` has been removed.
+- Domain entity parsing no longer calls runtime config accessors directly.
+- Application/infrastructure boundaries now provide separator context where
+  required for persistence/rehydration parity.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:
