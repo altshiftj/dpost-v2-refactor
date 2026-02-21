@@ -356,17 +356,54 @@
   - `python -m pytest tests/unit/pc_plugins/test_pc_plugins.py tests/unit/plugin_system/test_plugin_loader.py`
     -> `12 passed`
 
+## Deep-Core Increment: Concrete EXTR HAAKE Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost EXTR HAAKE plugin package:
+    - `src/dpost/device_plugins/extr_haake/`
+  - added dpost-owned EXTR HAAKE modules:
+    - `src/dpost/device_plugins/extr_haake/plugin.py`
+    - `src/dpost/device_plugins/extr_haake/settings.py`
+    - `src/dpost/device_plugins/extr_haake/file_processor.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.device_plugins.extr_haake` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `11 passed`
+
+## Deep-Core Increment: Concrete HAAKE BLB PC Plugin Namespace Rehost
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - added canonical dpost HAAKE BLB PC plugin package:
+    - `src/dpost/pc_plugins/haake_blb/`
+  - added dpost-owned HAAKE BLB PC modules:
+    - `src/dpost/pc_plugins/haake_blb/plugin.py`
+    - `src/dpost/pc_plugins/haake_blb/settings.py`
+  - preserved runtime behavior while resolving canonical plugin loading through
+    `dpost.pc_plugins.haake_blb` before legacy fallback.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `11 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `140 passed, 302 deselected`
+  -> `142 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `103 files would be left unchanged.`
+  -> `110 files would be left unchanged.`
 - `python -m pytest`
-  -> `441 passed, 1 skipped`
+  -> `443 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -374,13 +411,18 @@
   after additional runtime-boundary implementation.
   Formatting was applied with `python -m black ...`, and all required gates
   were re-run to final green.
+- Current concrete-plugin rehost slice completed with Black check green on
+  first pass (`110 files would be left unchanged`).
 
 ## Remaining Risk / Open Work
 - Most plugin implementation packages remain in legacy namespaces during
   migration (`src/ipat_watchdog/device_plugins/`,
-  `src/ipat_watchdog/pc_plugins/`), excluding rehosted reference packages
-  under `src/dpost/device_plugins/test_device/` and
-  `src/dpost/pc_plugins/test_pc/`.
+  `src/ipat_watchdog/pc_plugins/`), excluding rehosted reference/concrete
+  packages under `src/dpost/device_plugins/test_device/`,
+  `src/dpost/device_plugins/utm_zwick/`,
+  `src/dpost/device_plugins/extr_haake/`, `src/dpost/pc_plugins/test_pc/`,
+  `src/dpost/pc_plugins/zwick_blb/`, and
+  `src/dpost/pc_plugins/haake_blb/`.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

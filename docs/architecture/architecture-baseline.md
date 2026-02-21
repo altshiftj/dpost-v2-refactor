@@ -138,8 +138,10 @@
 - `src/dpost/pc_plugins/test_pc/`
 - Canonical concrete plugin package (migration wave):
 - `src/dpost/device_plugins/utm_zwick/`
+- `src/dpost/device_plugins/extr_haake/`
 - Canonical concrete PC plugin package (migration wave):
 - `src/dpost/pc_plugins/zwick_blb/`
+- `src/dpost/pc_plugins/haake_blb/`
 - dpost storage utility boundary:
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - Configuration schema and runtime service:
@@ -215,8 +217,8 @@
   longer import legacy config/metrics modules directly.
 - Transition runtime dependency shims have been retired from canonical dpost
   paths (`runtime_dependencies.py`, `config_dependencies.py`).
-- dpost plugin profile support is currently reference-only and intended for
-  kernel validation until concrete plugin migration begins.
+- dpost plugin profile support remains reference-first for kernel validation
+  while concrete plugin namespace migration proceeds incrementally.
 - dpost plugin loading now uses dpost-owned plugin protocol contracts;
   canonical plugin discovery groups now use `dpost.device_plugins` and
   `dpost.pc_plugins`, with isolated legacy-namespace fallback mappings in
@@ -225,8 +227,12 @@
   dpost plugin namespaces before any legacy fallback path.
 - Concrete UTM Zwick plugin now loads from canonical dpost namespace
   (`dpost.device_plugins.utm_zwick`) before any legacy fallback path.
+- Concrete EXTR HAAKE plugin now loads from canonical dpost namespace
+  (`dpost.device_plugins.extr_haake`) before any legacy fallback path.
 - Concrete Zwick BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.zwick_blb`) before any legacy fallback path.
+- Concrete HAAKE BLB PC plugin now loads from canonical dpost namespace
+  (`dpost.pc_plugins.haake_blb`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   keeps legacy hook-namespace compatibility through isolated orchestration in
   `src/dpost/plugins/system.py`.

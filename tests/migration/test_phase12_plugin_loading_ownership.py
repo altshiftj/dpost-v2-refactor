@@ -141,3 +141,39 @@ def test_concrete_zwick_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) ->
 
     assert plugin.__class__.__module__ == "dpost.pc_plugins.zwick_blb.plugin"
     assert "dpost.pc_plugins.zwick_blb.plugin" in sys.modules
+
+
+def test_concrete_extr_haake_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete EXTR HAAKE plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.extr_haake.plugin",
+        "ipat_watchdog.device_plugins.extr_haake.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("extr_haake")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.extr_haake.plugin"
+    assert "dpost.device_plugins.extr_haake.plugin" in sys.modules
+
+
+def test_concrete_haake_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete HAAKE BLB PC plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.pc_plugins.haake_blb.plugin",
+        "ipat_watchdog.pc_plugins.haake_blb.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_pc_plugin
+
+    plugin = load_pc_plugin("haake_blb")
+
+    assert plugin.__class__.__module__ == "dpost.pc_plugins.haake_blb.plugin"
+    assert "dpost.pc_plugins.haake_blb.plugin" in sys.modules
