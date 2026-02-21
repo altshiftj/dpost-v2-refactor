@@ -109,7 +109,7 @@ python -m pytest
 
 Marker intent:
 - `migration`: canonical dpost migration/cutover contracts.
-- `legacy`: ipat_watchdog legacy behavior characterization contracts.
+- `legacy`: archived compatibility characterization contracts.
 
 ## Migration and Architecture Docs
 - Active roadmap:

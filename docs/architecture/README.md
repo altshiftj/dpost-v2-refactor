@@ -21,7 +21,8 @@
 - `docs/checklists/`
 - Test contract split:
 - `tests/migration/` for `dpost` migration/cutover tests
-- `tests/unit/`, `tests/integration/`, `tests/manual/` for legacy `ipat_watchdog` contract tests
+- `tests/unit/`, `tests/integration/`, `tests/manual/` for canonical `dpost`
+  behavior tests
 - Vocabulary and term definitions:
 - `GLOSSARY.csv`
 
@@ -55,7 +56,7 @@
 ## Test Isolation Commands
 - Full suite:
 - `python -m pytest`
-- Legacy-only:
+- Archived compatibility-only:
 - `python -m pytest -m legacy`
 - Migration-only:
 - `python -m pytest -m migration`

@@ -38,15 +38,14 @@
 - [x] Keep migration/full gates green during each test migration slice.
 
 ### Completion Notes
-- How it was done: In progress. Shared helper interfaces were migrated from
+- How it was done: Completed. Shared helper interfaces were migrated from
   legacy imports in:
   - `tests/helpers/fake_ui.py`
   - `tests/helpers/fake_sync.py`
   - `tests/helpers/fake_process_manager.py`
   - `tests/helpers/fake_processor.py`
-  - `src/ipat_watchdog/metrics.py` (legacy metric symbols now re-export the
-    canonical dpost metric objects to prevent duplicate collector
-    registration).
+  - canonical metrics ownership is now enforced in
+    `src/dpost/application/metrics.py` after full legacy source retirement.
   Conftest follow-up now includes:
   - hardcoded legacy observer monkeypatch literal removal
   - watchdog fixture migration to
@@ -184,14 +183,27 @@
   contributors and users do not follow stale legacy paths.
 
 ### Checklist
-- [ ] Remove legacy package metadata/entrypoint references from `pyproject.toml`.
-- [ ] Ensure README/USER/DEVELOPER docs are canonical-dpost only.
-- [ ] Update architecture baseline/contract/responsibility and ADR trail.
-- [ ] Update `GLOSSARY.csv` for retirement terminology changes.
-- [ ] Capture final retirement closure report with exact gate evidence.
+- [x] Remove legacy package metadata/entrypoint references from `pyproject.toml`.
+- [x] Ensure README/USER/DEVELOPER docs are canonical-dpost only.
+- [x] Update architecture baseline/contract/responsibility and ADR trail.
+- [x] Update `GLOSSARY.csv` for retirement terminology changes.
+- [x] Capture final retirement closure report with exact gate evidence.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done:
+  - `pyproject.toml` no longer contains legacy package-name references and
+    legacy Black exclusion for `src/ipat_watchdog/`.
+  - `DEVELOPER_README.md` and architecture guide wording now describe
+    canonical dpost ownership and archived `legacy` marker posture.
+  - Architecture governance artifacts were updated:
+    - `docs/architecture/architecture-baseline.md`
+    - `docs/architecture/architecture-contract.md`
+    - `docs/architecture/responsibility-catalog.md`
+    - `docs/architecture/adr/ADR-0004-full-legacy-source-package-retirement.md`
+  - `GLOSSARY.csv` remains valid without new internal-term additions for this
+    slice.
+  - retirement gate evidence captured in
+    `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
 
 ---
 

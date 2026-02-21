@@ -143,6 +143,12 @@
     - phase-8 identity guard now validates install guidance from
       `src/dpost/plugins/system.py` instead of removed legacy plugin system.
 
+## Current Status (Post-Retirement Checkpoint)
+- `src/ipat_watchdog/**` has been removed from source control.
+- Canonical runtime/test paths execute from `src/dpost/**` only.
+- Remaining retirement work is manual validation and release communication
+  closure, not additional source migration.
+
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.
 - No required production path depends on `src/ipat_watchdog/**`.

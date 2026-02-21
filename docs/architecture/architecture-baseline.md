@@ -235,39 +235,39 @@
   `dpost.pc_plugins` with no legacy namespace fallback mappings in canonical
   dpost paths.
 - Canonical reference profile plugins (`test_device`, `test_pc`) now load from
-  dpost plugin namespaces before any legacy fallback path.
+  dpost plugin namespaces with no legacy fallback path.
 - Concrete UTM Zwick plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.utm_zwick`) before any legacy fallback path.
+  (`dpost.device_plugins.utm_zwick`) with no legacy fallback path.
 - Concrete EXTR HAAKE plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.extr_haake`) before any legacy fallback path.
+  (`dpost.device_plugins.extr_haake`) with no legacy fallback path.
 - Concrete ERM HIOKI plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.erm_hioki`) before any legacy fallback path.
+  (`dpost.device_plugins.erm_hioki`) with no legacy fallback path.
 - Concrete SEM PHENOM XL2 plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.sem_phenomxl2`) before any legacy fallback path.
+  (`dpost.device_plugins.sem_phenomxl2`) with no legacy fallback path.
 - Concrete RMX EIRICH EL1 plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.rmx_eirich_el1`) before any legacy fallback path.
+  (`dpost.device_plugins.rmx_eirich_el1`) with no legacy fallback path.
 - Concrete RMX EIRICH R01 plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.rmx_eirich_r01`) before any legacy fallback path.
+  (`dpost.device_plugins.rmx_eirich_r01`) with no legacy fallback path.
 - Concrete DSV HORIBA plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.dsv_horiba`) before any legacy fallback path.
+  (`dpost.device_plugins.dsv_horiba`) with no legacy fallback path.
 - Concrete RHE KINEXUS plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.rhe_kinexus`) before any legacy fallback path.
+  (`dpost.device_plugins.rhe_kinexus`) with no legacy fallback path.
 - Concrete PSA HORIBA plugin now loads from canonical dpost namespace
-  (`dpost.device_plugins.psa_horiba`) before any legacy fallback path.
+  (`dpost.device_plugins.psa_horiba`) with no legacy fallback path.
 - Concrete Zwick BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.zwick_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.zwick_blb`) with no legacy fallback path.
 - Concrete HAAKE BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.haake_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.haake_blb`) with no legacy fallback path.
 - Concrete HIOKI BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.hioki_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.hioki_blb`) with no legacy fallback path.
 - Concrete TISCHREM BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.tischrem_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.tischrem_blb`) with no legacy fallback path.
 - Concrete EIRICH BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.eirich_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.eirich_blb`) with no legacy fallback path.
 - Concrete HORIBA BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.horiba_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.horiba_blb`) with no legacy fallback path.
 - Concrete KINEXUS BLB PC plugin now loads from canonical dpost namespace
-  (`dpost.pc_plugins.kinexus_blb`) before any legacy fallback path.
+  (`dpost.pc_plugins.kinexus_blb`) with no legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
   no longer orchestrates legacy hook namespaces in canonical dpost paths.
 - Canonical extension contracts are now explicitly documented in
