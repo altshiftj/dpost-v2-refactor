@@ -13,7 +13,15 @@ class ProcessingResult:
 
 
 class FakeFileProcessManager:
-    def __init__(self, interactions, sync_manager, session_manager, config_service=None, file_processor=None, **kwargs):
+    def __init__(
+        self,
+        interactions,
+        sync_manager,
+        session_manager,
+        config_service=None,
+        file_processor=None,
+        **kwargs,
+    ):
         self.processed = []
         self.records_synced = False
         self._rejected = []

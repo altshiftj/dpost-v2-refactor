@@ -10,6 +10,7 @@ FAKE_SYNC_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_sync.py"
 FAKE_PROCESS_MANAGER_PATH = (
     PROJECT_ROOT / "tests" / "helpers" / "fake_process_manager.py"
 )
+CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -31,3 +32,10 @@ def test_fake_process_manager_helper_avoids_legacy_processing_imports() -> None:
     contents = FAKE_PROCESS_MANAGER_PATH.read_text(encoding="utf-8")
 
     assert "ipat_watchdog.core.processing.models" not in contents
+
+
+def test_conftest_observer_patch_avoids_hardcoded_legacy_module_path() -> None:
+    """Require conftest observer monkeypatch path to avoid hardcoded legacy literal."""
+    contents = CONFTEST_PATH.read_text(encoding="utf-8")
+
+    assert "ipat_watchdog.core.app.device_watchdog_app.Observer" not in contents

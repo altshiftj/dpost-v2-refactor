@@ -20,10 +20,10 @@ if str(PROJECT_ROOT) not in sys.path:
 from ipat_watchdog.core.app.device_watchdog_app import DeviceWatchdogApp
 from ipat_watchdog.core.config import current, init_config, reset_service
 from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.test_device.settings import \
-    build_config as build_device_config
-from ipat_watchdog.pc_plugins.test_pc.settings import \
-    build_config as build_pc_config
+from ipat_watchdog.device_plugins.test_device.settings import (
+    build_config as build_device_config,
+)
+from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
 from tests.helpers.fake_handler import FakeFileEventHandler
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_process_manager import FakeFileProcessManager
@@ -37,7 +37,11 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Assign `legacy`/`migration` markers automatically from test paths."""
     for item in items:
         path_obj = Path(str(getattr(item, "path", item.fspath)))
-        marker = pytest.mark.migration if "migration" in path_obj.parts else pytest.mark.legacy
+        marker = (
+            pytest.mark.migration
+            if "migration" in path_obj.parts
+            else pytest.mark.legacy
+        )
         item.add_marker(marker)
 
 
@@ -149,8 +153,9 @@ def fake_file_process_manager():
 def watchdog_app(config_service, fake_ui, fake_sync, monkeypatch):
     init_dirs()
     observer_stub = FakeObserver()
+    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
     monkeypatch.setattr(
-        "ipat_watchdog.core.app.device_watchdog_app.Observer",
+        observer_target,
         lambda: observer_stub,
     )
     app = DeviceWatchdogApp(

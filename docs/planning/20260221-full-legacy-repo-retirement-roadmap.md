@@ -29,6 +29,9 @@
   - shared helper decoupling landed for:
     `tests/helpers/fake_ui.py`, `tests/helpers/fake_sync.py`, and
     `tests/helpers/fake_process_manager.py`
+  - conftest coupling reduction landed:
+    observer monkeypatch target now resolves from
+    `DeviceWatchdogApp.__module__` instead of a hardcoded legacy literal.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.
