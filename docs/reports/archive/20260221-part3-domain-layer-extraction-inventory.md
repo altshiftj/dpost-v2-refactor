@@ -166,4 +166,5 @@
 - No open technical blockers remain for Part 3 code extraction.
 - Manual operator/contributor validation closure was reported complete on
   2026-02-21 using:
-  - `docs/checklists/20260221-final-manual-validation-runbook.md`.
+  - `docs/checklists/archive/20260221-final-manual-validation-runbook.md`.
+

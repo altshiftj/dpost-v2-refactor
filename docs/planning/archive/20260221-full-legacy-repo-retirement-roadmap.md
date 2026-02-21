@@ -22,7 +22,7 @@
   - `src/ipat_watchdog/**/*.py`: `119` files
   - `ipat_watchdog` references in `tests/**`: `307`
 - Inventory source:
-  - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+  - `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
 - Kickoff progress:
   - migration guard test added:
     `tests/migration/test_full_legacy_repo_retirement_harness.py`
@@ -147,9 +147,9 @@
 - `src/ipat_watchdog/**` has been removed from source control.
 - Canonical runtime/test paths execute from `src/dpost/**` only.
 - Release communication closure is captured in:
-  `docs/reports/20260221-full-legacy-retirement-migration-notes.md`.
+  `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`.
 - Consolidated operator closure steps are captured in:
-  `docs/checklists/20260221-final-manual-validation-runbook.md`.
+  `docs/checklists/archive/20260221-final-manual-validation-runbook.md`.
 - Remaining retirement work is manual validation only, not additional source
   migration.
 
@@ -220,6 +220,7 @@
 ## Rollout
 - Execute as checkpointed autonomous slices.
 - Keep progress evidence in:
-  - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+  - `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
   - `docs/reports/archive/20260221-phase10-13-runtime-boundary-progress.md`
   - new retirement progress reports as slices land.
+

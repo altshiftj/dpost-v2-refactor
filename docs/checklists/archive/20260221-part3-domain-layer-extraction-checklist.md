@@ -138,4 +138,5 @@
 ### Completion Notes
 - How it was done: Human operator reported manual validation complete on
   2026-02-21 using the consolidated runbook steps captured in:
-  `docs/checklists/20260221-final-manual-validation-runbook.md`.
+  `docs/checklists/archive/20260221-final-manual-validation-runbook.md`.
+

@@ -17,14 +17,15 @@ artifacts.
 
 ## Key Docs
 - `docs/architecture/README.md`
-- `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
-- `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
-- `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
-- `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
-- `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
-- `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
-- `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
-- `docs/checklists/20260221-final-manual-validation-runbook.md`
+- `docs/reports/20260221-phase9-13-closure-pr-package.md`
+- `docs/planning/archive/20260221-part3-domain-layer-extraction-roadmap.md`
+- `docs/checklists/archive/20260221-part3-domain-layer-extraction-checklist.md`
+- `docs/reports/archive/20260221-part3-domain-layer-extraction-inventory.md`
+- `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
+- `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`
+- `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
+- `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
+- `docs/checklists/archive/20260221-final-manual-validation-runbook.md`
 - `docs/reports/archive/`
 - `docs/planning/archive/`
 - `docs/checklists/archive/`

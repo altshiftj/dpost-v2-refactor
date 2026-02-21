@@ -49,6 +49,7 @@
   change set.
 
 ## References
-- `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
-- `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
-- `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+- `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
+- `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
+- `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
+

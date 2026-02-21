@@ -13,7 +13,7 @@
 
 ### Completion Notes
 - How it was done: Inventory baseline captured in
-  `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
+  `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`.
   Migration guard coverage started in
   `tests/migration/test_full_legacy_repo_retirement_harness.py` with explicit
   assertions for shared helper decoupling from legacy interaction/sync imports.
@@ -203,9 +203,9 @@
   - `GLOSSARY.csv` is maintained as the canonical terminology source; later
     Part 3 hardening introduced additional domain-purity terms.
   - retirement gate evidence captured in
-    `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
+    `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`.
   - downstream migration/release communication captured in
-    `docs/reports/20260221-full-legacy-retirement-migration-notes.md`.
+    `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`.
 
 ---
 
@@ -232,4 +232,5 @@
   automation path + `tests/manual/test_plugin_import.py` script run with ASCII
   console-safe output), followed by human operator workflow validation reported
   complete on 2026-02-21. Consolidated operator steps are captured in:
-  `docs/checklists/20260221-final-manual-validation-runbook.md`.
+  `docs/checklists/archive/20260221-final-manual-validation-runbook.md`.
+

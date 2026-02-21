@@ -108,9 +108,9 @@
   - Execute legacy package deprecation and cleanup plan while preserving test
     parity and contributor migration guidance.
   - Active repo-wide retirement planning now tracked in:
-    - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
-    - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
-    - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+    - `docs/reports/archive/20260221-full-legacy-repo-retirement-inventory.md`
+    - `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
+    - `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
 
 ## Deep-Core Planning Artifacts
 - Detailed deep-core execution plan:
@@ -208,3 +208,4 @@
   - architecture docs are synchronized
 - After retirement, run manual operator validation for desktop and headless
   runtime workflows before phase closure.
+

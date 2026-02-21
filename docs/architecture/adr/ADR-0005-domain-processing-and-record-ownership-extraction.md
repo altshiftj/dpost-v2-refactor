@@ -62,6 +62,7 @@
   the same change windows.
 
 ## References
-- `docs/planning/20260221-part3-domain-layer-extraction-roadmap.md`
-- `docs/checklists/20260221-part3-domain-layer-extraction-checklist.md`
-- `docs/reports/20260221-part3-domain-layer-extraction-inventory.md`
+- `docs/planning/archive/20260221-part3-domain-layer-extraction-roadmap.md`
+- `docs/checklists/archive/20260221-part3-domain-layer-extraction-checklist.md`
+- `docs/reports/archive/20260221-part3-domain-layer-extraction-inventory.md`
+

@@ -53,11 +53,11 @@
 
 ## Companion Artifacts
 - Roadmap:
-  - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
+  - `docs/planning/archive/20260221-full-legacy-repo-retirement-roadmap.md`
 - Checklist:
-  - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+  - `docs/checklists/archive/20260221-full-legacy-repo-retirement-checklist.md`
 - Migration notes:
-  - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
+  - `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`
 
 ## Progress Update (Closure Hardening)
 - Added manual-script portability migration guard:
@@ -66,9 +66,9 @@
   Windows console compatibility:
   - `tests/manual/test_plugin_import.py`
 - Captured downstream release communication/migration guidance in:
-  - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
+  - `docs/reports/archive/20260221-full-legacy-retirement-migration-notes.md`
 - Added consolidated operator validation runbook:
-  - `docs/checklists/20260221-final-manual-validation-runbook.md`
+  - `docs/checklists/archive/20260221-final-manual-validation-runbook.md`
 
 ## Progress Update (Kickoff Increment)
 - Added migration guard test coverage for shared harness retirement:
@@ -257,3 +257,4 @@
       -> `157 files would be left unchanged`
     - `python -m pytest`
       -> `478 passed, 1 skipped`
+
