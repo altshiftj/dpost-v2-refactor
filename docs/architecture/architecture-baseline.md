@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through Part 3 domain extraction Wave 3.8 naming policy extraction)
+- 2026-02-21 (updated through Part 3 domain extraction Wave 3.9 naming identifier extraction)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -105,6 +105,7 @@
 - `src/dpost/domain/processing/staging.py`
 - `src/dpost/domain/processing/text.py`
 - `src/dpost/domain/naming/prefix_policy.py`
+- `src/dpost/domain/naming/identifiers.py`
 - `src/dpost/application/naming/policy.py`
 - `src/dpost/application/processing/staging_utils.py`
 - Phase 5 decomposition status:
@@ -198,6 +199,7 @@
 - `tests/migration/test_part3_domain_purity_boundaries.py`
 - `tests/migration/test_part3_domain_text_policy_ownership.py`
 - `tests/migration/test_part3_domain_naming_policy_ownership.py`
+- `tests/migration/test_part3_domain_naming_identifier_ownership.py`
 - Manual script portability retirement test currently lives in:
 - `tests/migration/test_manual_script_portability.py`
 - Phase 5 stage-boundary decomposition tests currently live in:
@@ -244,10 +246,11 @@
   reconstruction policy, and `LocalRecord` are now domain-owned under
   `src/dpost/domain/`; application paths retain orchestration and mutation
   helpers.
-- Filename-prefix validation/sanitization policy is now domain-owned under
-  `src/dpost/domain/naming/prefix_policy.py`, with config-aware application
-  facade usage in `src/dpost/application/naming/policy.py`; infrastructure
-  storage no longer owns prefix policy functions.
+- Filename-prefix validation/sanitization and parse/identifier composition
+  policy are now domain-owned under `src/dpost/domain/naming/`, with
+  config-aware application facade usage in
+  `src/dpost/application/naming/policy.py`; infrastructure storage no longer
+  owns prefix or identifier policy functions.
 - Domain ownership paths now avoid direct `dpost.application` and
   `dpost.infrastructure` imports for type/logging concerns.
 - Transition runtime dependency shims have been retired from canonical dpost

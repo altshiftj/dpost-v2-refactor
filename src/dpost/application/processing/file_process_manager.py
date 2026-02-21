@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from dpost.application.config import ConfigService, DeviceConfig, get_service
+from dpost.application.naming.policy import generate_file_id, parse_filename
 from dpost.application.interactions import (
     DialogPrompts,
     ErrorMessages,
@@ -28,10 +29,8 @@ from dpost.domain.processing.models import (
 from dpost.domain.processing.routing import determine_routing_decision
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
-    generate_file_id,
     get_record_path,
     move_to_exception_folder,
-    parse_filename,
 )
 from dpost.application.session import SessionManager
 from dpost.application.processing.device_resolver import DeviceResolver

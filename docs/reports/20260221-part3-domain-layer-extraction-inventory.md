@@ -75,6 +75,19 @@
 - Migration guard added:
   - `tests/migration/test_part3_domain_naming_policy_ownership.py`.
 
+## Update (Wave 3.9 Complete)
+- Naming identifier policy ownership is now established under domain:
+  - `src/dpost/domain/naming/identifiers.py` owns filename parsing and
+    record/file identifier composition policy.
+  - `src/dpost/application/naming/policy.py` now exposes config-aware
+    identifier helper facade functions.
+  - `src/dpost/infrastructure/storage/filesystem_utils.py` no longer defines
+    `parse_filename`, `generate_record_id`, or `generate_file_id`.
+- Processing manager and routing/record orchestration now consume app naming
+  facade imports for parse/identifier policy.
+- Migration guard added:
+  - `tests/migration/test_part3_domain_naming_identifier_ownership.py`.
+
 ## Findings
 - Domain ownership is now established for:
   - processing value/routing models (`src/dpost/domain/processing/models.py`,
@@ -85,10 +98,11 @@
     `src/dpost/domain/processing/staging.py`,
     `src/dpost/domain/processing/text.py`)
   - naming prefix policy (`src/dpost/domain/naming/prefix_policy.py`)
+  - naming identifier policy (`src/dpost/domain/naming/identifiers.py`)
 - Application now owns config-aware naming policy facade at
   `src/dpost/application/naming/policy.py`.
 - Infrastructure storage utilities now focus on filesystem/record persistence
-  concerns and no longer define prefix validation/sanitization policy.
+  concerns and no longer define prefix/identifier naming policy functions.
 - Remaining Part 3 work is manual workflow validation only.
 
 ## Evidence
@@ -100,6 +114,7 @@
 - `src/dpost/domain/processing/staging.py`
 - `src/dpost/domain/processing/text.py`
 - `src/dpost/domain/naming/prefix_policy.py`
+- `src/dpost/domain/naming/identifiers.py`
 - `src/dpost/application/naming/policy.py`
 - `src/dpost/application/processing/routing.py`
 - `src/dpost/application/processing/rename_flow.py`

@@ -5,6 +5,13 @@ from __future__ import annotations
 from typing import Pattern
 
 from dpost.application.config import current
+from dpost.domain.naming.identifiers import (
+    generate_file_id as generate_file_id_policy,
+)
+from dpost.domain.naming.identifiers import (
+    generate_record_id as generate_record_id_policy,
+)
+from dpost.domain.naming.identifiers import parse_filename as parse_filename_policy
 from dpost.domain.naming.prefix_policy import (
     analyze_user_input as analyze_user_input_policy,
 )
@@ -28,6 +35,51 @@ def _id_separator() -> str:
 
 def _filename_pattern() -> Pattern[str]:
     return current().filename_pattern
+
+
+def _current_device():
+    return current().device
+
+
+def parse_filename(src_path: str) -> tuple[str, str]:
+    """Return filename stem and suffix for a path-like string."""
+    return parse_filename_policy(src_path)
+
+
+def generate_record_id(
+    filename_prefix: str, dev_kadi_record_id: str | None = None
+) -> str:
+    """Generate record identifier using active naming settings and device context."""
+    resolved_record_id = dev_kadi_record_id
+    if resolved_record_id is None:
+        device = _current_device()
+        if device is None or not device.metadata.record_kadi_id:
+            raise ValueError(
+                "Device context is not set; provide dev_kadi_record_id explicitly or activate a device."
+            )
+        resolved_record_id = device.metadata.record_kadi_id
+    return generate_record_id_policy(
+        filename_prefix,
+        dev_kadi_record_id=resolved_record_id,
+        id_separator=_id_separator(),
+    )
+
+
+def generate_file_id(filename_prefix: str, device_abbr: str | None = None) -> str:
+    """Generate file identifier using active naming settings and device context."""
+    resolved_device_abbr = device_abbr
+    if resolved_device_abbr is None:
+        device = _current_device()
+        if device is None or not device.metadata.device_abbr:
+            raise ValueError(
+                "Device context is not set; provide device_abbr explicitly or activate a device."
+            )
+        resolved_device_abbr = device.metadata.device_abbr
+    return generate_file_id_policy(
+        filename_prefix,
+        device_abbr=resolved_device_abbr,
+        id_separator=_id_separator(),
+    )
 
 
 def is_valid_prefix(raw_prefix: str) -> bool:

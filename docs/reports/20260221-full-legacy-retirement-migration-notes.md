@@ -30,6 +30,14 @@
   - canonical ownership is now:
     `src/dpost/domain/naming/prefix_policy.py` and
     `src/dpost/application/naming/policy.py`
+- Naming identifier extraction moved parse/ID helpers out of infrastructure
+  storage:
+  - `parse_filename`, `generate_record_id`, and `generate_file_id` are no
+    longer defined in
+    `src/dpost/infrastructure/storage/filesystem_utils.py`
+  - canonical ownership is now:
+    `src/dpost/domain/naming/identifiers.py` and
+    `src/dpost/application/naming/policy.py`
 
 ## Required Contributor Updates
 1. Replace legacy imports with canonical `dpost` imports.

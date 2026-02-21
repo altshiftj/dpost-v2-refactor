@@ -5,11 +5,11 @@ from typing import Dict, Optional
 
 from dpost.application.config import DeviceConfig
 from dpost.application.metrics import FILES_PROCESSED_BY_RECORD
+from dpost.application.naming.policy import generate_record_id
 from dpost.application.ports import SyncAdapterPort
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
-    generate_record_id,
     load_persisted_records,
     save_persisted_records,
 )

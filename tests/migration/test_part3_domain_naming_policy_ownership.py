@@ -61,10 +61,8 @@ def test_application_processing_flows_use_application_naming_facade() -> None:
     routing_contents = DPOST_APPLICATION_ROUTING_PATH.read_text(encoding="utf-8")
     rename_contents = DPOST_APPLICATION_RENAME_FLOW_PATH.read_text(encoding="utf-8")
 
-    assert (
-        "from dpost.application.naming.policy import sanitize_and_validate"
-        in routing_contents
-    )
+    assert "from dpost.application.naming.policy import" in routing_contents
+    assert "sanitize_and_validate" in routing_contents
     assert "from dpost.application.naming.policy import (" in rename_contents
 
 

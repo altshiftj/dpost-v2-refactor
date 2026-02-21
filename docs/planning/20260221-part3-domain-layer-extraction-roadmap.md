@@ -51,6 +51,18 @@
     naming policy modules
   - ownership guard added at
     `tests/migration/test_part3_domain_naming_policy_ownership.py`
+- Wave 3.9 is complete:
+  - filename parsing and record/file identifier policy now owned by
+    `src/dpost/domain/naming/identifiers.py`
+  - `src/dpost/application/naming/policy.py` now exposes config-aware
+    identifier helpers (`parse_filename`, `generate_record_id`,
+    `generate_file_id`)
+  - `src/dpost/infrastructure/storage/filesystem_utils.py` retired direct
+    parse/identifier policy ownership
+  - processing manager and routing/record orchestration now consume
+    application/domain naming identifier helpers
+  - ownership guard added at
+    `tests/migration/test_part3_domain_naming_identifier_ownership.py`
 - Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals

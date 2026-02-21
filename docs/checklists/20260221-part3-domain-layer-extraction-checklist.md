@@ -96,7 +96,11 @@
   filename-prefix policy ownership to
   `src/dpost/domain/naming/prefix_policy.py` with config-aware application
   facade `src/dpost/application/naming/policy.py` and ownership guard
-  `tests/migration/test_part3_domain_naming_policy_ownership.py`.
+  `tests/migration/test_part3_domain_naming_policy_ownership.py`; then
+  extracted filename parsing and record/file identifier policy to
+  `src/dpost/domain/naming/identifiers.py`, rewired processing/records flows
+  to app naming facade helpers, and added guard
+  `tests/migration/test_part3_domain_naming_identifier_ownership.py`.
 
 ---
 

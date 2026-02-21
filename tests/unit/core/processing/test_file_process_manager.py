@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from dpost.application.config import activate_device
+from dpost.application.naming.policy import generate_file_id, generate_record_id
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
@@ -14,8 +15,6 @@ from dpost.application.processing.stability_tracker import (
     StabilityOutcome,
 )
 from dpost.infrastructure.storage.filesystem_utils import (
-    generate_file_id,
-    generate_record_id,
     get_record_path,
 )
 from tests.helpers.fake_session import FakeSessionManager

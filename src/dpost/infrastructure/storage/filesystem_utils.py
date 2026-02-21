@@ -1,10 +1,9 @@
 """
-Filesystem and naming utilities used by the processing pipeline.
+Filesystem and storage utilities used by the processing pipeline.
 
-This module centralizes filename parsing/validation, path computation for
-records/exceptions/rename destinations, file moves with fallbacks, and simple
-ID generation helpers. It also persists lightweight record state to JSON for
-day-level continuity.
+This module centralizes path computation for records/exceptions/rename
+destinations, file moves with fallbacks, and persisted record state JSON
+helpers for day-level continuity.
 
 Keep functions small and predictable; prefer returning strings/paths and let
 callers handle higher-level orchestration.
@@ -56,24 +55,6 @@ def _id_sep() -> str:
 
 def _current_device():
     return _active_config().device
-
-
-# -------------------------------
-# FILE NAME PARSING
-# -------------------------------
-
-
-def parse_filename(src_path: str) -> tuple[str, str]:
-    """Return filename stem and suffix for a path-like string.
-
-    Args:
-        src_path: File or directory path (string accepted).
-
-    Returns:
-        (stem, suffix) where suffix includes the leading dot (e.g. ".tiff").
-    """
-    p = Path(src_path)
-    return p.stem, p.suffix
 
 
 # -------------------------------
@@ -281,49 +262,6 @@ def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -
         log_message="Moved '{}' to record folder for '{}'",
         log_level=logging.INFO,
     )
-
-
-# -------------------------------
-# ID GENERATION
-# -------------------------------
-
-
-def generate_record_id(
-    filename_prefix: str, dev_kadi_record_id: Optional[str] = None
-) -> str:
-    """Generate a record ID using the device KADI record prefix and filename prefix."""
-
-    if dev_kadi_record_id is None:
-        device = _current_device()
-        if device is None or not device.metadata.record_kadi_id:
-            raise ValueError(
-                "Device context is not set; provide dev_kadi_record_id explicitly or activate a device."
-            )
-        dev_kadi_record_id = device.metadata.record_kadi_id
-
-    sep = _id_sep()
-    return f"{dev_kadi_record_id}{sep}{filename_prefix}".lower()
-
-
-def generate_file_id(filename_prefix: str, device_abbr: Optional[str] = None) -> str:
-    """Generate a file ID combining device abbreviation and sample id from the prefix."""
-
-    if device_abbr is None:
-        device = _current_device()
-        if device is None or not device.metadata.device_abbr:
-            raise ValueError(
-                "Device context is not set; provide device_abbr explicitly or activate a device."
-            )
-        device_abbr = device.metadata.device_abbr
-
-    sep = _id_sep()
-    parts = filename_prefix.split(sep)
-    if len(parts) < 3:
-        raise ValueError(
-            f"Filename prefix '{filename_prefix}' does not contain three segments."
-        )
-    sample_id = sep.join(parts[2:])
-    return f"{device_abbr}{sep}{sample_id}"
 
 
 def load_persisted_records() -> dict[str, LocalRecord]:

@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 
 from dpost.application.config import init_config, reset_service
+from dpost.application.naming.policy import generate_file_id, generate_record_id
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
@@ -15,8 +16,6 @@ from dpost.application.processing.stability_tracker import (
 from dpost.device_plugins.erm_hioki.file_processor import FileProcessorHioki
 from dpost.device_plugins.erm_hioki.settings import build_config as build_hioki_config
 from dpost.infrastructure.storage.filesystem_utils import (
-    generate_file_id,
-    generate_record_id,
     get_record_path,
     get_unique_filename,
     init_dirs,
