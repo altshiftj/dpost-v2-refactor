@@ -76,7 +76,8 @@
     `src/dpost/device_plugins/rmx_eirich_el1/` and
     `src/dpost/device_plugins/rmx_eirich_r01/` and
     `src/dpost/device_plugins/dsv_horiba/` and
-    `src/dpost/device_plugins/rhe_kinexus/`.
+    `src/dpost/device_plugins/rhe_kinexus/` and
+    `src/dpost/device_plugins/psa_horiba/`.
   - Concrete PC plugins migrated to canonical dpost namespace:
     `src/dpost/pc_plugins/zwick_blb/` and
     `src/dpost/pc_plugins/haake_blb/` and
@@ -88,10 +89,12 @@
 - In progress:
   - Retirement of remaining intentional legacy plugin compatibility seams
     (`dpost.plugins.system` hook compatibility orchestration +
-    `dpost.plugins.legacy_compat` fallback mappings).
+    `dpost.plugins.legacy_compat` fallback mappings) after concrete plugin
+    namespace migration criteria were met in this wave.
 - Next deep-core migration target:
-  - Execute plugin-namespace compatibility retirement/import sweep after dpost
-    plugin package migration criteria are satisfied.
+  - Execute plugin-namespace compatibility retirement/import sweep and remove
+    legacy fallback mappings now that all concrete in-repo plugin packages are
+    available under canonical dpost namespaces.
 
 ## Deep-Core Planning Artifacts
 - Detailed deep-core execution plan:

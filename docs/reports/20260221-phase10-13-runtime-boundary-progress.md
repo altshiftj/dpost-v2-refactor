@@ -602,17 +602,34 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `22 passed`
 
+## Deep-Core Increment: Concrete PSA HORIBA Plugin Namespace Rehost
+- Migration contract:
+  - extended `tests/migration/test_phase12_plugin_loading_ownership.py` with
+    `test_concrete_psa_horiba_plugin_loads_from_dpost_namespace`.
+- Implementation:
+  - added canonical dpost PSA HORIBA plugin package:
+    - `src/dpost/device_plugins/psa_horiba/`
+  - added dpost-owned PSA HORIBA modules:
+    - `src/dpost/device_plugins/psa_horiba/plugin.py`
+    - `src/dpost/device_plugins/psa_horiba/settings.py`
+    - `src/dpost/device_plugins/psa_horiba/file_processor.py`
+  - preserved staged CSV/NGB pairing behavior while resolving canonical plugin
+    loading through `dpost.device_plugins.psa_horiba` before legacy fallback.
+- Verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `23 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `153 passed, 302 deselected`
+  -> `154 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `152 files would be left unchanged.`
+  -> `156 files would be left unchanged.`
 - `python -m pytest`
-  -> `454 passed, 1 skipped`
+  -> `455 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -644,25 +661,14 @@
   `src/dpost/device_plugins/rhe_kinexus/file_processor.py` before
   `python -m black --check .` returned
   `152 files would be left unchanged`.
+- PSA concrete-plugin slice completed with Black check green on first pass
+  (`156 files would be left unchanged`).
 
 ## Remaining Risk / Open Work
-- Most plugin implementation packages remain in legacy namespaces during
-  migration (`src/ipat_watchdog/device_plugins/`,
-  `src/ipat_watchdog/pc_plugins/`), excluding rehosted reference/concrete
-  packages under `src/dpost/device_plugins/test_device/`,
-  `src/dpost/device_plugins/utm_zwick/`,
-  `src/dpost/device_plugins/extr_haake/`,
-  `src/dpost/device_plugins/erm_hioki/`,
-  `src/dpost/device_plugins/sem_phenomxl2/`,
-  `src/dpost/device_plugins/rmx_eirich_el1/`,
-  `src/dpost/device_plugins/rmx_eirich_r01/`,
-  `src/dpost/device_plugins/dsv_horiba/`,
-  `src/dpost/device_plugins/rhe_kinexus/`,
-  `src/dpost/pc_plugins/test_pc/`,
-  `src/dpost/pc_plugins/zwick_blb/`, `src/dpost/pc_plugins/haake_blb/`, and
-  `src/dpost/pc_plugins/hioki_blb/`, `src/dpost/pc_plugins/tischrem_blb/`,
-  `src/dpost/pc_plugins/eirich_blb/`, `src/dpost/pc_plugins/horiba_blb/`,
-  `src/dpost/pc_plugins/kinexus_blb/`.
+- In-repo concrete plugin package rehosting is now complete across
+  `src/dpost/device_plugins/` and `src/dpost/pc_plugins/`; remaining migration
+  risk is concentrated in compatibility-seam retirement and final legacy
+  fallback removal.
 - Remaining intentional legacy compatibility seams are now limited to:
   - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
   - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`

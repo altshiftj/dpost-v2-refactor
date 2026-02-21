@@ -149,6 +149,7 @@
 - `src/dpost/device_plugins/rmx_eirich_r01/`
 - `src/dpost/device_plugins/dsv_horiba/`
 - `src/dpost/device_plugins/rhe_kinexus/`
+- `src/dpost/device_plugins/psa_horiba/`
 - Canonical concrete PC plugin package (migration wave):
 - `src/dpost/pc_plugins/zwick_blb/`
 - `src/dpost/pc_plugins/haake_blb/`
@@ -256,6 +257,8 @@
   (`dpost.device_plugins.dsv_horiba`) before any legacy fallback path.
 - Concrete RHE KINEXUS plugin now loads from canonical dpost namespace
   (`dpost.device_plugins.rhe_kinexus`) before any legacy fallback path.
+- Concrete PSA HORIBA plugin now loads from canonical dpost namespace
+  (`dpost.device_plugins.psa_horiba`) before any legacy fallback path.
 - Concrete Zwick BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.zwick_blb`) before any legacy fallback path.
 - Concrete HAAKE BLB PC plugin now loads from canonical dpost namespace

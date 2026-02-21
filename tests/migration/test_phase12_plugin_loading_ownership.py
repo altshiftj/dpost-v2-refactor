@@ -331,6 +331,24 @@ def test_concrete_dsv_horiba_plugin_loads_from_dpost_namespace(monkeypatch) -> N
     assert "dpost.device_plugins.dsv_horiba.plugin" in sys.modules
 
 
+def test_concrete_psa_horiba_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
+    """Require concrete PSA HORIBA plugin to load from dpost namespace."""
+    system_module = importlib.import_module("dpost.plugins.system")
+    monkeypatch.setattr(system_module, "_PLUGIN_LOADER_SINGLETON", None)
+    for module_name in (
+        "dpost.device_plugins.psa_horiba.plugin",
+        "ipat_watchdog.device_plugins.psa_horiba.plugin",
+    ):
+        sys.modules.pop(module_name, None)
+
+    from dpost.plugins.loading import load_device_plugin
+
+    plugin = load_device_plugin("psa_horiba")
+
+    assert plugin.__class__.__module__ == "dpost.device_plugins.psa_horiba.plugin"
+    assert "dpost.device_plugins.psa_horiba.plugin" in sys.modules
+
+
 def test_concrete_horiba_blb_pc_plugin_loads_from_dpost_namespace(monkeypatch) -> None:
     """Require concrete HORIBA BLB PC plugin to load from dpost namespace."""
     system_module = importlib.import_module("dpost.plugins.system")
