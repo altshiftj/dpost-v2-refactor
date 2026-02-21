@@ -7,12 +7,12 @@ from pathlib import Path
 
 import pytest
 
-from ipat_watchdog.plugin_system import PluginLoader
+from dpost.plugins.system import PluginLoader
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
-DEVICE_PLUGIN_ROOT = PROJECT_ROOT / "src" / "ipat_watchdog" / "device_plugins"
-PC_PLUGIN_ROOT = PROJECT_ROOT / "src" / "ipat_watchdog" / "pc_plugins"
+DEVICE_PLUGIN_ROOT = PROJECT_ROOT / "src" / "dpost" / "device_plugins"
+PC_PLUGIN_ROOT = PROJECT_ROOT / "src" / "dpost" / "pc_plugins"
 
 
 def _plugin_directories(root: Path) -> tuple[Path, ...]:

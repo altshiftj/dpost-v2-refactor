@@ -7,12 +7,17 @@ import pytest
 pytest.importorskip("kadi_apy")
 from pathlib import Path
 
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.config.schema import (DeviceConfig,
-                                              DeviceFileSelectors,
-                                              DeviceMetadata, PathSettings,
-                                              PCConfig, SessionSettings)
-from ipat_watchdog.core.sync.sync_kadi import KadiSyncManager
+from dpost.application.config import (
+    DeviceConfig,
+    DeviceFileSelectors,
+    DeviceMetadata,
+    PathSettings,
+    PCConfig,
+    SessionSettings,
+    init_config,
+    reset_service,
+)
+from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 from tests.helpers.fake_ui import HeadlessUI
 
 

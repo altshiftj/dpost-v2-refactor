@@ -101,6 +101,9 @@
 - Added runtime-service bridge in shared test fixture:
   - `tests/conftest.py` now registers the fixture-created config service with
     both legacy and dpost runtime registries and resets both during teardown.
+- Retired temporary runtime-service bridge after migration-test import ownership
+  moved to canonical dpost modules:
+  - `tests/conftest.py` now uses canonical dpost config/storage imports only.
 - Added integration-wide legacy-import retirement guard:
   - `tests/migration/test_full_legacy_repo_retirement_harness.py` now asserts
     all integration tests avoid `ipat_watchdog` import paths.
@@ -139,6 +142,25 @@
   - `tests/unit/core/settings/test_settings_classes.py`
   - `tests/unit/core/settings/test_settings_manager.py`
   - `tests/unit/core/settings/test_stability_tracker_overrides.py`
+- Added remaining import-sweep legacy-retirement guard:
+  - `tests/migration/test_full_legacy_repo_retirement_harness.py` now asserts
+    selected conftest/manual/core-ui/core-app/device-loader suites avoid
+    `ipat_watchdog` import paths.
+- Migrated remaining conftest/manual/core-ui/core-app/device-loader tests to
+  canonical dpost boundaries:
+  - `tests/conftest.py`
+  - `tests/manual/test_plugin_import.py`
+  - `tests/manual/test_sync_integration.py`
+  - `tests/unit/core/app/test_bootstrap.py`
+  - `tests/unit/core/ui/test_dialogs.py`
+  - `tests/unit/core/ui/test_ui_tkinter.py`
+  - `tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py`
+  - `tests/unit/device_plugins/test_device_loader.py`
+- Migrated remaining migration suites with direct legacy imports to canonical
+  dpost boundaries:
+  - `tests/migration/test_processing_pipeline_stage_boundaries.py`
+  - `tests/migration/test_naming_constants_consolidation.py`
+  - `tests/migration/test_plugin_discovery_hardening.py`
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -163,7 +185,9 @@
     `1 failed, 12 passed` (red after core-dataflow guard), then
     `13 passed` (green), then
     `1 failed, 13 passed` (red after processing-settings guard), then
-    `14 passed` (green)
+    `14 passed` (green), then
+    `1 failed, 14 passed` (red after remaining-import-sweep guard), then
+    `15 passed` (green)
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
@@ -184,6 +208,10 @@
     -> `67 passed, 1 skipped`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/core/processing tests/unit/core/settings`
     -> `83 passed`
+  - `python -m pytest tests/migration/test_processing_pipeline_stage_boundaries.py tests/migration/test_naming_constants_consolidation.py tests/migration/test_plugin_discovery_hardening.py tests/migration/test_full_legacy_repo_retirement_harness.py`
+    -> `57 passed`
+  - `python -m pytest tests/unit/core/ui/test_ui_tkinter.py tests/unit/core/ui/test_dialogs.py tests/unit/core/app/test_bootstrap.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/unit/device_plugins/test_device_loader.py tests/manual/test_sync_integration.py tests/manual/test_plugin_import.py`
+    -> `43 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -192,10 +220,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `175 passed, 302 deselected`
+      -> `176 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `476 passed, 1 skipped`
+      -> `477 passed, 1 skipped`

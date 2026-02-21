@@ -1,8 +1,8 @@
 import pytest
 
-from ipat_watchdog.core.config import DeviceConfig
-from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-from ipat_watchdog.loader import load_device_plugin
+from dpost.application.config import DeviceConfig
+from dpost.plugins.contracts import DevicePlugin
+from dpost.plugins.loading import load_device_plugin
 
 
 def _load_device_or_skip(name: str) -> DevicePlugin:

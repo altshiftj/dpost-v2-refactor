@@ -6,19 +6,22 @@ from types import SimpleNamespace
 
 import pytest
 
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.core.processing.file_process_manager import FileProcessManager
-from ipat_watchdog.core.processing.stability_tracker import FileStabilityTracker, StabilityOutcome
-from ipat_watchdog.core.storage.filesystem_utils import (
+from dpost.application.config import init_config, reset_service
+from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.stability_tracker import (
+    FileStabilityTracker,
+    StabilityOutcome,
+)
+from dpost.device_plugins.erm_hioki.file_processor import FileProcessorHioki
+from dpost.device_plugins.erm_hioki.settings import build_config as build_hioki_config
+from dpost.infrastructure.storage.filesystem_utils import (
     generate_file_id,
     generate_record_id,
     get_record_path,
     get_unique_filename,
     init_dirs,
 )
-from ipat_watchdog.device_plugins.erm_hioki.file_processor import FileProcessorHioki
-from ipat_watchdog.device_plugins.erm_hioki.settings import build_config as build_hioki_config
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI

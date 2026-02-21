@@ -2,9 +2,9 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 import tkinter.messagebox as messagebox
-from ipat_watchdog.core.ui.ui_tkinter import TKinterUI
-from ipat_watchdog.core.interactions import SessionPromptDetails
-from ipat_watchdog.core.interactions.messages import DialogPrompts
+from dpost.application.interactions import DialogPrompts
+from dpost.application.ports import SessionPromptDetails
+from dpost.infrastructure.runtime.tkinter_ui import TKinterRuntimeUI as TKinterUI
 
 
 @pytest.fixture
@@ -39,7 +39,7 @@ def test_show_error(ui_instance):
 
 
 def test_show_rename_dialog(ui_instance):
-    with patch("ipat_watchdog.core.ui.ui_tkinter.RenameDialog") as MockDialog:
+    with patch("dpost.infrastructure.runtime.tkinter_ui.RenameDialog") as MockDialog:
         MockDialog.return_value.result = {
             "name": "alice",
             "institute": "lab",
@@ -115,7 +115,7 @@ def test_compose_session_message_includes_users_and_records(ui_instance):
 
 def test_run_on_ui_sync_executes_via_after(ui_instance, monkeypatch):
     ui_instance._ui_thread_id = 999
-    monkeypatch.setattr("ipat_watchdog.core.ui.ui_tkinter.threading.get_ident", lambda: 1)
+    monkeypatch.setattr("dpost.infrastructure.runtime.tkinter_ui.threading.get_ident", lambda: 1)
 
     def run_after(delay, callback):
         callback()
@@ -129,7 +129,7 @@ def test_run_on_ui_sync_executes_via_after(ui_instance, monkeypatch):
 
 def test_run_on_ui_sync_propagates_exception(ui_instance, monkeypatch):
     ui_instance._ui_thread_id = 999
-    monkeypatch.setattr("ipat_watchdog.core.ui.ui_tkinter.threading.get_ident", lambda: 1)
+    monkeypatch.setattr("dpost.infrastructure.runtime.tkinter_ui.threading.get_ident", lambda: 1)
 
     def run_after(delay, callback):
         callback()
@@ -143,9 +143,9 @@ def test_run_on_ui_sync_propagates_exception(ui_instance, monkeypatch):
 def test_show_done_dialog_requires_callable(ui_instance):
     details = SessionPromptDetails(users=[], records=[])
 
-    with patch("ipat_watchdog.core.ui.ui_tkinter.tk.Toplevel"), patch(
-        "ipat_watchdog.core.ui.ui_tkinter.tk.Label"
-    ), patch("ipat_watchdog.core.ui.ui_tkinter.tk.Button"):
+    with patch("dpost.infrastructure.runtime.tkinter_ui.tk.Toplevel"), patch(
+        "dpost.infrastructure.runtime.tkinter_ui.tk.Label"
+    ), patch("dpost.infrastructure.runtime.tkinter_ui.tk.Button"):
         with pytest.raises(TypeError):
             ui_instance.show_done_dialog(details, on_done_callback=None)
 

@@ -6,9 +6,9 @@ import traceback
 print("Step 1: Testing config + processor instantiation...")
 
 try:
-    from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import \
+    from dpost.device_plugins.sem_phenomxl2.file_processor import \
         FileProcessorSEMPhenomXL2
-    from ipat_watchdog.device_plugins.sem_phenomxl2.settings import \
+    from dpost.device_plugins.sem_phenomxl2.settings import \
         build_config
 
     device_config = build_config()
@@ -23,12 +23,12 @@ except Exception as e:
 print("\nStep 2: Creating plugin class manually (mirrors runtime plugin)...")
 
 try:
-    from ipat_watchdog.core.config import DeviceConfig
-    from ipat_watchdog.device_plugins.device_plugin import DevicePlugin
-    from ipat_watchdog.device_plugins.sem_phenomxl2.file_processor import \
+    from dpost.application.config import DeviceConfig
+    from dpost.device_plugins.sem_phenomxl2.file_processor import \
         FileProcessorSEMPhenomXL2
-    from ipat_watchdog.device_plugins.sem_phenomxl2.settings import \
+    from dpost.device_plugins.sem_phenomxl2.settings import \
         build_config
+    from dpost.plugins.contracts import DevicePlugin
 
     class SEMPhenomXL2Plugin(DevicePlugin):
         def __init__(self) -> None:
@@ -51,7 +51,7 @@ except Exception as e:
 
 print("\nStep 3: Checking plugin file content...")
 
-plugin_path = "src/ipat_watchdog/device_plugins/sem_phenomxl2/plugin.py"
+plugin_path = "src/dpost/device_plugins/sem_phenomxl2/plugin.py"
 if os.path.exists(plugin_path):
     print(f"✓ Plugin file exists: {plugin_path}")
     with open(plugin_path, "r", encoding="utf-8") as f:

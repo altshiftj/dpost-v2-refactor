@@ -173,6 +173,21 @@ CORE_PROCESSING_SETTINGS_UNIT_TEST_PATHS = (
     / "settings"
     / "test_stability_tracker_overrides.py",
 )
+REMAINING_TEST_IMPORT_SWEEP_PATHS = (
+    PROJECT_ROOT / "tests" / "conftest.py",
+    PROJECT_ROOT / "tests" / "manual" / "test_plugin_import.py",
+    PROJECT_ROOT / "tests" / "manual" / "test_sync_integration.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "app" / "test_bootstrap.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "ui" / "test_dialogs.py",
+    PROJECT_ROOT / "tests" / "unit" / "core" / "ui" / "test_ui_tkinter.py",
+    PROJECT_ROOT
+    / "tests"
+    / "unit"
+    / "device_plugins"
+    / "erm_hioki"
+    / "test_live_run_sequence.py",
+    PROJECT_ROOT / "tests" / "unit" / "device_plugins" / "test_device_loader.py",
+)
 
 
 def test_fake_ui_helper_avoids_legacy_interaction_imports() -> None:
@@ -370,6 +385,14 @@ def test_core_dataflow_unit_tests_avoid_legacy_import_paths() -> None:
 def test_core_processing_and_settings_unit_tests_avoid_legacy_import_paths() -> None:
     """Require core processing/settings tests to import canonical dpost modules."""
     for path in CORE_PROCESSING_SETTINGS_UNIT_TEST_PATHS:
+        contents = path.read_text(encoding="utf-8")
+        assert "from ipat_watchdog" not in contents
+        assert "import ipat_watchdog" not in contents
+
+
+def test_remaining_test_import_sweep_avoids_legacy_import_paths() -> None:
+    """Require the remaining harness/manual/UI/device tests to use dpost imports."""
+    for path in REMAINING_TEST_IMPORT_SWEEP_PATHS:
         contents = path.read_text(encoding="utf-8")
         assert "from ipat_watchdog" not in contents
         assert "import ipat_watchdog" not in contents

@@ -11,23 +11,19 @@ import pytest
 TESTS_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = TESTS_ROOT.parent
 SRC_ROOT = PROJECT_ROOT / "src"
-# Prepend src first to ensure `import ipat_watchdog` resolves to local sources
+# Prepend src first to ensure local package imports resolve to workspace sources.
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 # Also add project root for any relative test package imports
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
+from dpost.application.config import current, init_config, reset_service
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
-from dpost.application.config.runtime import (
-    reset_service as reset_dpost_service,
-    set_service as set_dpost_service,
-)
-from ipat_watchdog.core.config import current, init_config, reset_service
-from ipat_watchdog.core.storage.filesystem_utils import init_dirs
-from ipat_watchdog.device_plugins.test_device.settings import (
+from dpost.device_plugins.test_device.settings import (
     build_config as build_device_config,
 )
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 from tests.helpers.fake_handler import FakeFileEventHandler
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_process_manager import FakeFileProcessManager
@@ -78,10 +74,8 @@ def config_service(tmp_path):
     )
 
     service = init_config(pc_config, [device_config])
-    set_dpost_service(cast(Any, service))
     init_dirs()
     yield service
-    reset_dpost_service()
     reset_service()
 
 

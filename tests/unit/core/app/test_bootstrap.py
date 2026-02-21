@@ -7,8 +7,8 @@ import importlib
 
 import pytest
 
-bootstrap_mod = importlib.import_module("ipat_watchdog.core.app.bootstrap")
-from ipat_watchdog.core.app.bootstrap import (
+bootstrap_mod = importlib.import_module("dpost.runtime.bootstrap")
+from dpost.runtime.bootstrap import (
     collect_startup_settings,
     MissingConfiguration,
     StartupError,
@@ -97,30 +97,19 @@ def test_load_bundled_env_reads_file(monkeypatch, tmp_path):
 
 def test_build_config_service_uses_plugins(monkeypatch):
     sentinel_config = object()
-    pc_config = object()
-    device_configs = [object(), object()]
-    pc_plugin = type("PCPluginStub", (), {"get_config": lambda self: pc_config})()
+    calls: dict[str, object] = {}
 
-    def load_pc(name):
-        assert name == "pc"
-        return pc_plugin
-
-    def load_device(name):
-        assert name in {"dev1", "dev2"}
-        idx = 0 if name == "dev1" else 1
-        return type("DevPluginStub", (), {"get_config": lambda self, cfg=device_configs[idx]: cfg})()
-
-    def init_config(pc, devices):
-        assert pc is pc_config
-        assert devices == device_configs
+    def build_config_service(pc_name, device_names):
+        calls["pc_name"] = pc_name
+        calls["device_names"] = tuple(device_names)
         return sentinel_config
 
-    monkeypatch.setattr(bootstrap_mod, "load_pc_plugin", load_pc)
-    monkeypatch.setattr(bootstrap_mod, "load_device_plugin", load_device)
-    monkeypatch.setattr(bootstrap_mod, "init_config", init_config)
+    monkeypatch.setattr(bootstrap_mod, "_build_config_service", build_config_service)
 
     config = bootstrap_mod._build_config_service("pc", ["dev1", "dev2"])
     assert config is sentinel_config
+    assert calls["pc_name"] == "pc"
+    assert calls["device_names"] == ("dev1", "dev2")
 
 
 def test_bootstrap_starts_services(monkeypatch):

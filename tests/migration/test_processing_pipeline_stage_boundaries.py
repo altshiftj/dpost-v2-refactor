@@ -8,12 +8,12 @@ from types import SimpleNamespace
 
 import pytest
 
-from ipat_watchdog.core.processing.file_process_manager import (
+from dpost.application.processing.file_process_manager import (
     FileProcessManager,
     _ProcessingPipeline,
 )
-from ipat_watchdog.core.processing.file_processor_abstract import ProcessingOutput
-from ipat_watchdog.core.processing.models import (
+from dpost.application.processing.file_processor_abstract import ProcessingOutput
+from dpost.application.processing.models import (
     ProcessingCandidate,
     ProcessingRequest,
     ProcessingResult,
@@ -21,7 +21,7 @@ from ipat_watchdog.core.processing.models import (
     RouteContext,
     RoutingDecision,
 )
-from ipat_watchdog.core.processing.rename_flow import RenameOutcome
+from dpost.application.processing.rename_flow import RenameOutcome
 from tests.helpers.fake_processor import DummyProcessor
 from tests.helpers.fake_session import FakeSessionManager
 from tests.helpers.fake_sync import DummySyncManager
@@ -89,6 +89,7 @@ def test_process_delegates_to_resolve_then_stabilize_stage_hooks(
         lambda _path: pytest.fail(
             "Legacy _prepare_request path should be replaced by explicit stage hooks."
         ),
+        raising=False,
     )
 
     result = pipeline.process(source)
@@ -575,21 +576,21 @@ def test_add_item_to_record_delegates_resolve_record_persistence_context_stage(
         lambda *_args, **_kwargs: None,
     )
     monkeypatch.setattr(
-        "ipat_watchdog.core.processing.file_process_manager.get_or_create_record",
+        "dpost.application.processing.file_process_manager.get_or_create_record",
         lambda *_args, **_kwargs: pytest.fail(
             "add_item_to_record should delegate record setup through "
             "_resolve_record_persistence_context_stage."
         ),
     )
     monkeypatch.setattr(
-        "ipat_watchdog.core.processing.file_process_manager.get_record_path",
+        "dpost.application.processing.file_process_manager.get_record_path",
         lambda *_args, **_kwargs: pytest.fail(
             "add_item_to_record should delegate record path resolution through "
             "_resolve_record_persistence_context_stage."
         ),
     )
     monkeypatch.setattr(
-        "ipat_watchdog.core.processing.file_process_manager.generate_file_id",
+        "dpost.application.processing.file_process_manager.generate_file_id",
         lambda *_args, **_kwargs: pytest.fail(
             "add_item_to_record should delegate file-id resolution through "
             "_resolve_record_persistence_context_stage."
@@ -636,7 +637,7 @@ def test_add_item_to_record_delegates_post_persist_side_effects_stage(
         raising=False,
     )
     monkeypatch.setattr(
-        "ipat_watchdog.core.processing.file_process_manager.update_record",
+        "dpost.application.processing.file_process_manager.update_record",
         lambda *_args, **_kwargs: pytest.fail(
             "add_item_to_record should delegate post-persist bookkeeping "
             "through _post_persist_side_effects_stage."

@@ -9,11 +9,11 @@ from types import ModuleType, SimpleNamespace
 
 import pytest
 
-from ipat_watchdog.core.config import init_config, reset_service
-from ipat_watchdog.device_plugins.test_device.settings import (
+from dpost.application.config import init_config, reset_service
+from dpost.device_plugins.test_device.settings import (
     build_config as build_device_config,
 )
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 
 def _missing_config_service() -> None:
@@ -55,8 +55,8 @@ def _reload_sync_kadi_module_with_stubbed_dependencies(
         collections_module,
     )
 
-    sys.modules.pop("ipat_watchdog.core.sync.sync_kadi", None)
-    return importlib.import_module("ipat_watchdog.core.sync.sync_kadi")
+    sys.modules.pop("dpost.infrastructure.sync.kadi_manager", None)
+    return importlib.import_module("dpost.infrastructure.sync.kadi_manager")
 
 
 @pytest.fixture
@@ -84,7 +84,7 @@ def test_local_record_parses_identifier_using_active_config_separator(
     custom_separator_config,
 ) -> None:
     """Parse LocalRecord identifier using active config naming separator."""
-    from ipat_watchdog.core.records.local_record import LocalRecord
+    from dpost.application.records.local_record import LocalRecord
 
     record = LocalRecord(identifier="dev:usr:inst:sample_1")
 
@@ -98,7 +98,7 @@ def test_local_record_requires_active_config_for_separator_resolution(
 ) -> None:
     """Fail fast when LocalRecord separator is resolved without active config."""
     local_record_module = importlib.import_module(
-        "ipat_watchdog.core.records.local_record"
+        "dpost.application.records.local_record"
     )
     monkeypatch.setattr(local_record_module, "current", _missing_config_service)
 
@@ -165,9 +165,7 @@ def test_sync_kadi_requires_active_config_for_separator_resolution(
 
 def test_psa_separator_requires_active_config(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject PSA separator fallback when config service is unavailable."""
-    module = importlib.import_module(
-        "ipat_watchdog.device_plugins.psa_horiba.file_processor"
-    )
+    module = importlib.import_module("dpost.device_plugins.psa_horiba.file_processor")
     monkeypatch.setattr(module, "current", _missing_config_service)
 
     with pytest.raises(
@@ -178,9 +176,7 @@ def test_psa_separator_requires_active_config(monkeypatch: pytest.MonkeyPatch) -
 
 def test_rhe_separator_requires_active_config(monkeypatch: pytest.MonkeyPatch) -> None:
     """Reject Kinexus separator fallback when config service is unavailable."""
-    module = importlib.import_module(
-        "ipat_watchdog.device_plugins.rhe_kinexus.file_processor"
-    )
+    module = importlib.import_module("dpost.device_plugins.rhe_kinexus.file_processor")
     monkeypatch.setattr(module, "current", _missing_config_service)
 
     with pytest.raises(

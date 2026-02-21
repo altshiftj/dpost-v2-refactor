@@ -85,6 +85,22 @@
   - migration guard scope expanded again:
     retirement harness now enforces processing/settings unit prohibition of
     `ipat_watchdog` imports for those suites.
+  - remaining harness/manual/UI/device test import sweep landed:
+    - `tests/conftest.py`
+    - `tests/manual/test_plugin_import.py`
+    - `tests/manual/test_sync_integration.py`
+    - `tests/unit/core/app/test_bootstrap.py`
+    - `tests/unit/core/ui/test_dialogs.py`
+    - `tests/unit/core/ui/test_ui_tkinter.py`
+    - `tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py`
+    - `tests/unit/device_plugins/test_device_loader.py`
+  - migration-test import sweep landed:
+    - `tests/migration/test_processing_pipeline_stage_boundaries.py`
+    - `tests/migration/test_naming_constants_consolidation.py`
+    - `tests/migration/test_plugin_discovery_hardening.py`
+  - migration guard scope expanded again:
+    retirement harness now enforces remaining harness/manual/UI/device test
+    prohibition of `ipat_watchdog` imports.
   - observability unit migration increment landed:
     `tests/unit/test_observability.py` now imports canonical
     `dpost.infrastructure.observability`.
@@ -111,17 +127,14 @@
     - `tests/unit/device_plugins/rhe_kinexus/test_file_processor.py`
     - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py`
     - `tests/unit/device_plugins/utm_zwick/test_file_processor.py`
-  - conftest runtime-service bridge increment landed:
-    shared `config_service` fixture now registers the same config service in
-    both legacy and dpost runtime registries to keep mixed-import tests
-    behaviorally aligned during migration.
+  - conftest runtime-service bridge was retired after migration-test
+    import ownership moved to canonical dpost modules.
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate
     collectors.
-  - conftest import migration remains staged:
-    some config/storage/settings imports are still legacy-scoped, but runtime
-    service convergence now keeps mixed-import test slices green.
+  - test import migration now uses canonical dpost module ownership for
+    shared fixtures + migration/integration/unit/manual suites.
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

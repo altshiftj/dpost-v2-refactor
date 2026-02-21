@@ -27,13 +27,13 @@
   must migrate before safe source deletion.
 
 ### Checklist
-- [ ] Migrate shared fixtures in `tests/conftest.py` and `tests/helpers/**` to
+- [x] Migrate shared fixtures in `tests/conftest.py` and `tests/helpers/**` to
       canonical dpost imports.
-- [ ] Remove `ipat_watchdog` imports from migration tests.
-- [ ] Remove `ipat_watchdog` imports from unit tests.
-- [ ] Remove `ipat_watchdog` imports from integration tests.
-- [ ] Remove `ipat_watchdog` imports from manual tests.
-- [ ] Keep migration/full gates green during each test migration slice.
+- [x] Remove `ipat_watchdog` imports from migration tests.
+- [x] Remove `ipat_watchdog` imports from unit tests.
+- [x] Remove `ipat_watchdog` imports from integration tests.
+- [x] Remove `ipat_watchdog` imports from manual tests.
+- [x] Keep migration/full gates green during each test migration slice.
 
 ### Completion Notes
 - How it was done: In progress. Shared helper interfaces were migrated from
@@ -119,8 +119,22 @@
     - `tests/unit/core/settings/test_stability_tracker_overrides.py`
   - migration harness now includes processing/settings unit retirement guard:
     `test_core_processing_and_settings_unit_tests_avoid_legacy_import_paths`.
-  Full conftest import migration still requires follow-up slices because
-  runtime/config/storage boundaries are not yet fully converged.
+  - remaining harness/manual/UI/device import sweep to canonical dpost
+    ownership:
+    - `tests/conftest.py`
+    - `tests/manual/test_plugin_import.py`
+    - `tests/manual/test_sync_integration.py`
+    - `tests/unit/core/app/test_bootstrap.py`
+    - `tests/unit/core/ui/test_dialogs.py`
+    - `tests/unit/core/ui/test_ui_tkinter.py`
+    - `tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py`
+    - `tests/unit/device_plugins/test_device_loader.py`
+  - migration test import sweep to canonical dpost ownership:
+    - `tests/migration/test_processing_pipeline_stage_boundaries.py`
+    - `tests/migration/test_naming_constants_consolidation.py`
+    - `tests/migration/test_plugin_discovery_hardening.py`
+  - migration harness now includes remaining import sweep guard:
+    `test_remaining_test_import_sweep_avoids_legacy_import_paths`.
 
 ---
 
