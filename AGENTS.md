@@ -6,41 +6,24 @@
 - Preserve behavior first; tighten architecture in controlled phases.
 - Active implementation scope is Phase 9+ (post-Phase 8 cutover/retirement).
 
-## Active Phase Scope (Phase 9+)
+## Phase 9-13 Operating Mode
 - All migration execution guidance in this document is for Phase 9 and later.
-- Prior phase notes remain historical context unless explicitly reactivated.
 - Current objective is native `dpost` runtime completion and legacy runtime
   dependency retirement through Phase 9-13 gates.
-- Autonomy posture for Phase 9-13 is fully autonomous execution by default:
-  plan, test, implement, refactor, validate, and document without waiting for
-  step-by-step human approvals.
-
-## Phase 9-13 Full Autonomy Mandate
-- For all work scoped to Phases 9 through 13, treat autonomous execution as the
-  default operating mode.
-- Execute end-to-end within a single session whenever feasible:
-- analyze architecture context
-- run tests-first red-state setup
-- implement to green
-- refactor with tests green
-- update required architecture/reporting artifacts
-- report outcomes and remaining risks
+- Autonomous execution is default: analyze, test red, implement green, refactor,
+  validate, and document in one continuous loop.
 - Only pause for human intervention when requirements are ambiguous,
   contradictory, or unsafe.
-- Do not introduce human-in-the-loop wait points inside normal TDD cycles for
-  Phase 9-13 execution.
-
-## Execution Tempo (Bold by Default)
+- Do not introduce human-in-the-loop wait points inside normal TDD cycles.
 - Default to bold, subsystem-oriented migration slices when requirements are
   clear.
-- Prefer retiring meaningful legacy surface per checkpoint commit over
-  micro-edits (for example an entire harness seam, runtime seam, or plugin
-  family seam).
+- Prefer meaningful retirement checkpoints over micro-edits (for example an
+  entire harness seam, runtime seam, or plugin family seam).
 - Keep changes reviewable, but do not split tightly coupled edits into separate
   commits solely for caution.
 - During implementation, use focused tests for fast feedback; run required
   full gates once per checkpoint before commit.
-- Avoid repetitive full-suite reruns mid-slice unless a failure indicates broad
+- Avoid repetitive full-suite reruns mid-slice unless failure signals broad
   regression risk.
 
 ## Current Migration Decisions (Locked)
@@ -81,35 +64,6 @@
   explicit human approval and documentation rationale in active migration
   reports/checklists.
 
-## Shim Retirement Exit Criteria (Required)
-- Status (2026-02-21): criteria satisfied and both shim modules are retired.
-- `src/dpost/application/runtime/runtime_dependencies.py` may be retired only
-  when all are true:
-- runtime app and processing ownership paths resolve through dpost-owned modules
-  (`dpost.application.processing`, `dpost.application.records`,
-  `dpost.application.session`, `dpost.application.config`,
-  `dpost.application.metrics`)
-- no direct `ipat_watchdog.core.*` imports remain in canonical runtime/app
-  ownership paths (`src/dpost/application/runtime/`,
-  `src/dpost/application/processing/`)
-- migration contracts for runtime app rehost/boundaries are green
-  (`tests/migration/test_phase10_runtime_app_rehost.py` and
-  `tests/migration/test_phase13_legacy_runtime_retirement.py`)
-- required global gates are green (`python -m pytest -m migration`,
-  `python -m ruff check .`, `python -m black --check .`, `python -m pytest`)
-- `src/dpost/infrastructure/runtime/config_dependencies.py` may be retired only
-  when all are true:
-- runtime bootstrap config/storage wiring resolves through native dpost modules
-  (not legacy-backed boundary wrappers)
-- no direct `ipat_watchdog.core.config*` or
-  `ipat_watchdog.core.storage.filesystem_utils` imports remain under
-  `src/dpost/infrastructure/runtime/` except approved UI boundary paths
-- migration contracts for runtime infrastructure boundaries are green
-  (`tests/migration/test_phase11_runtime_infrastructure_boundary.py` and
-  `tests/migration/test_phase13_legacy_runtime_retirement.py`)
-- required global gates are green (`python -m pytest -m migration`,
-  `python -m ruff check .`, `python -m black --check .`, `python -m pytest`)
-
 ## Autonomous TDD (Novel Code)
 - For Phase 9+ behavior changes or non-trivial architectural changes, run full
   TDD loops autonomously:
@@ -120,15 +74,6 @@
 - maintain a fast cadence: one explicit red-to-green loop per migration slice,
   then run required full gates before checkpoint commit
 - Do not pause for human approval between red and green unless requirements are ambiguous or unsafe.
-
-## Reasoning Effort Policy
-- Very high reasoning effort:
-- documentation analysis/updates (architecture, planning, checklists, ADR impact)
-- test design and test writing
-- code design, implementation, and refactoring
-- Medium reasoning effort:
-- running test/lint/format/pre-commit commands
-- git status/review and commit workflow operations
 
 ## Architecture Governance (Required)
 - Treat these as source-of-truth artifacts:
@@ -210,15 +155,6 @@
 - `git cherry-pick`
 - `git commit --amend`
 - `git push --force`
-
-## Key Paths (Current)
-- Canonical CLI entrypoint: `src/dpost/__main__.py`
-- Legacy CLI entrypoint (retired): `src/ipat_watchdog/__main__.py`
-- Runtime bootstrap: `src/ipat_watchdog/core/app/bootstrap.py`
-- New composition root scaffold: `src/dpost/runtime/composition.py`
-- Architecture docs: `docs/architecture/`
-- Migration plan/checklist: `docs/planning/20260218-dpost-architecture-tightening-plan.md`, `docs/checklists/20260218-dpost-architecture-tightening-checklist.md`
-- Migration tests: `tests/migration/`
 
 ## Output Expectations
 - Summarize what changed and why.
