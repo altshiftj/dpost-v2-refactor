@@ -21,7 +21,6 @@
 | `dpost.plugins.profile_selection` | Plugin boundary helper | Resolve configured plugin profile names to plugin-profile contracts | Plugin profile name mapping and actionable unknown-profile errors | Runtime bootstrap wiring and env-to-settings composition |
 | `dpost.plugins.loading` | Plugin boundary helper | Resolve PC/device plugin instances through canonical dpost plugin loading APIs | Plugin lookup calls used by runtime bootstrap and config wiring | Runtime mode/adapter selection policy |
 | `dpost.plugins.contracts` | Plugin contract | Define dpost-owned structural plugin protocol types for loader boundaries | Runtime-checkable plugin type contracts and decoupled typing surface | Concrete plugin discovery implementation |
-| `dpost.plugins.legacy_compat` | Plugin compatibility boundary | Isolate legacy plugin namespace fallback mappings while canonical groups transition to dpost names | Legacy entrypoint-group/package/module mapping helpers | Runtime composition policy or plugin orchestration logic |
 | `dpost.infrastructure.logging` | Infrastructure adapter | Provide canonical dpost logger configuration implementation | JSON logger formatter and rotating handler setup | Runtime orchestration policy |
 | `dpost.infrastructure.observability` | Infrastructure adapter | Provide canonical observability HTTP server wiring for runtime bootstrap | `/health` and `/logs` server lifecycle wiring | Runtime startup policy and plugin/config resolution |
 | `dpost.application.runtime.DeviceWatchdogApp` | Application | Coordinate observer lifecycle and queue-driven processing loop | Event queue polling, graceful shutdown orchestration | Direct plugin discovery logic |
@@ -45,7 +44,7 @@
 | `KadiSyncAdapter` | Infrastructure adapter (dpost wrapper) | Bridge dpost sync port to legacy Kadi implementation with optional dependency handling | Adapter selection path and lazy legacy delegation | Runtime composition policy |
 | `NoopSyncAdapter` | Infrastructure adapter (reference) | Provide no-op sync behavior for framework validation and local headless paths | Deterministic no-op sync responses | Production backend side effects |
 | `HeadlessRuntimeUI` | Infrastructure adapter (runtime UI) | Provide non-interactive UI/scheduler behavior for headless runtime mode | Headless event-loop scheduling and no-dialog interaction defaults | Desktop dialog rendering and Tk lifecycle ownership |
-| `dpost.plugins.system.PluginLoader` | Infrastructure support | Register/discover/instantiate device and PC plugins | Plugin lifecycle and registration state with canonical dpost groups, canonical hook namespace, and isolated legacy fallback/orchestration | Artifact processing behavior |
+| `dpost.plugins.system.PluginLoader` | Infrastructure support | Register/discover/instantiate device and PC plugins | Plugin lifecycle and registration state with canonical dpost groups and canonical hook namespace | Artifact processing behavior |
 | `UserInteractionPort` + adapters | Application port + Infrastructure adapter | Decouple interaction requests from UI implementation | Interaction contract and adapter mapping | Core domain decision logic |
 
 ## Responsibility Rules

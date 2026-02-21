@@ -619,17 +619,37 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `23 passed`
 
+## Deep-Core Increment: Plugin Compatibility Seam Retirement
+- Tests-first contracts tightened:
+  - `tests/migration/test_phase12_plugin_loading_ownership.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `2 failed`
+- Implementation:
+  - removed transition compatibility module:
+    - deleted `src/dpost/plugins/legacy_compat.py`
+  - rewired `src/dpost/plugins/system.py` to canonical-only dpost plugin
+    manager behavior:
+    - removed legacy hook namespace orchestration
+    - removed legacy entrypoint-group and built-in package fallback loading
+    - removed legacy module fallback candidates during lazy loading
+  - updated governance/source-of-truth docs and AGENTS policy to retire
+    temporary dpost legacy import exceptions.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
+    -> `24 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `154 passed, 302 deselected`
+  -> `155 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `156 files would be left unchanged.`
+  -> `155 files would be left unchanged.`
 - `python -m pytest`
-  -> `455 passed, 1 skipped`
+  -> `456 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -663,12 +683,19 @@
   `152 files would be left unchanged`.
 - PSA concrete-plugin slice completed with Black check green on first pass
   (`156 files would be left unchanged`).
+- Compatibility-seam retirement slice required formatter passes on
+  `src/dpost/plugins/system.py` and
+  `tests/migration/test_phase12_plugin_loading_ownership.py` before
+  `python -m black --check .` returned
+  `155 files would be left unchanged`.
 
 ## Remaining Risk / Open Work
 - In-repo concrete plugin package rehosting is now complete across
-  `src/dpost/device_plugins/` and `src/dpost/pc_plugins/`; remaining migration
-  risk is concentrated in compatibility-seam retirement and final legacy
-  fallback removal.
-- Remaining intentional legacy compatibility seams are now limited to:
-  - hook namespace compatibility orchestration in `src/dpost/plugins/system.py`
-  - namespace fallback mapping in `src/dpost/plugins/legacy_compat.py`
+  `src/dpost/device_plugins/` and `src/dpost/pc_plugins/`.
+- Canonical dpost plugin loading paths now run without legacy namespace or
+  legacy hook compatibility seams (`src/dpost/plugins/legacy_compat.py`
+  retired; `src/dpost/plugins/system.py` canonical-only).
+- Remaining migration risk is focused on deprecating and eventually retiring
+  legacy package trees under `src/ipat_watchdog/device_plugins/` and
+  `src/ipat_watchdog/pc_plugins/` while preserving contributor migration
+  guidance.

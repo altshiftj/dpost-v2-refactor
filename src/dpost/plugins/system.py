@@ -7,18 +7,12 @@ import sys
 from dataclasses import dataclass
 from importlib import import_module
 from importlib.metadata import entry_points
-from typing import Callable, Dict, Iterable, Tuple, TypeVar
+from typing import Callable, Dict, Iterable, Tuple
 
 import pluggy
 
 from dpost.infrastructure.logging import setup_logger
 from dpost.plugins.contracts import DevicePlugin, PCPlugin
-from dpost.plugins.legacy_compat import (
-    LEGACY_PLUGIN_NAMESPACE,
-    legacy_builtin_module_name,
-    legacy_builtin_packages,
-    legacy_entrypoint_groups,
-)
 
 logger = setup_logger(__name__)
 
@@ -30,7 +24,6 @@ _PLUGIN_LOADER_SINGLETON: PluginLoader | None = None
 
 hookspec = pluggy.HookspecMarker(_PLUGIN_NAMESPACE)
 hookimpl = pluggy.HookimplMarker(_PLUGIN_NAMESPACE)
-_legacy_hookspec = pluggy.HookspecMarker(LEGACY_PLUGIN_NAMESPACE)
 
 
 class HookSpecifications:
@@ -43,21 +36,6 @@ class HookSpecifications:
     @hookspec
     def register_pc_plugins(self, registry: "PCPluginRegistry") -> None:
         """Register PC plugin factories."""
-
-
-class LegacyHookSpecifications:
-    """Legacy hook specifications kept for transition compatibility."""
-
-    @_legacy_hookspec
-    def register_device_plugins(self, registry: "DevicePluginRegistry") -> None:
-        """Register device plugin factories via legacy marker namespace."""
-
-    @_legacy_hookspec
-    def register_pc_plugins(self, registry: "PCPluginRegistry") -> None:
-        """Register PC plugin factories via legacy marker namespace."""
-
-
-FactoryT = TypeVar("FactoryT", bound=Callable[[], object])
 
 
 @dataclass
@@ -76,23 +54,6 @@ class _BaseRegistry:
         if not normalized:
             raise ValueError(f"{self.kind} plugin name must not be empty")
         if normalized in self._factories:
-            existing_factory = self._factories[normalized]
-            existing_module = getattr(existing_factory, "__module__", "")
-            incoming_module = getattr(factory, "__module__", "")
-            existing_root = existing_module.split(".", 1)[0]
-            incoming_root = incoming_module.split(".", 1)[0]
-            if {existing_root, incoming_root} == {
-                _PLUGIN_NAMESPACE,
-                LEGACY_PLUGIN_NAMESPACE,
-            }:
-                logger.debug(
-                    "Skipping compatibility duplicate for %s plugin '%s' (%s kept, %s ignored)",
-                    self.kind,
-                    normalized,
-                    existing_module,
-                    incoming_module,
-                )
-                return
             raise ValueError(
                 f"{self.kind} plugin '{normalized}' registered multiple times"
             )
@@ -163,9 +124,7 @@ class PluginLoader:
         self, *, load_entrypoints: bool = False, load_builtins: bool = False
     ) -> None:
         self._pm = pluggy.PluginManager(_PLUGIN_NAMESPACE)
-        self._legacy_pm = pluggy.PluginManager(LEGACY_PLUGIN_NAMESPACE)
         self._pm.add_hookspecs(HookSpecifications)
-        self._legacy_pm.add_hookspecs(LegacyHookSpecifications)
         self._device_registry = DevicePluginRegistry()
         self._pc_registry = PCPluginRegistry()
         self._registered_modules: set[str] = set()
@@ -222,40 +181,30 @@ class PluginLoader:
     def register_plugin(self, plugin: object, name: str | None = None) -> None:
         try:
             self._pm.register(plugin, name=name)
-            self._legacy_pm.register(
-                plugin,
-                name=f"legacy:{name}" if name is not None else None,
-            )
         except pluggy.PluginValidationError as exc:
             raise RuntimeError(f"Plugin {plugin!r} failed validation: {exc}") from exc
         self.refresh()
 
     def _invoke_registration_hooks(self, *, devices: bool, pcs: bool) -> None:
-        for plugin_manager in (self._pm, self._legacy_pm):
-            if devices:
-                plugin_manager.hook.register_device_plugins(
-                    registry=self._device_registry
-                )
-            if pcs:
-                plugin_manager.hook.register_pc_plugins(registry=self._pc_registry)
+        if devices:
+            self._pm.hook.register_device_plugins(registry=self._device_registry)
+        if pcs:
+            self._pm.hook.register_pc_plugins(registry=self._pc_registry)
 
     def _load_entrypoints(self, group: str) -> None:
-        groups = (group, *legacy_entrypoint_groups(group))
-        for selected_group in groups:
-            for entry_point in _iter_entry_points(selected_group):
-                module_name, _, _ = entry_point.value.partition(":")
-                self._register_module(
-                    module_name=module_name,
-                    registration_name=f"{selected_group}:{entry_point.name}",
-                    log_context=f"entry point '{entry_point.name}'",
-                )
+        for entry_point in _iter_entry_points(group):
+            module_name, _, _ = entry_point.value.partition(":")
+            self._register_module(
+                module_name=module_name,
+                registration_name=f"{group}:{entry_point.name}",
+                log_context=f"entry point '{entry_point.name}'",
+            )
         self.refresh()
 
     def _load_builtin_plugins(self) -> None:
         packages = (
             ("dpost.device_plugins", DEVICE_ENTRYPOINT_GROUP),
             ("dpost.pc_plugins", PC_ENTRYPOINT_GROUP),
-            *legacy_builtin_packages(),
         )
         for package_name, group in packages:
             try:
@@ -289,56 +238,48 @@ class PluginLoader:
         else:
             return False
 
-        module_candidates = [module_name]
-        legacy_module_name = legacy_builtin_module_name(group, name)
-        if legacy_module_name is not None:
-            module_candidates.append(legacy_module_name)
+        if module_name in self._registered_modules:
+            return False
 
-        for candidate_name in module_candidates:
-            if candidate_name in self._registered_modules:
-                continue
-
-            self._register_module(
-                module_name=candidate_name,
-                registration_name=f"lazy:{group}:{name}",
-                log_context=f"lazy {group} plugin '{name}'",
+        self._register_module(
+            module_name=module_name,
+            registration_name=f"lazy:{group}:{name}",
+            log_context=f"lazy {group} plugin '{name}'",
+        )
+        if module_name in self._registered_modules:
+            if group == DEVICE_ENTRYPOINT_GROUP:
+                self.refresh_devices()
+            else:
+                self.refresh_pcs()
+            logger.debug(
+                "Lazily loaded %s plugin '%s'",
+                "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
+                name,
             )
-            if candidate_name in self._registered_modules:
+            return True
+        return False
+
+    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
+        for entry_point in _iter_entry_points(group):
+            if entry_point.name != name:
+                continue
+            module_name, _, _ = entry_point.value.partition(":")
+            self._register_module(
+                module_name=module_name,
+                registration_name=f"entrypoint:{group}:{name}",
+                log_context=f"entry point '{name}'",
+            )
+            if module_name in self._registered_modules:
                 if group == DEVICE_ENTRYPOINT_GROUP:
                     self.refresh_devices()
                 else:
                     self.refresh_pcs()
                 logger.debug(
-                    "Lazily loaded %s plugin '%s'",
+                    "Lazily loaded %s plugin '%s' via entry point",
                     "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
                     name,
                 )
                 return True
-        return False
-
-    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
-        groups = (group, *legacy_entrypoint_groups(group))
-        for selected_group in groups:
-            for entry_point in _iter_entry_points(selected_group):
-                if entry_point.name != name:
-                    continue
-                module_name, _, _ = entry_point.value.partition(":")
-                self._register_module(
-                    module_name=module_name,
-                    registration_name=f"entrypoint:{selected_group}:{name}",
-                    log_context=f"entry point '{name}'",
-                )
-                if module_name in self._registered_modules:
-                    if group == DEVICE_ENTRYPOINT_GROUP:
-                        self.refresh_devices()
-                    else:
-                        self.refresh_pcs()
-                    logger.debug(
-                        "Lazily loaded %s plugin '%s' via entry point",
-                        "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
-                        name,
-                    )
-                    return True
         return False
 
     def _register_module(
@@ -351,38 +292,18 @@ class PluginLoader:
         except Exception as exc:  # noqa: BLE001
             logger.error("Failed to import %s (%s): %s", module_name, log_context, exc)
             return
-        registered = False
-        plugin_managers = (
-            (self._pm, "dpost"),
-            (self._legacy_pm, "legacy"),
-        )
-        for plugin_manager, manager_name in plugin_managers:
-            if module in plugin_manager.get_plugins():
-                registered = True
-                continue
-            try:
-                plugin_manager.register(
-                    module, name=f"{manager_name}:{registration_name}"
-                )
-            except ValueError as exc:
-                logger.debug(
-                    "Skipping duplicate registration for %s (%s): %s",
-                    log_context,
-                    manager_name,
-                    exc,
-                )
-                registered = True
-            except pluggy.PluginValidationError as exc:
-                logger.error(
-                    "Plugin registration failed for %s (%s): %s",
-                    log_context,
-                    manager_name,
-                    exc,
-                )
-            else:
-                registered = True
-        if registered:
+        if module in self._pm.get_plugins():
             self._registered_modules.add(module_name)
+            return
+        try:
+            self._pm.register(module, name=f"dpost:{registration_name}")
+        except ValueError as exc:
+            logger.debug("Skipping duplicate registration for %s: %s", log_context, exc)
+            return
+        except pluggy.PluginValidationError as exc:
+            logger.error("Plugin registration failed for %s: %s", log_context, exc)
+            return
+        self._registered_modules.add(module_name)
 
 
 def _iter_entry_points(group: str) -> Iterable:

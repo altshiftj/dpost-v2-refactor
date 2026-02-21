@@ -237,8 +237,8 @@
   while concrete plugin namespace migration proceeds incrementally.
 - dpost plugin loading now uses dpost-owned plugin protocol contracts;
   canonical plugin discovery groups now use `dpost.device_plugins` and
-  `dpost.pc_plugins`, with isolated legacy-namespace fallback mappings in
-  `src/dpost/plugins/legacy_compat.py` during plugin migration.
+  `dpost.pc_plugins` with no legacy namespace fallback mappings in canonical
+  dpost paths.
 - Canonical reference profile plugins (`test_device`, `test_pc`) now load from
   dpost plugin namespaces before any legacy fallback path.
 - Concrete UTM Zwick plugin now loads from canonical dpost namespace
@@ -274,12 +274,10 @@
 - Concrete KINEXUS BLB PC plugin now loads from canonical dpost namespace
   (`dpost.pc_plugins.kinexus_blb`) before any legacy fallback path.
 - dpost plugin loading now uses canonical hook namespace marker `dpost` and
-  keeps legacy hook-namespace compatibility through isolated orchestration in
-  `src/dpost/plugins/system.py`.
+  no longer orchestrates legacy hook namespaces in canonical dpost paths.
 - Remaining intentional legacy boundaries in canonical dpost runtime paths are
-  plugin hook compatibility orchestration in `src/dpost/plugins/system.py` and
-  legacy namespace fallback mappings in
-  `src/dpost/plugins/legacy_compat.py`.
+  now outside plugin loading; plugin namespace/hook compatibility seams are
+  retired from `src/dpost/plugins/`.
 - Rename retries no longer recurse through `_route_with_prefix()`, but rename
   prompts and retry loop orchestration still live in `file_process_manager`
   and remain active decomposition targets.

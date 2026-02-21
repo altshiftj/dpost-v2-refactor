@@ -47,8 +47,8 @@ def test_plugin_system_uses_dpost_owned_plugin_namespace_groups() -> None:
     assert 'PC_ENTRYPOINT_GROUP = "dpost.pc_plugins"' in system_contents
 
 
-def test_legacy_namespace_literals_are_isolated_to_legacy_compat_module() -> None:
-    """Require legacy namespace literals to remain isolated to compat module."""
+def test_dpost_sources_have_no_legacy_namespace_literals() -> None:
+    """Require complete retirement of legacy namespace literals in dpost source."""
     files_with_legacy_namespace: list[str] = []
     for python_path in DPOST_SOURCE_ROOT.rglob("*.py"):
         contents = python_path.read_text(encoding="utf-8")
@@ -57,11 +57,12 @@ def test_legacy_namespace_literals_are_isolated_to_legacy_compat_module() -> Non
                 str(python_path.relative_to(PROJECT_ROOT)).replace("\\", "/")
             )
 
-    assert files_with_legacy_namespace == [
-        str(DPOST_PLUGIN_LEGACY_COMPAT_PATH.relative_to(PROJECT_ROOT)).replace(
-            "\\", "/"
-        )
-    ]
+    assert files_with_legacy_namespace == []
+
+
+def test_legacy_plugin_compat_module_is_retired() -> None:
+    """Require dpost plugin compat module removal after full namespace rehost."""
+    assert not DPOST_PLUGIN_LEGACY_COMPAT_PATH.exists()
 
 
 def test_dpost_plugin_loading_resolves_reference_pc_devices() -> None:

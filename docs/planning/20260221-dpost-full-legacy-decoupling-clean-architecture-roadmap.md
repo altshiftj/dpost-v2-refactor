@@ -86,15 +86,17 @@
     `src/dpost/pc_plugins/eirich_blb/` and
     `src/dpost/pc_plugins/horiba_blb/` and
     `src/dpost/pc_plugins/kinexus_blb/`.
+  - Legacy plugin compatibility seams retired from canonical dpost paths:
+    `src/dpost/plugins/legacy_compat.py` removed and
+    `src/dpost/plugins/system.py` now canonical-only for dpost hook/namespace
+    loading.
 - In progress:
-  - Retirement of remaining intentional legacy plugin compatibility seams
-    (`dpost.plugins.system` hook compatibility orchestration +
-    `dpost.plugins.legacy_compat` fallback mappings) after concrete plugin
-    namespace migration criteria were met in this wave.
+  - Legacy package retirement planning for `src/ipat_watchdog/device_plugins/`
+    and `src/ipat_watchdog/pc_plugins/` now that canonical dpost plugin
+    packages are complete.
 - Next deep-core migration target:
-  - Execute plugin-namespace compatibility retirement/import sweep and remove
-    legacy fallback mappings now that all concrete in-repo plugin packages are
-    available under canonical dpost namespaces.
+  - Execute legacy package deprecation and cleanup plan while preserving test
+    parity and contributor migration guidance.
 
 ## Deep-Core Planning Artifacts
 - Detailed deep-core execution plan:

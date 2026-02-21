@@ -62,16 +62,11 @@
 - place `ipat_watchdog` contract tests in legacy paths (`tests/unit`, `tests/integration`, `tests/manual`)
 - place new `dpost` migration/cutover tests in `tests/migration`
 
-## Temporary Legacy Import Exceptions (Phase 9-13)
-- Temporary legacy imports are allowed only in explicit transition boundary
-  modules listed below:
-- `src/dpost/plugins/system.py` (legacy pluggy hook compatibility orchestration only)
-- `src/dpost/plugins/legacy_compat.py` (legacy plugin namespace discovery fallback only)
-- No other `src/dpost/**` modules may add new direct `ipat_watchdog.*` imports
-  without explicit human approval and documentation rationale in active
-  migration reports/checklists.
-- Exception modules must remain thin boundaries (import/export, adapter wiring,
-  or lazy loading); do not add orchestration/business logic to them.
+## Legacy Import Policy (Phase 9-13)
+- Legacy imports in `src/dpost/**` are retired.
+- No `src/dpost/**` module may add direct `ipat_watchdog.*` imports without
+  explicit human approval and documentation rationale in active migration
+  reports/checklists.
 
 ## Shim Retirement Exit Criteria (Required)
 - Status (2026-02-21): criteria satisfied and both shim modules are retired.
