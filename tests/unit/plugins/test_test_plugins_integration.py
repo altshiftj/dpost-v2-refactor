@@ -1,9 +1,9 @@
 """Tests for integration between test device and test PC plugins."""
 
-from ipat_watchdog.device_plugins.test_device.plugin import TestDevicePlugin
-from ipat_watchdog.device_plugins.test_device.settings import build_config as build_device_config
-from ipat_watchdog.pc_plugins.test_pc.plugin import TestPCPlugin
-from ipat_watchdog.pc_plugins.test_pc.settings import build_config as build_pc_config
+from dpost.device_plugins.test_device.plugin import TestDevicePlugin
+from dpost.device_plugins.test_device.settings import build_config as build_device_config
+from dpost.pc_plugins.test_pc.plugin import TestPCPlugin
+from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
 
 
 def test_test_device_plugin_config():

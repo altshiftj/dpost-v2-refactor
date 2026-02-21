@@ -14,6 +14,12 @@ FAKE_PROCESSOR_PATH = PROJECT_ROOT / "tests" / "helpers" / "fake_processor.py"
 CONFTEST_PATH = PROJECT_ROOT / "tests" / "conftest.py"
 LEGACY_METRICS_PATH = PROJECT_ROOT / "src" / "ipat_watchdog" / "metrics.py"
 UNIT_OBSERVABILITY_TEST_PATH = PROJECT_ROOT / "tests" / "unit" / "test_observability.py"
+UNIT_PC_DEVICE_MAPPING_TEST_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "loader" / "test_pc_device_mapping.py"
+)
+UNIT_TEST_PLUGINS_INTEGRATION_PATH = (
+    PROJECT_ROOT / "tests" / "unit" / "plugins" / "test_test_plugins_integration.py"
+)
 INTEGRATION_RUNTIME_TEST_PATHS = (
     PROJECT_ROOT / "tests" / "integration" / "test_integration.py",
     PROJECT_ROOT / "tests" / "integration" / "test_device_integrations.py",
@@ -96,3 +102,25 @@ def test_unit_observability_tests_avoid_legacy_package_root_import() -> None:
     contents = UNIT_OBSERVABILITY_TEST_PATH.read_text(encoding="utf-8")
 
     assert "from ipat_watchdog import observability" not in contents
+
+
+def test_loader_plugin_unit_tests_avoid_legacy_loader_and_test_plugin_imports() -> None:
+    """Require selected loader/plugin unit tests to resolve dpost plugin boundaries."""
+    mapping_contents = UNIT_PC_DEVICE_MAPPING_TEST_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.loader import get_devices_for_pc" not in (
+        mapping_contents
+    )
+
+    plugin_contents = UNIT_TEST_PLUGINS_INTEGRATION_PATH.read_text(encoding="utf-8")
+    assert "from ipat_watchdog.device_plugins.test_device.plugin import" not in (
+        plugin_contents
+    )
+    assert "from ipat_watchdog.device_plugins.test_device.settings import" not in (
+        plugin_contents
+    )
+    assert "from ipat_watchdog.pc_plugins.test_pc.plugin import" not in (
+        plugin_contents
+    )
+    assert "from ipat_watchdog.pc_plugins.test_pc.settings import" not in (
+        plugin_contents
+    )

@@ -63,6 +63,9 @@
     existing behavior while runtime/config convergence continues
   - observability unit test migration to canonical dpost infrastructure module:
     - `tests/unit/test_observability.py`
+  - loader/plugin unit migration to canonical dpost plugin loading boundaries:
+    - `tests/unit/loader/test_pc_device_mapping.py`
+    - `tests/unit/plugins/test_test_plugins_integration.py`
   Full conftest import migration still requires follow-up slices because
   runtime/config/storage boundaries are not yet fully converged.
 

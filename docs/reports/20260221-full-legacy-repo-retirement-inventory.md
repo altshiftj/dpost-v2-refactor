@@ -79,6 +79,9 @@
   - `tests/integration/test_extr_haake_safesave.py`
 - Migrated observability unit tests to canonical dpost infrastructure module:
   - `tests/unit/test_observability.py`
+- Migrated selected loader/plugin unit tests to canonical dpost modules:
+  - `tests/unit/loader/test_pc_device_mapping.py`
+  - `tests/unit/plugins/test_test_plugins_integration.py`
 - Retired direct Prometheus collector definitions from legacy metrics module:
   - `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols.
@@ -94,7 +97,9 @@
     runtime-import guard), then `7 passed` (green), then
     `1 failed, 7 passed` (red after integration-runtime guard), then
     `8 passed` (green), then `1 failed, 8 passed` (red after
-    observability-import guard), then `9 passed` (green)
+    observability-import guard), then `9 passed` (green), then
+    `1 failed, 9 passed` (red after loader-plugin guard), then
+    `10 passed` (green)
   - `@' ... import dpost runtime then ipat runtime ... '@ | python -`
     -> `ok`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py`
@@ -103,6 +108,8 @@
     -> `29 passed`
   - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/test_observability.py`
     -> `15 passed`
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py tests/unit/loader/test_pc_device_mapping.py tests/unit/plugins/test_test_plugins_integration.py`
+    -> `31 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
     -> `55 passed`
   - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/integration/test_integration.py tests/integration/test_device_integrations.py`
@@ -111,10 +118,10 @@
     - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
       -> `2 passed`
     - `python -m pytest -m migration`
-      -> `170 passed, 302 deselected`
+      -> `171 passed, 302 deselected`
     - `python -m ruff check .`
       -> `All checks passed!`
     - `python -m black --check .`
       -> `157 files would be left unchanged`
     - `python -m pytest`
-      -> `471 passed, 1 skipped`
+      -> `472 passed, 1 skipped`

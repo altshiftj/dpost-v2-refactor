@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ipat_watchdog.loader import get_devices_for_pc
+from dpost.plugins.loading import get_devices_for_pc
 
 
 _EXPECTED_MAPPINGS = [

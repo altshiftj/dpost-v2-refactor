@@ -46,6 +46,11 @@
   - observability unit migration increment landed:
     `tests/unit/test_observability.py` now imports canonical
     `dpost.infrastructure.observability`.
+  - loader/plugin unit migration increment landed:
+    - `tests/unit/loader/test_pc_device_mapping.py` now imports
+      `dpost.plugins.loading.get_devices_for_pc`
+    - `tests/unit/plugins/test_test_plugins_integration.py` now imports
+      canonical dpost test plugin modules/settings.
   - legacy metrics compatibility boundary landed:
     `src/ipat_watchdog/metrics.py` now re-exports canonical
     `dpost.application.metrics` symbols instead of defining duplicate
