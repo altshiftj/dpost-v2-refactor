@@ -1,7 +1,10 @@
 # tests/helpers/fake_ui.py
-from ipat_watchdog.core.interactions import (RenameDecision, RenamePrompt,
-                                             SessionPromptDetails)
-from ipat_watchdog.core.interactions.ports import UserInteractionPort
+from dpost.application.ports.interactions import (
+    RenameDecision,
+    RenamePrompt,
+    UserInteractionPort,
+)
+from dpost.application.ports.ui import SessionPromptDetails
 
 
 class HeadlessUI(UserInteractionPort):
@@ -107,10 +110,14 @@ class HeadlessUI(UserInteractionPort):
     # Interaction port compatibility helpers
     # ------------------------------------------------------------------
     def request_rename(self, prompt: RenamePrompt) -> RenameDecision:
-        self.calls["show_rename_dialog"].append((prompt.attempted_prefix, prompt.analysis))
+        self.calls["show_rename_dialog"].append(
+            (prompt.attempted_prefix, prompt.analysis)
+        )
         if prompt.contextual_reason:
             # record contextual hints so tests can inspect them via rename_inputs side effects
-            self.calls.setdefault("contextual_reason", []).append(prompt.contextual_reason)
+            self.calls.setdefault("contextual_reason", []).append(
+                prompt.contextual_reason
+            )
 
         if self.show_rename_dialog_return is not None:
             result = self.show_rename_dialog_return

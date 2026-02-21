@@ -23,6 +23,11 @@
   - `ipat_watchdog` references in `tests/**`: `307`
 - Inventory source:
   - `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`
+- Kickoff progress:
+  - migration guard test added:
+    `tests/migration/test_full_legacy_repo_retirement_harness.py`
+  - shared helper decoupling landed for:
+    `tests/helpers/fake_ui.py` and `tests/helpers/fake_sync.py`
 
 ## End-State Definition
 - `dpost` is the only canonical runtime/import target.

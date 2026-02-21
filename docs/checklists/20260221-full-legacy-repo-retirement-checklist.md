@@ -7,13 +7,18 @@
 ### Checklist
 - [x] Capture legacy repository inventory and reference counts.
 - [x] Define retirement target end-state criteria.
-- [ ] Add migration guard tests for repository-wide retirement criteria.
-- [ ] Link roadmap/checklist/report artifacts from active contributor docs.
+- [x] Add migration guard tests for repository-wide retirement criteria.
+- [x] Link roadmap/checklist/report artifacts from active contributor docs.
 - [ ] Define explicit exception policy for any temporary retained legacy files.
 
 ### Completion Notes
 - How it was done: Inventory baseline captured in
   `docs/reports/20260221-full-legacy-repo-retirement-inventory.md`.
+  Migration guard coverage started in
+  `tests/migration/test_full_legacy_repo_retirement_harness.py` with explicit
+  assertions for shared helper decoupling from legacy interaction/sync imports.
+  Roadmap/checklist/report artifacts are linked from canonical contributor docs
+  (`README.md`, `DEVELOPER_README.md`).
 
 ---
 
@@ -31,7 +36,12 @@
 - [ ] Keep migration/full gates green during each test migration slice.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: In progress. Shared helper interfaces were migrated from
+  legacy imports in:
+  - `tests/helpers/fake_ui.py`
+  - `tests/helpers/fake_sync.py`
+  Conftest and remaining helper modules still require follow-up migration
+  slices.
 
 ---
 

@@ -1,9 +1,6 @@
-from ipat_watchdog.core.sync.sync_abstract import ISyncManager
-
-
-class DummySyncManager(ISyncManager):
+class DummySyncManager:
     def __init__(self, interactions):
-        super().__init__(interactions)
+        self.interactions = interactions
         self.synced_records = []
 
     def sync_record_to_database(self, local_record):

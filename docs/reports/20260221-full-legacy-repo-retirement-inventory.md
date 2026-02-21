@@ -56,3 +56,26 @@
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
 - Checklist:
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+
+## Progress Update (Kickoff Increment)
+- Added migration guard test coverage for shared harness retirement:
+  - `tests/migration/test_full_legacy_repo_retirement_harness.py`
+- Removed legacy imports from shared helper boundaries:
+  - `tests/helpers/fake_ui.py`
+  - `tests/helpers/fake_sync.py`
+- Verification snapshots:
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
+    -> `2 failed` (red), then `2 passed` (green)
+  - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
+    -> `55 passed`
+  - Required gates:
+    - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
+      -> `2 passed`
+    - `python -m pytest -m migration`
+      -> `163 passed, 302 deselected`
+    - `python -m ruff check .`
+      -> `All checks passed!`
+    - `python -m black --check .`
+      -> `157 files would be left unchanged`
+    - `python -m pytest`
+      -> `464 passed, 1 skipped`

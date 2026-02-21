@@ -712,17 +712,34 @@
     - `docs/reports/20260221-full-legacy-decoupling-functional-architecture-audit.md`
     - `docs/checklists/20260221-dpost-full-legacy-decoupling-clean-architecture-checklist.md`
 
+## Full Legacy Repo Retirement Kickoff: Shared Harness Helper Decoupling
+- Tests-first contract:
+  - `tests/migration/test_full_legacy_repo_retirement_harness.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
+    -> `2 failed`
+- Implementation:
+  - migrated shared helper boundaries away from direct legacy interaction/sync
+    imports:
+    - `tests/helpers/fake_ui.py`
+    - `tests/helpers/fake_sync.py`
+- Green-state verification:
+  - `python -m pytest tests/migration/test_full_legacy_repo_retirement_harness.py`
+    -> `2 passed`
+  - `python -m pytest tests/unit/core/app/test_device_watchdog_app.py tests/unit/core/processing/test_file_process_manager.py tests/migration/test_processing_pipeline_stage_boundaries.py tests/integration/test_multi_processor_app_flow.py`
+    -> `55 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `161 passed, 302 deselected`
+  -> `163 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `156 files would be left unchanged.`
+  -> `157 files would be left unchanged.`
 - `python -m pytest`
-  -> `462 passed, 1 skipped`
+  -> `464 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
