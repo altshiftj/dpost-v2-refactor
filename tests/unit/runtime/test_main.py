@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import runpy
 from types import SimpleNamespace
+
+import pytest
 
 from dpost import __main__ as main_module
 from dpost.runtime.bootstrap import MissingConfiguration, StartupError
@@ -55,3 +58,17 @@ def test_main_run_error(monkeypatch) -> None:
     )
 
     assert main_module.main() == 1
+
+
+def test_module_entrypoint_invokes_sys_exit(monkeypatch) -> None:
+    import dpost.runtime.composition as composition_module
+
+    monkeypatch.setattr(
+        composition_module,
+        "compose_bootstrap",
+        lambda: SimpleNamespace(app=DummyApp()),
+    )
+
+    with pytest.raises(SystemExit) as exc_info:
+        runpy.run_module("dpost.__main__", run_name="__main__")
+    assert exc_info.value.code == 0

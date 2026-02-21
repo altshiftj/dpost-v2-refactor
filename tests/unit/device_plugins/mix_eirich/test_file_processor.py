@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.rmx_eirich_el1.file_processor import (
     FileProcessorEirich as FileProcessorEirichEL1,
 )
@@ -128,3 +129,40 @@ def test_probe_file_rejects_non_txt_extension(
     result = processor.probe_file(str(target))
 
     assert result.is_mismatch()
+
+
+@pytest.mark.parametrize(
+    ("config_builder", "processor_cls", "expected_device_id"),
+    [
+        (build_el1_config, FileProcessorEirichEL1, "rmx_eirich_el1"),
+        (build_r01_config, FileProcessorEirichR01, "rmx_eirich_r01"),
+    ],
+)
+def test_processing_defaults_and_device_specific_processing(
+    tmp_path: Path,
+    config_service,
+    config_builder,
+    processor_cls,
+    expected_device_id: str,
+) -> None:
+    config = config_builder()
+    processor = processor_cls(config)
+    src = tmp_path / "Eirich_export.txt"
+    src.write_text("payload", encoding="utf-8")
+    record_dir = tmp_path / "records"
+
+    preprocessed = processor.device_specific_preprocessing(str(src))
+    output = processor.device_specific_processing(
+        src_path=str(src),
+        record_path=str(record_dir),
+        file_id="user-sample",
+        extension=".txt",
+    )
+
+    assert preprocessed is not None
+    assert preprocessed.effective_path == str(src)
+    assert processor.is_appendable(LocalRecord(), "user-sample", ".txt") is True
+    assert processor.get_device_id() == expected_device_id
+    assert output.datatype == "tabular"
+    assert Path(output.final_path).exists()
+    assert not src.exists()

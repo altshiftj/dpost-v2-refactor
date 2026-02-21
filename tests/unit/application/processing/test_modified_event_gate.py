@@ -108,3 +108,22 @@ def test_maybe_prune_removes_stale():
 
     assert "old" not in gate._last_seen
     assert "new" in gate._last_seen
+
+
+def test_maybe_prune_skips_when_cutoff_non_positive():
+    clock = FakeClock(0.0)
+    gate = ModifiedEventGate(
+        config_service=DummyConfigService([]),
+        processor_resolver=lambda device: DummyProcessor(),
+        cooldown_seconds=1.0,
+        prune_after_seconds=10.0,
+        prune_interval_seconds=1.0,
+        clock=clock,
+    )
+
+    gate._last_seen = {"old": 0.1}
+    gate._next_prune_at = 0.0
+
+    gate._maybe_prune(now=1.0)
+
+    assert gate._last_seen == {"old": 0.1}

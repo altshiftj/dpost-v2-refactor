@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from dpost.domain.records.local_record import LocalRecord
+from dpost.domain.records.local_record import LocalRecord, _resolve_id_separator
 
 pytestmark = pytest.mark.usefixtures("config_service")
 
@@ -43,6 +43,11 @@ def test_init_with_invalid_identifier(caplog):
     assert record.institute == "null"
     assert record.sample_name == "null"
     assert "does not conform" in caplog.text
+
+
+def test_resolve_id_separator_detects_alternative_separator() -> None:
+    resolved = _resolve_id_separator("dev:usr:inst:sample_1", "-")
+    assert resolved == ":"
 
 
 def test_add_item_file_fs(sample_record):
@@ -183,6 +188,14 @@ def test_mark_file_as_unsynced_marks_force(sample_record):
 
     assert sample_record.files_uploaded[normalized] is False
     assert normalized in sample_record.files_require_force
+
+
+def test_mark_file_as_unsynced_warns_for_unknown_file(sample_record, caplog):
+    caplog.set_level("WARNING")
+    sample_record.mark_file_as_unsynced("/missing/file.txt")
+
+    warnings = [rec.message for rec in caplog.records if rec.levelname == "WARNING"]
+    assert any("Tried to mark non-existent file as unsynced" in w for w in warnings)
 
 
 def test_to_dict_from_dict_roundtrip():

@@ -133,3 +133,43 @@
 - Columns: `term,type,purpose,usage`.
 - Include only project-defined terms (exclude vendor/library terms).
 - Add entries when introducing new internal terms.
+
+## Coverage Hardening Playbook (Current Process)
+- Primary objective: raise `tests/unit` coverage for `src/dpost/**` while preserving behavior.
+- Target posture:
+  - prioritize branch and error/fallback paths, not just happy-path line execution
+  - prefer low-risk, high-yield modules first, then orchestration-heavy modules
+  - keep production code changes separate from test-only coverage work unless explicitly requested
+- Execution loop:
+  1. take baseline:
+     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  2. pick next slice from highest missed lines with manageable test seams
+  3. add focused unit tests (red/green) for selected branches
+  4. validate slice:
+     - `python -m ruff check tests/unit`
+     - `python -m pytest -q <targeted test paths>`
+  5. run checkpoint baseline again and update docs
+- Current coverage governance artifacts:
+  - findings report:
+    - `docs/reports/20260221-coverage-informed-architecture-findings.md`
+  - execution/action checklist:
+    - `docs/checklists/20260221-coverage-hardening-action-items-checklist.md`
+- Documentation requirement per checkpoint:
+  - record exact commands executed
+  - record pass/fail outcomes and known warnings
+  - record top uncovered modules and next planned slice
+  - maintain lightweight in-flight notes for each slice:
+    - intended action (what we are about to change/test)
+    - expected outcome (what should improve or be validated)
+    - observed outcome (what actually happened, including blockers)
+  - keep notes concise and append-only so progress is easy to audit
+- Priority modules for deeper follow-up refactoring/testing:
+  - `src/dpost/application/processing/file_process_manager.py`
+  - `src/dpost/application/processing/stability_tracker.py`
+  - `src/dpost/application/runtime/device_watchdog_app.py`
+  - `src/dpost/infrastructure/sync/kadi_manager.py`
+  - `src/dpost/plugins/system.py`
+- Test hygiene rules for this process:
+  - keep test module basenames unique across non-package test directories
+  - avoid introducing flaky time/thread dependencies without controllable clocks/events
+  - do not rely on global active config in tests unless explicitly validating that behavior

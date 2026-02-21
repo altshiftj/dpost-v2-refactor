@@ -80,6 +80,25 @@ def test_rename_dialog_validate_blocks_empty_fields(rename_dialog_setup):
         mock_error.assert_called_once()
 
 
+def test_rename_dialog_validate_accepts_completed_fields(rename_dialog_setup):
+    dialog = rename_dialog_setup()
+    dialog.user_entry.insert(0, "User")
+    dialog.institute_entry.insert(0, "Lab")
+    dialog.sample_entry.insert(0, "Sample123")
+
+    with patch("tkinter.messagebox.showerror") as mock_error:
+        assert dialog.validate() is True
+        mock_error.assert_not_called()
+
+
+def test_rename_dialog_focus_primary_input_ignores_focus_exceptions(
+    rename_dialog_setup,
+):
+    dialog = rename_dialog_setup()
+    with patch.object(dialog.user_entry, "focus_force", side_effect=RuntimeError("focus failed")):
+        dialog._focus_primary_input()
+
+
 def test_rename_dialog_apply_sets_result(rename_dialog_setup):
     dialog = rename_dialog_setup()
     dialog.user_entry.insert(0, "User")

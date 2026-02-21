@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import threading
 
 from dpost.infrastructure import observability
@@ -60,6 +61,29 @@ def test_logs_tail_truncates(monkeypatch, tmp_path):
     assert response.status_code == 200
     assert "raw line" in body
     assert "&#34;msg&#34;" not in body
+
+
+def test_logs_returns_500_when_log_read_fails(monkeypatch, tmp_path):
+    log_path = tmp_path / "watchdog.log"
+    log_path.write_text("{}\n")
+    monkeypatch.setattr(observability, "LOG_PATH", str(log_path))
+    monkeypatch.setattr(observability.os.path, "exists", lambda _path: True)
+
+    real_open = builtins.open
+
+    def _failing_open(*args, **kwargs):  # type: ignore[no-untyped-def]
+        if args and args[0] == str(log_path):
+            raise OSError("denied")
+        return real_open(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", _failing_open)
+
+    client = observability.app.test_client()
+    response = client.get("/logs")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 500
+    assert "Failed to read log" in body
 
 
 def test_start_observability_server_spawns_thread(monkeypatch):

@@ -96,6 +96,32 @@ def test_remove_item_from_record_clears_force_flag(tmp_path, record_manager):
     assert resolved not in record.files_require_force
 
 
+def test_remove_item_from_record_removes_directory_tracked_children(
+    tmp_path,
+    record_manager,
+):
+    record_dir = tmp_path / "record_dir"
+    nested_dir = record_dir / "nested"
+    nested_dir.mkdir(parents=True)
+    child = nested_dir / "child.txt"
+    child.write_text("payload", encoding="utf-8")
+
+    normalized_dir = str(record_dir.resolve())
+    normalized_child = str(child.resolve())
+    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record.files_uploaded = {normalized_dir: False, normalized_child: False}
+    record_manager._persist_records_dict = {record.identifier: record}
+
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
+        removed = record_manager.remove_item_from_record(str(record_dir), record)
+
+    mock_save.assert_called_once()
+    assert removed == 2
+    assert record.files_uploaded == {}
+
+
 def test_get_record_by_id_case_insensitive(record_manager):
     record = LocalRecord(identifier="rem-usr-ipat-sampleZ")
     record_manager._persist_records_dict = {"rem-usr-ipat-samplez": record}
@@ -136,6 +162,16 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
         with patch.object(record_manager.sync, "sync_record_to_database", return_value=False) as mock_sync:
             record_manager.sync_records_to_database()
             mock_sync.assert_called_once_with(record)
+
+
+def test_sync_records_to_database_skips_already_uploaded_ipat_record(record_manager):
+    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record.files_uploaded = {"f": True}
+    record_manager._persist_records_dict = {record.identifier: record}
+
+    with patch.object(record_manager.sync, "sync_record_to_database") as mock_sync:
+        record_manager.sync_records_to_database()
+        mock_sync.assert_not_called()
 
 
 def test_persist_records_dict_lazy_loads_once(fake_sync):
@@ -189,3 +225,7 @@ def test_reload_records_refreshes_cache(fake_sync):
         manager.reload_records()
 
     assert set(manager.persist_records_dict) == {"fresh"}
+
+
+def test_infer_id_separator_defaults_to_dash_for_alnum_prefix(record_manager):
+    assert record_manager._infer_id_separator("sample123") == "-"  # noqa: SLF001

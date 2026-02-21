@@ -46,3 +46,14 @@ def test_file_processor_moves_excel(tmp_path, config_service):
     assert processor.matches_file(str(destination))
     assert output.datatype == "tabular"
     assert processor.is_appendable(LocalRecord(), "user-blb-sample01", ".xlsx")
+
+
+def test_file_processor_probe_rejects_unsupported_extension(tmp_path):
+    config = build_config()
+    processor = FileProcessorEXTRHaake(config)
+    src = tmp_path / "sample.csv"
+    src.write_text("sheet data", encoding="utf-8")
+
+    probe = processor.probe_file(str(src))
+
+    assert probe.is_mismatch()
