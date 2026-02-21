@@ -90,6 +90,10 @@
     `src/dpost/plugins/legacy_compat.py` removed and
     `src/dpost/plugins/system.py` now canonical-only for dpost hook/namespace
     loading.
+  - Records/sync parity hardening completed for immediate-sync behavior and
+    user-visible sync failure surfacing via
+    `tests/migration/test_phase13_records_sync_parity.py` and
+    `src/dpost/application/processing/file_process_manager.py`.
 - In progress:
   - Legacy package retirement planning for `src/ipat_watchdog/device_plugins/`
     and `src/ipat_watchdog/pc_plugins/` now that canonical dpost plugin

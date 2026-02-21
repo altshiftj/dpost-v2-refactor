@@ -27,6 +27,12 @@ class ErrorMessages:
     )
     SESSION_END_ERROR = "Session End Error"
     SESSION_END_ERROR_DETAILS = "An error occurred during session end: {error}"
+    SYNC_ERROR = "Sync Error"
+    SYNC_ERROR_DETAILS = (
+        "Failed to sync processed item '{filename}'.\n"
+        "Data remains stored locally and will retry on the next sync attempt.\n"
+        "Error: {error}"
+    )
 
 
 class WarningMessages:

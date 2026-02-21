@@ -115,14 +115,18 @@
 - [x] Add failing migration tests for record manager and sync trigger ownership.
 - [x] Move record lifecycle orchestration to `dpost` application/domain modules.
 - [x] Keep sync behavior behind `dpost` ports and infrastructure adapters.
-- [ ] Preserve immediate-sync semantics and user-visible sync error messaging.
+- [x] Preserve immediate-sync semantics and user-visible sync error messaging.
 - [x] Verify migration and full gates are green.
 
 ### Completion Notes
 - How it was done: Record lifecycle ownership seams were introduced in
   `src/dpost/application/records/` and canonical processing/runtime imports now
   resolve record/sync contracts through dpost modules. Additional focused
-  migration assertions for sync error-message parity remain open.
+  migration assertions now cover immediate-sync trigger behavior plus
+  user-visible error surfacing for sync failures in
+  `tests/migration/test_phase13_records_sync_parity.py`, and
+  `src/dpost/application/processing/file_process_manager.py` now surfaces
+  actionable sync errors through dpost interaction messages.
 
 ---
 

@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from dpost.application.config import ConfigService, DeviceConfig, get_service
-from dpost.application.interactions import DialogPrompts, WarningMessages
+from dpost.application.interactions import (
+    DialogPrompts,
+    ErrorMessages,
+    WarningMessages,
+)
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
 from dpost.application.ports import SyncAdapterPort
 from dpost.application.ports import UserInteractionPort
@@ -538,6 +542,13 @@ class FileProcessManager:
             except Exception as exc:  # noqa: BLE001
                 logger.exception(
                     "Immediate sync failed after processing %s: %s", src_path, exc
+                )
+                self.interactions.show_error(
+                    ErrorMessages.SYNC_ERROR,
+                    ErrorMessages.SYNC_ERROR_DETAILS.format(
+                        filename=Path(src_path).name,
+                        error=exc,
+                    ),
                 )
 
     def _persist_candidate_record_stage(self, context: RouteContext) -> Optional[str]:

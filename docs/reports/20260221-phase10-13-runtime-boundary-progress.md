@@ -639,17 +639,38 @@
   - `python -m pytest tests/migration/test_phase12_plugin_loading_ownership.py`
     -> `24 passed`
 
+## Deep-Core Increment: Records/Sync Immediate-Error Parity Hardening
+- Tests-first contract:
+  - `tests/migration/test_phase13_records_sync_parity.py`
+- Red-state verification:
+  - `python -m pytest tests/migration/test_phase13_records_sync_parity.py`
+    -> `1 failed, 2 passed`
+- Implementation:
+  - added migration parity tests to lock:
+    - immediate-sync trigger behavior when pending uploads remain
+    - skip behavior when records are already fully uploaded
+    - user-visible sync error surfacing when immediate sync fails
+  - updated dpost interaction message catalog with sync failure messages:
+    - `src/dpost/application/interactions/messages.py`
+  - updated immediate-sync exception handling in
+    `src/dpost/application/processing/file_process_manager.py` to surface
+    actionable UI errors while preserving best-effort non-crashing sync
+    behavior.
+- Green-state verification:
+  - `python -m pytest tests/migration/test_phase13_records_sync_parity.py`
+    -> `3 passed`
+
 ## Global Gate Verification (Final)
 - `python -m pytest tests/migration/test_phase9_native_bootstrap_boundary.py`
   -> `2 passed`
 - `python -m pytest -m migration`
-  -> `155 passed, 302 deselected`
+  -> `158 passed, 302 deselected`
 - `python -m ruff check .`
   -> `All checks passed!`
 - `python -m black --check .`
-  -> `155 files would be left unchanged.`
+  -> `156 files would be left unchanged.`
 - `python -m pytest`
-  -> `456 passed, 1 skipped`
+  -> `459 passed, 1 skipped`
 
 ## Notes
 - During this run, `python -m black --check .` initially failed on 4 files,
@@ -688,6 +709,8 @@
   `tests/migration/test_phase12_plugin_loading_ownership.py` before
   `python -m black --check .` returned
   `155 files would be left unchanged`.
+- Records/sync parity hardening slice completed with Black check green on first
+  pass (`156 files would be left unchanged`).
 
 ## Remaining Risk / Open Work
 - In-repo concrete plugin package rehosting is now complete across
