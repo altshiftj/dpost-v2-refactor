@@ -123,6 +123,7 @@ Marker intent:
   - `docs/reports/20260221-full-legacy-retirement-migration-notes.md`
   - `docs/planning/20260221-full-legacy-repo-retirement-roadmap.md`
   - `docs/checklists/20260221-full-legacy-repo-retirement-checklist.md`
+  - `docs/checklists/20260221-final-manual-validation-runbook.md`
 - Historical migration docs:
   - `docs/reports/archive/`
   - `docs/planning/archive/`

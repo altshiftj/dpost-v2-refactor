@@ -118,4 +118,6 @@
    without tracing application internals.
 
 ### Completion Notes
-- How it was done: Pending.
+- How it was done: Pending human execution. Consolidated operator steps are
+  captured in:
+  `docs/checklists/20260221-final-manual-validation-runbook.md`.

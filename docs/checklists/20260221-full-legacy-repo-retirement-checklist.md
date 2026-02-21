@@ -231,3 +231,5 @@
 - How it was done: Automated prechecks were executed (`tests/manual/`
   automation path + `tests/manual/test_plugin_import.py` script run with ASCII
   console-safe output), while human operator workflow checks remain pending.
+  Consolidated operator steps are captured in:
+  `docs/checklists/20260221-final-manual-validation-runbook.md`.
