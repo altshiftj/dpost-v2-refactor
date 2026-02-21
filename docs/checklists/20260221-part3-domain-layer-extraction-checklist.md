@@ -82,13 +82,14 @@
 ### Checklist
 - [x] Remove superseded application-local model/policy duplicates.
 - [x] Update architecture baseline/contract/responsibility docs.
-- [ ] Record major extraction decisions in ADRs as needed.
+- [x] Record major extraction decisions in ADRs as needed.
 - [x] Capture checkpoint evidence in roadmap/report artifacts.
 
 ### Completion Notes
 - How it was done: Retired application-local processing model and batch model
   modules, updated responsibility catalog ownership rows, and refreshed Part 3
-  roadmap/report progress snapshots.
+  roadmap/report progress snapshots, including
+  `ADR-0005-domain-processing-and-record-ownership-extraction.md`.
 
 ---
 

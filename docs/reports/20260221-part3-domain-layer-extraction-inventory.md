@@ -38,6 +38,13 @@
 - PSA/Kinexus processor tests and migration ownership tests are green after
   import rewiring.
 
+## Update (Wave 3.5 Complete)
+- Governance closure artifacts are aligned with extraction outcomes:
+  - architecture baseline and responsibility catalog updated.
+  - ADR recorded:
+    `docs/architecture/adr/ADR-0005-domain-processing-and-record-ownership-extraction.md`.
+- Remaining closure work is manual workflow validation.
+
 ## Findings
 - `src/dpost/domain/` is currently empty except `__init__.py`.
 - Core business objects still live in `application`:

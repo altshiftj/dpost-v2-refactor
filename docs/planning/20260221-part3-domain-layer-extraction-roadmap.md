@@ -22,7 +22,11 @@
   - pair-reconstruction/stale-stage policies now owned by
     `src/dpost/domain/processing/staging.py`
   - `src/dpost/application/processing/batch_models.py` retired
-- Next active target is Wave 3.5 (final contract cleanup/governance closure).
+- Wave 3.5 is complete:
+  - architecture baseline/responsibility docs updated for final ownership state
+  - ADR captured at
+    `docs/architecture/adr/ADR-0005-domain-processing-and-record-ownership-extraction.md`
+- Remaining Part 3 closure item: manual validation checklist execution.
 
 ## Non-Goals
 - No runtime entrypoint redesign.

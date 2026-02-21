@@ -1,7 +1,7 @@
 # Architecture Baseline (Current State)
 
 ## Snapshot Date
-- 2026-02-21 (updated through full `src/ipat_watchdog/**` source retirement)
+- 2026-02-21 (updated through Part 3 domain extraction Waves 3.2-3.4)
 
 ## System Purpose
 - Monitor local watch directories for instrument output.
@@ -100,8 +100,9 @@
 - `src/dpost/application/processing/file_process_manager.py`
 - dpost processing helper module set:
 - `src/dpost/application/processing/`
-- dpost processing batch/staging/text helpers:
-- `src/dpost/application/processing/batch_models.py`
+- dpost processing domain/application helper split:
+- `src/dpost/domain/processing/batch_models.py`
+- `src/dpost/domain/processing/staging.py`
 - `src/dpost/application/processing/staging_utils.py`
 - `src/dpost/application/processing/text_utils.py`
 - Phase 5 decomposition status:
@@ -166,8 +167,9 @@
 - `src/dpost/application/config/`
 - dpost metrics boundary:
 - `src/dpost/application/metrics.py`
-- Local record persistence:
-- `src/dpost/application/records/`
+- Local record domain entity + persistence manager:
+- `src/dpost/domain/records/local_record.py`
+- `src/dpost/application/records/record_manager.py`
 - Current Kadi backend implementation:
 - `src/dpost/infrastructure/sync/kadi_manager.py`
 
@@ -227,6 +229,10 @@
   paths.
 - Canonical dpost config and metrics boundaries are now dpost-owned and no
   longer import legacy config/metrics modules directly.
+- Processing value models, routing policy, staged batch models, staging
+  reconstruction policy, and `LocalRecord` are now domain-owned under
+  `src/dpost/domain/`; application paths retain orchestration and mutation
+  helpers.
 - Transition runtime dependency shims have been retired from canonical dpost
   paths (`runtime_dependencies.py`, `config_dependencies.py`).
 - dpost plugin profile support remains reference-first for kernel validation.
