@@ -213,14 +213,38 @@ unit coverage.
   - `662 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5100 stmts, 0 miss`)
 
+### Checkpoint L: Naming-context cleanup + retry-policy unification seam
+
+- Completed slices:
+  - added:
+    - `src/dpost/application/retry_delay_policy.py`
+    - `tests/unit/application/test_retry_delay_policy.py`
+  - updated:
+    - `src/dpost/application/naming/policy.py`
+    - `tests/unit/application/naming/test_policy.py`
+    - `src/dpost/application/runtime/retry_planner.py`
+    - `src/dpost/application/processing/device_resolver.py`
+    - `src/dpost/application/runtime/device_watchdog_app.py`
+- Validation:
+  - targeted:
+    - `python -m pytest -q tests/unit/application/test_retry_delay_policy.py tests/unit/application/runtime/test_retry_planner.py tests/unit/application/processing/test_device_resolver.py tests/unit/application/runtime/test_device_watchdog_app.py tests/unit/application/runtime/test_device_watchdog_app_branches.py` -> `48 passed`
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `9 passed`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `666 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5105 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
    - continue separating failure handling side-effect emission (UI/metrics/logging) from outcome construction
 2. deep helper global-config access cleanup (`current()/get_service()` reduction)
    - continue after `filesystem_utils` explicit-context support:
-     next targets: `application/naming/policy.py` wrappers and remaining storage/runtime helper accessors
+     `application/naming/policy.py` wrapper slice completed
+     next targets: remaining storage/runtime helper accessors and compatibility wrappers
 3. shared retry policy unification across resolver/watchdog flows
+   - shared retry-delay parsing/normalization seam completed; next step is
+     policy object wiring/config centralization if further consolidation is desired
 4. test naming/import hygiene automation (prevent duplicate-basename regressions)
 
 ## Execution Model

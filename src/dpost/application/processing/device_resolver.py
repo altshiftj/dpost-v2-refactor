@@ -9,6 +9,7 @@ from typing import Iterable
 from dpost.application.config import ConfigService, DeviceConfig
 from dpost.application.processing.file_processor_abstract import FileProbeResult
 from dpost.application.processing.processor_factory import FileProcessorFactory
+from dpost.application.retry_delay_policy import RetryDelayPolicy
 from dpost.infrastructure.logging import setup_logger
 
 logger = setup_logger(__name__)
@@ -149,10 +150,10 @@ class DeviceResolver:
         return max(delays) if delays else self._default_retry_delay()
 
     def _device_retry_delay(self, device: DeviceConfig) -> float:
-        try:
-            return float(device.watcher.retry_delay_seconds)
-        except Exception:
-            return self._default_retry_delay()
+        return RetryDelayPolicy(
+            default_delay_seconds=self._default_retry_delay(),
+            minimum_delay_seconds=0.0,
+        ).coerce(getattr(device.watcher, "retry_delay_seconds", None))
 
     @staticmethod
     def _default_retry_delay() -> float:

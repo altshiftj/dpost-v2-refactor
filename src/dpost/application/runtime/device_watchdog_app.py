@@ -31,6 +31,7 @@ from dpost.application.processing import (
     ProcessingResult,
 )
 from dpost.application.runtime.retry_planner import build_retry_plan
+from dpost.application.retry_delay_policy import RetryDelayPolicy
 from dpost.application.session import SessionManager
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.runtime import UiInteractionAdapter, UiTaskScheduler
@@ -267,16 +268,17 @@ class DeviceWatchdogApp:
             return 0
 
     def _schedule_retry(self, path: str, delay_seconds: float) -> None:
-        safe_delay = max(delay_seconds, 0.1)
+        safe_delay = RetryDelayPolicy(
+            default_delay_seconds=self._default_retry_delay()
+        ).normalize(delay_seconds)
         logger.debug("Re-queuing %s in %.2f seconds", path, safe_delay)
         milliseconds = int(safe_delay * 1000)
         self.scheduler.schedule(milliseconds, partial(self._enqueue_if_present, path))
 
     def _default_retry_delay(self) -> float:
-        try:
-            return float(self.config_service.pc.watcher.retry_delay_seconds)
-        except Exception:
-            return 2.0
+        return RetryDelayPolicy().coerce(
+            getattr(self.config_service.pc.watcher, "retry_delay_seconds", None)
+        )
 
     def _enqueue_if_present(self, path: str) -> None:
         if Path(path).exists():

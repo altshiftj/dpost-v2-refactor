@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `662 passed, 1 skipped, 1 warning`
-  - total coverage: `100%` (`5100 stmts, 0 miss`)
+  - `666 passed, 1 skipped, 1 warning`
+  - total coverage: `100%` (`5105 stmts, 0 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -87,8 +87,10 @@ Current status:
 - `session_manager` timeout scheduling now supports an explicit provider seam.
 - Kinexus/PSA sequence helpers now support explicit/lazy separator resolution
   with safe fallback when runtime config is unavailable.
-- remaining global-context cleanup is concentrated in helper layers under
-  naming-policy wrappers and residual storage/runtime helpers.
+- `application.naming.policy` wrappers now accept explicit context parameters,
+  reducing monkeypatch pressure in callers/tests.
+- remaining global-context cleanup is concentrated in residual storage/runtime
+  helpers and any compatibility wrappers still reading ambient config directly.
 
 ## Insight 3: Retry and deferral policy is fragmented across layers
 
@@ -200,7 +202,8 @@ Action:
 1. `file_process_manager` failure event/outcome side-effect separation (logging/UI/metrics emission boundaries).
 2. global config access reduction in deep helper layers (continue after
    `filesystem_utils` explicit-context support).
-3. retry policy unification across resolver/watchdog flows.
+3. retry policy unification across resolver/watchdog flows (shared retry-delay
+   policy seam completed; next step is configuration centralization).
 4. continue monitoring test naming/import hygiene as suites expand.
 
 ## Cross-Reference

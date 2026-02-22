@@ -138,8 +138,8 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `662 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5100 stmts, 0 miss`)
+  - `666 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5105 stmts, 0 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
      - separate failure event/outcome construction from side-effect emission
@@ -148,9 +148,11 @@
      - `filesystem_utils` explicit-context support completed
      - `SessionManager` timeout-provider seam completed
      - Kinexus/PSA lazy separator seams completed
-     - next: `src/dpost/application/naming/policy.py` wrappers and remaining runtime/storage helper accessors
+     - `application/naming/policy.py` wrapper explicit-context slice completed
+     - next: remaining runtime/storage helper accessors and compatibility wrappers
   3. retry policy unification across resolver/watchdog processing flows
-     - introduce shared policy value object + contract tests
+     - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
+     - next: centralize runtime retry config wiring if further consolidation is needed
   4. test hygiene automation
      - prevent duplicate test-module basename/import-mismatch regressions
 - Supporting reference docs:

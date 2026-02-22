@@ -14,7 +14,8 @@ increase startup-order risk, and block isolated unit testing.
       (separator/pattern/path policy inputs).
       Progress: `filesystem_utils` path/persistence helpers now accept explicit
       separators/paths/device context while preserving legacy signatures;
-      `SessionManager` now accepts explicit timeout provider.
+      `SessionManager` now accepts explicit timeout provider; naming facade
+      wrappers now accept explicit separator/pattern/device context.
 - [ ] Update composition root wiring so concrete runtime values are provided once
       at boundaries, not pulled globally in deep helpers.
 - [ ] Add focused unit tests for both explicit-context success and missing-context
@@ -90,7 +91,7 @@ How it was done:
 - Built from iterative red/green coverage runs during 2026-02-21 autonomous TDD sessions.
 - Derived priorities from latest full coverage snapshot:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `662 passed, 1 skipped, 1 warning, total 100% (5100 stmts, 0 miss)`.
+  - `666 passed, 1 skipped, 1 warning, total 100% (5105 stmts, 0 miss)`.
 - Priorities now focus on refactor leverage and dependency cleanup rather than
   raw coverage gaps.
 - Captured deeper rationale in:

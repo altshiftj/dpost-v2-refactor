@@ -157,3 +157,59 @@ def test_violation_and_user_input_analysis_wrappers_delegate_to_domain_policy(
     )
     assert analysis["valid"] is True
     assert analysis["sanitized"] == "mus-ipat-Sample_Name"
+
+
+def test_generate_id_wrappers_accept_explicit_context_without_active_config() -> None:
+    """Generate IDs using explicit separator/device context with no current() patching."""
+    device = _Device(_Metadata(device_abbr="SEM", record_kadi_id="RID42"))
+
+    record_id = policy.generate_record_id(
+        "mus__ipat__sample_1",
+        id_separator="__",
+        current_device=device,
+    )
+    file_id = policy.generate_file_id(
+        "mus__ipat__sample_1",
+        id_separator="__",
+        current_device=device,
+    )
+
+    assert record_id == "rid42__mus__ipat__sample_1"
+    assert file_id == "SEM__sample_1"
+
+
+def test_prefix_wrappers_accept_explicit_pattern_and_separator() -> None:
+    """Validate/sanitize/analyze wrappers should work with explicit naming context."""
+    pattern = re.compile(r"^[A-Za-z]+__[A-Za-z]+__[A-Za-z0-9_ ]{1,30}$")
+
+    assert policy.is_valid_prefix(
+        "mus__ipat__sample_1",
+        filename_pattern=pattern,
+        id_separator="__",
+    ) is True
+    assert (
+        policy.sanitize_prefix(" MuS __ IPAT __ Sample Name ", id_separator="__")
+        == "mus__ipat__Sample_Name"
+    )
+    sanitized, valid = policy.sanitize_and_validate(
+        "MuS__IPAT__Sample Name",
+        filename_pattern=pattern,
+        id_separator="__",
+    )
+    assert sanitized == "mus__ipat__Sample_Name"
+    assert valid is True
+
+    violation = policy.explain_filename_violation(
+        "u1__ipat__sample!",
+        filename_pattern=pattern,
+        id_separator="__",
+    )
+    assert violation["valid"] is False
+
+    analysis = policy.analyze_user_input(
+        {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"},
+        filename_pattern=pattern,
+        id_separator="__",
+    )
+    assert analysis["valid"] is True
+    assert analysis["sanitized"] == "mus__ipat__Sample_Name"

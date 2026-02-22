@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from dpost.application.retry_delay_policy import RetryDelayPolicy
 from dpost.application.processing import ProcessingResult, ProcessingStatus
 
 
@@ -29,14 +30,12 @@ def build_retry_plan(
     if result.status is not ProcessingStatus.DEFERRED:
         return None
 
-    raw_delay = result.retry_delay
-    if raw_delay is None:
-        resolved_delay = default_delay_seconds
-    else:
-        try:
-            resolved_delay = float(raw_delay)
-        except Exception:
-            resolved_delay = default_delay_seconds
-
-    safe_delay = max(resolved_delay, minimum_delay_seconds)
+    policy = RetryDelayPolicy(
+        default_delay_seconds=default_delay_seconds,
+        minimum_delay_seconds=minimum_delay_seconds,
+    )
+    raw_delay = (
+        result.retry_delay if result.retry_delay is not None else default_delay_seconds
+    )
+    safe_delay = policy.normalize(raw_delay)
     return RetryPlan(path=src_path, delay_seconds=safe_delay)

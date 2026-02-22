@@ -802,3 +802,47 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `662 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5100 stmts, 0 miss`)
+
+### Slice 31: Naming facade explicit-context wrapper parameters
+
+- Intended action:
+  - reduce ambient `current()` dependence in `application/naming/policy.py`
+    wrapper functions by allowing explicit naming context injection
+    (separator/pattern/device) while preserving default behavior
+- Expected outcome:
+  - callers/tests can use naming facade helpers without active runtime config
+    when context is already known
+- Observed outcome:
+  - updated:
+    - `src/dpost/application/naming/policy.py`
+      - added optional explicit context parameters to naming facade wrappers
+        (`id_separator`, `filename_pattern`, `current_device`)
+    - `tests/unit/application/naming/test_policy.py`
+      - added no-monkeypatch explicit-context tests for ID generation and prefix wrappers
+  - validation:
+    - `python -m ruff check src/dpost/application/naming/policy.py tests/unit/application/naming/test_policy.py` -> pass
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `9 passed`
+
+### Slice 32: Shared retry-delay policy across resolver/watchdog/runtime planner
+
+- Intended action:
+  - unify retry delay parsing/defaulting/clamping logic used by
+    `device_resolver`, `device_watchdog_app`, and `retry_planner`
+- Expected outcome:
+  - one shared retry-delay policy seam with preserved behavior and direct tests
+- Observed outcome:
+  - added:
+    - `src/dpost/application/retry_delay_policy.py`
+    - `tests/unit/application/test_retry_delay_policy.py`
+  - updated:
+    - `src/dpost/application/runtime/retry_planner.py`
+    - `src/dpost/application/processing/device_resolver.py`
+    - `src/dpost/application/runtime/device_watchdog_app.py`
+      - now consume shared retry-delay policy for parsing/normalization
+  - validation:
+    - `python -m ruff check src/dpost/application/retry_delay_policy.py src/dpost/application/runtime/retry_planner.py src/dpost/application/processing/device_resolver.py src/dpost/application/runtime/device_watchdog_app.py tests/unit/application/test_retry_delay_policy.py tests/unit/application/runtime/test_retry_planner.py tests/unit/application/processing/test_device_resolver.py tests/unit/application/runtime/test_device_watchdog_app.py tests/unit/application/runtime/test_device_watchdog_app_branches.py` -> pass
+    - `python -m pytest -q tests/unit/application/test_retry_delay_policy.py tests/unit/application/runtime/test_retry_planner.py tests/unit/application/processing/test_device_resolver.py tests/unit/application/runtime/test_device_watchdog_app.py tests/unit/application/runtime/test_device_watchdog_app_branches.py` -> `48 passed`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `666 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5105 stmts, 0 miss`)
