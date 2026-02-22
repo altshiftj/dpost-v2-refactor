@@ -137,14 +137,19 @@
 ## Refactor-First Playbook (Current Process)
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
+  - `python -m pytest -q`
+  - `726 passed, 1 skipped, 1 warning`
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `670 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5129 stmts, 0 miss`)
+  - `691 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5269 stmts, 0 miss`)
+  - `python -m ruff check .` -> pass
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
      - failure outcome construction vs emission split completed
      - injectable failure emission sink completed (`failure_emitter.py`)
-     - next: evaluate post-persist immediate-sync error reporting for similar sink extraction (UI/log/metrics boundary)
+     - immediate-sync error emission sink extraction completed
+     - constructor startup-sync side effect removed; explicit startup hook completed
+     - next: continue post-persist side-effect decomposition (record updates / metrics / force-path bookkeeping seams)
   2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed
@@ -154,11 +159,14 @@
      - next: remaining runtime/storage helper accessors and compatibility wrappers
   3. retry policy unification across resolver/watchdog processing flows
      - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
+     - stability/result explicit outcome semantics completed in resolver + stability tracker
      - next: centralize runtime retry config wiring if further consolidation is needed
   4. test hygiene automation
      - guard test added (`tests/unit/test_unique_test_module_basenames.py`)
      - import-key collision policy (package-scoped modules allowed to reuse basenames)
-     - next: decide whether to enforce package markers in currently non-package plugin test dirs
+     - virtual-time scheduler helper completed (`HeadlessUI(use_virtual_time=True)`, `advance_scheduled_time`)
+     - observer-factory integration fixture cleanup completed
+     - next: expand delay-aware integration assertions where retry timing matters
 - Supporting reference docs:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`

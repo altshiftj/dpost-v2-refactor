@@ -1,7 +1,6 @@
 """Integration test for EXTR HAAKE plugin handling Excel safe-save (disappear/reappear)."""
 from __future__ import annotations
 
-import importlib
 import threading
 import time
 from dataclasses import replace
@@ -67,11 +66,8 @@ def app_with_extr_haake(tmp_path):
         sync_manager=sync,
         config_service=service,
         file_process_manager_cls=FileProcessManager,
+        observer_factory=lambda: observer_stub,
     )
-
-    # Monkeypatch the Observer factory used by the app.
-    app_mod = importlib.import_module(DeviceWatchdogApp.__module__)
-    app_mod.Observer = lambda: observer_stub  # type: ignore[assignment]
 
     app.initialize()
     try:

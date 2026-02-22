@@ -24,6 +24,7 @@ class FakeFileProcessManager:
     ):
         self.processed = []
         self.records_synced = False
+        self.startup_sync_calls = 0
         self._rejected = []
         self.interactions = interactions
         self.config_service = config_service
@@ -44,3 +45,6 @@ class FakeFileProcessManager:
 
     def sync_records_to_database(self):
         self.records_synced = True
+
+    def run_startup_sync_if_pending(self):
+        self.startup_sync_calls += 1

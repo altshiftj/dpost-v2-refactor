@@ -10,9 +10,6 @@ from typing import Optional, Tuple
 
 from dpost.application.config import ConfigService, DeviceConfig, get_service
 from dpost.application.naming.policy import generate_file_id, parse_filename
-from dpost.application.interactions import (
-    ErrorMessages,
-)
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
 from dpost.application.ports import SyncAdapterPort
 from dpost.application.ports import UserInteractionPort
@@ -35,6 +32,10 @@ from dpost.application.processing.device_resolver import DeviceResolutionKind
 from dpost.application.processing.failure_emitter import (
     ProcessingFailureEmissionSink,
     emit_processing_failure_outcome,
+)
+from dpost.application.processing.immediate_sync_error_emitter import (
+    ImmediateSyncErrorEmissionSink,
+    emit_immediate_sync_error,
 )
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.candidate_metadata import derive_candidate_metadata
@@ -345,6 +346,7 @@ class FileProcessManager:
         file_processor: FileProcessorABS | None = None,
         immediate_sync: bool = False,
         failure_emission_sink: ProcessingFailureEmissionSink | None = None,
+        immediate_sync_error_sink: ImmediateSyncErrorEmissionSink | None = None,
     ) -> None:
         self.interactions = interactions
         self.session_manager = session_manager
@@ -360,16 +362,16 @@ class FileProcessManager:
         self._failure_emission_sink = (
             failure_emission_sink or self._default_failure_emission_sink()
         )
+        self._immediate_sync_error_sink = (
+            immediate_sync_error_sink or self._default_immediate_sync_error_sink()
+        )
         self._pipeline = _ProcessingPipeline(self)
         self._immediate_sync = immediate_sync
+        self._startup_sync_attempted = False
         self._modified_event_gate = ModifiedEventGate(
             self.config_service,
             self._resolve_processor,
         )
-
-        if not self.records.all_records_uploaded():
-            logger.debug("Syncing records to database upon startup")
-            self.sync_records_to_database()
 
     # ------------------------------------------------------------------
     # Public API
@@ -389,6 +391,15 @@ class FileProcessManager:
     def should_queue_modified(self, path: str) -> bool:
         """Return True when a modified event should be queued for processing."""
         return self._modified_event_gate.should_queue(path)
+
+    def run_startup_sync_if_pending(self) -> None:
+        """Run the one-time startup sync check explicitly from composition boundaries."""
+        if self._startup_sync_attempted:
+            return
+        self._startup_sync_attempted = True
+        if not self.records.all_records_uploaded():
+            logger.debug("Syncing records to database upon startup")
+            self.sync_records_to_database()
 
     def add_item_to_record(
         self,
@@ -528,16 +539,7 @@ class FileProcessManager:
                 if not self.records.all_records_uploaded():
                     self.records.sync_records_to_database()
             except Exception as exc:  # noqa: BLE001
-                logger.exception(
-                    "Immediate sync failed after processing %s: %s", src_path, exc
-                )
-                self.interactions.show_error(
-                    ErrorMessages.SYNC_ERROR,
-                    ErrorMessages.SYNC_ERROR_DETAILS.format(
-                        filename=Path(src_path).name,
-                        error=exc,
-                    ),
-                )
+                self._emit_immediate_sync_error_stage(src_path, exc)
 
     def _persist_candidate_record_stage(self, context: RouteContext) -> Optional[str]:
         """Persist accepted candidate artifact and return final output path."""
@@ -603,6 +605,18 @@ class FileProcessManager:
             increment_failed_metric=FILES_FAILED.inc,
         )
 
+    @staticmethod
+    def _log_immediate_sync_exception(src_path: str, exc: Exception) -> None:
+        """Log immediate-sync failures with source path context."""
+        logger.exception("Immediate sync failed after processing %s: %s", src_path, exc)
+
+    def _default_immediate_sync_error_sink(self) -> ImmediateSyncErrorEmissionSink:
+        """Build the default sink for immediate-sync error side effects."""
+        return ImmediateSyncErrorEmissionSink(
+            log_exception=self._log_immediate_sync_exception,
+            show_error=self.interactions.show_error,
+        )
+
     def _handle_processing_failure(
         self,
         path: Path,
@@ -636,3 +650,7 @@ class FileProcessManager:
             failure_outcome,
             self._failure_emission_sink,
         )
+
+    def _emit_immediate_sync_error_stage(self, src_path: str, exc: Exception) -> None:
+        """Apply immediate-sync failure logging and user error reporting."""
+        emit_immediate_sync_error(src_path, exc, self._immediate_sync_error_sink)

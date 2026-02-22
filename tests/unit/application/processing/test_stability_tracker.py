@@ -91,6 +91,13 @@ def test_stability_outcome_rejects_invalid_kind_and_retry_combinations() -> None
             kind=StabilityOutcomeKind.DEFER,
         )
 
+    with pytest.raises(ValueError, match="Non-stable outcomes cannot use"):
+        StabilityOutcome(
+            path=Path("bad.txt"),
+            stable=False,
+            kind=StabilityOutcomeKind.STABLE,
+        )
+
     with pytest.raises(ValueError, match="retry_delay is only valid"):
         StabilityOutcome(
             path=Path("bad.txt"),

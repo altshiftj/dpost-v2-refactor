@@ -826,11 +826,11 @@ def test_log_processing_failure_exception_logs_with_path_and_exception(
     logger_mock.exception.assert_called_once_with("Error processing %s: %s", src, exc)
 
 
-def test_init_triggers_startup_sync_when_records_pending(
+def test_init_does_not_trigger_startup_sync_when_records_pending_until_called_explicitly(
     config_service,
     monkeypatch,
 ) -> None:
-    """Run startup sync branch when record manager reports pending uploads."""
+    """Constructor should be side-effect free until explicit startup sync is invoked."""
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
     session = FakeSessionManager(interactions=ui, scheduler=ui)
@@ -840,11 +840,12 @@ def test_init_triggers_startup_sync_when_records_pending(
         lambda self: False,
     )
     monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.RecordManager.sync_records_to_database",
+        FileProcessManager,
+        "sync_records_to_database",
         lambda self: sync_calls.__setitem__("count", sync_calls["count"] + 1),
     )
 
-    FileProcessManager(
+    manager = FileProcessManager(
         interactions=ui,
         sync_manager=sync,
         session_manager=session,
@@ -852,6 +853,45 @@ def test_init_triggers_startup_sync_when_records_pending(
         file_processor=DummyProcessor(),
     )
 
+    assert sync_calls["count"] == 0
+
+    manager.run_startup_sync_if_pending()
+    assert sync_calls["count"] == 1
+
+
+def test_run_startup_sync_if_pending_is_idempotent(
+    config_service,
+    monkeypatch,
+) -> None:
+    """Startup sync hook should only attempt the pending sync check once."""
+    ui = HeadlessUI()
+    sync = DummySyncManager(ui)
+    session = FakeSessionManager(interactions=ui, scheduler=ui)
+    sync_calls = {"count": 0}
+    upload_checks = {"count": 0}
+
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.RecordManager.all_records_uploaded",
+        lambda self: upload_checks.__setitem__("count", upload_checks["count"] + 1)
+        or False,
+    )
+    manager = FileProcessManager(
+        interactions=ui,
+        sync_manager=sync,
+        session_manager=session,
+        config_service=config_service,
+        file_processor=DummyProcessor(),
+    )
+    monkeypatch.setattr(
+        manager,
+        "sync_records_to_database",
+        lambda: sync_calls.__setitem__("count", sync_calls["count"] + 1),
+    )
+
+    manager.run_startup_sync_if_pending()
+    manager.run_startup_sync_if_pending()
+
+    assert upload_checks["count"] == 1
     assert sync_calls["count"] == 1
 
 

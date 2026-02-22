@@ -14,7 +14,7 @@ from dpost.infrastructure.storage.filesystem_utils import init_dirs
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
-from tests.helpers.task_runner import drain_scheduled_tasks
+from tests.helpers.task_runner import advance_scheduled_time, drain_scheduled_tasks
 
 
 def _assert_processed_artifact(tmp_settings, institute: str, user: str, sample: str, extension: str = ".tif") -> Path:
@@ -28,21 +28,17 @@ def _assert_processed_artifact(tmp_settings, institute: str, user: str, sample: 
 @pytest.fixture
 def real_processing_app(config_service, tmp_settings, monkeypatch):
     """Build a DeviceWatchdogApp wired to real processors and a stub observer."""
-    ui = HeadlessUI()
+    ui = HeadlessUI(use_virtual_time=True)
     sync = DummySyncManager(ui)
     init_dirs()
 
     observer_stub = FakeObserver()
-    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
-    monkeypatch.setattr(
-        observer_target,
-        lambda: observer_stub,
-    )
     app = DeviceWatchdogApp(
         ui=cast(Any, ui),  # HeadlessUI implements UserInteractionPort, which is compatible with UserInterface
         sync_manager=sync,
         config_service=config_service,
         file_process_manager_cls=FileProcessManager,
+        observer_factory=lambda: observer_stub,
     )
     # Expose sync manager for assertions without mutating DeviceWatchdogApp internals
     setattr(ui, "sync_manager", sync)
@@ -88,6 +84,23 @@ def test_event_queue_processes_pending_items(real_processing_app, tmp_settings):
 
     _assert_processed_artifact(tmp_settings, "ipat", "mus", "queued")
     assert not queued.exists()
+
+
+def test_retry_schedule_honors_virtual_delay(real_processing_app, tmp_settings):
+    """Integration app retries should enqueue only after the scheduled delay."""
+    target = tmp_settings.WATCH_DIR / "mus-ipat-delay.tif"
+    target.write_bytes(b"retry me")
+
+    real_processing_app._cancel_event_poll()
+    real_processing_app._schedule_retry(str(target), 2.0)
+
+    assert real_processing_app.event_queue.empty()
+
+    advance_scheduled_time(real_processing_app.ui, 1500)
+    assert real_processing_app.event_queue.empty()
+
+    advance_scheduled_time(real_processing_app.ui, 500)
+    assert real_processing_app.event_queue.get_nowait() == str(target)
 
 
 # ---------------------------------------------------------------------------

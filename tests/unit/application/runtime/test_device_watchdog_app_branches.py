@@ -63,3 +63,12 @@ def test_schedule_retry_clips_negative_delay_to_floor(watchdog_app) -> None:
     watchdog_app._schedule_retry("C:/tmp/retry.txt", -5.0)
 
     assert scheduled == [100]
+
+
+def test_initialize_invokes_explicit_startup_sync_on_file_processor(
+    watchdog_app,
+) -> None:
+    """Initialization should trigger the file-processing startup sync hook once."""
+    watchdog_app.initialize()
+
+    assert watchdog_app.file_processing.startup_sync_calls == 1

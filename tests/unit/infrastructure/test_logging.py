@@ -28,6 +28,14 @@ def test_json_formatter_includes_optional_session_id() -> None:
     assert payload["message"] == "hello world"
 
 
+def test_parse_bool_env_supports_false_and_invalid_values() -> None:
+    """Boolean env parsing should recognize false values and ignore invalid text."""
+
+    assert logging_module._parse_bool_env("false") is False
+    assert logging_module._parse_bool_env(" OFF ") is False
+    assert logging_module._parse_bool_env("maybe") is None
+
+
 def test_setup_logger_ignores_console_handler_failures(monkeypatch) -> None:
     """Continue logger setup when stdout stream-handler creation raises."""
     logger_name = "unit.logging.setup.failure"
@@ -136,4 +144,33 @@ def test_setup_logger_ignores_file_handler_failures_and_keeps_console(
 
     assert configured is logger
     assert any(isinstance(handler, logging.StreamHandler) for handler in configured.handlers)
+    configured.handlers.clear()
+
+
+def test_setup_logger_falls_back_to_null_handler_when_all_handler_setup_fails(
+    monkeypatch,
+) -> None:
+    """Attach a NullHandler when file and console handlers both fail."""
+    logger_name = "unit.logging.setup.null_fallback"
+    logger = logging.getLogger(logger_name)
+    logger.handlers.clear()
+    logger.propagate = False
+    monkeypatch.setenv("DPOST_LOG_FILE_ENABLED", "1")
+    monkeypatch.setattr(
+        logging_module,
+        "RotatingFileHandler",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(PermissionError("denied")),
+    )
+    monkeypatch.setattr(logging_module.sys, "stdout", object())
+    monkeypatch.setattr(
+        logging_module.logging,
+        "StreamHandler",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(RuntimeError("stream failed")),
+    )
+
+    configured = logging_module.setup_logger(logger_name)
+
+    assert configured is logger
+    assert len(configured.handlers) == 1
+    assert isinstance(configured.handlers[0], logging.NullHandler)
     configured.handlers.clear()

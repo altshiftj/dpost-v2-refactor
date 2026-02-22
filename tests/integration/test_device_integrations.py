@@ -113,11 +113,7 @@ def _build_uber_config(tmp_path: Path) -> tuple[PCConfig, list[DeviceConfig], Pa
 def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, HeadlessUI, DummySyncManager, PathSettings]:
     _silence_file_logging(monkeypatch)
     monkeypatch.setattr(FileStabilityTracker, "wait", _stable_immediately)
-    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
-    monkeypatch.setattr(
-        observer_target,
-        lambda: FakeObserver(),
-    )
+    observer_stub = FakeObserver()
     loader = PluginLoader(load_entrypoints=False, load_builtins=False)
     monkeypatch.setattr(plugin_system, "_PLUGIN_LOADER_SINGLETON", loader)
 
@@ -132,6 +128,7 @@ def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, Headless
         sync_manager=sync,
         config_service=config_service,
         file_process_manager_cls=FileProcessManager,
+        observer_factory=lambda: observer_stub,
     )
     app.initialize()
     return app, ui, sync, paths

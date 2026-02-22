@@ -212,6 +212,19 @@ def test_device_resolution_accept_requires_selected_device() -> None:
         )
 
 
+def test_device_resolution_rejects_retry_delay_for_non_defer_kind() -> None:
+    """Retry delay must not be attached to ACCEPT/REJECT outcomes."""
+
+    with pytest.raises(ValueError, match="retry_delay is only valid"):
+        DeviceResolution(
+            selected=None,
+            assessments=tuple(),
+            reason="bad",
+            kind=DeviceResolutionKind.REJECT,
+            retry_delay=1.0,
+        )
+
+
 def test_retry_delay_falls_back_when_device_value_is_invalid() -> None:
     """Invalid retry values should degrade to resolver defaults."""
 

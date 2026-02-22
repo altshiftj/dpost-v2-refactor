@@ -242,3 +242,96 @@ Validation:
 - `python -m pytest -q tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader_residual_branches.py tests/unit/plugins/system/test_no_double_logging.py` -> `26 passed`
 - `python -m pytest -q` -> `717 passed, 1 skipped, 1 warning`
 - `python -m ruff check .` -> pass
+
+## Progress Update: Post-Persist Sync-Error Boundary Extraction (Completed Slice)
+
+Intended action:
+- Reduce coupling inside `_post_persist_side_effects_stage()` by extracting the
+  immediate-sync error reporting path (log + UI error) behind an injectable
+  seam.
+
+Observed outcome:
+- Added `src/dpost/application/processing/immediate_sync_error_emitter.py` with:
+  - `ImmediateSyncErrorEmissionSink`
+  - `emit_immediate_sync_error(...)`
+- Wired `FileProcessManager` to use an injected/default immediate-sync error
+  sink and moved immediate-sync error side effects into
+  `_emit_immediate_sync_error_stage(...)`.
+- Preserved existing post-persist behavior and branch tests while adding a
+  dedicated seam-level unit test.
+
+Validation:
+- Targeted unit tests + branch coverage checks passed
+- Included in final full checkpoint (`726 passed, 1 skipped, 1 warning`)
+
+## Progress Update: FileProcessManager Constructor Side-Effect Reduction (Completed Slice)
+
+Intended action:
+- Remove startup record-sync work from `FileProcessManager.__init__` and make it
+  an explicit composition-root lifecycle step.
+
+Observed outcome:
+- `FileProcessManager.__init__` no longer triggers startup sync.
+- Added explicit one-time hook:
+  - `FileProcessManager.run_startup_sync_if_pending()`
+- Wired `DeviceWatchdogApp.initialize()` to invoke the hook, preserving runtime
+  startup behavior while keeping constructor setup deterministic.
+- Added tests proving:
+  - constructor is side-effect free
+  - startup sync hook is idempotent
+  - app initialization invokes the explicit hook
+
+Validation:
+- Targeted runtime/processing unit tests passed
+- Included in final full checkpoint (`726 passed, 1 skipped, 1 warning`)
+
+## Progress Update: Integration Observer Injection Cleanup (Completed Slice)
+
+Intended action:
+- Replace integration-time module monkeypatching of `Observer` with explicit
+  `observer_factory=` injection to match the existing `DeviceWatchdogApp` seam.
+
+Observed outcome:
+- Updated integration fixtures in:
+  - `tests/integration/test_device_integrations.py`
+  - `tests/integration/test_integration.py`
+  - `tests/integration/test_extr_haake_safesave.py`
+  - `tests/integration/test_multi_processor_app_flow.py`
+- Fixtures now pass `observer_factory=lambda: FakeObserver()` directly, reducing
+  global monkeypatch timing risks and fixture coupling to module globals.
+
+Validation:
+- Targeted integration subset passed
+- Included in final full checkpoint (`726 passed, 1 skipped, 1 warning`)
+
+## Progress Update: Virtual-Time Test Scheduler Helper (Completed Slice)
+
+Intended action:
+- Add a lightweight scheduler fake mode that honors delays for tests that need
+  retry timing semantics, without breaking existing immediate-drain test flows.
+
+Observed outcome:
+- Added opt-in virtual-time support to `tests/helpers/fake_ui.py`:
+  - `HeadlessUI(use_virtual_time=True)`
+  - virtual time tracking + due-task execution helpers
+- Extended `tests/helpers/task_runner.py` with:
+  - virtual-aware `drain_scheduled_tasks(...)`
+  - `advance_scheduled_time(...)`
+- Added unit tests for virtual scheduler behavior:
+  - `tests/unit/test_task_runner_virtual_time.py`
+- Added a delay-aware integration test in `tests/integration/test_integration.py`
+  that explicitly advances virtual time to validate retry enqueue timing.
+
+Validation:
+- Targeted helper + integration subset passed (`72 passed`)
+- `python -m pytest -q` -> `726 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `691 passed, 1 skipped, 1 warning`, `100%` total coverage
+- `python -m ruff check .` -> pass
+
+## Checklist Status (2026-02-22 Final)
+
+All eight prioritized improvement opportunities in this report have now been
+addressed as completed slices or intentional incremental refactor steps
+(notably item 2, which is complete for explicit outcome semantics and leaves a
+documented optional follow-up to emit deferred outcomes directly from the
+stability tracker).

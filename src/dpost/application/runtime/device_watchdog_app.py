@@ -121,6 +121,7 @@ class DeviceWatchdogApp:
     def initialize(self) -> None:
         """Initialise the file observer and UI loop hooks."""
         logger.info("Monitoring directory: %s", self.watch_dir)
+        self.file_processing.run_startup_sync_if_pending()
 
         self._start_observer()
         self._schedule_next_event_check()

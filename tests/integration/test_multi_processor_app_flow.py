@@ -108,17 +108,13 @@ def multi_processor_app(tmp_path, monkeypatch):
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
     observer_stub = FakeObserver()
-    observer_target = f"{DeviceWatchdogApp.__module__}.Observer"
-    monkeypatch.setattr(
-        observer_target,
-        lambda: observer_stub,
-    )
 
     app = DeviceWatchdogApp(
         ui=cast(Any, ui),
         sync_manager=sync,
         config_service=config_service,
         file_process_manager_cls=FileProcessManager,
+        observer_factory=lambda: observer_stub,
     )
     app.initialize()
     try:
