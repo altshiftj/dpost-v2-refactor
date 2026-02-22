@@ -257,7 +257,12 @@ def _move_to_folder(
 
 
 def move_to_exception_folder(
-    src_path: str, filename_prefix: str | None = None, extension: str | None = None
+    src_path: str,
+    filename_prefix: str | None = None,
+    extension: str | None = None,
+    *,
+    base_dir: str | None = None,
+    id_separator: str | None = None,
 ) -> None:
     """Move an item to the exceptions folder (unique path)."""
     if filename_prefix is None:
@@ -268,7 +273,11 @@ def move_to_exception_folder(
         src=src_path,
         filename_prefix=filename_prefix,
         extension=extension,
-        unique_path_func=get_exception_path,
+        unique_path_func=lambda name: get_exception_path(
+            name,
+            base_dir=base_dir,
+            id_separator=id_separator,
+        ),
         log_message="Moved '{}' to exceptions folder at '{}'",
         log_level=logging.WARNING,
     )

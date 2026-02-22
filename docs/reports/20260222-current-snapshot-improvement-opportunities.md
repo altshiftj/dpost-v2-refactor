@@ -433,3 +433,34 @@ Validation:
 - `python -m pytest -q` -> `733 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `698 passed, 1 skipped, 1 warning`, `100%` total coverage (`5318 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Exception-Path Context Explicit Forwarding (2026-02-22)
+
+Intended action:
+- Reduce hidden global storage-context reads in reject/failure flows by passing
+  explicit exception-folder context (`exception_dir`, `id_separator`) through
+  processing error-handling and storage helpers.
+
+Observed outcome:
+- `src/dpost/application/processing/error_handling.py`
+  - `safe_move_to_exception(...)` now accepts optional explicit
+    `exception_dir` and `id_separator` and forwards them to
+    `move_to_exception_folder(...)`.
+- `src/dpost/application/processing/file_process_manager.py`
+  - added context-aware exception-move helpers for reject/failure stages
+  - reject, no-processor, and failure-emission paths now use explicit
+    config-derived exception context instead of relying on storage helper
+    runtime-config defaults
+- `src/dpost/infrastructure/storage/filesystem_utils.py`
+  - `move_to_exception_folder(...)` now accepts optional explicit `base_dir`
+    and `id_separator`, forwarding them to `get_exception_path(...)`
+- Tests expanded to cover:
+  - explicit exception-context forwarding in processing error handling
+  - manager helper forwarding into storage move helpers
+  - explicit exception context support in `move_to_exception_folder(...)`
+  - default `_exceptions_dir()` wrapper path coverage (compatibility wrapper)
+
+Validation:
+- `python -m pytest -q` -> `738 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `703 passed, 1 skipped, 1 warning`, `100%` total coverage (`5324 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

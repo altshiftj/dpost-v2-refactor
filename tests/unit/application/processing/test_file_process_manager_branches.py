@@ -571,13 +571,45 @@ def test_resolve_record_processor_stage_raises_without_processor(
     moved: list[str] = []
     monkeypatch.setattr(
         "dpost.application.processing.file_process_manager.move_to_exception_folder",
-        lambda path: moved.append(path),
+        lambda path, *_args, **_kwargs: moved.append(path),
     )
 
     with pytest.raises(RuntimeError, match="No file processor available"):
         manager._resolve_record_processor_stage(None, str(src))
 
     assert moved == [str(src)]
+
+
+def test_exception_move_helpers_forward_explicit_exception_context(
+    manager_bundle,
+    monkeypatch,
+) -> None:
+    """Exception-bucket helpers should pass explicit base dir + separator."""
+    manager, _ = manager_bundle
+    captured: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.move_to_exception_folder",
+        lambda *args, **kwargs: captured.__setitem__("move", (args, kwargs)),
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.safe_move_to_exception",
+        lambda *args, **kwargs: captured.__setitem__("safe", (args, kwargs)),
+    )
+
+    manager._move_to_exception_bucket_stage("C:/watch/a.txt", "a", ".txt")
+    manager._safe_move_to_exception_with_context("C:/watch/b.txt", "b", ".txt")
+
+    move_args, move_kwargs = captured["move"]
+    safe_args, safe_kwargs = captured["safe"]
+    assert move_args == ("C:/watch/a.txt", "a", ".txt")
+    assert safe_args == ("C:/watch/b.txt", "b", ".txt")
+    assert move_kwargs["base_dir"] == str(manager.config_service.current.paths.exceptions_dir)
+    assert move_kwargs["id_separator"] == manager.config_service.current.id_separator
+    assert safe_kwargs["exception_dir"] == str(
+        manager.config_service.current.paths.exceptions_dir
+    )
+    assert safe_kwargs["id_separator"] == manager.config_service.current.id_separator
 
 
 def test_resolve_record_persistence_context_stage_passes_explicit_naming_and_storage_context(

@@ -78,6 +78,18 @@ def test_current_device_returns_active_config_device(monkeypatch: pytest.MonkeyP
     assert filesystem_utils._current_device() is sentinel_device  # noqa: SLF001
 
 
+def test_exceptions_dir_returns_active_config_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Return exceptions directory from active config wrapper."""
+    sentinel_path = Path("C:/tmp/exceptions")
+    monkeypatch.setattr(
+        filesystem_utils,
+        "_active_config",
+        lambda: SimpleNamespace(paths=SimpleNamespace(exceptions_dir=sentinel_path)),
+    )
+
+    assert filesystem_utils._exceptions_dir() == sentinel_path  # noqa: SLF001
+
+
 def test_move_item_removes_empty_placeholder(tmp_path: Path):
     """Replace empty destination placeholder file before moving source."""
     src = tmp_path / "src.txt"
@@ -162,6 +174,23 @@ def test_unique_path_helpers_accept_explicit_separator(
     resolved = helper("item.csv", base_dir=str(base), id_separator="__")
 
     assert Path(resolved).name == "item__02.csv"
+
+
+def test_get_exception_path_uses_default_exceptions_dir_when_not_provided(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Fallback exception path helper should use active exceptions dir wrapper."""
+    exceptions_dir = tmp_path / "exceptions"
+    exceptions_dir.mkdir()
+    (exceptions_dir / "item-01.csv").write_text("1")
+
+    monkeypatch.setattr(filesystem_utils, "_exceptions_dir", lambda: exceptions_dir)
+    monkeypatch.setattr(filesystem_utils, "_id_sep", lambda: "-")
+
+    resolved = filesystem_utils.get_exception_path("item.csv")
+
+    assert Path(resolved).name == "item-02.csv"
 
 
 def test_move_item_raises_when_fallback_move_fails(
@@ -267,6 +296,41 @@ def test_remove_directory_if_empty_removes_empty_folder(tmp_path: Path):
     filesystem_utils.remove_directory_if_empty(folder)
 
     assert not folder.exists()
+
+
+def test_move_to_exception_folder_accepts_explicit_base_dir_and_separator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exception moves should support explicit path context without runtime globals."""
+    src = tmp_path / "sample.txt"
+    src.write_text("data")
+    dest_dir = tmp_path / "exceptions"
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        filesystem_utils,
+        "get_exception_path",
+        lambda *args, **kwargs: calls.__setitem__("path", (args, kwargs))
+        or str(dest_dir / "sample-01.txt"),
+    )
+    monkeypatch.setattr(
+        filesystem_utils,
+        "move_item",
+        lambda *args, **kwargs: calls.__setitem__("move", (args, kwargs)),
+    )
+
+    filesystem_utils.move_to_exception_folder(
+        str(src),
+        base_dir=str(dest_dir),
+        id_separator="__",
+    )
+
+    path_args, path_kwargs = calls["path"]
+    move_args, _move_kwargs = calls["move"]
+    assert path_args == ("sample.txt",)
+    assert path_kwargs == {"base_dir": str(dest_dir), "id_separator": "__"}
+    assert move_args == (str(src), str(dest_dir / "sample-01.txt"))
 
 
 def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path, monkeypatch):

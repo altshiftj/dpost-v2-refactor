@@ -142,7 +142,7 @@ class _ProcessingPipeline:
         if stability_outcome.rejected:
             reason = stability_outcome.reason or "File rejected by stability guard"
             manager._register_rejection(str(request.source), reason)
-            safe_move_to_exception(str(request.source))
+            manager._safe_move_to_exception_with_context(str(request.source))
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
         if not request.source.exists():
@@ -334,7 +334,7 @@ class _ProcessingPipeline:
             logger.info("Internal staging folder ignored: %s", path)
             manager._register_rejection(str(path), reason)
             return ProcessingResult(ProcessingStatus.DEFERRED, reason)
-        move_to_exception_folder(str(path))
+        manager._move_to_exception_bucket_stage(str(path))
         manager._register_rejection(str(path), reason)
         FILES_FAILED.inc()
         return ProcessingResult(ProcessingStatus.REJECTED, reason)
@@ -463,7 +463,7 @@ class FileProcessManager:
         """Resolve processor for record persistence or fail with routing fallback behavior."""
         processor = file_processor or self.file_processor
         if processor is None:
-            move_to_exception_folder(source_path)
+            self._move_to_exception_bucket_stage(source_path)
             FILES_FAILED.inc()
             raise RuntimeError("No file processor available")
         return processor
@@ -619,9 +619,41 @@ class FileProcessManager:
         """Build the default sink that applies manager failure side effects."""
         return ProcessingFailureEmissionSink(
             log_exception=self._log_processing_failure_exception,
-            move_to_exception=safe_move_to_exception,
+            move_to_exception=self._safe_move_to_exception_with_context,
             register_rejection=self._register_rejection,
             increment_failed_metric=FILES_FAILED.inc,
+        )
+
+    def _move_to_exception_bucket_stage(
+        self,
+        src_path: str,
+        filename_prefix: str | None = None,
+        extension: str | None = None,
+    ) -> None:
+        """Move an artefact to the exception bucket using explicit config context."""
+        active_config = self.config_service.current
+        move_to_exception_folder(
+            src_path,
+            filename_prefix,
+            extension,
+            base_dir=str(active_config.paths.exceptions_dir),
+            id_separator=active_config.id_separator,
+        )
+
+    def _safe_move_to_exception_with_context(
+        self,
+        src_path: str,
+        filename_prefix: str | None = None,
+        extension: str | None = None,
+    ) -> None:
+        """Safely move an artefact to exceptions using explicit config context."""
+        active_config = self.config_service.current
+        safe_move_to_exception(
+            src_path,
+            filename_prefix,
+            extension,
+            exception_dir=str(active_config.paths.exceptions_dir),
+            id_separator=active_config.id_separator,
         )
 
     @staticmethod

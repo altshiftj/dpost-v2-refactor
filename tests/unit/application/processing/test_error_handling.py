@@ -9,15 +9,48 @@ from tests.helpers.fake_ui import HeadlessUI
 def test_safe_move_to_exception_ignores_missing(monkeypatch):
     calls = []
 
-    def raise_missing(path_like, prefix, extension):
-        calls.append((path_like, prefix, extension))
+    def raise_missing(path_like, prefix, extension, **kwargs):
+        calls.append((path_like, prefix, extension, kwargs))
         raise FileNotFoundError("missing")
 
     monkeypatch.setattr(error_handling, "move_to_exception_folder", raise_missing)
 
     error_handling.safe_move_to_exception("missing.txt", prefix="prefix", extension=".txt")
 
-    assert calls == [("missing.txt", "prefix", ".txt")]
+    assert calls == [
+        (
+            "missing.txt",
+            "prefix",
+            ".txt",
+            {"base_dir": None, "id_separator": None},
+        )
+    ]
+
+
+def test_safe_move_to_exception_forwards_explicit_exception_context(monkeypatch):
+    calls = []
+
+    def record_move(path_like, prefix, extension, **kwargs):
+        calls.append((path_like, prefix, extension, kwargs))
+
+    monkeypatch.setattr(error_handling, "move_to_exception_folder", record_move)
+
+    error_handling.safe_move_to_exception(
+        "sample.txt",
+        prefix="prefix",
+        extension=".txt",
+        exception_dir="C:/Exceptions",
+        id_separator="__",
+    )
+
+    assert calls == [
+        (
+            "sample.txt",
+            "prefix",
+            ".txt",
+            {"base_dir": "C:/Exceptions", "id_separator": "__"},
+        )
+    ]
 
 
 def test_move_to_exception_and_inform_warns_and_handles_preprocessed(tmp_path, monkeypatch):

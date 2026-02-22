@@ -14,13 +14,24 @@ logger = setup_logger(__name__)
 
 
 def safe_move_to_exception(
-    path_like: str, prefix: str | None = None, extension: str | None = None
+    path_like: str,
+    prefix: str | None = None,
+    extension: str | None = None,
+    *,
+    exception_dir: str | None = None,
+    id_separator: str | None = None,
 ) -> None:
     """Attempt to move the artefact into the exception folder while masking IO errors."""
     try:
         filename_prefix: str = prefix if prefix is not None else ""
         file_extension: str = extension if extension is not None else ""
-        move_to_exception_folder(path_like, filename_prefix, file_extension)
+        move_to_exception_folder(
+            path_like,
+            filename_prefix,
+            file_extension,
+            base_dir=exception_dir,
+            id_separator=id_separator,
+        )
     except FileNotFoundError:
         logger.debug("Path already removed while moving to exceptions: %s", path_like)
     except Exception as exc:  # pragma: no cover - defensive logging
