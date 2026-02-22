@@ -31,6 +31,7 @@ from dpost.infrastructure.storage.filesystem_utils import (
 )
 from dpost.application.session import SessionManager
 from dpost.application.processing.device_resolver import DeviceResolver
+from dpost.application.processing.device_resolver import DeviceResolutionKind
 from dpost.application.processing.failure_emitter import (
     ProcessingFailureEmissionSink,
     emit_processing_failure_outcome,
@@ -104,15 +105,16 @@ class _ProcessingPipeline:
         resolution = manager._device_resolver.resolve(path)
         device = resolution.selected
         reason = resolution.reason or "Invalid file type"
-        if resolution.deferred:
+        if resolution.kind is DeviceResolutionKind.DEFER:
             logger.debug("Processing deferred for %s: %s", path, reason)
             return ProcessingResult(
                 ProcessingStatus.DEFERRED,
                 reason,
                 retry_delay=resolution.retry_delay,
             )
-        if device is None:
+        if resolution.kind is DeviceResolutionKind.REJECT:
             return self._reject_immediately(path, reason)
+        assert device is not None  # ACCEPT outcomes guarantee a selected device.
         return ProcessingRequest(source=path, device=device)
 
     def _stabilize_artifact_stage(

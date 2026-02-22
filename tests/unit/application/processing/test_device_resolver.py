@@ -3,9 +3,12 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+import pytest
+
 from dpost.application.config import DeviceConfig, WatcherSettings
 from dpost.application.processing.device_resolver import (
     DeviceResolution,
+    DeviceResolutionKind,
     DeviceResolver,
     ProbeAssessment,
 )
@@ -63,6 +66,7 @@ def test_resolve_missing_path_selects_reappear_device(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected == device
+    assert resolution.kind is DeviceResolutionKind.ACCEPT
     assert resolution.deferred is False
     assert resolution.retry_delay is None
     assert "waiting for reappearance" in resolution.reason
@@ -76,6 +80,7 @@ def test_resolve_missing_path_defers_without_reappear(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected is None
+    assert resolution.kind is DeviceResolutionKind.DEFER
     assert resolution.deferred is True
     assert "disappeared" in resolution.reason
 
@@ -88,6 +93,7 @@ def test_resolve_defers_for_deferred_devices(tmp_path: Path):
 
     resolution = resolver.resolve(target)
 
+    assert resolution.kind is DeviceResolutionKind.DEFER
     assert resolution.deferred is True
     assert resolution.retry_delay == 4.5
     assert "dev1" in resolution.reason
@@ -100,6 +106,7 @@ def test_resolve_defers_for_empty_directory(tmp_path: Path):
 
     resolution = resolver.resolve(target)
 
+    assert resolution.kind is DeviceResolutionKind.DEFER
     assert resolution.deferred is True
     assert "Deferred until" in resolution.reason
 
@@ -116,6 +123,7 @@ def test_resolve_with_no_candidates_for_file_reports_unmatched_reason(
     resolution = resolver.resolve(target)
 
     assert resolution.selected is None
+    assert resolution.kind is DeviceResolutionKind.REJECT
     assert resolution.deferred is False
     assert resolution.reason == "No device selectors matched the file"
 
@@ -129,6 +137,7 @@ def test_resolve_returns_single_candidate_without_probing(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected == device
+    assert resolution.kind is DeviceResolutionKind.ACCEPT
     assert resolution.assessments == tuple()
     assert "probing skipped" in resolution.reason
 
@@ -149,6 +158,7 @@ def test_resolve_all_mismatch(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected is None
+    assert resolution.kind is DeviceResolutionKind.REJECT
     assert "rejected the file" in resolution.reason
     assert len(resolution.assessments) == 2
 
@@ -169,17 +179,37 @@ def test_resolve_inconclusive_prefers_first_unknown(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected == dev1
+    assert resolution.kind is DeviceResolutionKind.ACCEPT
     assert "inconclusive" in resolution.reason
 
 
 def test_device_resolution_matched_property_reflects_selection() -> None:
     """Expose a stable bool helper for callers checking match status."""
 
-    matched = DeviceResolution(selected=_device("dev"), assessments=tuple(), reason="ok")
-    unmatched = DeviceResolution(selected=None, assessments=tuple(), reason="none")
+    matched = DeviceResolution.accept(_device("dev"), reason="ok")
+    unmatched = DeviceResolution.reject(reason="none")
+    deferred_with_selected = DeviceResolution.defer(
+        reason="wait",
+        selected=_device("dev"),
+        retry_delay=1.0,
+    )
 
     assert matched.matched is True
     assert unmatched.matched is False
+    assert deferred_with_selected.matched is False
+    assert deferred_with_selected.deferred is True
+
+
+def test_device_resolution_accept_requires_selected_device() -> None:
+    """Guard against ambiguous ACCEPT outcomes without a chosen device."""
+
+    with pytest.raises(ValueError, match="requires a selected device"):
+        DeviceResolution(
+            selected=None,
+            assessments=tuple(),
+            reason="bad",
+            kind=DeviceResolutionKind.ACCEPT,
+        )
 
 
 def test_retry_delay_falls_back_when_device_value_is_invalid() -> None:

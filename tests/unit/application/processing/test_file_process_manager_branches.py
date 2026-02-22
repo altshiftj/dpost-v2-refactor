@@ -91,11 +91,8 @@ def test_process_item_defers_when_resolution_requests_retry(
     monkeypatch.setattr(
         manager._device_resolver,
         "resolve",
-        lambda _path: DeviceResolution(
-            selected=None,
-            assessments=tuple(),
+        lambda _path: DeviceResolution.defer(
             reason=f"wait for {device.identifier}",
-            deferred=True,
             retry_delay=4.25,
         ),
     )
@@ -122,11 +119,9 @@ def test_process_item_defers_when_resolution_preselects_device_but_marks_deferre
     monkeypatch.setattr(
         manager._device_resolver,
         "resolve",
-        lambda _path: DeviceResolution(
-            selected=device,
-            assessments=tuple(),
+        lambda _path: DeviceResolution.defer(
             reason="waiting for reappearance",
-            deferred=True,
+            selected=device,
             retry_delay=2.0,
         ),
     )
@@ -188,11 +183,7 @@ def test_process_item_defers_when_path_missing_after_stability_guard_returns_sta
     monkeypatch.setattr(
         manager._device_resolver,
         "resolve",
-        lambda _path: DeviceResolution(
-            selected=device,
-            assessments=tuple(),
-            reason="selected for test",
-        ),
+        lambda _path: DeviceResolution.accept(device, reason="selected for test"),
     )
 
     monkeypatch.setattr(

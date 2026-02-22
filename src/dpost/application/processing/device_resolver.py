@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 from typing import Iterable
 
@@ -13,6 +14,14 @@ from dpost.application.retry_delay_policy import RetryDelayPolicy
 from dpost.infrastructure.logging import setup_logger
 
 logger = setup_logger(__name__)
+
+
+class DeviceResolutionKind(str, Enum):
+    """Explicit pipeline-facing resolution actions returned by the resolver."""
+
+    ACCEPT = "accept"
+    DEFER = "defer"
+    REJECT = "reject"
 
 
 @dataclass(frozen=True)
@@ -31,12 +40,72 @@ class DeviceResolution:
     selected: DeviceConfig | None
     assessments: tuple[ProbeAssessment, ...]
     reason: str
-    deferred: bool = False
+    kind: DeviceResolutionKind
     retry_delay: float | None = None
+
+    def __post_init__(self) -> None:
+        if self.kind is DeviceResolutionKind.ACCEPT and self.selected is None:
+            raise ValueError("ACCEPT device resolution requires a selected device")
+        if self.kind is not DeviceResolutionKind.DEFER and self.retry_delay is not None:
+            raise ValueError("retry_delay is only valid for DEFER device resolutions")
+
+    @classmethod
+    def accept(
+        cls,
+        selected: DeviceConfig,
+        *,
+        assessments: tuple[ProbeAssessment, ...] = tuple(),
+        reason: str,
+    ) -> "DeviceResolution":
+        """Build an explicit accepted-resolution outcome."""
+        return cls(
+            selected=selected,
+            assessments=assessments,
+            reason=reason,
+            kind=DeviceResolutionKind.ACCEPT,
+        )
+
+    @classmethod
+    def defer(
+        cls,
+        *,
+        reason: str,
+        retry_delay: float | None = None,
+        selected: DeviceConfig | None = None,
+        assessments: tuple[ProbeAssessment, ...] = tuple(),
+    ) -> "DeviceResolution":
+        """Build an explicit deferred-resolution outcome."""
+        return cls(
+            selected=selected,
+            assessments=assessments,
+            reason=reason,
+            kind=DeviceResolutionKind.DEFER,
+            retry_delay=retry_delay,
+        )
+
+    @classmethod
+    def reject(
+        cls,
+        *,
+        reason: str,
+        assessments: tuple[ProbeAssessment, ...] = tuple(),
+    ) -> "DeviceResolution":
+        """Build an explicit rejected-resolution outcome."""
+        return cls(
+            selected=None,
+            assessments=assessments,
+            reason=reason,
+            kind=DeviceResolutionKind.REJECT,
+        )
 
     @property
     def matched(self) -> bool:
-        return self.selected is not None
+        return self.kind is DeviceResolutionKind.ACCEPT
+
+    @property
+    def deferred(self) -> bool:
+        """Compatibility helper for callers still checking boolean defer state."""
+        return self.kind is DeviceResolutionKind.DEFER
 
 
 class DeviceResolver:
@@ -58,18 +127,14 @@ class DeviceResolver:
                 logger.debug(
                     "DeviceResolver: %s (%s -> %s)", reason, target, selected.identifier
                 )
-                return DeviceResolution(
-                    selected=selected,
-                    assessments=tuple(),
+                return DeviceResolution.accept(
+                    selected,
                     reason=reason,
                 )
             reason = f"Path '{target.name}' disappeared before device resolution"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
-            return DeviceResolution(
-                selected=None,
-                assessments=tuple(),
+            return DeviceResolution.defer(
                 reason=reason,
-                deferred=True,
                 retry_delay=self._default_retry_delay(),
             )
 
@@ -83,11 +148,8 @@ class DeviceResolver:
                 target,
                 reason,
             )
-            return DeviceResolution(
-                selected=None,
-                assessments=tuple(),
+            return DeviceResolution.defer(
                 reason=reason,
-                deferred=True,
                 retry_delay=self._max_retry_delay(deferred_devices),
             )
 
@@ -95,16 +157,13 @@ class DeviceResolver:
             if target.is_dir() and self._should_defer_empty_directory(target):
                 reason = f"Deferred until '{target.name}' gains contents"
                 logger.debug("DeviceResolver: deferring %s (%s)", target, reason)
-                return DeviceResolution(
-                    selected=None,
-                    assessments=tuple(),
+                return DeviceResolution.defer(
                     reason=reason,
-                    deferred=True,
                     retry_delay=self._default_retry_delay(),
                 )
             reason = "No device selectors matched the file"
             logger.debug("DeviceResolver: %s (%s)", reason, target)
-            return DeviceResolution(selected=None, assessments=tuple(), reason=reason)
+            return DeviceResolution.reject(reason=reason)
 
         if len(candidates) == 1:
             reason = "Single device matched selectors; probing skipped"
@@ -114,8 +173,9 @@ class DeviceResolver:
                 target,
                 candidates[0].identifier,
             )
-            return DeviceResolution(
-                selected=candidates[0], assessments=tuple(), reason=reason
+            return DeviceResolution.accept(
+                candidates[0],
+                reason=reason,
             )
 
         assessments: list[ProbeAssessment] = [
@@ -136,8 +196,12 @@ class DeviceResolver:
                 "DeviceResolver: no processor accepted %s (%s)", target, reason
             )
 
-        return DeviceResolution(
-            selected=selected, assessments=tuple(assessments), reason=reason
+        if selected is None:
+            return DeviceResolution.reject(reason=reason, assessments=tuple(assessments))
+        return DeviceResolution.accept(
+            selected,
+            reason=reason,
+            assessments=tuple(assessments),
         )
 
     @staticmethod
