@@ -204,7 +204,8 @@ Action:
    `filesystem_utils` explicit-context support).
 3. retry policy unification across resolver/watchdog flows (shared retry-delay
    policy seam completed; next step is configuration centralization).
-4. continue monitoring test naming/import hygiene as suites expand.
+4. continue monitoring test naming/import hygiene as suites expand
+   (guard test now enforces pytest import-key uniqueness).
 
 ## Cross-Reference
 

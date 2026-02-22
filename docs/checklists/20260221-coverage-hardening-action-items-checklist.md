@@ -62,10 +62,10 @@ failure/recovery branches that affect runtime stability.
 Why this matters: duplicate `test_*.py` basenames in non-package directories caused
 import mismatch errors during full-suite collection.
 
-- [ ] Enforce unique test module basenames across `tests/unit/**` (or consistent package
-      scoping with `__init__.py` where appropriate).
-- [ ] Add a lightweight guard test or lint script that fails on conflicting basenames.
-- [ ] Document test naming rule in contributor testing guidance.
+- [x] Enforce unique test module import keys across `tests/unit/**` (allow duplicate
+      basenames only when package scoping keeps import names distinct).
+- [x] Add a lightweight guard test or lint script that fails on conflicting basenames.
+- [x] Document test naming rule in contributor testing guidance.
 
 ## Manual Check
 
@@ -94,6 +94,8 @@ How it was done:
   - `666 passed, 1 skipped, 1 warning, total 100% (5105 stmts, 0 miss)`.
 - Priorities now focus on refactor leverage and dependency cleanup rather than
   raw coverage gaps.
+- Test naming hygiene now includes automated import-collision detection via
+  `tests/unit/test_unique_test_module_basenames.py`.
 - Captured deeper rationale in:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`.
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`.

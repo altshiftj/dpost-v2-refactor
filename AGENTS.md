@@ -138,7 +138,7 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `666 passed, 1 skipped, 1 warning`
+  - `667 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5105 stmts, 0 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
@@ -154,7 +154,9 @@
      - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
      - next: centralize runtime retry config wiring if further consolidation is needed
   4. test hygiene automation
-     - prevent duplicate test-module basename/import-mismatch regressions
+     - guard test added (`tests/unit/test_unique_test_module_basenames.py`)
+     - import-key collision policy (package-scoped modules allowed to reuse basenames)
+     - next: decide whether to enforce package markers in currently non-package plugin test dirs
 - Supporting reference docs:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`

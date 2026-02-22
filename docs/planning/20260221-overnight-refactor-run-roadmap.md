@@ -231,7 +231,7 @@ unit coverage.
     - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `9 passed`
 - Full checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `666 passed, 1 skipped, 1 warning`
+  - `667 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5105 stmts, 0 miss`)
 
 ## Active Refactor Queue
@@ -245,7 +245,9 @@ unit coverage.
 3. shared retry policy unification across resolver/watchdog flows
    - shared retry-delay parsing/normalization seam completed; next step is
      policy object wiring/config centralization if further consolidation is desired
-4. test naming/import hygiene automation (prevent duplicate-basename regressions)
+4. test naming/import hygiene automation
+   - import-collision guard test completed (`tests/unit/test_unique_test_module_basenames.py`)
+   - follow-up: optionally normalize package markers in non-package plugin test dirs
 
 ## Execution Model
 

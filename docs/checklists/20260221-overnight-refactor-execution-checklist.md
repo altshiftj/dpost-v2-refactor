@@ -85,7 +85,7 @@ How it was done:
 - [x] Remaining backlog prioritized for next run.
 - [x] Final checkpoint reached:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-      -> `666 passed, 1 skipped, 1 warning`, `100%` (`5105 stmts, 0 miss`)
+      -> `667 passed, 1 skipped, 1 warning`, `100%` (`5105 stmts, 0 miss`)
 - [x] Final residual in `file_process_manager` classified and documented via
       explicit `# pragma: no cover` defensive exhaustiveness guard rationale.
 - [x] Post-coverage refactor slices (`stability_timing_policy`, `failure_outcome_policy`)
@@ -100,3 +100,6 @@ How it was done:
 - [x] Added naming-facade explicit-context wrapper parameters and unified retry
       delay parsing/normalization across resolver/watchdog/runtime planner
       (full-checkpoint `100%` retained).
+- [x] Added unit-test import-collision hygiene guard using pytest-style import
+      key detection (allows package-scoped duplicate basenames, blocks risky
+      non-package collisions); full-checkpoint remained `100%`.

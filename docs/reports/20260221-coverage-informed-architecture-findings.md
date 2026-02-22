@@ -846,3 +846,27 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `666 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5105 stmts, 0 miss`)
+
+### Slice 33: Unit-test import-collision hygiene guard
+
+- Intended action:
+  - prevent future pytest import-mismatch regressions by adding a lightweight
+    suite guard that detects colliding test import names without banning valid
+    duplicate basenames in package-scoped paths
+- Expected outcome:
+  - CI fails only for actual import-key collisions (top-level/non-package
+    duplicates), while package-scoped plugin tests remain allowed
+- Observed outcome:
+  - added:
+    - `tests/unit/test_unique_test_module_basenames.py`
+      - computes pytest-style import key:
+        package-scoped tests -> dotted path
+        non-package tests -> top-level stem
+      - fails on duplicate import keys only
+  - validation:
+    - `python -m ruff check tests/unit/test_unique_test_module_basenames.py` -> pass
+    - `python -m pytest -q tests/unit/test_unique_test_module_basenames.py` -> `1 passed`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `667 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5105 stmts, 0 miss`)
