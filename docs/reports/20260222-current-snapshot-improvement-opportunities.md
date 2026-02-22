@@ -385,3 +385,26 @@ Validation:
 - `python -m pytest -q` -> `732 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `697 passed, 1 skipped, 1 warning`, `100%` total coverage (`5316 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Processing Routing Explicit Naming Context (2026-02-22)
+
+Intended action:
+- Remove hidden naming-policy runtime context reads from the processing routing
+  hot path by passing explicit naming context through `fetch_record_for_prefix`.
+
+Observed outcome:
+- `src/dpost/application/processing/routing.py`
+  - `fetch_record_for_prefix(...)` now accepts optional explicit
+    `filename_pattern` and `id_separator`
+  - forwards explicit naming context to `sanitize_and_validate(...)`
+  - forwards explicit separator + current device to `generate_record_id(...)`
+- `src/dpost/application/processing/file_process_manager.py`
+  - `_build_route_context(...)` now passes `manager.config_service.current`
+    naming values into `fetch_record_for_prefix(...)`
+- `tests/unit/application/processing/test_routing_helpers.py`
+  - updated to assert explicit kwarg forwarding behavior
+
+Validation:
+- `python -m pytest -q` -> `732 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `697 passed, 1 skipped, 1 warning`, `100%` total coverage (`5317 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

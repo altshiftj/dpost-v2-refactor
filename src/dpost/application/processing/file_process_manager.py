@@ -229,8 +229,13 @@ class _ProcessingPipeline:
 
     def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
         manager = self._manager
+        active_config = manager.config_service.current
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            manager.records, candidate.prefix, candidate.device
+            manager.records,
+            candidate.prefix,
+            candidate.device,
+            filename_pattern=active_config.filename_pattern,
+            id_separator=active_config.id_separator,
         )
         return build_route_context(
             candidate,

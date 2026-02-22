@@ -28,28 +28,45 @@ def test_fetch_record_for_prefix_uses_generated_record_identifier(
     """Resolve record using generated record ID when naming policy succeeds."""
     records = Mock()
     existing = object()
+    device = _DeviceStub(metadata=_MetadataStub(record_kadi_id="dev-record"))
+    filename_pattern = object()
+    captured: dict[str, object] = {}
     records.get_record_by_id.return_value = existing
 
     monkeypatch.setattr(
         routing_module,
         "sanitize_and_validate",
-        lambda prefix: ("sanitized", True),
+        lambda prefix, **kwargs: captured.__setitem__("sanitize_kwargs", kwargs)
+        or ("sanitized", True),
     )
     monkeypatch.setattr(
         routing_module,
         "generate_record_id",
-        lambda prefix, dev_kadi_record_id=None: f"rid:{prefix}:{dev_kadi_record_id}",
+        lambda prefix, dev_kadi_record_id=None, **kwargs: captured.__setitem__(
+            "record_kwargs", kwargs
+        )
+        or f"rid:{prefix}:{dev_kadi_record_id}",
     )
 
     sanitized, is_valid, record = routing_module.fetch_record_for_prefix(
         records=records,
         filename_prefix="raw",
-        device=_DeviceStub(metadata=_MetadataStub(record_kadi_id="dev-record")),
+        device=device,
+        filename_pattern=filename_pattern,
+        id_separator="__",
     )
 
     assert sanitized == "sanitized"
     assert is_valid is True
     assert record is existing
+    assert captured["sanitize_kwargs"] == {
+        "filename_pattern": filename_pattern,
+        "id_separator": "__",
+    }
+    assert captured["record_kwargs"] == {
+        "id_separator": "__",
+        "current_device": device,
+    }
     records.get_record_by_id.assert_called_once_with("rid:sanitized:dev-record")
 
 
@@ -63,7 +80,7 @@ def test_fetch_record_for_prefix_falls_back_to_lowercase_prefix_when_generation_
     monkeypatch.setattr(
         routing_module,
         "sanitize_and_validate",
-        lambda prefix: ("Sanitized-Prefix", False),
+        lambda prefix, **_kwargs: ("Sanitized-Prefix", False),
     )
 
     def _raise(*_args, **_kwargs):

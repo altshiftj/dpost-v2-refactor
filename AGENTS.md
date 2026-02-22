@@ -141,7 +141,7 @@
   - `732 passed, 1 skipped, 1 warning`
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
   - `697 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5316 stmts, 0 miss`)
+  - `100%` total coverage (`5317 stmts, 0 miss`)
   - `python -m ruff check .` -> pass
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
@@ -155,6 +155,7 @@
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed
      - `RecordManager` explicit persisted-record path/id-separator wiring completed
+     - processing routing hot path now passes explicit naming context (`filename_pattern`, `id_separator`)
      - `SessionManager` timeout-provider seam completed
      - Kinexus/PSA lazy separator seams completed
      - `application/naming/policy.py` wrapper explicit-context slice completed
