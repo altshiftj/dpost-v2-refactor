@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Deque, Dict, List, Optional
 
-from dpost.application.config import DeviceConfig, current
+from dpost.application.config import DeviceConfig
 from dpost.application.processing.file_processor_abstract import (
     FileProbeResult,
     FileProcessorABS,
@@ -36,9 +36,9 @@ from dpost.infrastructure.storage.filesystem_utils import (
 from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir
 
 logger = setup_logger(__name__)
+def _runtime_id_separator() -> str:
+    from dpost.application.config import current
 
-
-def _id_separator() -> str:
     return current().id_separator
 
 
@@ -62,9 +62,14 @@ class _FolderState:
 class FileProcessorRHEKinexus(FileProcessorABS):
     """Sentinel-driven pairing of Kinexus native `.rdf` files and exports."""
 
-    def __init__(self, device_config: DeviceConfig) -> None:
+    def __init__(
+        self,
+        device_config: DeviceConfig,
+        id_separator: str | None = None,
+    ) -> None:
         super().__init__(device_config)
         self.device_config = device_config
+        self._id_separator = id_separator
         self._state: Dict[str, _FolderState] = {}
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._raw_to_stage: Dict[str, str] = {}
@@ -346,7 +351,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
             self._state.pop(folder_key, None)
 
     def _next_sequence_basename(self, directory: Path, prefix: str) -> str:
-        sep = _id_separator()
+        sep = self._resolve_id_separator()
         max_index = 0
         for existing in directory.iterdir():
             if not existing.is_file():
@@ -371,6 +376,14 @@ class FileProcessorRHEKinexus(FileProcessorABS):
             next_name,
         )
         return next_name
+
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        try:
+            return _runtime_id_separator()
+        except RuntimeError:
+            return "-"
 
     @staticmethod
     def _zip_raw(src: Path, dest: Path, arcname: str) -> None:

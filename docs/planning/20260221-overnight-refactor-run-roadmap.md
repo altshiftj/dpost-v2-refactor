@@ -194,13 +194,32 @@ unit coverage.
   - `657 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5078 stmts, 0 miss`)
 
+### Checkpoint K: Global-config cleanup continuation (session + plugin lazy separators)
+
+- Completed slices:
+  - updated:
+    - `src/dpost/application/session/session_manager.py`
+    - `tests/unit/application/session/test_session_manager.py`
+    - `src/dpost/device_plugins/rhe_kinexus/file_processor.py`
+    - `src/dpost/device_plugins/psa_horiba/file_processor.py`
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+- Validation:
+  - targeted:
+    - `python -m pytest -q tests/unit/application/session/test_session_manager.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py` -> `66 passed`
+    - focused plugin coverage restored to `100%` after lazy fallback branch tests
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `662 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5100 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
    - continue separating failure handling side-effect emission (UI/metrics/logging) from outcome construction
 2. deep helper global-config access cleanup (`current()/get_service()` reduction)
    - continue after `filesystem_utils` explicit-context support:
-     `application/session/session_manager.py`, device plugin `_id_separator()` helpers
+     next targets: `application/naming/policy.py` wrappers and remaining storage/runtime helper accessors
 3. shared retry policy unification across resolver/watchdog flows
 4. test naming/import hygiene automation (prevent duplicate-basename regressions)
 

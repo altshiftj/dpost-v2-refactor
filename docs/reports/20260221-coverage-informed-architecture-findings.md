@@ -749,3 +749,56 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `657 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5078 stmts, 0 miss`)
+
+### Slice 29: Session manager timeout-provider seam
+
+- Intended action:
+  - reduce direct `current()` dependency in `SessionManager` timeout scheduling
+    by introducing an injectable timeout provider while preserving default behavior
+- Expected outcome:
+  - tests/callers can supply timeout values explicitly without monkeypatching
+    runtime config access
+- Observed outcome:
+  - updated:
+    - `src/dpost/application/session/session_manager.py`
+      - added optional `timeout_provider` constructor seam
+      - `_schedule_timeout()` now uses injected/default provider
+      - default provider still proxies active config (`current().session_timeout`)
+    - `tests/unit/application/session/test_session_manager.py`
+      - added explicit timeout-provider tests (positive timeout and disabled timeout)
+  - validation:
+    - `python -m ruff check src/dpost/application/session/session_manager.py tests/unit/application/session/test_session_manager.py` -> pass
+    - `python -m pytest -q tests/unit/application/session/test_session_manager.py` -> `20 passed`
+
+### Slice 30: Kinexus/PSA lazy id-separator seam + safe fallback
+
+- Intended action:
+  - reduce deep ambient-config coupling in Kinexus/PSA sequence naming by moving
+    separator lookup to lazy instance resolution with optional constructor seam
+- Expected outcome:
+  - preserve runtime behavior while allowing tests/callers to supply explicit
+    separators and avoiding constructor-time config-service requirements
+- Observed outcome:
+  - updated:
+    - `src/dpost/device_plugins/rhe_kinexus/file_processor.py`
+    - `src/dpost/device_plugins/psa_horiba/file_processor.py`
+      - constructors accept optional `id_separator`
+      - `_next_sequence_basename()` resolves separator via lazy instance helper
+      - runtime config lookup is deferred and safely falls back to `"-"` when
+        config service is unavailable
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+      - sequence helper uses explicit constructor seam
+      - added runtime helper and fallback branch tests
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - sequence helper uses explicit constructor seam
+      - added fallback branch test
+  - validation:
+    - `python -m ruff check src/dpost/device_plugins/rhe_kinexus/file_processor.py src/dpost/device_plugins/psa_horiba/file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py` -> pass
+    - focused coverage:
+      - `python -m pytest --cov=dpost.device_plugins.rhe_kinexus.file_processor --cov=dpost.device_plugins.psa_horiba.file_processor --cov-report=term-missing -q tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - `rhe_kinexus/file_processor.py` -> `100%`
+      - `psa_horiba/file_processor.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `662 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5100 stmts, 0 miss`)

@@ -371,10 +371,9 @@ def test_processing_cleanup_ignores_directory_and_map_failures(
 
 def test_tracking_helpers_and_next_sequence_basename(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Track CSV/NGB sentinels and compute next sequence from existing files."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     csv_path = folder / "tracked.csv"
@@ -407,12 +406,21 @@ def test_tracking_helpers_and_next_sequence_basename(
     (record_dir / "prefix-xx.csv").write_text("x")
     (record_dir / "other-99.csv").write_text("o")
     (record_dir / "nested").mkdir()
-    monkeypatch.setattr(
-        "dpost.device_plugins.psa_horiba.file_processor._id_separator",
-        lambda: "-",
-    )
 
     assert processor._next_sequence_basename(record_dir, "prefix") == "prefix-10"
+
+
+def test_resolve_id_separator_falls_back_when_runtime_config_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Use default '-' separator when runtime config service is unavailable."""
+    processor = FileProcessorPSAHoriba(build_config())
+    monkeypatch.setattr(
+        "dpost.device_plugins.psa_horiba.file_processor._runtime_id_separator",
+        lambda: (_ for _ in ()).throw(RuntimeError("no config")),
+    )
+
+    assert processor._resolve_id_separator() == "-"
 
 
 def test_zip_ngb_keeps_zip_when_unlink_fails(

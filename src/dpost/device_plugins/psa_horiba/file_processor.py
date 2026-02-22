@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Deque, Dict, List, Optional
 
-from dpost.application.config import DeviceConfig, current
+from dpost.application.config import DeviceConfig
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.file_processor_abstract import (
     FileProbeResult,
@@ -37,9 +37,9 @@ logger = setup_logger(__name__)
 
 _PROBENAME_KEY = "probenname"
 _MAX_PREFIX_BYTES = 200_000
+def _runtime_id_separator() -> str:
+    from dpost.application.config import current
 
-
-def _id_separator() -> str:
     return current().id_separator
 
 
@@ -72,9 +72,14 @@ class _FolderState:
 class FileProcessorPSAHoriba(FileProcessorABS):
     """Bucket NGB/CSV pairs and flush them on sentinel sequence completion."""
 
-    def __init__(self, device_config: DeviceConfig) -> None:
+    def __init__(
+        self,
+        device_config: DeviceConfig,
+        id_separator: str | None = None,
+    ) -> None:
         super().__init__(device_config)
         self.device_config = device_config
+        self._id_separator = id_separator
         self._state: Dict[str, _FolderState] = {}
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._ngb_to_stage: Dict[str, str] = {}
@@ -366,7 +371,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             self._state.pop(folder_key, None)
 
     def _next_sequence_basename(self, directory: Path, prefix: str) -> str:
-        sep = _id_separator()
+        sep = self._resolve_id_separator()
         max_index = 0
         for existing in directory.iterdir():
             if not existing.is_file():
@@ -388,6 +393,14 @@ class FileProcessorPSAHoriba(FileProcessorABS):
             "PSA: next sequence for prefix=%r in %s -> %s", prefix, directory, next_name
         )
         return next_name
+
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        try:
+            return _runtime_id_separator()
+        except RuntimeError:
+            return "-"
 
     @staticmethod
     def _zip_ngb(src: Path, dest: Path, arcname: str) -> None:

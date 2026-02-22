@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `657 passed, 1 skipped, 1 warning`
-  - total coverage: `100%` (`5078 stmts, 0 miss`)
+  - `662 passed, 1 skipped, 1 warning`
+  - total coverage: `100%` (`5100 stmts, 0 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -84,8 +84,11 @@ Current status:
   is fully unit covered.
 - `filesystem_utils` path/persistence helpers now accept explicit context
   parameters while preserving legacy signatures.
+- `session_manager` timeout scheduling now supports an explicit provider seam.
+- Kinexus/PSA sequence helpers now support explicit/lazy separator resolution
+  with safe fallback when runtime config is unavailable.
 - remaining global-context cleanup is concentrated in helper layers under
-  session/device-plugin utilities and residual storage wrappers.
+  naming-policy wrappers and residual storage/runtime helpers.
 
 ## Insight 3: Retry and deferral policy is fragmented across layers
 

@@ -238,15 +238,41 @@ def test_identity_helpers_are_stable() -> None:
     assert processor.get_device_id() == "rhe_kinexus"
 
 
-def test_id_separator_reads_from_current_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Read separator from active config shim."""
+def test_constructor_accepts_explicit_id_separator_for_sequence_helper(
+    tmp_path: Path,
+) -> None:
+    """Sequence helper should respect injected separator without ambient config lookup."""
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="__")
+    record_dir = tmp_path / "record"
+    record_dir.mkdir()
+    (record_dir / "prefix__01.csv").write_text("1")
+    (record_dir / "prefix__02.csv").write_text("2")
+
+    assert processor._next_sequence_basename(record_dir, "prefix") == "prefix__03"
+
+
+def test_runtime_id_separator_reads_active_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Runtime separator helper should proxy through active config accessor."""
     monkeypatch.setattr(
-        kinexus_fp,
-        "current",
+        "dpost.application.config.current",
         lambda: type("Cfg", (), {"id_separator": "__"})(),
     )
 
-    assert kinexus_fp._id_separator() == "__"
+    assert kinexus_fp._runtime_id_separator() == "__"
+
+
+def test_resolve_id_separator_falls_back_when_runtime_config_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Use default '-' separator when runtime config service is not initialised."""
+    processor = FileProcessorRHEKinexus(build_config())
+    monkeypatch.setattr(
+        kinexus_fp,
+        "_runtime_id_separator",
+        lambda: (_ for _ in ()).throw(RuntimeError("no config")),
+    )
+
+    assert processor._resolve_id_separator() == "-"
 
 
 def test_processing_requires_pending_batch_for_file_source(tmp_path: Path) -> None:
@@ -342,9 +368,9 @@ def test_processing_directory_cleanup_ignores_rmdir_and_map_pop_failures(
     assert (record_dir / "prefix-01.zip").exists()
 
 
-def test_export_tracking_and_sequence_helpers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_export_tracking_and_sequence_helpers(tmp_path: Path) -> None:
     """Track pending exports and compute next sequence from existing filenames."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     tracked_export = folder / "tracked.csv"
@@ -374,10 +400,6 @@ def test_export_tracking_and_sequence_helpers(tmp_path: Path, monkeypatch: pytes
     (record_dir / "prefix-xx.csv").write_text("x")
     (record_dir / "other-99.csv").write_text("o")
     (record_dir / "nested").mkdir()
-    monkeypatch.setattr(
-        "dpost.device_plugins.rhe_kinexus.file_processor._id_separator",
-        lambda: "-",
-    )
 
     assert processor._next_sequence_basename(record_dir, "prefix") == "prefix-10"
 

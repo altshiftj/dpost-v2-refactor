@@ -85,7 +85,7 @@ How it was done:
 - [x] Remaining backlog prioritized for next run.
 - [x] Final checkpoint reached:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-      -> `657 passed, 1 skipped, 1 warning`, `100%` (`5078 stmts, 0 miss`)
+      -> `662 passed, 1 skipped, 1 warning`, `100%` (`5100 stmts, 0 miss`)
 - [x] Final residual in `file_process_manager` classified and documented via
       explicit `# pragma: no cover` defensive exhaustiveness guard rationale.
 - [x] Post-coverage refactor slices (`stability_timing_policy`, `failure_outcome_policy`)
@@ -95,3 +95,5 @@ How it was done:
       checkpoint regression confirmation still at `100%`.
 - [x] Began deep global-config cleanup with `filesystem_utils` explicit-context
       parameters and maintained full-checkpoint `100%` coverage.
+- [x] Continued deep global-config cleanup with `SessionManager` timeout-provider
+      seam and Kinexus/PSA lazy separator seams (full-checkpoint `100%` retained).

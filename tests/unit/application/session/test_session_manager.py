@@ -161,6 +161,35 @@ def test_reset_timer_ignores_disabled_timeout(fake_ui, monkeypatch):
     assert fake_ui.scheduled_tasks == []
 
 
+def test_start_session_uses_explicit_timeout_provider(fake_ui, config_service):
+    """Allow scheduling without reading ambient config when provider is injected."""
+    session_manager = SessionManager(
+        interactions=fake_ui,
+        scheduler=fake_ui,
+        timeout_provider=lambda: 7,
+    )
+
+    session_manager.start_session()
+
+    assert session_manager.timer_id == 1
+    assert fake_ui.scheduled_tasks[-1][0] == 7000
+
+
+def test_explicit_timeout_provider_can_disable_timeout(fake_ui, config_service):
+    """Negative injected timeout should disable scheduling without monkeypatching globals."""
+    session_manager = SessionManager(
+        interactions=fake_ui,
+        scheduler=fake_ui,
+        timeout_provider=lambda: -1,
+    )
+
+    session_manager.start_session()
+
+    assert session_manager.session_active is True
+    assert session_manager.timer_id is None
+    assert fake_ui.scheduled_tasks == []
+
+
 def test_session_manager_properties_and_summary(fake_ui, config_service):
     """Expose active/interactive state and immutable summary snapshot."""
     manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)

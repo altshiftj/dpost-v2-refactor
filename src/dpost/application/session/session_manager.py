@@ -13,7 +13,7 @@ Headless / 'it just works' mode:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from dpost.application.ports import (
     SessionPromptDetails,
@@ -53,6 +53,7 @@ class SessionManager:
         scheduler: TaskScheduler,
         end_session_callback=None,
         interactive: bool = True,
+        timeout_provider: Callable[[], float | int] | None = None,
     ) -> None:
         self._interactions = interactions
         self._scheduler = scheduler
@@ -62,6 +63,7 @@ class SessionManager:
         self._session_users: list[str] = []
         self._session_records: list[str] = []
         self._interactive = interactive
+        self._timeout_provider = timeout_provider or self._default_timeout_provider
 
     @property
     def is_active(self) -> bool:
@@ -127,7 +129,7 @@ class SessionManager:
 
     def _schedule_timeout(self) -> None:
         self._cancel_timer()
-        timeout_seconds = current().session_timeout
+        timeout_seconds = self._timeout_provider()
         if timeout_seconds < 0:
             logger.debug("Session timeout disabled (value: %s).", timeout_seconds)
             return
@@ -196,3 +198,8 @@ class SessionManager:
                 return separator.join(parts[3:])
             return identifier
         return None
+
+    @staticmethod
+    def _default_timeout_provider() -> float | int:
+        """Resolve session timeout from the active runtime config."""
+        return current().session_timeout
