@@ -363,3 +363,25 @@ Validation:
 - `python -m pytest -q` -> `729 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `694 passed, 1 skipped, 1 warning`, `100%` total coverage (`5312 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: RecordManager Explicit Persistence Context Wiring (2026-02-22)
+
+Intended action:
+- Reduce hidden global config access in core record orchestration by making
+  persisted-record path and record id-separator explicit in `RecordManager`.
+
+Observed outcome:
+- `src/dpost/application/records/record_manager.py` now accepts:
+  - `persisted_records_path`
+  - `id_separator`
+- Lazy load / reload / save paths now forward explicit values to
+  `load_persisted_records(...)` / `save_persisted_records(...)` instead of
+  relying on `filesystem_utils` global runtime config defaults.
+- `FileProcessManager` now passes config-derived values when constructing
+  `RecordManager`, reducing hidden runtime coupling in the processing path.
+- Added focused unit tests verifying explicit-path/separator forwarding.
+
+Validation:
+- `python -m pytest -q` -> `732 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `697 passed, 1 skipped, 1 warning`, `100%` total coverage (`5316 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

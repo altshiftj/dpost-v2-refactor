@@ -1,5 +1,7 @@
 """Manages LocalRecord lifecycle, persistence, and sync orchestration."""
 
+from __future__ import annotations
+
 import datetime
 import os
 from pathlib import Path
@@ -33,7 +35,13 @@ class RecordManager:
     storage, ensuring records are properly persisted and synchronized.
     """
 
-    def __init__(self, sync_manager: SyncAdapterPort):
+    def __init__(
+        self,
+        sync_manager: SyncAdapterPort,
+        *,
+        persisted_records_path: str | Path | None = None,
+        id_separator: str | None = None,
+    ):
         """
         Initialize RecordManager with synchronization capabilities.
 
@@ -43,6 +51,12 @@ class RecordManager:
         self.sync = sync_manager
         # Lazy-loaded dictionary of all persisted records
         self._persist_records_dict: Optional[Dict[str, LocalRecord]] = None
+        self._persisted_records_path = (
+            Path(persisted_records_path)
+            if persisted_records_path is not None
+            else None
+        )
+        self._id_separator = id_separator
 
     @property
     def persist_records_dict(self) -> Dict[str, LocalRecord]:
@@ -57,7 +71,10 @@ class RecordManager:
         """
         if self._persist_records_dict is None:
             logger.debug("Lazy loading persisted records from disk...")
-            self._persist_records_dict = load_persisted_records()
+            self._persist_records_dict = load_persisted_records(
+                json_path=self._persisted_records_path,
+                id_separator=self._id_separator,
+            )
         return self._persist_records_dict
 
     def reload_records(self):
@@ -68,7 +85,10 @@ class RecordManager:
         or when manual refresh is needed.
         """
         logger.info("Reloading persisted records from disk...")
-        self._persist_records_dict = load_persisted_records()
+        self._persist_records_dict = load_persisted_records(
+            json_path=self._persisted_records_path,
+            id_separator=self._id_separator,
+        )
 
     def create_record(
         self, filename_prefix: str, device: Optional[DeviceConfig] = None
@@ -171,7 +191,10 @@ class RecordManager:
         Persists all processed records to a dictionary ledger for crash recovery and state preservation.
         """
         logger.debug(f"Persisting {len(self.persist_records_dict)} records.")
-        save_persisted_records(self.persist_records_dict)
+        save_persisted_records(
+            self.persist_records_dict,
+            json_path=self._persisted_records_path,
+        )
 
     def get_all_records(self) -> Dict[str, LocalRecord]:
         """

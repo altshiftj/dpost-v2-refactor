@@ -358,7 +358,12 @@ class FileProcessManager:
         self.session_manager = session_manager
         self.config_service = config_service or get_service()
         self.file_processor = file_processor
-        self.records = RecordManager(sync_manager=sync_manager)
+        active_config = self.config_service.current
+        self.records = RecordManager(
+            sync_manager=sync_manager,
+            persisted_records_path=active_config.paths.daily_records_json,
+            id_separator=active_config.id_separator,
+        )
         self._processor_factory = FileProcessorFactory()
         self._device_resolver = DeviceResolver(
             self.config_service, self._processor_factory

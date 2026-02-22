@@ -138,10 +138,10 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest -q`
-  - `729 passed, 1 skipped, 1 warning`
+  - `732 passed, 1 skipped, 1 warning`
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `694 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5312 stmts, 0 miss`)
+  - `697 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5316 stmts, 0 miss`)
   - `python -m ruff check .` -> pass
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
@@ -154,10 +154,11 @@
   2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed
+     - `RecordManager` explicit persisted-record path/id-separator wiring completed
      - `SessionManager` timeout-provider seam completed
      - Kinexus/PSA lazy separator seams completed
      - `application/naming/policy.py` wrapper explicit-context slice completed
-     - next: remaining runtime/storage helper accessors and compatibility wrappers
+     - next: remaining runtime/storage helper compatibility wrappers (`filesystem_utils`, naming wrappers)
   3. retry policy unification across resolver/watchdog processing flows
      - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
      - stability/result explicit outcome semantics completed in resolver + stability tracker

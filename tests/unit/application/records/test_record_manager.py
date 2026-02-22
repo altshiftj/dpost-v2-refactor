@@ -185,6 +185,38 @@ def test_persist_records_dict_lazy_loads_once(fake_sync):
         mock_load.assert_called_once()
 
 
+def test_record_manager_loads_records_with_explicit_persistence_context(fake_sync, tmp_path):
+    """Explicit path/separator constructor args should be forwarded to load helper."""
+    records_path = tmp_path / "records.json"
+
+    with patch(
+        "dpost.application.records.record_manager.load_persisted_records",
+        return_value={"x": LocalRecord(identifier="x")},
+    ) as mock_load:
+        manager = RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=records_path,
+            id_separator="_",
+        )
+        _ = manager.persist_records_dict
+
+    mock_load.assert_called_once_with(json_path=records_path, id_separator="_")
+
+
+def test_record_manager_save_records_uses_explicit_persistence_path(fake_sync, tmp_path):
+    """Explicit persistence path should be forwarded to save helper."""
+    records_path = tmp_path / "records.json"
+    manager = RecordManager(sync_manager=fake_sync, persisted_records_path=records_path)
+    manager._persist_records_dict = {"x": LocalRecord(identifier="x")}
+
+    with patch(
+        "dpost.application.records.record_manager.save_persisted_records"
+    ) as mock_save:
+        manager.save_records()
+
+    mock_save.assert_called_once_with(manager.persist_records_dict, json_path=records_path)
+
+
 @pytest.mark.skip(reason="Deactivated pending review of sync record deletion logic.")
 def test_sync_record_deletes_if_no_files_remain(record_manager):
     record = LocalRecord(identifier="dev-usr-ipat-sample")
@@ -225,6 +257,24 @@ def test_reload_records_refreshes_cache(fake_sync):
         manager.reload_records()
 
     assert set(manager.persist_records_dict) == {"fresh"}
+
+
+def test_reload_records_uses_explicit_separator_and_path(fake_sync, tmp_path):
+    """Reload should honor explicit persistence context instead of runtime globals."""
+    records_path = tmp_path / "records.json"
+    manager = RecordManager(
+        sync_manager=fake_sync,
+        persisted_records_path=records_path,
+        id_separator="~",
+    )
+
+    with patch(
+        "dpost.application.records.record_manager.load_persisted_records",
+        return_value={"fresh": LocalRecord(identifier="fresh")},
+    ) as mock_load:
+        manager.reload_records()
+
+    mock_load.assert_called_once_with(json_path=records_path, id_separator="~")
 
 
 def test_infer_id_separator_defaults_to_dash_for_alnum_prefix(record_manager):
