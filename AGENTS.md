@@ -143,14 +143,14 @@
   - `713 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5335 stmts, 0 miss`)
   - `python -m ruff check .` -> pass
-- Current priority queue (in order):
+- Completion status (queue closed for this pass):
   1. `src/dpost/application/processing/file_process_manager.py`
      - failure outcome construction vs emission split completed
      - injectable failure emission sink completed (`failure_emitter.py`)
      - immediate-sync error emission sink extraction completed
      - constructor startup-sync side effect removed; explicit startup hook completed
      - post-persist bookkeeping plan/emitter seam completed (`post_persist_bookkeeping.py`)
-     - next: continue post-persist side-effect decomposition (record mutation boundaries / record manager update adapter seam)
+     - status: completed for current refactor goals; further decomposition is optional
   2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed
@@ -167,17 +167,22 @@
       - storage move helper trio now supports explicit context (`record`/`rename`/`exception`)
       - manager now injects runtime separator into processors via `configure_runtime_context(...)`
       - `RecordManager.create_record(...)` now forwards injected separator to naming helper
-     - next: remaining compatibility fallback wrappers (`filesystem_utils`, `naming wrappers`) and direct-plugin-construction separator fallbacks (very low urgency)
+     - deferred (very low urgency): compatibility fallback wrappers (`filesystem_utils`, `naming wrappers`) and direct-plugin-construction separator fallbacks
   3. retry policy unification across resolver/watchdog processing flows
      - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
      - stability/result explicit outcome semantics completed in resolver + stability tracker
-     - next: centralize runtime retry config wiring if further consolidation is needed
+     - status: completed for current goals; additional consolidation optional
   4. test hygiene automation
      - guard test added (`tests/unit/test_unique_test_module_basenames.py`)
      - import-key collision policy (package-scoped modules allowed to reuse basenames)
      - virtual-time scheduler helper completed (`HeadlessUI(use_virtual_time=True)`, `advance_scheduled_time`)
      - observer-factory integration fixture cleanup completed
-     - next: expand delay-aware integration assertions where retry timing matters
+     - status: completed for current goals; additional timing assertions optional
+- Stop condition reached:
+  - no known behavior regressions
+  - full suite green
+  - unit coverage remains at `100%`
+  - remaining work is compatibility fallback cleanup only
 - Supporting reference docs:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`

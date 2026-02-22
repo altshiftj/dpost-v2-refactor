@@ -611,3 +611,23 @@ Validation:
 - `python -m pytest -q` -> `748 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `713 passed, 1 skipped, 1 warning`, `100%` total coverage (`5335 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Closeout Decision (2026-02-22)
+
+This refactor/polish pass is complete.
+
+Reason for stopping:
+- Active-path orchestration and helper flows now pass explicit runtime context
+  through the main processing pipeline, rename flow, session wiring, record
+  persistence, and storage move helpers.
+- Full validation remains green with `100%` unit coverage.
+- Remaining identified opportunities are compatibility fallback wrappers and
+  direct plugin-construction fallbacks only; they are low-risk and not worth
+  additional churn in this pass.
+
+Deferred (explicitly, low urgency):
+- Compatibility `current()` fallback wrappers in:
+  - `src/dpost/application/naming/policy.py`
+  - `src/dpost/infrastructure/storage/filesystem_utils.py`
+- Direct plugin-construction separator fallbacks in Kinexus/PSA processors
+  (manager-driven runtime path now injects separator via `configure_runtime_context(...)`)
