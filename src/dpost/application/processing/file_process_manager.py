@@ -34,6 +34,7 @@ from dpost.application.processing.device_resolver import DeviceResolver
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.candidate_metadata import derive_candidate_metadata
 from dpost.application.processing.failure_outcome_policy import (
+    ProcessingFailureOutcome,
     build_processing_failure_outcome,
 )
 from dpost.application.processing.file_processor_abstract import (
@@ -570,8 +571,36 @@ class FileProcessManager:
         candidate: Optional[ProcessingCandidate],
         exc: Exception,
     ) -> None:
+        failure_outcome = self._build_processing_failure_outcome_stage(
+            path, candidate, exc
+        )
+        self._emit_processing_failure_outcome_stage(path, exc, failure_outcome)
+
+    def _build_processing_failure_outcome_stage(
+        self,
+        path: Path,
+        candidate: Optional[ProcessingCandidate],
+        exc: Exception,
+    ) -> ProcessingFailureOutcome:
+        """Classify failure artifacts and rejection payload without side effects."""
+        return build_processing_failure_outcome(path, candidate, exc)
+
+    def _emit_processing_failure_outcome_stage(
+        self,
+        path: Path,
+        exc: Exception,
+        failure_outcome: ProcessingFailureOutcome,
+    ) -> None:
+        """Apply logging, file moves, queue registration, and metrics for a failure."""
         logger.exception("Error processing %s: %s", path, exc)
-        failure_outcome = build_processing_failure_outcome(path, candidate, exc)
+        self._emit_processing_failure_moves_stage(failure_outcome)
+        self._emit_processing_failure_rejection_stage(failure_outcome)
+
+    def _emit_processing_failure_moves_stage(
+        self,
+        failure_outcome: ProcessingFailureOutcome,
+    ) -> None:
+        """Move failure artifacts so watch folders do not retain partial inputs."""
         # Move whichever artefact exists (raw or preprocessed) so nothing lingers in watch folders.
         for move_target in failure_outcome.move_targets:
             safe_move_to_exception(
@@ -579,6 +608,12 @@ class FileProcessManager:
                 move_target.prefix,
                 move_target.extension,
             )
+
+    def _emit_processing_failure_rejection_stage(
+        self,
+        failure_outcome: ProcessingFailureOutcome,
+    ) -> None:
+        """Register rejection payload and increment failure metrics."""
         self._register_rejection(
             failure_outcome.rejection_path,
             failure_outcome.rejection_reason,

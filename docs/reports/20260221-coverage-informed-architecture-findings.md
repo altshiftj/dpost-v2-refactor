@@ -870,3 +870,31 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `667 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5105 stmts, 0 miss`)
+
+### Slice 34: File-process manager failure emission stage separation
+
+- Intended action:
+  - separate failure outcome construction from side-effect emission in
+    `FileProcessManager` so logging/moves/rejection/metrics are explicit stage
+    methods with narrower test seams
+- Expected outcome:
+  - preserve failure behavior while reducing `_handle_processing_failure(...)`
+    coupling and making future collaborator injection easier
+- Observed outcome:
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - `_handle_processing_failure(...)` now delegates to:
+        - `_build_processing_failure_outcome_stage(...)`
+        - `_emit_processing_failure_outcome_stage(...)`
+        - `_emit_processing_failure_moves_stage(...)`
+        - `_emit_processing_failure_rejection_stage(...)`
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+      - added explicit emission-stage test covering logger/move/rejection/metric
+        side effects via monkeypatched sinks
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py` -> `21 passed`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `668 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5113 stmts, 0 miss`)

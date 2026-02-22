@@ -10,6 +10,10 @@ import pytest
 
 from dpost.application.interactions import DialogPrompts, ErrorMessages
 from dpost.application.processing.device_resolver import DeviceResolution
+from dpost.application.processing.failure_outcome_policy import (
+    FailureMoveTarget,
+    ProcessingFailureOutcome,
+)
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.file_processor_abstract import ProcessingOutput
 from dpost.application.processing.rename_flow import RenameOutcome
@@ -668,6 +672,57 @@ def test_handle_processing_failure_moves_preprocessed_artifact_when_distinct(
         (str(src), "abc-ipat-sample", ".txt"),
         (str(prepared), "abc-ipat-sample", ".txt"),
     ]
+
+
+def test_emit_processing_failure_outcome_stage_emits_log_moves_rejection_and_metric(
+    manager_bundle,
+    monkeypatch,
+) -> None:
+    """Apply failure side effects through the explicit emission seam."""
+    manager, _ = manager_bundle
+    src = Path("C:/watch/failure.txt")
+    exc = RuntimeError("boom")
+    outcome = ProcessingFailureOutcome(
+        move_targets=(
+            FailureMoveTarget(
+                path="C:/watch/failure.txt",
+                prefix="failure",
+                extension=".txt",
+            ),
+        ),
+        rejection_path="C:/watch/failure.txt",
+        rejection_reason="boom",
+    )
+    logger_mock = MagicMock()
+    metric_mock = MagicMock()
+    moves: list[tuple[str, str | None, str | None]] = []
+    rejections: list[tuple[str, str]] = []
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.logger",
+        logger_mock,
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.FILES_FAILED",
+        metric_mock,
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.safe_move_to_exception",
+        lambda path, prefix=None, extension=None: moves.append(
+            (path, prefix, extension)
+        ),
+    )
+    monkeypatch.setattr(
+        manager,
+        "_register_rejection",
+        lambda path, reason: rejections.append((path, reason)),
+    )
+
+    manager._emit_processing_failure_outcome_stage(src, exc, outcome)
+
+    logger_mock.exception.assert_called_once_with("Error processing %s: %s", src, exc)
+    assert moves == [("C:/watch/failure.txt", "failure", ".txt")]
+    assert rejections == [("C:/watch/failure.txt", "boom")]
+    metric_mock.inc.assert_called_once_with()
 
 
 def test_init_triggers_startup_sync_when_records_pending(
