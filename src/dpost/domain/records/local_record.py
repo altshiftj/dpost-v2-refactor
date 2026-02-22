@@ -52,6 +52,7 @@ class LocalRecord:
     def __post_init__(self):
         """Parse identity segments from identifier using configured/detected separator."""
         id_separator = _resolve_id_separator(self.identifier, self.id_separator)
+        self.id_separator = id_separator
         parts = self.identifier.split(id_separator)
         if len(parts) >= 4:
             self.device_type = parts[0].lower()

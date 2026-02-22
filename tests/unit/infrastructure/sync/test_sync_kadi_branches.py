@@ -199,6 +199,48 @@ def test_get_or_create_collection_returns_existing_and_adds_user_role() -> None:
     existing.add_user.assert_called_once_with(user_id="u-1", role_name="viewer")
 
 
+def test_get_or_create_collection_ignores_duplicate_user_membership_error() -> None:
+    """Treat duplicate membership errors as idempotent when attaching users."""
+    sync_mgr = KadiSyncManager(
+        interactions=_InteractionSpy(),
+        db_manager_factory=lambda: _DbManagerContext(),
+    )
+    db_manager = MagicMock()
+    existing = MagicMock()
+    existing.add_user.side_effect = RuntimeError("User already exists as member")
+    db_manager.collection.return_value = existing
+
+    result = sync_mgr._get_or_create_collection(
+        db_manager,
+        collection_id="existing-id",
+        title="Existing",
+        add_user_info={"user_id": "u-1", "role": "viewer"},
+    )
+
+    assert result is existing
+    existing.add_user.assert_called_once_with(user_id="u-1", role_name="viewer")
+
+
+def test_get_or_create_collection_reraises_non_duplicate_add_user_errors() -> None:
+    """Preserve real membership failures instead of swallowing them broadly."""
+    sync_mgr = KadiSyncManager(
+        interactions=_InteractionSpy(),
+        db_manager_factory=lambda: _DbManagerContext(),
+    )
+    db_manager = MagicMock()
+    existing = MagicMock()
+    existing.add_user.side_effect = RuntimeError("permission denied")
+    db_manager.collection.return_value = existing
+
+    with pytest.raises(RuntimeError, match="permission denied"):
+        sync_mgr._get_or_create_collection(
+            db_manager,
+            collection_id="existing-id",
+            title="Existing",
+            add_user_info={"user_id": "u-1", "role": "viewer"},
+        )
+
+
 def test_get_or_create_collection_creates_and_sets_title_when_missing() -> None:
     """Create missing collections and assign title metadata once."""
     sync_mgr = KadiSyncManager(
@@ -222,6 +264,28 @@ def test_get_or_create_collection_creates_and_sets_title_when_missing() -> None:
     ]
     created.set_attribute.assert_called_once_with("title", "New Title")
     created.add_user.assert_not_called()
+
+
+def test_get_or_create_group_ignores_duplicate_user_membership_error() -> None:
+    """Group helper should also treat duplicate membership as idempotent."""
+    sync_mgr = KadiSyncManager(
+        interactions=_InteractionSpy(),
+        db_manager_factory=lambda: _DbManagerContext(),
+    )
+    db_manager = MagicMock()
+    existing = MagicMock()
+    existing.add_user.side_effect = RuntimeError("member already exists")
+    db_manager.group.return_value = existing
+
+    result = sync_mgr._get_or_create_group(
+        db_manager,
+        group_id="existing-group",
+        title="Existing",
+        add_user_info={"user_id": "u-1", "role": "viewer"},
+    )
+
+    assert result is existing
+    existing.add_user.assert_called_once_with(user_id="u-1", role_name="viewer")
 
 
 def test_get_or_create_user_rawdata_collection_forwards_add_user_info() -> None:
@@ -403,6 +467,16 @@ def test_infer_id_separator_prefers_record_separator_when_shape_matches() -> Non
     """Honor record separator when identifier already uses it with full segment shape."""
     record = _build_record("dev:user:ipat:sample")
     record.id_separator = ":"
+
+    inferred = KadiSyncManager._infer_id_separator_from_record(record)
+
+    assert inferred == ":"
+
+
+def test_infer_id_separator_detects_alternative_separator_from_identifier() -> None:
+    """Detect a different separator when record preference does not match shape."""
+    record = _build_record("dev:user:ipat:sample")
+    record.id_separator = "-"
 
     inferred = KadiSyncManager._infer_id_separator_from_record(record)
 

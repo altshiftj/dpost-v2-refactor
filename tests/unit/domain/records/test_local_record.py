@@ -50,6 +50,16 @@ def test_resolve_id_separator_detects_alternative_separator() -> None:
     assert resolved == ":"
 
 
+def test_init_persists_detected_id_separator_from_identifier() -> None:
+    """Store the detected separator on the record for downstream consumers."""
+    record = LocalRecord(identifier="dev:usr:inst:sample_1")
+
+    assert record.id_separator == ":"
+    assert record.user == "usr"
+    assert record.institute == "inst"
+    assert record.sample_name == "sample_1"
+
+
 def test_add_item_file_fs(sample_record):
     with Patcher() as patcher:
         fake_file = "/path/to/fake_file.tif"

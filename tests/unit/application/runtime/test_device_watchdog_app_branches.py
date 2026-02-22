@@ -75,6 +75,19 @@ def test_initialize_invokes_explicit_startup_sync_on_file_processor(
     assert watchdog_app.file_processing.startup_sync_calls == 1
 
 
+def test_run_routes_initialize_exceptions_through_handle_exception(
+    watchdog_app,
+    monkeypatch,
+) -> None:
+    """Startup failures during initialize() should use the app exception path."""
+    monkeypatch.setattr(watchdog_app, "initialize", MagicMock(side_effect=RuntimeError("boom")))
+    watchdog_app.handle_exception = MagicMock()
+
+    watchdog_app.run()
+
+    watchdog_app.handle_exception.assert_called_once()
+
+
 def test_constructor_injects_dynamic_session_timeout_provider(
     config_service,
     fake_ui,

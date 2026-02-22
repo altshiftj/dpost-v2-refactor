@@ -69,6 +69,22 @@ def test_setup_logger_ignores_console_handler_failures(monkeypatch) -> None:
     configured.handlers.clear()
 
 
+def test_setup_logger_disables_propagation_outside_pytest(monkeypatch) -> None:
+    """Normal runtime should disable propagation to avoid duplicate host logs."""
+    logger_name = "unit.logging.setup.propagate_off"
+    logger = logging.getLogger(logger_name)
+    logger.handlers.clear()
+    logger.propagate = True
+    monkeypatch.delenv("DPOST_LOG_FILE_ENABLED", raising=False)
+    monkeypatch.setattr(logging_module, "_is_pytest_runtime", lambda: False)
+
+    configured = logging_module.setup_logger(logger_name)
+
+    assert configured is logger
+    assert configured.propagate is False
+    configured.handlers.clear()
+
+
 def test_setup_logger_disables_file_handler_by_default_under_pytest(monkeypatch) -> None:
     """Pytest runs should default to console-only logging unless explicitly enabled."""
     logger_name = "unit.logging.setup.pytest_default"

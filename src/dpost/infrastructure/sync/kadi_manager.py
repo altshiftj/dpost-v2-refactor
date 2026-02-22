@@ -37,6 +37,12 @@ class KadiSyncManager:
 
     _DEFAULT_ID_SEPARATOR = "-"
     _KNOWN_ID_SEPARATORS: tuple[str, ...] = ("-", ":", "|")
+    _DUPLICATE_MEMBERSHIP_MARKERS: tuple[str, ...] = (
+        "already",
+        "duplicate",
+        "exists",
+        "member",
+    )
 
     def __init__(
         self,
@@ -122,9 +128,12 @@ class KadiSyncManager:
             collection.set_attribute("title", title)
             logger.debug("Created new collection with ID: %s", collection.id)
         if add_user_info:
-            collection.add_user(
+            self._add_user_membership_if_needed(
+                collection,
                 user_id=add_user_info["user_id"],
                 role_name=add_user_info.get("role", "admin"),
+                resource_kind="collection",
+                resource_id=collection_id,
             )
         return collection
 
@@ -180,11 +189,48 @@ class KadiSyncManager:
             logger.debug("Created new group with ID: %s", group_id)
 
         if add_user_info:
-            group.add_user(
+            self._add_user_membership_if_needed(
+                group,
                 user_id=add_user_info["user_id"],
                 role_name=add_user_info.get("role", "admin"),
+                resource_kind="group",
+                resource_id=group_id,
             )
         return group
+
+    @classmethod
+    def _looks_like_duplicate_membership_error(cls, exc: Exception) -> bool:
+        """Best-effort detector for duplicate membership/user-role assignment errors."""
+        message = str(exc).lower()
+        mentions_membership = any(marker in message for marker in ("user", "member"))
+        mentions_duplicate = any(
+            marker in message for marker in cls._DUPLICATE_MEMBERSHIP_MARKERS
+        )
+        return mentions_membership and mentions_duplicate
+
+    def _add_user_membership_if_needed(
+        self,
+        resource,
+        *,
+        user_id: str,
+        role_name: str,
+        resource_kind: str,
+        resource_id: str,
+    ) -> None:
+        """Attach a user membership unless the backend reports it already exists."""
+        try:
+            resource.add_user(user_id=user_id, role_name=role_name)
+        except Exception as exc:
+            if self._looks_like_duplicate_membership_error(exc):
+                logger.debug(
+                    "Skipping duplicate user membership on %s '%s' for user '%s': %s",
+                    resource_kind,
+                    resource_id,
+                    user_id,
+                    exc,
+                )
+                return
+            raise
 
     def _get_or_create_db_user_rawdata_group(
         self,

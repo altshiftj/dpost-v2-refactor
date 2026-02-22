@@ -74,6 +74,9 @@ def setup_logger(name: str = "watchdog") -> logging.Logger:
     """Return a configured logger with JSON handlers and optional file output."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
+    # Preserve pytest caplog capture (root-handler based) while preventing
+    # duplicate host-process logging in normal runtime execution.
+    logger.propagate = _is_pytest_runtime()
 
     if not logger.handlers:
         formatter = JSONFormatter()

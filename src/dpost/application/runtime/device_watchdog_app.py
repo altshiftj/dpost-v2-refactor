@@ -130,8 +130,8 @@ class DeviceWatchdogApp:
         self.ui.set_exception_handler(self.handle_exception)
 
     def run(self) -> None:
-        self.initialize()
         try:
+            self.initialize()
             self.ui.run_main_loop()
         except KeyboardInterrupt:
             self.on_closing()
