@@ -40,6 +40,8 @@ build/*
 *_setup.md
 
 .coverage
+.coverage.*
+htmlcov/
 .dpost_test_tmp
 .dpost_test_tmp_probe
 .pytest_tmp
