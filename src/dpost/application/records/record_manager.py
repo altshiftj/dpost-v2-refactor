@@ -110,6 +110,7 @@ class RecordManager:
         record_id = generate_record_id(
             filename_prefix,
             dev_kadi_record_id=(device.metadata.record_kadi_id if device else None),
+            id_separator=self._id_separator,
         )
         id_separator = self._infer_id_separator(filename_prefix)
         sample_name = filename_prefix.split(id_separator)[-1]

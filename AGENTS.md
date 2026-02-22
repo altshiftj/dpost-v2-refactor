@@ -138,9 +138,9 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest -q`
-  - `747 passed, 1 skipped, 1 warning`
+  - `748 passed, 1 skipped, 1 warning`
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `712 passed, 1 skipped, 1 warning`
+  - `713 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5335 stmts, 0 miss`)
   - `python -m ruff check .` -> pass
 - Current priority queue (in order):
@@ -166,7 +166,8 @@
       - `DeviceWatchdogApp` now injects `SessionManager.timeout_provider` from `config_service`
       - storage move helper trio now supports explicit context (`record`/`rename`/`exception`)
       - manager now injects runtime separator into processors via `configure_runtime_context(...)`
-     - next: remaining compatibility fallback wrappers (`filesystem_utils`, `naming wrappers`) and direct-plugin-construction separator fallbacks (low urgency)
+      - `RecordManager.create_record(...)` now forwards injected separator to naming helper
+     - next: remaining compatibility fallback wrappers (`filesystem_utils`, `naming wrappers`) and direct-plugin-construction separator fallbacks (very low urgency)
   3. retry policy unification across resolver/watchdog processing flows
      - shared retry-delay policy seam completed (`retry_planner`, `device_resolver`, `device_watchdog_app`)
      - stability/result explicit outcome semantics completed in resolver + stability tracker

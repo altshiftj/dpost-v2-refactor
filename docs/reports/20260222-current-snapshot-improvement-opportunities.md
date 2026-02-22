@@ -592,3 +592,22 @@ Validation:
 - `python -m pytest -q` -> `747 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `712 passed, 1 skipped, 1 warning`, `100%` total coverage (`5335 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: RecordManager create_record Explicit Separator Forwarding (2026-02-22)
+
+Intended action:
+- Remove one remaining active-path naming wrapper fallback by forwarding
+  `RecordManager`'s injected separator into `generate_record_id(...)` during
+  record creation.
+
+Observed outcome:
+- `src/dpost/application/records/record_manager.py`
+  - `create_record(...)` now passes `id_separator=self._id_separator` to
+    `generate_record_id(...)`
+- `tests/unit/application/records/test_record_manager.py`
+  - added focused forwarding assertion to lock the new behavior
+
+Validation:
+- `python -m pytest -q` -> `748 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `713 passed, 1 skipped, 1 warning`, `100%` total coverage (`5335 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

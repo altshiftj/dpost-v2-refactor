@@ -41,6 +41,27 @@ def test_create_record_generates_proper_id_and_sample(record_manager):
     assert record.identifier in record_manager.get_all_records()
 
 
+def test_create_record_forwards_explicit_separator_to_generate_record_id(fake_sync) -> None:
+    """Record creation should forward constructor separator to naming helper."""
+    with patch(
+        "dpost.application.records.record_manager.load_persisted_records",
+        return_value={},
+    ):
+        manager = RecordManager(sync_manager=fake_sync, id_separator="__")
+
+    with patch(
+        "dpost.application.records.record_manager.generate_record_id",
+        return_value="dev__usr__ipat__sample",
+    ) as mock_generate:
+        manager.create_record("usr__ipat__sample")
+
+    mock_generate.assert_called_once_with(
+        "usr__ipat__sample",
+        dev_kadi_record_id=None,
+        id_separator="__",
+    )
+
+
 def test_add_item_to_record_saves_it(tmp_path, record_manager):
     file_path = tmp_path / "file.tif"
     file_path.write_text("fake content")
