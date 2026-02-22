@@ -31,7 +31,9 @@ behavior regressions are most costly (`file_process_manager`, `stability_tracker
       Progress: candidate metadata, force-path sync rules, and rename retry
       policy are extracted; route-context and failure classification seams are
       extracted; failure outcome construction vs emission stages are now split;
-      remaining work is injectable emission sink/collaborator separation.
+      injectable failure emission sink/collaborator is completed; remaining
+      work is optional follow-on extraction for other side-effect-heavy branches
+      (e.g., post-persist immediate-sync error reporting).
 - [ ] Extract time-based decision helpers from `stability_tracker` into small,
       side-effect-free units.
       Progress: timing/config resolution moved to `stability_timing_policy.py`;
@@ -92,7 +94,7 @@ How it was done:
 - Built from iterative red/green coverage runs during 2026-02-21 autonomous TDD sessions.
 - Derived priorities from latest full coverage snapshot:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `668 passed, 1 skipped, 1 warning, total 100% (5113 stmts, 0 miss)`.
+  - `670 passed, 1 skipped, 1 warning, total 100% (5129 stmts, 0 miss)`.
 - Priorities now focus on refactor leverage and dependency cleanup rather than
   raw coverage gaps.
 - Test naming hygiene now includes automated import-collision detection via

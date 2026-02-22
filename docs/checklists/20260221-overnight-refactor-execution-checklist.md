@@ -85,7 +85,7 @@ How it was done:
 - [x] Remaining backlog prioritized for next run.
 - [x] Final checkpoint reached:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-      -> `668 passed, 1 skipped, 1 warning`, `100%` (`5113 stmts, 0 miss`)
+      -> `670 passed, 1 skipped, 1 warning`, `100%` (`5129 stmts, 0 miss`)
 - [x] Final residual in `file_process_manager` classified and documented via
       explicit `# pragma: no cover` defensive exhaustiveness guard rationale.
 - [x] Post-coverage refactor slices (`stability_timing_policy`, `failure_outcome_policy`)
@@ -106,3 +106,6 @@ How it was done:
 - [x] Further decomposed `file_process_manager` failure handling into explicit
       outcome-construction and side-effect-emission stages with focused seam
       test and full-checkpoint regression confirmation still at `100%`.
+- [x] Added injectable processing-failure emission sink (`failure_emitter.py`)
+      and migrated failure-path tests to seam-based assertions (revealed and
+      removed post-construction monkeypatch timing assumptions).

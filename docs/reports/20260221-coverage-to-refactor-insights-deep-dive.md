@@ -200,7 +200,7 @@ Action:
 ## Prioritized Refactor Queue
 
 1. `file_process_manager` failure emission boundary refinement
-   (outcome construction vs emission stages now split; next step is sink injection for logging/UI/metrics/rejection queue boundaries).
+   (outcome construction vs emission stages split and sink injection completed; next candidate is post-persist sync-error UI/log boundary extraction).
 2. global config access reduction in deep helper layers (continue after
    `filesystem_utils` explicit-context support).
 3. retry policy unification across resolver/watchdog flows (shared retry-delay

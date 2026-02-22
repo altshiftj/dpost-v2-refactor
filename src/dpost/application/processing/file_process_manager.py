@@ -31,6 +31,10 @@ from dpost.infrastructure.storage.filesystem_utils import (
 )
 from dpost.application.session import SessionManager
 from dpost.application.processing.device_resolver import DeviceResolver
+from dpost.application.processing.failure_emitter import (
+    ProcessingFailureEmissionSink,
+    emit_processing_failure_outcome,
+)
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.candidate_metadata import derive_candidate_metadata
 from dpost.application.processing.failure_outcome_policy import (
@@ -324,6 +328,7 @@ class FileProcessManager:
         config_service: ConfigService | None = None,
         file_processor: FileProcessorABS | None = None,
         immediate_sync: bool = False,
+        failure_emission_sink: ProcessingFailureEmissionSink | None = None,
     ) -> None:
         self.interactions = interactions
         self.session_manager = session_manager
@@ -336,6 +341,9 @@ class FileProcessManager:
         )
         self._rename_service = RenameService(interactions)
         self._rejected_queue: queue.Queue[Tuple[str, str]] = queue.Queue()
+        self._failure_emission_sink = (
+            failure_emission_sink or self._default_failure_emission_sink()
+        )
         self._pipeline = _ProcessingPipeline(self)
         self._immediate_sync = immediate_sync
         self._modified_event_gate = ModifiedEventGate(
@@ -565,6 +573,20 @@ class FileProcessManager:
         logger.warning("Rejected %s: %s", path, reason)
         self._rejected_queue.put((path, reason))
 
+    @staticmethod
+    def _log_processing_failure_exception(path: Path, exc: Exception) -> None:
+        """Log processing failures at exception level with source path context."""
+        logger.exception("Error processing %s: %s", path, exc)
+
+    def _default_failure_emission_sink(self) -> ProcessingFailureEmissionSink:
+        """Build the default sink that applies manager failure side effects."""
+        return ProcessingFailureEmissionSink(
+            log_exception=self._log_processing_failure_exception,
+            move_to_exception=safe_move_to_exception,
+            register_rejection=self._register_rejection,
+            increment_failed_metric=FILES_FAILED.inc,
+        )
+
     def _handle_processing_failure(
         self,
         path: Path,
@@ -592,30 +614,9 @@ class FileProcessManager:
         failure_outcome: ProcessingFailureOutcome,
     ) -> None:
         """Apply logging, file moves, queue registration, and metrics for a failure."""
-        logger.exception("Error processing %s: %s", path, exc)
-        self._emit_processing_failure_moves_stage(failure_outcome)
-        self._emit_processing_failure_rejection_stage(failure_outcome)
-
-    def _emit_processing_failure_moves_stage(
-        self,
-        failure_outcome: ProcessingFailureOutcome,
-    ) -> None:
-        """Move failure artifacts so watch folders do not retain partial inputs."""
-        # Move whichever artefact exists (raw or preprocessed) so nothing lingers in watch folders.
-        for move_target in failure_outcome.move_targets:
-            safe_move_to_exception(
-                move_target.path,
-                move_target.prefix,
-                move_target.extension,
-            )
-
-    def _emit_processing_failure_rejection_stage(
-        self,
-        failure_outcome: ProcessingFailureOutcome,
-    ) -> None:
-        """Register rejection payload and increment failure metrics."""
-        self._register_rejection(
-            failure_outcome.rejection_path,
-            failure_outcome.rejection_reason,
+        emit_processing_failure_outcome(
+            path,
+            exc,
+            failure_outcome,
+            self._failure_emission_sink,
         )
-        FILES_FAILED.inc()

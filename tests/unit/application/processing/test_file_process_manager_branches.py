@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, cast
 from unittest.mock import MagicMock
 
 import pytest
 
 from dpost.application.interactions import DialogPrompts, ErrorMessages
 from dpost.application.processing.device_resolver import DeviceResolution
+from dpost.application.processing.failure_emitter import ProcessingFailureEmissionSink
 from dpost.application.processing.failure_outcome_policy import (
     FailureMoveTarget,
     ProcessingFailureOutcome,
@@ -641,7 +642,6 @@ def test_handle_processing_failure_moves_preprocessed_artifact_when_distinct(
     manager_bundle,
     config_service,
     tmp_settings,
-    monkeypatch,
 ) -> None:
     """Move both effective and preprocessed paths when they differ on failure."""
     manager, _ = manager_bundle
@@ -659,11 +659,13 @@ def test_handle_processing_failure_moves_preprocessed_artifact_when_distinct(
         preprocessed_path=prepared,
     )
     moves: list[tuple[str, str | None, str | None]] = []
-    monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.safe_move_to_exception",
-        lambda path, prefix=None, extension=None: moves.append(
+    manager._failure_emission_sink = ProcessingFailureEmissionSink(
+        log_exception=lambda *_args, **_kwargs: None,
+        move_to_exception=lambda path, prefix, extension: moves.append(
             (path, prefix, extension)
         ),
+        register_rejection=lambda *_args, **_kwargs: None,
+        increment_failed_metric=lambda: None,
     )
 
     manager._handle_processing_failure(src, candidate, RuntimeError("boom"))
@@ -676,9 +678,8 @@ def test_handle_processing_failure_moves_preprocessed_artifact_when_distinct(
 
 def test_emit_processing_failure_outcome_stage_emits_log_moves_rejection_and_metric(
     manager_bundle,
-    monkeypatch,
 ) -> None:
-    """Apply failure side effects through the explicit emission seam."""
+    """Delegate failure side effects through the injected emission sink."""
     manager, _ = manager_bundle
     src = Path("C:/watch/failure.txt")
     exc = RuntimeError("boom")
@@ -693,36 +694,44 @@ def test_emit_processing_failure_outcome_stage_emits_log_moves_rejection_and_met
         rejection_path="C:/watch/failure.txt",
         rejection_reason="boom",
     )
-    logger_mock = MagicMock()
-    metric_mock = MagicMock()
-    moves: list[tuple[str, str | None, str | None]] = []
-    rejections: list[tuple[str, str]] = []
-    monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.logger",
-        logger_mock,
-    )
-    monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.FILES_FAILED",
-        metric_mock,
-    )
-    monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.safe_move_to_exception",
-        lambda path, prefix=None, extension=None: moves.append(
-            (path, prefix, extension)
+    captured: dict[str, object] = {}
+    manager._failure_emission_sink = ProcessingFailureEmissionSink(
+        log_exception=lambda logged_path, logged_exc: captured.__setitem__(
+            "log", (logged_path, logged_exc)
         ),
-    )
-    monkeypatch.setattr(
-        manager,
-        "_register_rejection",
-        lambda path, reason: rejections.append((path, reason)),
+        move_to_exception=lambda path, prefix, extension: cast(
+            list[tuple[str, str, str]],
+            captured.setdefault("moves", []),
+        ).append((path, prefix, extension)),
+        register_rejection=lambda path, reason: captured.__setitem__(
+            "rejection", (path, reason)
+        ),
+        increment_failed_metric=lambda: captured.__setitem__("metric_called", True),
     )
 
     manager._emit_processing_failure_outcome_stage(src, exc, outcome)
 
+    assert captured["log"] == (src, exc)
+    assert captured["moves"] == [("C:/watch/failure.txt", "failure", ".txt")]
+    assert captured["rejection"] == ("C:/watch/failure.txt", "boom")
+    assert captured["metric_called"] is True
+
+
+def test_log_processing_failure_exception_logs_with_path_and_exception(
+    monkeypatch,
+) -> None:
+    """Format failure exception logs with path and exception context."""
+    logger_mock = MagicMock()
+    src = Path("C:/watch/failure.txt")
+    exc = RuntimeError("boom")
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.logger",
+        logger_mock,
+    )
+
+    FileProcessManager._log_processing_failure_exception(src, exc)
+
     logger_mock.exception.assert_called_once_with("Error processing %s: %s", src, exc)
-    assert moves == [("C:/watch/failure.txt", "failure", ".txt")]
-    assert rejections == [("C:/watch/failure.txt", "boom")]
-    metric_mock.inc.assert_called_once_with()
 
 
 def test_init_triggers_startup_sync_when_records_pending(

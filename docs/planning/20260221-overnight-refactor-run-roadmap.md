@@ -231,14 +231,15 @@ unit coverage.
     - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `9 passed`
 - Full checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `668 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5113 stmts, 0 miss`)
+  - `670 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5129 stmts, 0 miss`)
 
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
    - outcome construction vs side-effect emission split completed
-   - next: extract injectable failure emission sink/collaborator for logger/metrics/rejection queue boundaries
+   - injectable failure emission sink/collaborator completed for logger/metrics/rejection queue + move cleanup
+   - next: evaluate post-persist immediate-sync error reporting for similar boundary extraction
 2. deep helper global-config access cleanup (`current()/get_service()` reduction)
    - continue after `filesystem_utils` explicit-context support:
      `application/naming/policy.py` wrapper slice completed

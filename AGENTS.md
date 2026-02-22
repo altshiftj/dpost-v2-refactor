@@ -138,12 +138,13 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `668 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5113 stmts, 0 miss`)
+  - `670 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5129 stmts, 0 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
      - failure outcome construction vs emission split completed
-     - next: isolate failure emission sink dependencies (logger/metrics/UI queue) for collaborator injection
+     - injectable failure emission sink completed (`failure_emitter.py`)
+     - next: evaluate post-persist immediate-sync error reporting for similar sink extraction (UI/log/metrics boundary)
   2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed

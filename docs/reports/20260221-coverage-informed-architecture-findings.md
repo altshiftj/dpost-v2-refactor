@@ -898,3 +898,41 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `668 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5113 stmts, 0 miss`)
+
+### Slice 35: Injectable processing-failure emission sink
+
+- Intended action:
+  - decouple `file_process_manager` failure emission from hard-bound global sinks
+    by introducing an injectable failure-emission sink/collaborator while
+    preserving default runtime behavior
+- Expected outcome:
+  - failure-path tests can assert behavior through injected sink seams instead
+    of monkeypatching globals after manager construction
+  - manager remains behavior-compatible with default logger/move/rejection/metric
+    side effects
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/failure_emitter.py`
+      - `ProcessingFailureEmissionSink`
+      - `emit_processing_failure_outcome(...)`
+    - `tests/unit/application/processing/test_failure_emitter.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - constructor accepts optional `failure_emission_sink`
+      - default sink built via `_default_failure_emission_sink()`
+      - failure emission stage delegates to `emit_processing_failure_outcome(...)`
+      - added `_log_processing_failure_exception(...)` helper
+    - `tests/unit/application/processing/test_file_process_manager.py`
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+      - migrated failure-path assertions to use injected sink seam
+  - refactor insight:
+    - this surfaced brittle tests that monkeypatched `safe_move_to_exception`
+      after manager construction; the sink seam now makes that dependency timing
+      explicit and testable
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/failure_emitter.py src/dpost/application/processing/file_process_manager.py tests/unit/application/processing/test_failure_emitter.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
+    - `python -m pytest -q tests/unit/application/processing/test_failure_emitter.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `38 passed`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `670 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5129 stmts, 0 miss`)

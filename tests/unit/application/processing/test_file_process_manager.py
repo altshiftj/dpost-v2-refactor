@@ -5,6 +5,7 @@ import pytest
 from dpost.application.config import activate_device
 from dpost.application.naming.policy import generate_file_id, generate_record_id
 from dpost.application.processing.file_process_manager import FileProcessManager
+from dpost.application.processing.failure_emitter import ProcessingFailureEmissionSink
 from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
@@ -267,9 +268,13 @@ def test_process_item_preserves_source_extension_on_effective_path_fallback(
     def record_move(path_like: str, prefix: str | None = None, extension: str | None = None):
         moves.append((path_like, prefix or "", extension or ""))
 
-    monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.safe_move_to_exception",
-        record_move,
+    manager._failure_emission_sink = ProcessingFailureEmissionSink(
+        log_exception=lambda *_args, **_kwargs: None,
+        move_to_exception=lambda path, prefix, extension: record_move(
+            path, prefix, extension
+        ),
+        register_rejection=lambda *_args, **_kwargs: None,
+        increment_failed_metric=lambda: None,
     )
 
     with pytest.raises(RuntimeError):
