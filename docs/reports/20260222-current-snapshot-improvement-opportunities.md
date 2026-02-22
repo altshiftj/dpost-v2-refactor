@@ -408,3 +408,28 @@ Validation:
 - `python -m pytest -q` -> `732 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `697 passed, 1 skipped, 1 warning`, `100%` total coverage (`5317 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: FileProcessManager Persistence Context Explicit Forwarding (2026-02-22)
+
+Intended action:
+- Remove hidden naming/storage context reads from the record-persistence hot
+  path by explicitly forwarding config-derived context into naming/storage
+  helpers in `FileProcessManager`.
+
+Observed outcome:
+- `src/dpost/application/processing/file_process_manager.py`
+  - `_resolve_record_persistence_context_stage(...)` now forwards explicit:
+    - `id_separator`
+    - `dest_dir`
+    - `current_device`
+    into `get_record_path(...)`
+  - also forwards explicit `id_separator` and `current_device` into
+    `generate_file_id(...)`
+- Added focused branch test in
+  `tests/unit/application/processing/test_file_process_manager_branches.py`
+  asserting explicit kwarg forwarding to both helpers.
+
+Validation:
+- `python -m pytest -q` -> `733 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `698 passed, 1 skipped, 1 warning`, `100%` total coverage (`5318 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

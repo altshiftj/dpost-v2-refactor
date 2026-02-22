@@ -580,6 +580,71 @@ def test_resolve_record_processor_stage_raises_without_processor(
     assert moved == [str(src)]
 
 
+def test_resolve_record_persistence_context_stage_passes_explicit_naming_and_storage_context(
+    manager_bundle,
+    config_service,
+    monkeypatch,
+) -> None:
+    """Avoid hidden globals by forwarding config-derived naming/storage context."""
+    manager, _ = manager_bundle
+    device = config_service.devices[0]
+    processor = DummyProcessor()
+    record = MagicMock()
+    captured: dict[str, object] = {}
+
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.get_or_create_record",
+        lambda _records, _record, _prefix, _device: record,
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.apply_device_defaults",
+        lambda *_args, **_kwargs: None,
+    )
+
+    def _fake_get_record_path(prefix, device_abbr=None, **kwargs):
+        captured["record_path_call"] = (prefix, device_abbr, kwargs)
+        return "C:/records/path"
+
+    def _fake_generate_file_id(prefix, device_abbr=None, **kwargs):
+        captured["file_id_call"] = (prefix, device_abbr, kwargs)
+        return "FILE-ID"
+
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.get_record_path",
+        _fake_get_record_path,
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.generate_file_id",
+        _fake_generate_file_id,
+    )
+
+    resolved_record, resolved_processor, record_path, file_id = (
+        manager._resolve_record_persistence_context_stage(
+            record=None,
+            filename_prefix="abc-ipat-sample",
+            device=device,
+            processor=processor,
+        )
+    )
+
+    assert resolved_record is record
+    assert resolved_processor is processor
+    assert record_path == "C:/records/path"
+    assert file_id == "FILE-ID"
+
+    record_prefix, record_device_abbr, record_kwargs = captured["record_path_call"]
+    file_prefix, file_device_abbr, file_kwargs = captured["file_id_call"]
+    assert record_prefix == "abc-ipat-sample"
+    assert file_prefix == "abc-ipat-sample"
+    assert record_device_abbr == device.metadata.device_abbr
+    assert file_device_abbr == device.metadata.device_abbr
+    assert record_kwargs["id_separator"] == config_service.current.id_separator
+    assert record_kwargs["dest_dir"] == config_service.current.paths.dest_dir
+    assert record_kwargs["current_device"] is device
+    assert file_kwargs["id_separator"] == config_service.current.id_separator
+    assert file_kwargs["current_device"] is device
+
+
 def test_post_persist_side_effects_handles_force_path_variants(
     manager_bundle,
     tmp_path: Path,

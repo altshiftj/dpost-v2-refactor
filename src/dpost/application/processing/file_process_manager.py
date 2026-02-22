@@ -485,8 +485,20 @@ class FileProcessManager:
         )
         device_abbr = resolved_device.metadata.device_abbr if resolved_device else None
         apply_device_defaults(resolved_record, resolved_device)
-        record_path = get_record_path(filename_prefix, device_abbr)
-        file_id = generate_file_id(filename_prefix, device_abbr)
+        active_config = self.config_service.current
+        record_path = get_record_path(
+            filename_prefix,
+            device_abbr,
+            id_separator=active_config.id_separator,
+            dest_dir=active_config.paths.dest_dir,
+            current_device=resolved_device,
+        )
+        file_id = generate_file_id(
+            filename_prefix,
+            device_abbr,
+            id_separator=active_config.id_separator,
+            current_device=resolved_device,
+        )
         return resolved_record, processor, record_path, file_id
 
     def _process_record_artifact_stage(
