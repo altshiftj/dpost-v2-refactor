@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import importlib
+import threading
+import time
 from types import ModuleType, SimpleNamespace
 
 import pytest
@@ -149,3 +151,68 @@ def test_get_plugin_loader_initializes_singleton_once(
 
     assert first is second
     assert created == [{"load_entrypoints": False, "load_builtins": False}]
+
+
+def test_loader_uses_reentrant_lock_for_nested_discovery_operations() -> None:
+    """Nested loader operations should re-enter the same lock without blocking."""
+
+    class _TrackingRLock:
+        def __init__(self) -> None:
+            self.depth = 0
+            self.max_depth = 0
+            self.enter_count = 0
+
+        def __enter__(self):
+            self.depth += 1
+            self.enter_count += 1
+            self.max_depth = max(self.max_depth, self.depth)
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            _ = (exc_type, exc, tb)
+            self.depth -= 1
+
+    loader = PluginLoader(
+        load_entrypoints=False,
+        load_builtins=False,
+        iter_entry_points_fn=lambda _group: [],
+    )
+    tracking_lock = _TrackingRLock()
+    loader._lock = tracking_lock
+
+    loader._load_entrypoints(DEVICE_ENTRYPOINT_GROUP)
+
+    assert tracking_lock.depth == 0
+    assert tracking_lock.enter_count >= 2
+    assert tracking_lock.max_depth >= 2
+
+
+def test_get_plugin_loader_initialization_is_serialized_under_thread_race(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Concurrent singleton access should not construct multiple loaders."""
+    created: list[dict[str, object]] = []
+    results: list[object] = []
+    start_barrier = threading.Barrier(4)
+
+    class _LoaderStub:
+        def __init__(self, **kwargs) -> None:
+            created.append(kwargs)
+            time.sleep(0.02)
+
+    def _worker() -> None:
+        start_barrier.wait()
+        results.append(plugin_system.get_plugin_loader())
+
+    monkeypatch.setattr(plugin_system, "_PLUGIN_LOADER_SINGLETON", None)
+    monkeypatch.setattr(plugin_system, "PluginLoader", _LoaderStub)
+
+    threads = [threading.Thread(target=_worker) for _ in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert len(created) == 1
+    assert len(results) == 4
+    assert all(result is results[0] for result in results)

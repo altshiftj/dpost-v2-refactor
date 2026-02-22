@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pkgutil
 import sys
+import threading
 from dataclasses import dataclass
 from importlib import import_module
 from importlib.metadata import entry_points
@@ -21,6 +22,7 @@ DEVICE_ENTRYPOINT_GROUP = "dpost.device_plugins"
 PC_ENTRYPOINT_GROUP = "dpost.pc_plugins"
 
 _PLUGIN_LOADER_SINGLETON: PluginLoader | None = None
+_PLUGIN_LOADER_SINGLETON_LOCK = threading.Lock()
 
 hookspec = pluggy.HookspecMarker(_PLUGIN_NAMESPACE)
 hookimpl = pluggy.HookimplMarker(_PLUGIN_NAMESPACE)
@@ -132,6 +134,7 @@ class PluginLoader:
         self._module_importer = module_importer or import_module
         self._iter_modules = iter_modules_fn or pkgutil.iter_modules
         self._iter_entry_points = iter_entry_points_fn or _iter_entry_points
+        self._lock = threading.RLock()
         self._pm = pluggy.PluginManager(_PLUGIN_NAMESPACE)
         self._pm.add_hookspecs(HookSpecifications)
         self._device_registry = DevicePluginRegistry()
@@ -145,138 +148,127 @@ class PluginLoader:
         self.refresh()
 
     def refresh(self) -> None:
-        self._device_registry.clear()
-        self._pc_registry.clear()
-        self._invoke_registration_hooks(devices=True, pcs=True)
+        with self._lock:
+            self._device_registry.clear()
+            self._pc_registry.clear()
+            self._invoke_registration_hooks(devices=True, pcs=True)
 
     def refresh_devices(self) -> None:
-        self._device_registry.clear()
-        self._invoke_registration_hooks(devices=True, pcs=False)
+        with self._lock:
+            self._device_registry.clear()
+            self._invoke_registration_hooks(devices=True, pcs=False)
 
     def refresh_pcs(self) -> None:
-        self._pc_registry.clear()
-        self._invoke_registration_hooks(devices=False, pcs=True)
+        with self._lock:
+            self._pc_registry.clear()
+            self._invoke_registration_hooks(devices=False, pcs=True)
 
     def available_device_plugins(self) -> Tuple[str, ...]:
-        return self._device_registry.names()
+        with self._lock:
+            return self._device_registry.names()
 
     def available_pc_plugins(self) -> Tuple[str, ...]:
-        return self._pc_registry.names()
+        with self._lock:
+            return self._pc_registry.names()
 
     def load_device(self, name: str) -> DevicePlugin:
-        try:
-            return self._device_registry.create(name)
-        except RuntimeError:
-            if self._lazy_load_builtin(DEVICE_ENTRYPOINT_GROUP, name):
+        with self._lock:
+            try:
                 return self._device_registry.create(name)
-            if self._lazy_load_entrypoint(DEVICE_ENTRYPOINT_GROUP, name):
+            except RuntimeError:
+                if self._lazy_load_builtin(DEVICE_ENTRYPOINT_GROUP, name):
+                    return self._device_registry.create(name)
+                if self._lazy_load_entrypoint(DEVICE_ENTRYPOINT_GROUP, name):
+                    return self._device_registry.create(name)
+                if not self._device_registry.names():
+                    self._load_builtin_plugins()
                 return self._device_registry.create(name)
-            if not self._device_registry.names():
-                self._load_builtin_plugins()
-            return self._device_registry.create(name)
 
     def load_pc(self, name: str) -> PCPlugin:
-        try:
-            return self._pc_registry.create(name)
-        except RuntimeError:
-            if self._lazy_load_builtin(PC_ENTRYPOINT_GROUP, name):
+        with self._lock:
+            try:
                 return self._pc_registry.create(name)
-            if self._lazy_load_entrypoint(PC_ENTRYPOINT_GROUP, name):
+            except RuntimeError:
+                if self._lazy_load_builtin(PC_ENTRYPOINT_GROUP, name):
+                    return self._pc_registry.create(name)
+                if self._lazy_load_entrypoint(PC_ENTRYPOINT_GROUP, name):
+                    return self._pc_registry.create(name)
+                if not self._pc_registry.names():
+                    self._load_builtin_plugins()
                 return self._pc_registry.create(name)
-            if not self._pc_registry.names():
-                self._load_builtin_plugins()
-            return self._pc_registry.create(name)
 
     def register_plugin(self, plugin: object, name: str | None = None) -> None:
-        try:
-            self._pm.register(plugin, name=name)
-        except pluggy.PluginValidationError as exc:
-            raise RuntimeError(f"Plugin {plugin!r} failed validation: {exc}") from exc
-        self.refresh()
+        with self._lock:
+            try:
+                self._pm.register(plugin, name=name)
+            except pluggy.PluginValidationError as exc:
+                raise RuntimeError(f"Plugin {plugin!r} failed validation: {exc}") from exc
+            self.refresh()
 
     def _invoke_registration_hooks(self, *, devices: bool, pcs: bool) -> None:
-        if devices:
-            self._pm.hook.register_device_plugins(registry=self._device_registry)
-        if pcs:
-            self._pm.hook.register_pc_plugins(registry=self._pc_registry)
+        with self._lock:
+            if devices:
+                self._pm.hook.register_device_plugins(registry=self._device_registry)
+            if pcs:
+                self._pm.hook.register_pc_plugins(registry=self._pc_registry)
 
     def _load_entrypoints(self, group: str) -> None:
-        for entry_point in self._iter_entry_points(group):
-            module_name, _, _ = entry_point.value.partition(":")
-            self._register_module(
-                module_name=module_name,
-                registration_name=f"{group}:{entry_point.name}",
-                log_context=f"entry point '{entry_point.name}'",
-            )
-        self.refresh()
+        with self._lock:
+            for entry_point in self._iter_entry_points(group):
+                module_name, _, _ = entry_point.value.partition(":")
+                self._register_module(
+                    module_name=module_name,
+                    registration_name=f"{group}:{entry_point.name}",
+                    log_context=f"entry point '{entry_point.name}'",
+                )
+            self.refresh()
 
     def _load_builtin_plugins(self) -> None:
-        packages = (
-            ("dpost.device_plugins", DEVICE_ENTRYPOINT_GROUP),
-            ("dpost.pc_plugins", PC_ENTRYPOINT_GROUP),
-        )
-        for package_name, group in packages:
-            try:
-                package = self._module_importer(package_name)
-            except Exception as exc:  # noqa: BLE001
-                logger.error(
-                    "Failed to import plugin package '%s': %s", package_name, exc
-                )
-                continue
-            package_path = getattr(package, "__path__", None)
-            if not package_path:
-                continue
-            for module_info in self._iter_modules(
-                package_path, prefix=f"{package_name}."
-            ):
-                if not module_info.ispkg:
+        with self._lock:
+            packages = (
+                ("dpost.device_plugins", DEVICE_ENTRYPOINT_GROUP),
+                ("dpost.pc_plugins", PC_ENTRYPOINT_GROUP),
+            )
+            for package_name, group in packages:
+                try:
+                    package = self._module_importer(package_name)
+                except Exception as exc:  # noqa: BLE001
+                    logger.error(
+                        "Failed to import plugin package '%s': %s", package_name, exc
+                    )
                     continue
-                plugin_module = f"{module_info.name}.plugin"
-                self._register_module(
-                    module_name=plugin_module,
-                    registration_name=f"builtin:{group}:{module_info.name}",
-                    log_context=f"builtin plugin '{module_info.name}'",
-                )
-        self.refresh()
+                package_path = getattr(package, "__path__", None)
+                if not package_path:
+                    continue
+                for module_info in self._iter_modules(
+                    package_path, prefix=f"{package_name}."
+                ):
+                    if not module_info.ispkg:
+                        continue
+                    plugin_module = f"{module_info.name}.plugin"
+                    self._register_module(
+                        module_name=plugin_module,
+                        registration_name=f"builtin:{group}:{module_info.name}",
+                        log_context=f"builtin plugin '{module_info.name}'",
+                    )
+            self.refresh()
 
     def _lazy_load_builtin(self, group: str, name: str) -> bool:
-        if group == DEVICE_ENTRYPOINT_GROUP:
-            module_name = f"dpost.device_plugins.{name}.plugin"
-        elif group == PC_ENTRYPOINT_GROUP:
-            module_name = f"dpost.pc_plugins.{name}.plugin"
-        else:
-            return False
-
-        if module_name in self._registered_modules:
-            return False
-
-        self._register_module(
-            module_name=module_name,
-            registration_name=f"lazy:{group}:{name}",
-            log_context=f"lazy {group} plugin '{name}'",
-        )
-        if module_name in self._registered_modules:
+        with self._lock:
             if group == DEVICE_ENTRYPOINT_GROUP:
-                self.refresh_devices()
+                module_name = f"dpost.device_plugins.{name}.plugin"
+            elif group == PC_ENTRYPOINT_GROUP:
+                module_name = f"dpost.pc_plugins.{name}.plugin"
             else:
-                self.refresh_pcs()
-            logger.debug(
-                "Lazily loaded %s plugin '%s'",
-                "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
-                name,
-            )
-            return True
-        return False
+                return False
 
-    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
-        for entry_point in self._iter_entry_points(group):
-            if entry_point.name != name:
-                continue
-            module_name, _, _ = entry_point.value.partition(":")
+            if module_name in self._registered_modules:
+                return False
+
             self._register_module(
                 module_name=module_name,
-                registration_name=f"entrypoint:{group}:{name}",
-                log_context=f"entry point '{name}'",
+                registration_name=f"lazy:{group}:{name}",
+                log_context=f"lazy {group} plugin '{name}'",
             )
             if module_name in self._registered_modules:
                 if group == DEVICE_ENTRYPOINT_GROUP:
@@ -284,35 +276,62 @@ class PluginLoader:
                 else:
                     self.refresh_pcs()
                 logger.debug(
-                    "Lazily loaded %s plugin '%s' via entry point",
+                    "Lazily loaded %s plugin '%s'",
                     "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
                     name,
                 )
                 return True
-        return False
+            return False
+
+    def _lazy_load_entrypoint(self, group: str, name: str) -> bool:
+        with self._lock:
+            for entry_point in self._iter_entry_points(group):
+                if entry_point.name != name:
+                    continue
+                module_name, _, _ = entry_point.value.partition(":")
+                self._register_module(
+                    module_name=module_name,
+                    registration_name=f"entrypoint:{group}:{name}",
+                    log_context=f"entry point '{name}'",
+                )
+                if module_name in self._registered_modules:
+                    if group == DEVICE_ENTRYPOINT_GROUP:
+                        self.refresh_devices()
+                    else:
+                        self.refresh_pcs()
+                    logger.debug(
+                        "Lazily loaded %s plugin '%s' via entry point",
+                        "device" if group == DEVICE_ENTRYPOINT_GROUP else "pc",
+                        name,
+                    )
+                    return True
+            return False
 
     def _register_module(
         self, module_name: str, registration_name: str, log_context: str
     ) -> None:
-        if module_name in self._registered_modules:
-            return
-        try:
-            module = self._module_importer(module_name)
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Failed to import %s (%s): %s", module_name, log_context, exc)
-            return
-        if module in self._pm.get_plugins():
+        with self._lock:
+            if module_name in self._registered_modules:
+                return
+            try:
+                module = self._module_importer(module_name)
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Failed to import %s (%s): %s", module_name, log_context, exc)
+                return
+            if module in self._pm.get_plugins():
+                self._registered_modules.add(module_name)
+                return
+            try:
+                self._pm.register(module, name=f"dpost:{registration_name}")
+            except ValueError as exc:
+                logger.debug(
+                    "Skipping duplicate registration for %s: %s", log_context, exc
+                )
+                return
+            except pluggy.PluginValidationError as exc:
+                logger.error("Plugin registration failed for %s: %s", log_context, exc)
+                return
             self._registered_modules.add(module_name)
-            return
-        try:
-            self._pm.register(module, name=f"dpost:{registration_name}")
-        except ValueError as exc:
-            logger.debug("Skipping duplicate registration for %s: %s", log_context, exc)
-            return
-        except pluggy.PluginValidationError as exc:
-            logger.error("Plugin registration failed for %s: %s", log_context, exc)
-            return
-        self._registered_modules.add(module_name)
 
 
 def _iter_entry_points(group: str) -> Iterable:
@@ -327,10 +346,12 @@ def get_plugin_loader() -> PluginLoader:
     """Return the singleton plugin loader used by dpost plugin boundaries."""
     global _PLUGIN_LOADER_SINGLETON
     if _PLUGIN_LOADER_SINGLETON is None:
-        _PLUGIN_LOADER_SINGLETON = PluginLoader(
-            load_entrypoints=False,
-            load_builtins=False,
-        )
+        with _PLUGIN_LOADER_SINGLETON_LOCK:
+            if _PLUGIN_LOADER_SINGLETON is None:
+                _PLUGIN_LOADER_SINGLETON = PluginLoader(
+                    load_entrypoints=False,
+                    load_builtins=False,
+                )
     return _PLUGIN_LOADER_SINGLETON
 
 

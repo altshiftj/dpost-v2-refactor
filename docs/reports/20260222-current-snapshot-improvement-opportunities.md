@@ -215,3 +215,30 @@ Validation:
 - `python -m pytest -q tests/unit/infrastructure/test_logging.py` -> `5 passed`
 - `python -m pytest -q` -> `715 passed, 1 skipped, 1 warning`
 - `python -m ruff check .` -> pass
+
+## Progress Update: Plugin Loader Reentrancy / Mutability Hardening (Completed Slice)
+
+Intended action:
+- Reduce race windows and reentrancy hazards in `PluginLoader` lazy-loading and
+  registry refresh flows without changing plugin discovery semantics.
+
+Observed outcome:
+- Added an internal `threading.RLock` to `PluginLoader` and wrapped mutable
+  operations, including:
+  - refresh methods (`refresh`, `refresh_devices`, `refresh_pcs`)
+  - lazy-load/discovery paths (`_load_entrypoints`, `_load_builtin_plugins`,
+    `_lazy_load_builtin`, `_lazy_load_entrypoint`)
+  - plugin registration (`register_plugin`, `_register_module`)
+  - plugin-availability reads (`available_device_plugins`,
+    `available_pc_plugins`) for consistent snapshots during refreshes
+- Hardened singleton initialization in `get_plugin_loader()` with a module-level
+  lock (double-checked locking pattern) to avoid duplicate loader construction
+  under concurrent access.
+- Added unit tests covering:
+  - nested/reentrant lock acquisition during loader discovery operations
+  - singleton initialization serialization under a thread race
+
+Validation:
+- `python -m pytest -q tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader_residual_branches.py tests/unit/plugins/system/test_no_double_logging.py` -> `26 passed`
+- `python -m pytest -q` -> `717 passed, 1 skipped, 1 warning`
+- `python -m ruff check .` -> pass
