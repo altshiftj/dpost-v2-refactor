@@ -24,7 +24,6 @@ from dpost.domain.processing.models import (
     RouteContext,
     RoutingDecision,
 )
-from dpost.domain.processing.routing import determine_routing_decision
 from dpost.infrastructure.logging import setup_logger
 from dpost.infrastructure.storage.filesystem_utils import (
     get_record_path,
@@ -35,7 +34,7 @@ from dpost.application.processing.device_resolver import DeviceResolver
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.candidate_metadata import derive_candidate_metadata
 from dpost.application.processing.failure_outcome_policy import (
-    build_failure_move_targets,
+    build_processing_failure_outcome,
 )
 from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
@@ -49,6 +48,7 @@ from dpost.application.processing.force_path_policy import (
 from dpost.application.processing.modified_event_gate import ModifiedEventGate
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_flow import handle_unappendable_record
+from dpost.application.processing.route_context_policy import build_route_context
 from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
 from dpost.application.processing.record_utils import (
     apply_device_defaults,
@@ -204,14 +204,12 @@ class _ProcessingPipeline:
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
             manager.records, candidate.prefix, candidate.device
         )
-        decision = determine_routing_decision(
+        return build_route_context(
+            candidate,
+            sanitized_prefix,
             record,
             is_valid_format,
-            candidate.prefix,
-            candidate.extension,
-            candidate.processor,
         )
-        return RouteContext(candidate, sanitized_prefix, record, decision)
 
     def _route_decision_stage(self, candidate: ProcessingCandidate) -> RouteContext:
         """Resolve routing decision context for a candidate artifact."""
@@ -573,12 +571,16 @@ class FileProcessManager:
         exc: Exception,
     ) -> None:
         logger.exception("Error processing %s: %s", path, exc)
+        failure_outcome = build_processing_failure_outcome(path, candidate, exc)
         # Move whichever artefact exists (raw or preprocessed) so nothing lingers in watch folders.
-        for move_target in build_failure_move_targets(path, candidate):
+        for move_target in failure_outcome.move_targets:
             safe_move_to_exception(
                 move_target.path,
                 move_target.prefix,
                 move_target.extension,
             )
-        self._register_rejection(str(path), str(exc))
+        self._register_rejection(
+            failure_outcome.rejection_path,
+            failure_outcome.rejection_reason,
+        )
         FILES_FAILED.inc()

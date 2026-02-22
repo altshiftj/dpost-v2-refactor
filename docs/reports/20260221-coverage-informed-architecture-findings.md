@@ -669,3 +669,53 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `650 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5061 stmts, 0 miss`)
+
+### Slice 26: File process manager route-context policy seam extraction
+
+- Intended action:
+  - extract route-context construction from `_build_route_context` into a pure
+    helper to isolate routing decision delegation from record lookup side effects
+- Expected outcome:
+  - keep `file_process_manager` orchestration thinner while preserving routing behavior
+  - add direct tests for route-context construction without touching record manager
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/route_context_policy.py`
+    - `tests/unit/application/processing/test_route_context_policy.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - `_build_route_context()` now performs record lookup then delegates to
+        `build_route_context(...)`
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/route_context_policy.py tests/unit/application/processing/test_route_context_policy.py` -> pass
+    - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.route_context_policy --cov-report=term-missing -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_route_context_policy.py`
+      - `file_process_manager.py` -> `100%`
+      - `route_context_policy.py` -> `100%`
+
+### Slice 27: File process manager failure-outcome payload classification seam
+
+- Intended action:
+  - extend `failure_outcome_policy` beyond move-target selection to also produce
+    rejection payload metadata so `_handle_processing_failure` emits side effects
+    from a single pure outcome object
+- Expected outcome:
+  - clearer separation between failure classification and side-effect emission
+  - direct tests for failure rejection payload construction
+- Observed outcome:
+  - updated:
+    - `src/dpost/application/processing/failure_outcome_policy.py`
+      - added `ProcessingFailureOutcome`
+      - added `build_processing_failure_outcome(...)`
+    - `src/dpost/application/processing/file_process_manager.py`
+      - `_handle_processing_failure()` now consumes `ProcessingFailureOutcome`
+    - `tests/unit/application/processing/test_failure_outcome_policy.py`
+      - added rejection-payload coverage
+  - validation:
+    - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.failure_outcome_policy --cov=dpost.application.processing.route_context_policy --cov-report=term-missing -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_failure_outcome_policy.py tests/unit/application/processing/test_route_context_policy.py`
+      - `file_process_manager.py` -> `100%`
+      - `failure_outcome_policy.py` -> `100%`
+      - `route_context_policy.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `652 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5076 stmts, 0 miss`)

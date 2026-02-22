@@ -6,6 +6,7 @@ from pathlib import Path
 
 from dpost.application.processing.failure_outcome_policy import (
     build_failure_move_targets,
+    build_processing_failure_outcome,
 )
 from dpost.domain.processing.models import ProcessingCandidate
 from tests.helpers.fake_processor import DummyProcessor
@@ -75,3 +76,27 @@ def test_build_failure_move_targets_skips_duplicate_preprocessed_path(config_ser
     targets = build_failure_move_targets(source, candidate)
 
     assert [target.path for target in targets] == [str(effective)]
+
+
+def test_build_processing_failure_outcome_wraps_move_targets_and_rejection(
+    config_service,
+) -> None:
+    """Failure outcome should combine cleanup targets with rejection payload text."""
+    source = Path("C:/watch/raw.txt")
+    effective = Path("C:/watch/staged/raw.txt")
+    candidate = _candidate(
+        source=source,
+        effective_path=effective,
+        preprocessed_path=None,
+        device=config_service.devices[0],
+    )
+
+    outcome = build_processing_failure_outcome(
+        source,
+        candidate,
+        RuntimeError("boom"),
+    )
+
+    assert outcome.rejection_path == str(source)
+    assert outcome.rejection_reason == "boom"
+    assert [target.path for target in outcome.move_targets] == [str(effective)]

@@ -17,6 +17,15 @@ class FailureMoveTarget:
     extension: str
 
 
+@dataclass(frozen=True)
+class ProcessingFailureOutcome:
+    """Pure failure-classification output consumed by side-effect handlers."""
+
+    move_targets: tuple[FailureMoveTarget, ...]
+    rejection_path: str
+    rejection_reason: str
+
+
 def build_failure_move_targets(
     path: Path,
     candidate: ProcessingCandidate | None,
@@ -52,3 +61,16 @@ def build_failure_move_targets(
         )
 
     return tuple(targets)
+
+
+def build_processing_failure_outcome(
+    path: Path,
+    candidate: ProcessingCandidate | None,
+    exc: Exception,
+) -> ProcessingFailureOutcome:
+    """Build move targets and rejection payload for a processing failure."""
+    return ProcessingFailureOutcome(
+        move_targets=build_failure_move_targets(path, candidate),
+        rejection_path=str(path),
+        rejection_reason=str(exc),
+    )

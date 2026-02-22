@@ -159,12 +159,32 @@ unit coverage.
   - `650 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5061 stmts, 0 miss`)
 
+### Checkpoint I: File-process manager route/failure-outcome seam continuation
+
+- Completed slices:
+  - added:
+    - `src/dpost/application/processing/route_context_policy.py`
+    - `tests/unit/application/processing/test_route_context_policy.py`
+  - updated:
+    - `src/dpost/application/processing/failure_outcome_policy.py`
+    - `src/dpost/application/processing/file_process_manager.py`
+    - `tests/unit/application/processing/test_failure_outcome_policy.py`
+- Validation:
+  - targeted module coverage results:
+    - `file_process_manager.py` -> `100%`
+    - `route_context_policy.py` -> `100%`
+    - `failure_outcome_policy.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `652 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5076 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
-   - extract remaining route-context policy seam
-   - continue separating failure handling side-effect emission from outcome construction
+   - continue separating failure handling side-effect emission (UI/metrics/logging) from outcome construction
 2. deep helper global-config access cleanup (`current()/get_service()` reduction)
+   - prioritize `infrastructure/storage/filesystem_utils.py`
 3. shared retry policy unification across resolver/watchdog flows
 4. test naming/import hygiene automation (prevent duplicate-basename regressions)
 

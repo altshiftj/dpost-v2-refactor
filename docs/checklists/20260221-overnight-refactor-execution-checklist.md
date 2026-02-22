@@ -85,8 +85,11 @@ How it was done:
 - [x] Remaining backlog prioritized for next run.
 - [x] Final checkpoint reached:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-      -> `650 passed, 1 skipped, 1 warning`, `100%` (`5061 stmts, 0 miss`)
+      -> `652 passed, 1 skipped, 1 warning`, `100%` (`5076 stmts, 0 miss`)
 - [x] Final residual in `file_process_manager` classified and documented via
       explicit `# pragma: no cover` defensive exhaustiveness guard rationale.
 - [x] Post-coverage refactor slices (`stability_timing_policy`, `failure_outcome_policy`)
       completed with full-checkpoint regression confirmation still at `100%`.
+- [x] Continued post-coverage `file_process_manager` seam extraction
+      (`route_context_policy`, expanded failure outcome classification) with full
+      checkpoint regression confirmation still at `100%`.

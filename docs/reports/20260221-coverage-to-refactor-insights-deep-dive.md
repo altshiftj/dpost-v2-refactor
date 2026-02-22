@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `650 passed, 1 skipped, 1 warning`
-  - total coverage: `100%` (`5061 stmts, 0 miss`)
+  - `652 passed, 1 skipped, 1 warning`
+  - total coverage: `100%` (`5076 stmts, 0 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -35,7 +35,7 @@ Refactor action:
    - `ForcePathPolicy` from `_post_persist_side_effects_stage`. (completed)
    - `RoutePolicy` from `_build_route_context`. (remaining)
    - `RenameRetryPolicy` from `_rename_retry_policy_stage`. (completed)
-   - `FailureOutcomePolicy` from `_handle_processing_failure` target selection. (partial/completed seam)
+   - `FailureOutcomePolicy` from `_handle_processing_failure` target/rejection classification. (expanded/completed seam)
 2. Keep `FileProcessManager` as orchestration shell only.
 3. Add direct policy tests that do not require active global config/service.
 
@@ -48,7 +48,7 @@ Current status:
 
 - `file_process_manager.py` is now at `100%`.
 - extracted policy modules (`candidate_metadata.py`, `force_path_policy.py`,
-  `rename_retry_policy.py`, `failure_outcome_policy.py`) are at `100%`.
+  `rename_retry_policy.py`, `route_context_policy.py`, `failure_outcome_policy.py`) are at `100%`.
 - remaining work is route-context/failure-outcome structuring and dependency
   cleanup refactors (not coverage-driven).
 
@@ -192,7 +192,7 @@ Action:
 
 ## Prioritized Refactor Queue
 
-1. `file_process_manager` route-context seam extraction and failure event/outcome separation.
+1. `file_process_manager` failure event/outcome side-effect separation (logging/UI/metrics emission boundaries).
 2. global config access reduction in deep helper layers.
 3. retry policy unification across resolver/watchdog flows.
 4. continue monitoring test naming/import hygiene as suites expand.
