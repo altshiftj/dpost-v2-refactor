@@ -164,3 +164,28 @@ Validation:
 - `python -m ruff check src/dpost/application/processing/device_resolver.py src/dpost/application/processing/file_process_manager.py tests/unit/application/processing/test_device_resolver.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
 - `python -m pytest -q tests/unit/application/processing/test_device_resolver.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `46 passed`
 - `python -m pytest -q` -> `707 passed, 1 skipped, 1 warning`
+
+## Progress Update: Stability vs Resolver Deferral Boundary (In Progress / Incremental Slice)
+
+Intended action:
+- Introduce explicit stability-stage outcome semantics (`stable`, `defer`,
+  `reject`) without changing safe-save behavior that currently depends on
+  blocking reappear handling inside `FileStabilityTracker.wait()`.
+
+Observed outcome:
+- Added `StabilityOutcomeKind` and explicit `StabilityOutcome` constructors
+  (`stable_result`, `defer`, `reject`) in
+  `src/dpost/application/processing/stability_tracker.py`.
+- Preserved backward compatibility for existing call sites/tests by inferring
+  `kind` from legacy `stable=True/False` construction in `__post_init__`.
+- Updated `_stabilize_artifact_stage()` in
+  `src/dpost/application/processing/file_process_manager.py` to honor explicit
+  deferred stability outcomes and return `ProcessingStatus.DEFERRED` with retry
+  delay when provided.
+- Expanded unit tests to assert explicit stability outcome semantics and manager
+  deferral handling.
+
+Expected next outcome (later slice):
+- Consider returning `StabilityOutcome.defer(...)` directly from
+  `FileStabilityTracker.wait()` for selected retry cases, after validating that
+  EXTR safe-save integration behavior remains unchanged.

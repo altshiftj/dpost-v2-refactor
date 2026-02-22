@@ -124,6 +124,14 @@ class _ProcessingPipeline:
         manager = self._manager
         # Block until the artefact stops changing (device overrides can tweak thresholds).
         stability_outcome = FileStabilityTracker(request.source, request.device).wait()
+        if stability_outcome.deferred:
+            reason = stability_outcome.reason or "File deferred by stability guard"
+            logger.debug("Processing deferred for %s: %s", request.source, reason)
+            return ProcessingResult(
+                ProcessingStatus.DEFERRED,
+                reason,
+                retry_delay=stability_outcome.retry_delay,
+            )
         if stability_outcome.rejected:
             reason = stability_outcome.reason or "File rejected by stability guard"
             manager._register_rejection(str(request.source), reason)

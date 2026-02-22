@@ -167,6 +167,41 @@ def test_process_item_rejects_when_stability_guard_fails(
     assert manager.get_and_clear_rejected() == [(str(src), "stability timeout")]
 
 
+def test_process_item_defers_when_stability_guard_returns_deferred_outcome(
+    manager_bundle,
+    tmp_settings,
+    monkeypatch,
+) -> None:
+    """Return deferred result when the stability guard explicitly asks for retry."""
+    manager, _ = manager_bundle
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("content")
+
+    monkeypatch.setattr(
+        FileStabilityTracker,
+        "wait",
+        lambda self: StabilityOutcome.defer(
+            self.file_path,
+            reason="waiting for path to settle",
+            retry_delay=1.25,
+        ),
+    )
+
+    moves: list[str] = []
+    monkeypatch.setattr(
+        "dpost.application.processing.file_process_manager.safe_move_to_exception",
+        lambda path, *_args, **_kwargs: moves.append(path),
+    )
+
+    result = manager.process_item(str(src))
+
+    assert result.status is ProcessingStatus.DEFERRED
+    assert result.message == "waiting for path to settle"
+    assert result.retry_delay == 1.25
+    assert moves == []
+    assert manager.get_and_clear_rejected() == []
+
+
 def test_process_item_defers_when_path_missing_after_stability_guard_returns_stable(
     manager_bundle,
     config_service,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 import datetime as dt
 import time
@@ -18,6 +19,14 @@ from dpost.application.processing.stability_timing_policy import (
 logger = setup_logger(__name__)
 
 
+class StabilityOutcomeKind(str, Enum):
+    """Explicit outcomes returned by the stability tracker stage."""
+
+    STABLE = "stable"
+    DEFER = "defer"
+    REJECT = "reject"
+
+
 @dataclass(frozen=True)
 class StabilityOutcome:
     """Result of waiting for a file/folder to settle."""
@@ -25,10 +34,71 @@ class StabilityOutcome:
     path: Path
     stable: bool
     reason: Optional[str] = None
+    kind: StabilityOutcomeKind | None = None
+    retry_delay: float | None = None
+
+    def __post_init__(self) -> None:
+        inferred = self.kind
+        if inferred is None:
+            inferred = (
+                StabilityOutcomeKind.STABLE
+                if self.stable
+                else StabilityOutcomeKind.REJECT
+            )
+            object.__setattr__(self, "kind", inferred)
+
+        if self.stable and inferred is not StabilityOutcomeKind.STABLE:
+            raise ValueError("Stable outcomes must use StabilityOutcomeKind.STABLE")
+        if not self.stable and inferred is StabilityOutcomeKind.STABLE:
+            raise ValueError("Non-stable outcomes cannot use StabilityOutcomeKind.STABLE")
+        if inferred is not StabilityOutcomeKind.DEFER and self.retry_delay is not None:
+            raise ValueError("retry_delay is only valid for deferred stability outcomes")
+
+    @classmethod
+    def stable_result(cls, path: Path) -> "StabilityOutcome":
+        """Build a stable outcome with explicit kind semantics."""
+        return cls(path=path, stable=True, kind=StabilityOutcomeKind.STABLE)
+
+    @classmethod
+    def defer(
+        cls,
+        path: Path,
+        *,
+        reason: str,
+        retry_delay: float | None = None,
+    ) -> "StabilityOutcome":
+        """Build a deferred (non-rejected) stability outcome."""
+        return cls(
+            path=path,
+            stable=False,
+            reason=reason,
+            kind=StabilityOutcomeKind.DEFER,
+            retry_delay=retry_delay,
+        )
+
+    @classmethod
+    def reject(
+        cls,
+        path: Path,
+        *,
+        reason: str,
+    ) -> "StabilityOutcome":
+        """Build a rejected stability outcome."""
+        return cls(
+            path=path,
+            stable=False,
+            reason=reason,
+            kind=StabilityOutcomeKind.REJECT,
+        )
 
     @property
     def rejected(self) -> bool:
-        return not self.stable
+        return self.kind is StabilityOutcomeKind.REJECT
+
+    @property
+    def deferred(self) -> bool:
+        """Return True when the path should be retried instead of rejected."""
+        return self.kind is StabilityOutcomeKind.DEFER
 
 
 class FileStabilityTracker:
@@ -67,16 +137,14 @@ class FileStabilityTracker:
                 ):
                     self._sleep(poll_seconds)
                     continue
-                return StabilityOutcome(
-                    path=self.file_path,
-                    stable=False,
+                return StabilityOutcome.reject(
+                    self.file_path,
                     reason="Path disappeared before becoming stable",
                 )
 
             if dt.datetime.now() >= deadline:
-                return StabilityOutcome(
-                    path=self.file_path,
-                    stable=False,
+                return StabilityOutcome.reject(
+                    self.file_path,
                     reason=f"Timeout (> {timing.max_wait_seconds}s)",
                 )
 
@@ -96,7 +164,7 @@ class FileStabilityTracker:
                 continue
 
             logger.info("File/folder is stable: %s", self.file_path.name)
-            return StabilityOutcome(path=self.file_path, stable=True)
+            return StabilityOutcome.stable_result(self.file_path)
 
     # ------------------------------------------------------------------
     # Internal helpers
