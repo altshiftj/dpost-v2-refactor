@@ -74,10 +74,17 @@ def init_dirs(directories: Optional[list[str]] = None) -> None:
         dir_path.mkdir(parents=True, exist_ok=True)
 
 
-def get_record_path(filename_prefix: str, device_abbr: str | None = None) -> str:
+def get_record_path(
+    filename_prefix: str,
+    device_abbr: str | None = None,
+    *,
+    id_separator: str | None = None,
+    dest_dir: str | Path | None = None,
+    current_device=None,
+) -> str:
     """Compute (and create) the destination record folder for a prefix."""
 
-    sep = _id_sep()
+    sep = id_separator if id_separator is not None else _id_sep()
     parts = filename_prefix.split(sep)
     if len(parts) < 3:
         raise ValueError(
@@ -87,24 +94,31 @@ def get_record_path(filename_prefix: str, device_abbr: str | None = None) -> str
     sample_id = sep.join(parts[2:])
 
     if device_abbr is None:
-        device = _current_device()
+        device = current_device if current_device is not None else _current_device()
         if device and device.metadata.device_abbr:
             device_abbr = device.metadata.device_abbr
     if device_abbr:
         sample_id = f"{device_abbr}-{sample_id}"
 
-    record_path = _dest_dir() / institute.upper() / user_id.upper() / sample_id
+    root = Path(dest_dir) if dest_dir is not None else _dest_dir()
+    record_path = root / institute.upper() / user_id.upper() / sample_id
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
 
 
-def get_unique_filename(directory: str, filename_prefix: str, extension: str) -> str:
+def get_unique_filename(
+    directory: str,
+    filename_prefix: str,
+    extension: str,
+    *,
+    id_separator: str | None = None,
+) -> str:
     """Generate a unique filename in the specified directory."""
 
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
 
-    sep = _id_sep()
+    sep = id_separator if id_separator is not None else _id_sep()
     counter = 1
     for existing in dir_path.iterdir():
         if existing.is_file() and existing.suffix == extension:
@@ -122,20 +136,40 @@ def get_unique_filename(directory: str, filename_prefix: str, extension: str) ->
     return str(candidate_path)
 
 
-def get_rename_path(name: str, base_dir: Optional[str] = None) -> str:
+def get_rename_path(
+    name: str,
+    base_dir: Optional[str] = None,
+    *,
+    id_separator: str | None = None,
+) -> str:
     """Return a unique path under the rename folder for the given name."""
 
     base = Path(base_dir) if base_dir is not None else _rename_dir()
     filename_prefix, extension = Path(name).stem, Path(name).suffix
-    return get_unique_filename(str(base), filename_prefix, extension)
+    return get_unique_filename(
+        str(base),
+        filename_prefix,
+        extension,
+        id_separator=id_separator,
+    )
 
 
-def get_exception_path(name: str, base_dir: Optional[str] = None) -> str:
+def get_exception_path(
+    name: str,
+    base_dir: Optional[str] = None,
+    *,
+    id_separator: str | None = None,
+) -> str:
     """Return a unique path under the exceptions folder for the given name."""
 
     base = Path(base_dir) if base_dir is not None else _exceptions_dir()
     filename_prefix, extension = Path(name).stem, Path(name).suffix
-    return get_unique_filename(str(base), filename_prefix, extension)
+    return get_unique_filename(
+        str(base),
+        filename_prefix,
+        extension,
+        id_separator=id_separator,
+    )
 
 
 def remove_directory_if_empty(path: Path) -> None:
@@ -264,37 +298,46 @@ def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -
     )
 
 
-def load_persisted_records() -> dict[str, LocalRecord]:
+def load_persisted_records(
+    *,
+    json_path: str | Path | None = None,
+    id_separator: str | None = None,
+) -> dict[str, LocalRecord]:
     """Load persisted daily records from JSON into LocalRecord instances."""
 
     from dpost.domain.records.local_record import LocalRecord
 
-    json_path = _daily_records_path()
-    if not json_path.exists():
+    path = Path(json_path) if json_path is not None else _daily_records_path()
+    if not path.exists():
         return {}
     try:
-        raw_data = json_path.read_text(encoding="utf-8")
+        raw_data = path.read_text(encoding="utf-8")
         records = json.loads(raw_data)
-        logger.debug(f"JSON data loaded from '{json_path}'.")
+        logger.debug(f"JSON data loaded from '{path}'.")
+        effective_sep = id_separator if id_separator is not None else _id_sep()
         return {
-            id: LocalRecord.from_dict(record_data, id_separator=_id_sep())
+            id: LocalRecord.from_dict(record_data, id_separator=effective_sep)
             for id, record_data in records.items()
         }
     except Exception as exc:
-        logger.exception(f"Failed to read or convert JSON file '{json_path}': {exc}")
+        logger.exception(f"Failed to read or convert JSON file '{path}': {exc}")
         return {}
 
 
-def save_persisted_records(daily_records_dict: dict[str, LocalRecord]):
+def save_persisted_records(
+    daily_records_dict: dict[str, LocalRecord],
+    *,
+    json_path: str | Path | None = None,
+):
     """Serialize LocalRecord mapping to JSON for day-level persistence."""
 
-    json_path = _daily_records_path()
+    path = Path(json_path) if json_path is not None else _daily_records_path()
     try:
         serialized = json.dumps(
             {key: record.to_dict() for key, record in daily_records_dict.items()},
             indent=4,
         )
-        json_path.write_text(serialized, encoding="utf-8")
-        logger.debug(f"JSON data saved to '{json_path}'.")
+        path.write_text(serialized, encoding="utf-8")
+        logger.debug(f"JSON data saved to '{path}'.")
     except Exception as exc:
-        logger.exception(f"Failed to write JSON file '{json_path}': {exc}")
+        logger.exception(f"Failed to write JSON file '{path}': {exc}")

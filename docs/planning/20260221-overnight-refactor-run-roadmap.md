@@ -179,12 +179,28 @@ unit coverage.
   - `652 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5076 stmts, 0 miss`)
 
+### Checkpoint J: Global-config cleanup start (filesystem utils explicit context)
+
+- Completed slices:
+  - updated:
+    - `src/dpost/infrastructure/storage/filesystem_utils.py`
+    - `tests/unit/infrastructure/storage/test_filesystem_utils.py`
+- Validation:
+  - targeted:
+    - `python -m ruff check src/dpost/infrastructure/storage/filesystem_utils.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> pass
+    - `python -m pytest --cov=dpost.infrastructure.storage.filesystem_utils --cov-report=term-missing -q tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `22 passed`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `657 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5078 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
    - continue separating failure handling side-effect emission (UI/metrics/logging) from outcome construction
 2. deep helper global-config access cleanup (`current()/get_service()` reduction)
-   - prioritize `infrastructure/storage/filesystem_utils.py`
+   - continue after `filesystem_utils` explicit-context support:
+     `application/session/session_manager.py`, device plugin `_id_separator()` helpers
 3. shared retry policy unification across resolver/watchdog flows
 4. test naming/import hygiene automation (prevent duplicate-basename regressions)
 

@@ -49,6 +49,23 @@ def test_get_record_path_uses_active_device_abbreviation(
     assert Path(resolved).name == "SEM-sampleA"
 
 
+def test_get_record_path_accepts_explicit_context_without_global_config(tmp_path: Path):
+    """Allow callers to provide separator/destination/device context explicitly."""
+    explicit_device = SimpleNamespace(metadata=SimpleNamespace(device_abbr="XRD"))
+
+    resolved = filesystem_utils.get_record_path(
+        "mus__ipat__sampleA",
+        id_separator="__",
+        dest_dir=tmp_path,
+        current_device=explicit_device,
+    )
+
+    resolved_path = Path(resolved)
+    assert resolved_path.parent.name == "MUS"
+    assert resolved_path.parent.parent.name == "IPAT"
+    assert resolved_path.name == "XRD-sampleA"
+
+
 def test_current_device_returns_active_config_device(monkeypatch: pytest.MonkeyPatch):
     """Return device from active config helper."""
     sentinel_device = object()
@@ -112,6 +129,39 @@ def test_move_item_removes_nonempty_destination_directory(tmp_path: Path):
     assert dest.is_file()
     assert dest.read_text() == "payload"
     assert not src.exists()
+
+
+def test_get_unique_filename_accepts_explicit_separator(tmp_path: Path) -> None:
+    """Sequence parsing should support explicit separators without ambient config."""
+    directory = tmp_path / "records"
+    directory.mkdir()
+    (directory / "prefix__01.txt").write_text("1")
+    (directory / "prefix__02.txt").write_text("2")
+
+    resolved = filesystem_utils.get_unique_filename(
+        str(directory),
+        "prefix",
+        ".txt",
+        id_separator="__",
+    )
+
+    assert Path(resolved).name == "prefix__03.txt"
+
+
+@pytest.mark.parametrize("func_name", ["get_rename_path", "get_exception_path"])
+def test_unique_path_helpers_accept_explicit_separator(
+    tmp_path: Path,
+    func_name: str,
+) -> None:
+    """Rename/exception path helpers should forward explicit separators."""
+    base = tmp_path / "base"
+    base.mkdir()
+    (base / "item__01.csv").write_text("1")
+    helper = getattr(filesystem_utils, func_name)
+
+    resolved = helper("item.csv", base_dir=str(base), id_separator="__")
+
+    assert Path(resolved).name == "item__02.csv"
 
 
 def test_move_item_raises_when_fallback_move_fails(
@@ -249,6 +299,22 @@ def test_load_persisted_records_returns_localrecord_mapping(
 
     assert set(result.keys()) == {"dev-usr-ipat-sample"}
     assert isinstance(result["dev-usr-ipat-sample"], LocalRecord)
+
+
+def test_load_and_save_persisted_records_accept_explicit_json_path(tmp_path: Path) -> None:
+    """Persistence helpers should work with explicit paths/separators and no patches."""
+    records_path = tmp_path / "records.json"
+    record = LocalRecord(identifier="dev__usr__ipat__sample", id_separator="__")
+
+    filesystem_utils.save_persisted_records({"id": record}, json_path=records_path)
+    loaded = filesystem_utils.load_persisted_records(
+        json_path=records_path,
+        id_separator="__",
+    )
+
+    assert set(loaded.keys()) == {"id"}
+    assert loaded["id"].identifier == "dev__usr__ipat__sample"
+    assert loaded["id"].id_separator == "__"
 
 
 def test_save_persisted_records_writes_json(tmp_path: Path, monkeypatch, config_service):

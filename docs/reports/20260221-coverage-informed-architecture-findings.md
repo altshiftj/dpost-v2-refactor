@@ -719,3 +719,33 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `652 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5076 stmts, 0 miss`)
+
+### Slice 28: Filesystem utils explicit-context path/persistence parameters
+
+- Intended action:
+  - reduce hidden global-config coupling in `filesystem_utils` by allowing core
+    path/persistence helpers to accept explicit context values (separator, dirs,
+    current device, JSON path) while preserving existing call signatures
+- Expected outcome:
+  - callers/tests can bypass ambient `current()` access for common path and
+    persistence operations without behavior changes to legacy call sites
+- Observed outcome:
+  - updated:
+    - `src/dpost/infrastructure/storage/filesystem_utils.py`
+      - `get_record_path(...)` supports explicit `id_separator`, `dest_dir`,
+        `current_device`
+      - `get_unique_filename(...)` supports explicit `id_separator`
+      - `get_rename_path(...)` / `get_exception_path(...)` forward explicit
+        separators
+      - `load_persisted_records(...)` / `save_persisted_records(...)` support
+        explicit `json_path` and `id_separator`
+    - `tests/unit/infrastructure/storage/test_filesystem_utils.py`
+      - added explicit-context tests for record paths, unique naming,
+        rename/exception helpers, and persisted-record IO
+  - validation:
+    - `python -m ruff check src/dpost/infrastructure/storage/filesystem_utils.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> pass
+    - `python -m pytest --cov=dpost.infrastructure.storage.filesystem_utils --cov-report=term-missing -q tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `22 passed`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `657 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5078 stmts, 0 miss`)

@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `652 passed, 1 skipped, 1 warning`
-  - total coverage: `100%` (`5076 stmts, 0 miss`)
+  - `657 passed, 1 skipped, 1 warning`
+  - total coverage: `100%` (`5078 stmts, 0 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -82,8 +82,10 @@ Current status:
 
 - `kadi_manager` now uses explicit separator and db-manager factory seams and
   is fully unit covered.
+- `filesystem_utils` path/persistence helpers now accept explicit context
+  parameters while preserving legacy signatures.
 - remaining global-context cleanup is concentrated in helper layers under
-  processing/storage wiring.
+  session/device-plugin utilities and residual storage wrappers.
 
 ## Insight 3: Retry and deferral policy is fragmented across layers
 
@@ -193,7 +195,8 @@ Action:
 ## Prioritized Refactor Queue
 
 1. `file_process_manager` failure event/outcome side-effect separation (logging/UI/metrics emission boundaries).
-2. global config access reduction in deep helper layers.
+2. global config access reduction in deep helper layers (continue after
+   `filesystem_utils` explicit-context support).
 3. retry policy unification across resolver/watchdog flows.
 4. continue monitoring test naming/import hygiene as suites expand.
 
