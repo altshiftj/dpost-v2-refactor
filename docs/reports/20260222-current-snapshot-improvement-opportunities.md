@@ -519,3 +519,25 @@ Validation:
 - `python -m pytest -q` -> `742 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `707 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: DeviceWatchdogApp Injected Session Timeout Provider (2026-02-22)
+
+Intended action:
+- Remove a runtime-path fallback to global config in session timeout handling by
+  explicitly injecting `SessionManager.timeout_provider` from
+  `DeviceWatchdogApp` using the app's `config_service`.
+
+Observed outcome:
+- `src/dpost/application/runtime/device_watchdog_app.py`
+  - `DeviceWatchdogApp.__init__` now passes
+    `timeout_provider=lambda: self.config_service.current.session_timeout` when
+    constructing `SessionManager`
+- `tests/unit/application/runtime/test_device_watchdog_app_branches.py`
+  - added constructor test proving the timeout provider is injected
+  - verifies the provider remains dynamic by reflecting an updated underlying
+    `pc.session.timeout_seconds` value
+
+Validation:
+- `python -m pytest -q` -> `743 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `708 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

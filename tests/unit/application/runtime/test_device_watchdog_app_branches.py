@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from dpost.application.interactions import ErrorMessages
+from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 
 
 def test_process_next_event_swallows_processing_exceptions(watchdog_app) -> None:
@@ -72,3 +73,36 @@ def test_initialize_invokes_explicit_startup_sync_on_file_processor(
     watchdog_app.initialize()
 
     assert watchdog_app.file_processing.startup_sync_calls == 1
+
+
+def test_constructor_injects_dynamic_session_timeout_provider(
+    config_service,
+    fake_ui,
+    fake_sync,
+) -> None:
+    """App should inject a config-backed timeout provider into SessionManager."""
+    captured: dict[str, object] = {}
+
+    class _CaptureSessionManager:
+        def __init__(self, **kwargs) -> None:  # type: ignore[no-untyped-def]
+            captured["kwargs"] = kwargs
+
+    class _NoopFileProcessManager:
+        def __init__(self, **_kwargs) -> None:  # type: ignore[no-untyped-def]
+            pass
+
+    app = DeviceWatchdogApp(
+        ui=fake_ui,
+        sync_manager=fake_sync,
+        config_service=config_service,
+        session_manager_cls=_CaptureSessionManager,
+        file_process_manager_cls=_NoopFileProcessManager,
+    )
+
+    timeout_provider = captured["kwargs"]["timeout_provider"]
+    assert callable(timeout_provider)
+    assert timeout_provider() == config_service.current.session_timeout
+
+    config_service.pc.session.timeout_seconds = 123
+    assert timeout_provider() == 123
+    assert app.session_manager is not None

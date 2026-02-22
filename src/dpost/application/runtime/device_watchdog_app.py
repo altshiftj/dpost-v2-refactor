@@ -98,6 +98,7 @@ class DeviceWatchdogApp:
             scheduler=self.scheduler,
             end_session_callback=None,
             interactive=False,
+            timeout_provider=lambda: self.config_service.current.session_timeout,
         )
         self.file_processing = file_process_manager_cls(
             interactions=self.interactions,
