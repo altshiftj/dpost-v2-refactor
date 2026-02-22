@@ -189,3 +189,29 @@ Expected next outcome (later slice):
 - Consider returning `StabilityOutcome.defer(...)` directly from
   `FileStabilityTracker.wait()` for selected retry cases, after validating that
   EXTR safe-save integration behavior remains unchanged.
+
+## Progress Update: Logging Setup Test-Hostility Reduction (Completed Slice)
+
+Intended action:
+- Remove import-time filesystem side effects from logging setup and make file
+  logging opt-in/overridable in tests without broad monkeypatching.
+
+Observed outcome:
+- `src/dpost/infrastructure/logging.py` no longer creates `C:/Watchdog/logs`
+  at import time.
+- File-handler setup is now lazy inside `setup_logger(...)`, guarded by a
+  policy helper and wrapped so file-access failures do not break startup.
+- Added env-driven control:
+  - `DPOST_LOG_FILE_ENABLED` (`true/false`, etc.)
+  - `DPOST_LOG_FILE_PATH` (with fallback to existing `LOG_FILE_PATH`)
+- Pytest runs now default to console/null logging unless file logging is
+  explicitly re-enabled, which reduces shared-path contention and permission
+  noise during tests.
+- Expanded unit tests in `tests/unit/infrastructure/test_logging.py` to cover:
+  pytest-default file logging disablement, explicit enablement, and file-handler
+  failure fallback.
+
+Validation:
+- `python -m pytest -q tests/unit/infrastructure/test_logging.py` -> `5 passed`
+- `python -m pytest -q` -> `715 passed, 1 skipped, 1 warning`
+- `python -m ruff check .` -> pass
