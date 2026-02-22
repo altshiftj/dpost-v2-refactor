@@ -85,6 +85,6 @@ How it was done:
 - [x] Remaining backlog prioritized for next run.
 - [x] Final checkpoint reached:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-      -> `640 passed, 1 skipped, 1 warning`, `99%` (`5011 stmts, 1 miss`)
-- [x] Remaining coverage residual classified as likely unreachable defensive line:
-      `src/dpost/application/processing/file_process_manager.py:145`
+      -> `643 passed, 1 skipped, 1 warning`, `100%` (`5025 stmts, 0 miss`)
+- [x] Final residual in `file_process_manager` classified and documented via
+      explicit `# pragma: no cover` defensive exhaustiveness guard rationale.

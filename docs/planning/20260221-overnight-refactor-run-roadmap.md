@@ -119,10 +119,28 @@ unit coverage.
   - remaining residual:
     - `src/dpost/application/processing/file_process_manager.py:145` (likely unreachable defensive raise)
 
+### Checkpoint G: File process manager policy seam closure + full-coverage checkpoint
+
+- Completed slices:
+  - added:
+    - `src/dpost/application/processing/rename_retry_policy.py`
+    - `tests/unit/application/processing/test_rename_retry_policy.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+- Validation:
+  - targeted module coverage results:
+    - `file_process_manager.py` -> `100%`
+    - `rename_retry_policy.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `643 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5025 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
-   - extract route/retry/failure-outcome policy seams
+   - extract remaining route-context and failure-outcome policy seams
 2. `src/dpost/application/processing/stability_tracker.py`
    - isolate time-based decision helpers into pure functions
 3. deep helper global-config access cleanup (`current()/get_service()` reduction)

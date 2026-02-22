@@ -21,6 +21,8 @@ behavior regressions are most costly (`file_process_manager`, `stability_tracker
 
 - [ ] Extract pure policy functions from `file_process_manager`:
       route/defer decisions, retry policy, force-path sync rules.
+      Progress: candidate metadata, force-path sync rules, and rename retry
+      policy are extracted; route-context and failure-outcome seams remain.
 - [ ] Extract time-based decision helpers from `stability_tracker` into small,
       side-effect-free units.
 - [ ] Add red/green tests for extracted policy functions before refactoring call sites.
@@ -79,9 +81,9 @@ How it was done:
 - Built from iterative red/green coverage runs during 2026-02-21 autonomous TDD sessions.
 - Derived priorities from latest full coverage snapshot:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `640 passed, 1 skipped, 1 warning, total 99% (5011 stmts, 1 miss)`.
-- Remaining miss is likely unreachable defensive line:
-  - `src/dpost/application/processing/file_process_manager.py:145`.
+  - `643 passed, 1 skipped, 1 warning, total 100% (5025 stmts, 0 miss)`.
+- Priorities now focus on refactor leverage and dependency cleanup rather than
+  raw coverage gaps.
 - Captured deeper rationale in:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`.
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`.

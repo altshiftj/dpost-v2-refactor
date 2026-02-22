@@ -589,3 +589,35 @@ Top priorities:
   - remaining miss classification:
     - `src/dpost/application/processing/file_process_manager.py:145`
       - likely unreachable defensive raise after dispatcher exhaustiveness
+
+### Slice 23: File process manager rename-retry policy seam + residual closure
+
+- Intended action:
+  - extract rename-loop retry prompt/warning decisions from
+    `file_process_manager` into a pure policy helper and resolve the final
+    defensive coverage residual with explicit rationale
+- Expected outcome:
+  - reduce orchestration density in rename retry flow
+  - maintain behavior while reaching full module/project coverage
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/rename_retry_policy.py`
+    - `tests/unit/application/processing/test_rename_retry_policy.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - delegates retry prompt/warning decisions to `build_rename_retry_prompt(...)`
+      - marks `_execute_pipeline` defensive exhaustiveness guard as
+        `# pragma: no cover` with rationale
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+      - added `_persist_and_sync_stage()` final-path branch coverage
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/rename_retry_policy.py tests/unit/application/processing/test_rename_retry_policy.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
+    - `python -m pytest -q tests/unit/application/processing/test_rename_retry_policy.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_path_policy.py` -> `40 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.rename_retry_policy --cov-report=term-missing -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_rename_retry_policy.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_force_path_policy.py tests/unit/application/processing/test_candidate_metadata.py`
+      - `file_process_manager.py` -> `100%`
+      - `rename_retry_policy.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `643 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5025 stmts, 0 miss`)

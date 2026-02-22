@@ -162,6 +162,37 @@ def test_persist_and_sync_stage_returns_processed_without_final_path(
     assert result.final_path is None
 
 
+def test_persist_and_sync_stage_returns_processed_with_final_path(
+    manager_bundle,
+    config_service,
+    tmp_settings,
+    monkeypatch,
+) -> None:
+    """Return processed result with path payload when persistence yields a final path."""
+    manager, _ = manager_bundle
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("x")
+    candidate = _build_candidate(
+        manager,
+        path=src,
+        prefix="abc-ipat-sample",
+        extension=".txt",
+        device=config_service.devices[0],
+    )
+    context = RouteContext(candidate, "abc-ipat-sample", None, RoutingDecision.ACCEPT)
+    final_path = tmp_settings.WATCH_DIR / "records" / "abc-ipat-sample" / "item.txt"
+    monkeypatch.setattr(
+        manager,
+        "_persist_candidate_record_stage",
+        lambda _ctx: str(final_path),
+    )
+
+    result = manager._pipeline._persist_and_sync_stage(context)
+
+    assert result.status is ProcessingStatus.PROCESSED
+    assert result.final_path == final_path
+
+
 def test_non_accept_route_stage_uses_record_flow_for_unappendable(
     manager_bundle,
     config_service,

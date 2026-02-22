@@ -11,9 +11,7 @@ from typing import Optional, Tuple
 from dpost.application.config import ConfigService, DeviceConfig, get_service
 from dpost.application.naming.policy import generate_file_id, parse_filename
 from dpost.application.interactions import (
-    DialogPrompts,
     ErrorMessages,
-    WarningMessages,
 )
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
 from dpost.application.ports import SyncAdapterPort
@@ -48,6 +46,7 @@ from dpost.application.processing.force_path_policy import (
 from dpost.application.processing.modified_event_gate import ModifiedEventGate
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_flow import handle_unappendable_record
+from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
 from dpost.application.processing.record_utils import (
     apply_device_defaults,
     get_or_create_record,
@@ -141,8 +140,8 @@ class _ProcessingPipeline:
             raise RuntimeError(
                 f"File processing failed for {request.source}: {exc}"
             ) from exc
-        # This point should be unreachable because control flow either returns or raises above.
-        raise RuntimeError("Unreachable code in _execute_pipeline")
+        # Defensive exhaustiveness guard; all valid control flow paths return or raise above.
+        raise RuntimeError("Unreachable code in _execute_pipeline")  # pragma: no cover
 
     def _preprocess_stage(
         self,
@@ -287,18 +286,13 @@ class _ProcessingPipeline:
     ) -> tuple[str, Optional[str]]:
         """Return next rename-loop prompt policy for non-ACCEPT routing outcomes."""
         manager = self._manager
-        if context.decision is RoutingDecision.UNAPPENDABLE:
+        policy = build_rename_retry_prompt(context)
+        if policy.warning_title and policy.warning_message:
             manager.interactions.show_warning(
-                WarningMessages.INVALID_RECORD,
-                WarningMessages.INVALID_RECORD_DETAILS,
+                policy.warning_title,
+                policy.warning_message,
             )
-            return (
-                context.sanitized_prefix,
-                DialogPrompts.UNAPPENDABLE_RECORD_CONTEXT.format(
-                    record_id=context.sanitized_prefix
-                ),
-            )
-        return context.candidate.prefix, None
+        return policy.next_prefix, policy.contextual_reason
 
     def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
         manager = self._manager

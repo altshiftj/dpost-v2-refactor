@@ -138,12 +138,11 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `640 passed, 1 skipped, 1 warning`
-  - `99%` total coverage (`5011 stmts, 1 miss`)
+  - `643 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5025 stmts, 0 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
-     - extract remaining pure routing/rename/retry/failure-outcome policy seams
-     - evaluate defensive residual at `:145` for explicit unreachable rationale
+     - extract remaining pure route-context and failure-outcome policy seams
   2. `src/dpost/application/processing/stability_tracker.py`
      - isolate time-window/stability decisions into pure helpers
   3. deep helper global-config access cleanup (`current()/get_service()` reduction)
@@ -170,6 +169,8 @@
     - observed outcome
     - commands run and results
   - avoid long narrative logs for minor intermediate edits
+  - when a coverage residual is classified as defensive/unreachable, record the
+    rationale at the slice where it is resolved
 
 ## Autonomous Execution and Communication Cadence
 - Default mode: fully autonomous execution across analysis -> test -> refactor -> validate -> document.

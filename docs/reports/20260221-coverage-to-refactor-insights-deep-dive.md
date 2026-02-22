@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `640 passed, 1 skipped, 1 warning`
-  - total coverage: `99%` (`5011 stmts, 1 miss`)
+  - `643 passed, 1 skipped, 1 warning`
+  - total coverage: `100%` (`5025 stmts, 0 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -33,7 +33,8 @@ Refactor action:
 1. Extract pure policy units:
    - `CandidateMetadataPolicy` from `_derive_candidate_metadata`. (completed)
    - `ForcePathPolicy` from `_post_persist_side_effects_stage`. (completed)
-   - `RoutePolicy` from `_build_route_context` and `_rename_retry_policy_stage`. (remaining)
+   - `RoutePolicy` from `_build_route_context`. (remaining)
+   - `RenameRetryPolicy` from `_rename_retry_policy_stage`. (completed)
 2. Keep `FileProcessManager` as orchestration shell only.
 3. Add direct policy tests that do not require active global config/service.
 
@@ -44,10 +45,11 @@ Acceptance criteria:
 
 Current status:
 
-- `file_process_manager.py` is now at `99%`.
-- extracted policy modules (`candidate_metadata.py`, `force_path_policy.py`) are at `100%`.
-- remaining gap is a single likely-defensive line (`file_process_manager.py:145`),
-  plus route/failure outcome structuring and dependency cleanup refactors.
+- `file_process_manager.py` is now at `100%`.
+- extracted policy modules (`candidate_metadata.py`, `force_path_policy.py`,
+  `rename_retry_policy.py`) are at `100%`.
+- remaining work is route-context/failure-outcome structuring and dependency
+  cleanup refactors (not coverage-driven).
 
 ## Insight 2: Hidden config globals still leak into deep infrastructure seams
 
@@ -143,8 +145,8 @@ Primary evidence:
   - `src/dpost/device_plugins/utm_zwick/file_processor.py`
   - `src/dpost/device_plugins/psa_horiba/file_processor.py`
   - `src/dpost/device_plugins/rhe_kinexus/file_processor.py`
-- remaining global miss is concentrated in an orchestration defensive path:
-  - `src/dpost/application/processing/file_process_manager.py:145`
+- no current global coverage misses remain; recent residual defensive path in
+  `file_process_manager` is now explicitly documented/classified.
 
 Risk:
 
@@ -164,8 +166,8 @@ Refactor action:
 Acceptance criteria:
 
 - Processor-specific helpers are testable without filesystem orchestration setup.
-- Remaining misses stay limited to defensive/unreachable branches or are
-  explicitly excluded with rationale.
+- Coverage remains stable while refactor slices continue, with any future
+  defensive exclusions explicitly justified.
 
 ## Insight 6: Testability improved where boundaries are explicit
 
@@ -189,11 +191,10 @@ Action:
 
 ## Prioritized Refactor Queue
 
-1. `file_process_manager` route/retry/failure-outcome seam extraction.
+1. `file_process_manager` route-context/failure-outcome seam extraction.
 2. global config access reduction in deep helper layers.
 3. `stability_tracker` time-policy seam extraction.
-4. decide whether to leave `file_process_manager.py:145` as defensive/unreachable
-   or mark with `# pragma: no cover` plus rationale.
+4. retry policy unification across resolver/watchdog flows.
 5. continue monitoring test naming/import hygiene as suites expand.
 
 ## Cross-Reference
