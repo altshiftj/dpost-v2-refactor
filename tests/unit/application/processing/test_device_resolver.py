@@ -63,6 +63,8 @@ def test_resolve_missing_path_selects_reappear_device(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.selected == device
+    assert resolution.deferred is False
+    assert resolution.retry_delay is None
     assert "waiting for reappearance" in resolution.reason
 
 

@@ -107,6 +107,37 @@ def test_process_item_defers_when_resolution_requests_retry(
     assert "wait for" in result.message
 
 
+def test_process_item_defers_when_resolution_preselects_device_but_marks_deferred(
+    manager_bundle,
+    config_service,
+    tmp_settings,
+    monkeypatch,
+) -> None:
+    """Honor deferred resolver outcomes even when a candidate device is preselected."""
+    manager, _ = manager_bundle
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("content")
+    device = config_service.devices[0]
+
+    monkeypatch.setattr(
+        manager._device_resolver,
+        "resolve",
+        lambda _path: DeviceResolution(
+            selected=device,
+            assessments=tuple(),
+            reason="waiting for reappearance",
+            deferred=True,
+            retry_delay=2.0,
+        ),
+    )
+
+    result = manager.process_item(str(src))
+
+    assert result.status is ProcessingStatus.DEFERRED
+    assert result.retry_delay == 2.0
+    assert "reappearance" in result.message
+
+
 def test_process_item_rejects_when_stability_guard_fails(
     manager_bundle,
     tmp_settings,
@@ -139,6 +170,41 @@ def test_process_item_rejects_when_stability_guard_fails(
     assert result.message == "stability timeout"
     assert moves == [str(src)]
     assert manager.get_and_clear_rejected() == [(str(src), "stability timeout")]
+
+
+def test_process_item_defers_when_path_missing_after_stability_guard_returns_stable(
+    manager_bundle,
+    config_service,
+    tmp_settings,
+    monkeypatch,
+) -> None:
+    """Defer when a path vanishes despite a stable outcome (race/over-optimistic stub)."""
+    manager, _ = manager_bundle
+    src = tmp_settings.WATCH_DIR / "abc-ipat-sample.txt"
+    src.write_text("content")
+    src.unlink()
+    device = config_service.devices[0]
+
+    monkeypatch.setattr(
+        manager._device_resolver,
+        "resolve",
+        lambda _path: DeviceResolution(
+            selected=device,
+            assessments=tuple(),
+            reason="selected for test",
+        ),
+    )
+
+    monkeypatch.setattr(
+        FileStabilityTracker,
+        "wait",
+        lambda self: StabilityOutcome(path=self.file_path, stable=True),
+    )
+
+    result = manager.process_item(str(src))
+
+    assert result.status is ProcessingStatus.DEFERRED
+    assert "disappeared before stability confirmation" in result.message
 
 
 def test_persist_and_sync_stage_returns_processed_without_final_path(

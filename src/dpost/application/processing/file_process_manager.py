@@ -103,15 +103,15 @@ class _ProcessingPipeline:
         # Device resolver combines selector rules with lightweight processor probes.
         resolution = manager._device_resolver.resolve(path)
         device = resolution.selected
+        reason = resolution.reason or "Invalid file type"
+        if resolution.deferred:
+            logger.debug("Processing deferred for %s: %s", path, reason)
+            return ProcessingResult(
+                ProcessingStatus.DEFERRED,
+                reason,
+                retry_delay=resolution.retry_delay,
+            )
         if device is None:
-            reason = resolution.reason or "Invalid file type"
-            if resolution.deferred:
-                logger.debug("Processing deferred for %s: %s", path, reason)
-                return ProcessingResult(
-                    ProcessingStatus.DEFERRED,
-                    reason,
-                    retry_delay=resolution.retry_delay,
-                )
             return self._reject_immediately(path, reason)
         return ProcessingRequest(source=path, device=device)
 
@@ -128,6 +128,12 @@ class _ProcessingPipeline:
             safe_move_to_exception(str(request.source))
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
+        if not request.source.exists():
+            reason = (
+                f"Path '{request.source.name}' disappeared before stability confirmation"
+            )
+            logger.debug("Processing deferred for %s: %s", request.source, reason)
+            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
         return request
 
     def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:

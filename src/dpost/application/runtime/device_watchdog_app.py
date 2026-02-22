@@ -81,7 +81,7 @@ class DeviceWatchdogApp:
         scheduler: UiTaskScheduler | None = None,
         session_manager_cls=SessionManager,
         file_process_manager_cls=FileProcessManager,
-        observer_factory: Callable[[], BaseObserver] = Observer,
+        observer_factory: Callable[[], BaseObserver] | None = None,
     ) -> None:
         self.start_time = datetime.now()
         logger.info("WatchdogApp started at %s", self.start_time.isoformat())
@@ -144,7 +144,8 @@ class DeviceWatchdogApp:
             self.event_queue,
             should_queue_modified=self.file_processing.should_queue_modified,
         )
-        observer = self._observer_factory()
+        observer_factory = self._observer_factory or Observer
+        observer = observer_factory()
         observer.schedule(handler, path=str(self.watch_dir), recursive=False)
         observer.start()
 
