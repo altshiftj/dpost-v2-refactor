@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Pattern
 
 from dpost.application.interactions import InfoMessages
 from dpost.application.naming.policy import (
@@ -34,9 +34,16 @@ class RenameService:
         self,
         current_prefix: str,
         contextual_reason: Optional[str] = None,
+        *,
+        filename_pattern: Pattern[str] | None = None,
+        id_separator: str | None = None,
     ) -> RenameOutcome:
         attempted = current_prefix
-        analysis = explain_filename_violation(attempted)
+        analysis = explain_filename_violation(
+            attempted,
+            filename_pattern=filename_pattern,
+            id_separator=id_separator,
+        )
         reason_hint = contextual_reason
 
         while True:
@@ -46,7 +53,11 @@ class RenameService:
             if decision.cancelled or not decision.values:
                 return RenameOutcome(sanitized_prefix=None, cancelled=True)
 
-            analysis = analyze_user_input(decision.values)
+            analysis = analyze_user_input(
+                decision.values,
+                filename_pattern=filename_pattern,
+                id_separator=id_separator,
+            )
             if analysis["valid"]:
                 return RenameOutcome(
                     sanitized_prefix=analysis["sanitized"], cancelled=False

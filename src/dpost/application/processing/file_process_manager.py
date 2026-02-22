@@ -295,11 +295,14 @@ class _ProcessingPipeline:
 
         while True:
             # UI-driven rename can either supply a sanitized prefix or bail out to manual processing.
+            active_config = manager.config_service.current
             outcome = manager._rename_service.obtain_valid_prefix(
-                retry_prefix, retry_reason
+                retry_prefix,
+                retry_reason,
+                filename_pattern=active_config.filename_pattern,
+                id_separator=active_config.id_separator,
             )
             if outcome.cancelled or not outcome.sanitized_prefix:
-                active_config = manager.config_service.current
                 manager._rename_service.send_to_manual_bucket(
                     str(candidate.effective_path),
                     retry_prefix,

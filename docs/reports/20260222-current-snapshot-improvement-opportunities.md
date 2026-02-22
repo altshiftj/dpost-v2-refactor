@@ -493,3 +493,29 @@ Validation:
 - `python -m pytest -q` -> `741 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `706 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Rename Validation Loop Explicit Naming Context (2026-02-22)
+
+Intended action:
+- Remove hidden naming-policy runtime-config reads from the interactive
+  rename-validation loop by passing explicit `filename_pattern` and
+  `id_separator` through `RenameService`.
+
+Observed outcome:
+- `src/dpost/application/processing/rename_flow.py`
+  - `RenameService.obtain_valid_prefix(...)` now accepts optional explicit
+    `filename_pattern` and `id_separator`
+  - forwards that context to `explain_filename_violation(...)` and
+    `analyze_user_input(...)` throughout the retry loop
+- `src/dpost/application/processing/file_process_manager.py`
+  - `_invoke_rename_flow(...)` now passes config-derived naming context to the
+    rename service on each loop iteration
+- Tests expanded to cover:
+  - rename-flow explicit naming-context forwarding
+  - manager rename-loop forwarding of explicit naming context (and preserved
+    retry/cancel behavior)
+
+Validation:
+- `python -m pytest -q` -> `742 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `707 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

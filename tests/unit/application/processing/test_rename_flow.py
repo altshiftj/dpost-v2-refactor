@@ -41,7 +41,11 @@ def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> Non
 
     monkeypatch.setattr(
         "dpost.application.processing.rename_flow.explain_filename_violation",
-        lambda _attempted: {"valid": False, "reasons": ["initial"], "highlight_spans": []},
+        lambda _attempted, **_kwargs: {
+            "valid": False,
+            "reasons": ["initial"],
+            "highlight_spans": [],
+        },
     )
     analyses = iter(
         [
@@ -56,7 +60,7 @@ def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> Non
     )
     monkeypatch.setattr(
         "dpost.application.processing.rename_flow.analyze_user_input",
-        lambda _values: next(analyses),
+        lambda _values, **_kwargs: next(analyses),
     )
 
     outcome = service.obtain_valid_prefix(
@@ -104,3 +108,45 @@ def test_send_to_manual_bucket_forwards_explicit_rename_context(monkeypatch) -> 
     assert move_args == ("C:/raw/file.txt", "prefix", ".txt")
     assert move_kwargs == {"base_dir": "C:/rename", "id_separator": "__"}
     assert interactions.infos
+
+
+def test_obtain_valid_prefix_forwards_explicit_naming_context(monkeypatch) -> None:
+    """Rename validation loop should forward explicit naming context to policy wrappers."""
+    interactions = _InteractionStub(
+        decisions=[
+            RenameDecision(
+                cancelled=False,
+                values={"name": "mus", "institute": "ipat", "sample_ID": "sample"},
+            )
+        ]
+    )
+    service = RenameService(interactions)
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        "dpost.application.processing.rename_flow.explain_filename_violation",
+        lambda *args, **kwargs: calls.__setitem__("explain", (args, kwargs))
+        or {"valid": False, "reasons": ["bad"], "highlight_spans": []},
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.rename_flow.analyze_user_input",
+        lambda *args, **kwargs: calls.__setitem__("analyze", (args, kwargs))
+        or {"valid": True, "sanitized": "mus__ipat__sample", "reasons": []},
+    )
+
+    outcome = service.obtain_valid_prefix(
+        "badprefix",
+        filename_pattern=object(),  # type: ignore[arg-type]
+        id_separator="__",
+    )
+
+    assert outcome.cancelled is False
+    assert outcome.sanitized_prefix == "mus__ipat__sample"
+    assert calls["explain"][1] == {
+        "filename_pattern": calls["explain"][1]["filename_pattern"],
+        "id_separator": "__",
+    }
+    assert calls["analyze"][1] == {
+        "filename_pattern": calls["explain"][1]["filename_pattern"],
+        "id_separator": "__",
+    }

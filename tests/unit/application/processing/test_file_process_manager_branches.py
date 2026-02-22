@@ -455,10 +455,14 @@ def test_invoke_rename_flow_retries_until_accept(
             RenameOutcome(sanitized_prefix="retry-two", cancelled=False),
         ]
     )
-    prompt_calls: list[tuple[str, str | None]] = []
+    prompt_calls: list[tuple[tuple[str, str | None], dict[str, object]]] = []
 
-    def fake_obtain(prefix: str, reason: str | None) -> RenameOutcome:
-        prompt_calls.append((prefix, reason))
+    def fake_obtain(
+        prefix: str,
+        reason: str | None,
+        **kwargs: object,
+    ) -> RenameOutcome:
+        prompt_calls.append(((prefix, reason), kwargs))
         return next(outcomes)
 
     def fake_route(updated: ProcessingCandidate) -> RouteContext:
@@ -486,7 +490,13 @@ def test_invoke_rename_flow_retries_until_accept(
 
     assert result.status is ProcessingStatus.PROCESSED
     assert result.message == "accepted"
-    assert prompt_calls == [("initial", None), ("retry-two", "retry-context")]
+    assert [entry[0] for entry in prompt_calls] == [
+        ("initial", None),
+        ("retry-two", "retry-context"),
+    ]
+    for _args, kwargs in prompt_calls:
+        assert kwargs["filename_pattern"] is config_service.current.filename_pattern
+        assert kwargs["id_separator"] == config_service.current.id_separator
 
 
 def test_invoke_rename_flow_cancel_forwards_explicit_rename_context(
@@ -511,7 +521,10 @@ def test_invoke_rename_flow_cancel_forwards_explicit_rename_context(
     monkeypatch.setattr(
         manager._rename_service,
         "obtain_valid_prefix",
-        lambda _prefix, _reason: RenameOutcome(sanitized_prefix=None, cancelled=True),
+        lambda _prefix, _reason, **_kwargs: RenameOutcome(
+            sanitized_prefix=None,
+            cancelled=True,
+        ),
     )
     monkeypatch.setattr(
         manager._rename_service,
