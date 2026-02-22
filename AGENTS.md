@@ -138,10 +138,10 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest -q`
-  - `726 passed, 1 skipped, 1 warning`
+  - `729 passed, 1 skipped, 1 warning`
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `691 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5269 stmts, 0 miss`)
+  - `694 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5312 stmts, 0 miss`)
   - `python -m ruff check .` -> pass
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
@@ -149,7 +149,8 @@
      - injectable failure emission sink completed (`failure_emitter.py`)
      - immediate-sync error emission sink extraction completed
      - constructor startup-sync side effect removed; explicit startup hook completed
-     - next: continue post-persist side-effect decomposition (record updates / metrics / force-path bookkeeping seams)
+     - post-persist bookkeeping plan/emitter seam completed (`post_persist_bookkeeping.py`)
+     - next: continue post-persist side-effect decomposition (record mutation boundaries / record manager update adapter seam)
   2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
      - `filesystem_utils` explicit-context support completed

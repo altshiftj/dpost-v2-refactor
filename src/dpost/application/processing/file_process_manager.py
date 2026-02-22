@@ -53,6 +53,12 @@ from dpost.application.processing.force_path_policy import (
     resolve_force_paths,
 )
 from dpost.application.processing.modified_event_gate import ModifiedEventGate
+from dpost.application.processing.post_persist_bookkeeping import (
+    PostPersistBookkeepingEmissionSink,
+    PostPersistBookkeepingPlan,
+    build_post_persist_bookkeeping_plan,
+    emit_post_persist_bookkeeping,
+)
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_flow import handle_unappendable_record
 from dpost.application.processing.route_context_policy import build_route_context
@@ -517,21 +523,12 @@ class FileProcessManager:
         src_path: str,
     ) -> None:
         """Apply post-persist bookkeeping, metrics, and immediate sync policy."""
-        new_files = update_record(self.records, output.final_path, record)
-        if output.force_paths:
-            for resolved in resolve_force_paths(output.force_paths, record_path):
-                if not resolved.exists:
-                    logger.debug(
-                        "Skipping missing force path for record: %s", resolved.raw_path
-                    )
-                    continue
-                new_files += update_record(
-                    self.records, str(resolved.resolved_path), record
-                )
-                for child in iter_force_unsynced_targets(resolved.resolved_path):
-                    record.mark_file_as_unsynced(str(child))
-        if new_files > 0:
-            FILES_PROCESSED.inc(new_files)
+        bookkeeping_plan = self._build_post_persist_bookkeeping_plan_stage(
+            output,
+            record_path,
+        )
+        self._log_post_persist_bookkeeping_skips_stage(bookkeeping_plan)
+        self._emit_post_persist_bookkeeping_stage(bookkeeping_plan, record)
 
         # Immediate sync path (best-effort) — keeps prior startup sync logic.
         if self._immediate_sync:
@@ -617,6 +614,40 @@ class FileProcessManager:
             show_error=self.interactions.show_error,
         )
 
+    def _build_post_persist_bookkeeping_plan_stage(
+        self,
+        output: ProcessingOutput,
+        record_path: str,
+    ) -> PostPersistBookkeepingPlan:
+        """Build record-update and unsynced-marking work for a processed artifact."""
+        resolved_force_paths = tuple()
+        if output.force_paths:
+            resolved_force_paths = resolve_force_paths(output.force_paths, record_path)
+        return build_post_persist_bookkeeping_plan(
+            output.final_path,
+            resolved_force_paths,
+            iter_force_unsynced_targets_fn=iter_force_unsynced_targets,
+        )
+
+    @staticmethod
+    def _log_post_persist_bookkeeping_skips_stage(
+        plan: PostPersistBookkeepingPlan,
+    ) -> None:
+        """Log skipped force-path entries that were missing at emit time."""
+        for raw_path in plan.skipped_missing_force_paths:
+            logger.debug("Skipping missing force path for record: %s", raw_path)
+
+    def _build_post_persist_bookkeeping_sink(
+        self,
+        record,
+    ) -> PostPersistBookkeepingEmissionSink:
+        """Build the default sink for post-persist record bookkeeping side effects."""
+        return PostPersistBookkeepingEmissionSink(
+            update_record=lambda path: update_record(self.records, path, record),
+            mark_file_as_unsynced=record.mark_file_as_unsynced,
+            increment_processed_metric=FILES_PROCESSED.inc,
+        )
+
     def _handle_processing_failure(
         self,
         path: Path,
@@ -654,3 +685,14 @@ class FileProcessManager:
     def _emit_immediate_sync_error_stage(self, src_path: str, exc: Exception) -> None:
         """Apply immediate-sync failure logging and user error reporting."""
         emit_immediate_sync_error(src_path, exc, self._immediate_sync_error_sink)
+
+    def _emit_post_persist_bookkeeping_stage(
+        self,
+        plan: PostPersistBookkeepingPlan,
+        record,
+    ) -> int:
+        """Apply post-persist bookkeeping side effects and return new-file count."""
+        return emit_post_persist_bookkeeping(
+            plan,
+            self._build_post_persist_bookkeeping_sink(record),
+        )

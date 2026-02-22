@@ -335,3 +335,31 @@ addressed as completed slices or intentional incremental refactor steps
 (notably item 2, which is complete for explicit outcome semantics and leaves a
 documented optional follow-up to emit deferred outcomes directly from the
 stability tracker).
+
+## Continuation Slice: Post-Persist Bookkeeping Plan/Emitter Extraction (2026-02-22)
+
+Intended action:
+- Continue item 5 decomposition by separating force-path bookkeeping planning
+  (update targets + unsynced marks + skipped missing paths) from side-effect
+  emission in `FileProcessManager`.
+
+Observed outcome:
+- Added `src/dpost/application/processing/post_persist_bookkeeping.py` with:
+  - `PostPersistBookkeepingPlan`
+  - `PostPersistRecordUpdateTarget`
+  - `PostPersistBookkeepingEmissionSink`
+  - `build_post_persist_bookkeeping_plan(...)`
+  - `emit_post_persist_bookkeeping(...)`
+- Updated `FileProcessManager` to:
+  - build a bookkeeping plan
+  - log skipped missing force paths in a dedicated stage
+  - emit bookkeeping side effects through a dedicated stage/sink builder
+- Preserved existing branch behavior for force-file/force-dir handling and
+  immediate-sync error reporting.
+- Added focused seam tests in
+  `tests/unit/application/processing/test_post_persist_bookkeeping.py`.
+
+Validation:
+- `python -m pytest -q` -> `729 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `694 passed, 1 skipped, 1 warning`, `100%` total coverage (`5312 stmts, 0 miss`)
+- `python -m ruff check .` -> pass
