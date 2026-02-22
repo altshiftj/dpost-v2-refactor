@@ -541,3 +541,26 @@ Validation:
 - `python -m pytest -q` -> `743 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `708 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Storage Move Helper Explicit-Context Symmetry (2026-02-22)
+
+Intended action:
+- Finish explicit-context support symmetry across filesystem move helpers by
+  extending `move_to_record_folder(...)` to match the explicit-context posture
+  already applied to rename/exception move helpers.
+
+Observed outcome:
+- `src/dpost/infrastructure/storage/filesystem_utils.py`
+  - `move_to_record_folder(...)` now accepts optional explicit:
+    - `id_separator`
+    - `dest_dir`
+    - `current_device`
+  - forwards these to `get_record_path(...)` via the helper path factory
+- `tests/unit/infrastructure/storage/test_filesystem_utils.py`
+  - existing record-folder move helper test updated for kwarg-tolerant monkeypatch
+  - added focused test asserting explicit-context forwarding behavior
+
+Validation:
+- `python -m pytest -q` -> `744 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `709 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

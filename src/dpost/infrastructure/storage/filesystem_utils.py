@@ -306,13 +306,26 @@ def move_to_rename_folder(
     )
 
 
-def move_to_record_folder(src: str, filename_prefix: str, extension: str = "") -> None:
+def move_to_record_folder(
+    src: str,
+    filename_prefix: str,
+    extension: str = "",
+    *,
+    id_separator: str | None = None,
+    dest_dir: str | Path | None = None,
+    current_device=None,
+) -> None:
     """Move an item to the computed record folder (unique filename)."""
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
         extension=extension,
-        unique_path_func=get_record_path,
+        unique_path_func=lambda name: get_record_path(
+            name,
+            id_separator=id_separator,
+            dest_dir=dest_dir,
+            current_device=current_device,
+        ),
         log_message="Moved '{}' to record folder for '{}'",
         log_level=logging.INFO,
     )

@@ -450,7 +450,11 @@ def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.Monk
     """Route move-to-record calls through record-path factory and move helper."""
     calls: dict[str, object] = {}
 
-    monkeypatch.setattr(filesystem_utils, "get_record_path", lambda name: f"/records/{name}")
+    monkeypatch.setattr(
+        filesystem_utils,
+        "get_record_path",
+        lambda name, **_kwargs: f"/records/{name}",
+    )
     monkeypatch.setattr(
         filesystem_utils,
         "move_item",
@@ -460,3 +464,40 @@ def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.Monk
     filesystem_utils.move_to_record_folder("C:/raw/file.txt", "prefix", ".txt")
 
     assert calls == {"src": "C:/raw/file.txt", "dest": "/records/prefix.txt"}
+
+
+def test_move_to_record_folder_accepts_explicit_context(monkeypatch: pytest.MonkeyPatch):
+    """Record-folder move helper should forward explicit naming/storage context."""
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+    device = object()
+
+    monkeypatch.setattr(
+        filesystem_utils,
+        "get_record_path",
+        lambda *args, **kwargs: calls.__setitem__("path", (args, kwargs))
+        or "/records/prefix.txt",
+    )
+    monkeypatch.setattr(
+        filesystem_utils,
+        "move_item",
+        lambda *args, **kwargs: calls.__setitem__("move", (args, kwargs)),
+    )
+
+    filesystem_utils.move_to_record_folder(
+        "C:/raw/file.txt",
+        "prefix",
+        ".txt",
+        id_separator="__",
+        dest_dir="C:/Data",
+        current_device=device,
+    )
+
+    path_args, path_kwargs = calls["path"]
+    move_args, _ = calls["move"]
+    assert path_args == ("prefix.txt",)
+    assert path_kwargs == {
+        "id_separator": "__",
+        "dest_dir": "C:/Data",
+        "current_device": device,
+    }
+    assert move_args == ("C:/raw/file.txt", "/records/prefix.txt")
