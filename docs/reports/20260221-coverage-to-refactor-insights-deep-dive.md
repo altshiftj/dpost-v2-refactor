@@ -10,8 +10,8 @@ reduces production risk, not just test percentages.
 - Validation command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Latest result:
-  - `537 passed, 1 skipped, 1 warning`
-  - total coverage: `93%` (`4990 stmts, 341 miss`)
+  - `640 passed, 1 skipped, 1 warning`
+  - total coverage: `99%` (`5011 stmts, 1 miss`)
 
 ## Insight 1: Orchestration hotspots are carrying too many responsibilities
 
@@ -31,9 +31,9 @@ Risk:
 Refactor action:
 
 1. Extract pure policy units:
-   - `CandidateMetadataPolicy` from `_derive_candidate_metadata`.
-   - `RoutePolicy` from `_build_route_context` and `_rename_retry_policy_stage`.
-   - `ForcePathPolicy` from `_post_persist_side_effects_stage`.
+   - `CandidateMetadataPolicy` from `_derive_candidate_metadata`. (completed)
+   - `ForcePathPolicy` from `_post_persist_side_effects_stage`. (completed)
+   - `RoutePolicy` from `_build_route_context` and `_rename_retry_policy_stage`. (remaining)
 2. Keep `FileProcessManager` as orchestration shell only.
 3. Add direct policy tests that do not require active global config/service.
 
@@ -42,12 +42,19 @@ Acceptance criteria:
 - `file_process_manager.py` coverage increases with fewer integration-style tests.
 - New policy modules have deterministic unit tests and no filesystem side effects.
 
+Current status:
+
+- `file_process_manager.py` is now at `99%`.
+- extracted policy modules (`candidate_metadata.py`, `force_path_policy.py`) are at `100%`.
+- remaining gap is a single likely-defensive line (`file_process_manager.py:145`),
+  plus route/failure outcome structuring and dependency cleanup refactors.
+
 ## Insight 2: Hidden config globals still leak into deep infrastructure seams
 
 Primary evidence:
 
 - `src/dpost/infrastructure/sync/kadi_manager.py:22` reads separator via
-  `_id_separator() -> current().id_separator`.
+  explicit resolver seam (improved), but other helpers still rely on ambient config.
 - `src/dpost/application/processing/file_process_manager.py:341` defaults to
   `get_service()` when `config_service` is not passed.
 
@@ -67,6 +74,13 @@ Acceptance criteria:
 
 - Deep helpers run in tests without implicit `activate_device` context.
 - `kadi_manager` no longer imports runtime global config accessor.
+
+Current status:
+
+- `kadi_manager` now uses explicit separator and db-manager factory seams and
+  is fully unit covered.
+- remaining global-context cleanup is concentrated in helper layers under
+  processing/storage wiring.
 
 ## Insight 3: Retry and deferral policy is fragmented across layers
 
@@ -119,29 +133,39 @@ Acceptance criteria:
 - Domain/application methods return structured outcomes without direct UI calls.
 - UI adapters consume outcomes and render notifications separately.
 
-## Insight 5: Dynamic plugin loading remains a low-coverage reliability surface
+## Insight 5: Coverage exposed processor design pressure more than raw risk gaps
 
 Primary evidence:
 
-- `src/dpost/plugins/system.py` still at `74%` with misses concentrated in
-  entry-point loading, lazy import error paths, duplicate registration handling,
-  and version-specific entry-point code.
+- previously low-covered processor modules are now fully covered with focused
+  branch suites:
+  - `src/dpost/device_plugins/erm_hioki/file_processor.py`
+  - `src/dpost/device_plugins/utm_zwick/file_processor.py`
+  - `src/dpost/device_plugins/psa_horiba/file_processor.py`
+  - `src/dpost/device_plugins/rhe_kinexus/file_processor.py`
+- remaining global miss is concentrated in an orchestration defensive path:
+  - `src/dpost/application/processing/file_process_manager.py:145`
 
 Risk:
 
-- Packaging or environment differences can break discovery silently.
-- Startup behavior may differ between dev/prod environments.
+- Raw coverage gaps are no longer the main problem; the next risk is
+  maintainability of large processor/orchestrator methods with many side effects.
+- Continued feature work in these modules can reintroduce coverage loss if seam
+  extraction does not continue.
 
 Refactor action:
 
-1. Introduce `PluginDiscoveryPort` and adapter for importlib/entry_points.
-2. Unit-test loader logic against a deterministic fake discovery source.
-3. Keep one integration test for real entry-point wiring.
+1. Extract pure parse/normalization helpers from large processors into
+   dedicated policy modules (now justified by test pain, not lack of coverage).
+2. Preserve the new branch suites as regression harnesses while reducing test
+   setup burden through helper seam extraction.
+3. Keep lightweight integration tests for end-to-end processor contracts.
 
 Acceptance criteria:
 
-- Most plugin loader tests stop monkeypatching importlib internals directly.
-- Error messages for missing/invalid plugins are contract-tested.
+- Processor-specific helpers are testable without filesystem orchestration setup.
+- Remaining misses stay limited to defensive/unreachable branches or are
+  explicitly excluded with rationale.
 
 ## Insight 6: Testability improved where boundaries are explicit
 
@@ -165,10 +189,12 @@ Action:
 
 ## Prioritized Refactor Queue
 
-1. `file_process_manager` policy extraction (highest ROI).
-2. `kadi_manager` config/dynamic-client seam extraction.
-3. `device_watchdog_app` lifecycle outcome decomposition.
-4. `plugins/system` discovery adapter extraction.
+1. `file_process_manager` route/retry/failure-outcome seam extraction.
+2. global config access reduction in deep helper layers.
+3. `stability_tracker` time-policy seam extraction.
+4. decide whether to leave `file_process_manager.py:145` as defensive/unreachable
+   or mark with `# pragma: no cover` plus rationale.
+5. continue monitoring test naming/import hygiene as suites expand.
 
 ## Cross-Reference
 

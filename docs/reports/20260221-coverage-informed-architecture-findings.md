@@ -12,8 +12,8 @@ Latest validated baseline in this run:
 - Command:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
 - Result:
-  - `537 passed, 1 skipped, 1 warning`
-  - total coverage: `93%` (`4990 stmts, 341 miss`)
+  - `627 passed, 1 skipped, 1 warning`
+  - total coverage: `99%` (`5011 stmts, 44 miss`)
 
 Additional quality gate:
 
@@ -42,17 +42,19 @@ Observed impact:
 with stubs only. This confirms the framework-first composition posture is working
 well in these areas.
 
-### 3. Coverage gaps are now concentrated in orchestration-heavy flows
+### 3. Coverage gaps are now concentrated in a small set of residual modules
 
 Most low/medium complexity modules are at or near 100%. Remaining misses cluster in:
 
-- `src/dpost/application/processing/file_process_manager.py` (79%)
-- `src/dpost/application/runtime/device_watchdog_app.py` (79%)
-- `src/dpost/infrastructure/sync/kadi_manager.py` (63%)
-- `src/dpost/plugins/system.py` (74%)
-- larger device processors (`rhe_kinexus`, portions of `psa_horiba`, etc.)
+- remaining device processors:
+  - `src/dpost/device_plugins/erm_hioki/file_processor.py` (85%)
+  - `src/dpost/device_plugins/utm_zwick/file_processor.py` (83%)
+- small residual branches in already high-covered processors:
+  - `file_process_manager.py` (2 lines)
+  - `psa_horiba/file_processor.py` (4 lines)
+  - `rhe_kinexus/file_processor.py` (3 lines)
 
-These modules combine timing, filesystem, retry/deferred behavior, and integration edges.
+These modules combine richer file variants, parser fallbacks, timing, and retry/deferred behavior.
 
 ### 4. Branch coverage improvements exposed meaningful edge behavior
 
@@ -79,10 +81,9 @@ Detailed execution steps are tracked in:
 Top priorities:
 
 1. Introduce explicit runtime-context ports for helpers that currently read global config.
-2. Extract and test pure decision functions from `file_process_manager` and `stability_tracker`.
-3. Add an injectable client/factory seam around `kadi_manager` to isolate API interactions in unit tests.
-4. Expand scenario-based tests for `device_watchdog_app` lifecycle and failure/recovery branches.
-5. Standardize unique test module naming under `tests/unit/**` to prevent import collisions.
+2. Close remaining branch residuals in `erm_hioki` and `utm_zwick`.
+3. Decide whether to treat current micro-misses in high-covered modules as acceptable defensive/unreachable lines.
+4. Standardize unique test module naming under `tests/unit/**` to prevent import collisions.
 
 ## Refactoring Guidance
 
@@ -107,8 +108,9 @@ Top priorities:
 
 ## Notes
 
-- Coverage improvements in this effort were test-only and docs-only changes.
-- No production behavior refactors were applied in this report cycle.
+- Coverage improvements in this effort include production-safe seam extractions
+  (`candidate_metadata`, `retry_planner`, `force_path_policy`, plugin discovery seams)
+  plus focused tests and documentation.
 
 ## In-Flight Slice Notes (Append-Only)
 
@@ -374,3 +376,216 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `537 passed, 1 skipped, 1 warning`
       - total coverage: `93%` (`4990 stmts, 341 miss`)
+
+### Slice 13: File process manager force-path policy seam + branch closure
+
+- Intended action:
+  - extract force-path resolution/unsynced-target expansion from
+    `file_process_manager` into a dedicated policy seam and close remaining
+    manager branch gaps with focused tests
+- Expected outcome:
+  - reduce orchestration density in post-persist side effects
+  - raise module-level coverage with deterministic branch tests
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/force_path_policy.py`
+    - `tests/unit/application/processing/test_force_path_policy.py`
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - delegates force-path resolution/expansion to policy helpers
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/force_path_policy.py tests/unit/application/processing/test_force_path_policy.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
+    - `python -m pytest -q tests/unit/application/processing/test_force_path_policy.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `38 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.force_path_policy --cov-report=term-missing -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_force_path_policy.py tests/unit/application/processing/test_candidate_metadata.py`
+      - `file_process_manager.py` -> `99%`
+      - `force_path_policy.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `558 passed, 1 skipped, 1 warning`
+      - total coverage: `94%` (`5010 stmts, 285 miss`)
+
+### Slice 14: Kadi sync manager factory seam + branch completion
+
+- Intended action:
+  - add explicit `db_manager` factory seam to reduce hard coupling in
+    `kadi_manager` and close remaining orchestration/private-branch gaps
+- Expected outcome:
+  - improve test determinism for sync orchestration flows
+  - raise `kadi_manager` coverage substantially
+- Observed outcome:
+  - updated:
+    - `src/dpost/infrastructure/sync/kadi_manager.py`
+      - added optional `db_manager_factory` injection seam
+  - added:
+    - `tests/unit/infrastructure/sync/test_sync_kadi_branches.py`
+      - covers sync orchestration success/error paths, resource preparation,
+        collection/group helpers, upload error branches, separator fallback policy
+  - validation:
+    - `python -m ruff check src/dpost/infrastructure/sync/kadi_manager.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py` -> pass
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/infrastructure/sync/test_kadi_adapter.py` -> `30 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.infrastructure.sync.kadi_manager --cov-report=term-missing -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/infrastructure/sync/test_kadi_adapter.py`
+      - `kadi_manager.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `574 passed, 1 skipped, 1 warning`
+      - total coverage: `96%` (`5011 stmts, 225 miss`)
+
+### Slice 15: Kinexus processor branch hardening
+
+- Intended action:
+  - raise coverage and confidence in the largest remaining device processor
+    (`rhe_kinexus`) by targeting helper and defensive branches directly
+- Expected outcome:
+  - significant module-level coverage increase with deterministic branch tests
+  - improved confidence in sentinel/pairing/cleanup/error handling behavior
+- Observed outcome:
+  - added:
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+      - covers preprocessing short-circuit branches, export/native helper branches,
+        probe decision branches, finalization guards, cleanup fallback behavior,
+        sequence helper, zip helper, stale purge exception paths
+  - validation:
+    - `python -m ruff check tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py src/dpost/device_plugins/rhe_kinexus/file_processor.py` -> pass
+    - `python -m pytest -q tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py` -> `24 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.device_plugins.rhe_kinexus.file_processor --cov-report=term-missing -q tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+      - `rhe_kinexus/file_processor.py` -> `99%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `593 passed, 1 skipped, 1 warning`
+      - total coverage: `97%` (`5011 stmts, 138 miss`)
+
+### Slice 16: PSA Horiba processor branch hardening
+
+- Intended action:
+  - close major remaining branch gaps in `psa_horiba` parser/preprocess/finalize/purge flows
+- Expected outcome:
+  - raise module-level coverage and reduce risk in staged flush/error handling behavior
+- Observed outcome:
+  - added:
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - covers preprocessing helper branches, CSV/NGB handling branches, probe paths,
+        finalize guard branches, sequence/zip helper branches, metadata parser edges,
+        and stale purge exception paths
+  - validation:
+    - `python -m ruff check tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py src/dpost/device_plugins/psa_horiba/file_processor.py` -> pass
+    - `python -m pytest -q tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py` -> `24 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.device_plugins.psa_horiba.file_processor --cov-report=term-missing -q tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py tests/unit/device_plugins/psa_horiba/test_staging_rename_cancel.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - `psa_horiba/file_processor.py` -> `99%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `609 passed, 1 skipped, 1 warning`
+      - total coverage: `98%` (`5011 stmts, 84 miss`)
+
+### Slice 17: SEM + DSV processor residual branch closure
+
+- Intended action:
+  - close remaining helper/error branches in smaller processor modules
+    (`sem_phenomxl2`, `dsv_horiba`)
+- Expected outcome:
+  - remove low-hanging residual misses and improve global baseline efficiently
+- Observed outcome:
+  - added:
+    - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py`
+    - `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py`
+  - validation:
+    - `python -m pytest --cov=dpost.device_plugins.sem_phenomxl2.file_processor --cov=dpost.device_plugins.dsv_horiba.file_processor --cov-report=term-missing -q tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py`
+      - `sem_phenomxl2/file_processor.py` -> `100%`
+      - `dsv_horiba/file_processor.py` -> `100%`
+
+### Slice 18: Runtime/plugin residual branch closure
+
+- Intended action:
+  - close remaining coverage residuals in `device_watchdog_app` and `plugins/system`
+- Expected outcome:
+  - fully cover runtime retry/exception branches and plugin singleton/entrypoint edge branches
+- Observed outcome:
+  - added:
+    - `tests/unit/application/runtime/test_device_watchdog_app_branches.py`
+    - `tests/unit/plugins/system/test_plugin_loader_residual_branches.py`
+  - validation:
+    - `python -m pytest --cov=dpost.application.runtime.device_watchdog_app --cov=dpost.plugins.system --cov-report=term-missing -q tests/unit/application/runtime/test_device_watchdog_app.py tests/unit/application/runtime/test_device_watchdog_app_branches.py tests/unit/plugins/system/test_plugin_loader.py tests/unit/plugins/system/test_no_double_logging.py tests/unit/plugins/system/test_plugin_loader_discovery_edges.py tests/unit/plugins/system/test_plugin_loader_residual_branches.py`
+      - `device_watchdog_app.py` -> `100%`
+      - `plugins/system.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `627 passed, 1 skipped, 1 warning`
+      - total coverage: `99%` (`5011 stmts, 44 miss`)
+    - quality gate:
+      - `python -m ruff check .` -> pass
+
+### Slice 19: ERM Hioki processor branch hardening
+
+- Intended action:
+  - close residual helper/error branches in `erm_hioki` processor to remove a
+    remaining device-plugin reliability hotspot
+- Expected outcome:
+  - bring `erm_hioki/file_processor.py` to full branch coverage with focused
+    tests only
+- Observed outcome:
+  - added:
+    - `tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py`
+  - validation:
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.device_plugins.erm_hioki.file_processor --cov-report=term-missing -q tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py`
+      - `erm_hioki/file_processor.py` -> `100%`
+
+### Slice 20: UTM Zwick processor branch hardening
+
+- Intended action:
+  - eliminate the largest remaining device-plugin miss cluster in
+    `utm_zwick/file_processor.py`
+- Expected outcome:
+  - close UTM helper/error/fallback branches and materially reduce global misses
+- Observed outcome:
+  - added:
+    - `tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py`
+  - validation:
+    - `python -m ruff check tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> pass
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> `12 passed`
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.device_plugins.utm_zwick.file_processor --cov-report=term-missing -q tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py`
+      - `utm_zwick/file_processor.py` -> `100%`
+
+### Slice 21: Kinexus/PSA residual micro-branch closure
+
+- Intended action:
+  - close the last low-cost misses in `rhe_kinexus` and `psa_horiba` helper
+    branches without changing production behavior
+- Expected outcome:
+  - fully cover both high-complexity processor modules
+- Observed outcome:
+  - updated:
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+      - added `_id_separator()` helper coverage, bucket-tracked export branch,
+        and no-separator sequence filename case
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - added `_reconstruct_batch_from_stage()` helper coverage, blank-line
+        metadata parser branch, and no-separator sequence filename case
+  - validation:
+    - `python -m ruff check tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py` -> pass
+    - targeted coverage:
+      - `python -m pytest --cov=dpost.device_plugins.rhe_kinexus.file_processor --cov-report=term-missing -q tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+      - `rhe_kinexus/file_processor.py` -> `100%`
+      - `python -m pytest --cov=dpost.device_plugins.psa_horiba.file_processor --cov-report=term-missing -q tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+      - `psa_horiba/file_processor.py` -> `100%`
+
+### Slice 22: Final coverage checkpoint and residual classification
+
+- Intended action:
+  - verify end-of-run global quality state after all branch-hardening slices and
+    classify any remaining misses
+- Expected outcome:
+  - near-total coverage with only defensive/unreachable residuals left
+- Observed outcome:
+  - full checkpoint:
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+    - `640 passed, 1 skipped, 1 warning`
+    - total coverage: `99%` (`5011 stmts, 1 miss`)
+  - remaining miss classification:
+    - `src/dpost/application/processing/file_process_manager.py:145`
+      - likely unreachable defensive raise after dispatcher exhaustiveness

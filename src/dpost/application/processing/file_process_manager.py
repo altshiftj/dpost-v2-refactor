@@ -41,6 +41,10 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
+from dpost.application.processing.force_path_policy import (
+    iter_force_unsynced_targets,
+    resolve_force_paths,
+)
 from dpost.application.processing.modified_event_gate import ModifiedEventGate
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_flow import handle_unappendable_record
@@ -484,24 +488,17 @@ class FileProcessManager:
         """Apply post-persist bookkeeping, metrics, and immediate sync policy."""
         new_files = update_record(self.records, output.final_path, record)
         if output.force_paths:
-            for force_path in output.force_paths:
-                if not force_path:
-                    continue
-                path_obj = Path(force_path)
-                if not path_obj.is_absolute():
-                    path_obj = Path(record_path) / path_obj
-                if not path_obj.exists():
+            for resolved in resolve_force_paths(output.force_paths, record_path):
+                if not resolved.exists:
                     logger.debug(
-                        "Skipping missing force path for record: %s", force_path
+                        "Skipping missing force path for record: %s", resolved.raw_path
                     )
                     continue
-                new_files += update_record(self.records, str(path_obj), record)
-                if path_obj.is_dir():
-                    for child in path_obj.rglob("*"):
-                        if child.is_file():
-                            record.mark_file_as_unsynced(str(child))
-                else:
-                    record.mark_file_as_unsynced(str(path_obj))
+                new_files += update_record(
+                    self.records, str(resolved.resolved_path), record
+                )
+                for child in iter_force_unsynced_targets(resolved.resolved_path):
+                    record.mark_file_as_unsynced(str(child))
         if new_files > 0:
             FILES_PROCESSED.inc(new_files)
 

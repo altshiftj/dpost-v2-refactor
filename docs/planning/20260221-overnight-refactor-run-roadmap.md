@@ -14,12 +14,119 @@ unit coverage.
   - `537 passed, 1 skipped, 1 warning`
   - `93%` total coverage (`4990 stmts, 341 miss`)
 
+## Progress Checkpoints
+
+### Checkpoint A: File process manager force-path seam slice
+
+- Completed slice:
+  - extracted `force_path_policy` seam from
+    `src/dpost/application/processing/file_process_manager.py`
+  - added focused branch tests:
+    - `tests/unit/application/processing/test_force_path_policy.py`
+    - `tests/unit/application/processing/test_file_process_manager_branches.py`
+- Validation:
+  - targeted `ruff` and targeted `pytest` passed
+  - targeted coverage:
+    - `file_process_manager.py` -> `99%`
+    - `force_path_policy.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `558 passed, 1 skipped, 1 warning`
+  - `94%` total coverage (`5010 stmts, 285 miss`)
+
+### Checkpoint B: Kadi manager seam + branch-completion slice
+
+- Completed slice:
+  - added explicit `db_manager_factory` seam in
+    `src/dpost/infrastructure/sync/kadi_manager.py`
+  - added focused branch suite:
+    - `tests/unit/infrastructure/sync/test_sync_kadi_branches.py`
+- Validation:
+  - targeted `ruff` and targeted sync tests passed
+  - targeted coverage:
+    - `kadi_manager.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `574 passed, 1 skipped, 1 warning`
+  - `96%` total coverage (`5011 stmts, 225 miss`)
+
+### Checkpoint C: Kinexus device processor branch-hardening slice
+
+- Completed slice:
+  - added focused branch suite:
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+- Validation:
+  - targeted `ruff` and targeted Kinexus tests passed
+  - targeted coverage:
+    - `rhe_kinexus/file_processor.py` -> `99%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `593 passed, 1 skipped, 1 warning`
+  - `97%` total coverage (`5011 stmts, 138 miss`)
+
+### Checkpoint D: PSA Horiba processor branch-hardening slice
+
+- Completed slice:
+  - added focused branch suite:
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+- Validation:
+  - targeted `ruff` and targeted PSA tests passed
+  - targeted coverage:
+    - `psa_horiba/file_processor.py` -> `99%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `609 passed, 1 skipped, 1 warning`
+  - `98%` total coverage (`5011 stmts, 84 miss`)
+
+### Checkpoint E: Residual branch-closure sprint (SEM/DSV + runtime/plugin)
+
+- Completed slices:
+  - added:
+    - `tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py`
+    - `tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py`
+    - `tests/unit/application/runtime/test_device_watchdog_app_branches.py`
+    - `tests/unit/plugins/system/test_plugin_loader_residual_branches.py`
+- Validation:
+  - targeted module coverage results:
+    - `sem_phenomxl2/file_processor.py` -> `100%`
+    - `dsv_horiba/file_processor.py` -> `100%`
+    - `device_watchdog_app.py` -> `100%`
+    - `plugins/system.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `627 passed, 1 skipped, 1 warning`
+  - `99%` total coverage (`5011 stmts, 44 miss`)
+
+### Checkpoint F: Final processor closure sprint (ERM/UTM + Kinexus/PSA micro-branches)
+
+- Completed slices:
+  - added:
+    - `tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py`
+    - `tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py`
+  - updated:
+    - `tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py`
+    - `tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py`
+- Validation:
+  - targeted module coverage results:
+    - `erm_hioki/file_processor.py` -> `100%`
+    - `utm_zwick/file_processor.py` -> `100%`
+    - `rhe_kinexus/file_processor.py` -> `100%`
+    - `psa_horiba/file_processor.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `640 passed, 1 skipped, 1 warning`
+  - `99%` total coverage (`5011 stmts, 1 miss`)
+  - remaining residual:
+    - `src/dpost/application/processing/file_process_manager.py:145` (likely unreachable defensive raise)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
-2. `src/dpost/infrastructure/sync/kadi_manager.py`
-3. `src/dpost/application/runtime/device_watchdog_app.py`
-4. `src/dpost/plugins/system.py`
+   - extract route/retry/failure-outcome policy seams
+2. `src/dpost/application/processing/stability_tracker.py`
+   - isolate time-based decision helpers into pure functions
+3. deep helper global-config access cleanup (`current()/get_service()` reduction)
+4. shared retry policy unification across resolver/watchdog flows
 
 ## Execution Model
 

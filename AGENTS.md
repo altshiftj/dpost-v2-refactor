@@ -136,15 +136,20 @@
 
 ## Refactor-First Playbook (Current Process)
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
+- Current validated checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `640 passed, 1 skipped, 1 warning`
+  - `99%` total coverage (`5011 stmts, 1 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
-     - extract pure routing/rename/retry/force-path policy seams
-  2. `src/dpost/infrastructure/sync/kadi_manager.py`
-     - remove hidden global-config dependency and add explicit injected seams
-  3. `src/dpost/application/runtime/device_watchdog_app.py`
-     - separate lifecycle/event-loop control flow from side-effect handling
-  4. `src/dpost/plugins/system.py`
-     - isolate dynamic discovery/import behavior behind deterministic seams
+     - extract remaining pure routing/rename/retry/failure-outcome policy seams
+     - evaluate defensive residual at `:145` for explicit unreachable rationale
+  2. `src/dpost/application/processing/stability_tracker.py`
+     - isolate time-window/stability decisions into pure helpers
+  3. deep helper global-config access cleanup (`current()/get_service()` reduction)
+     - push runtime/config lookup to composition boundaries
+  4. retry policy unification across resolver/watchdog processing flows
+     - introduce shared policy value object + contract tests
 - Supporting reference docs:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`

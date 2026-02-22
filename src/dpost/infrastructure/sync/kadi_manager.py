@@ -42,13 +42,15 @@ class KadiSyncManager:
         self,
         interactions: UserInteractionPort,
         id_separator_resolver: Callable[[LocalRecord], str] | None = None,
+        db_manager_factory: Callable[[], KadiManager] | None = None,
     ) -> None:
         """Initialise the sync manager with UI-agnostic collaborators."""
         self.interactions = interactions
         self._id_separator_resolver = (
             id_separator_resolver or self._infer_id_separator_from_record
         )
-        self.db_manager = KadiManager()
+        factory = db_manager_factory or KadiManager
+        self.db_manager = factory()
 
     def sync_record_to_database(self, local_record: LocalRecord) -> bool:
         try:

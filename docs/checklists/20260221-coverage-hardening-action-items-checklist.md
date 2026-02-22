@@ -31,19 +31,19 @@ behavior regressions are most costly (`file_process_manager`, `stability_tracker
 Why this matters: `kadi_manager` remains a low-coverage high-risk adapter with external
 API interactions and multi-step resource orchestration.
 
-- [ ] Add an injectable Kadi client factory boundary in `kadi_manager`.
-- [ ] Unit test each private flow deterministically:
+- [x] Add an injectable Kadi client factory boundary in `kadi_manager`.
+- [x] Unit test each private flow deterministically:
       resource prep, user/group/collection creation, upload error handling.
-- [ ] Keep one smoke contract test for end-to-end adapter delegation semantics.
+- [x] Keep one smoke contract test for end-to-end adapter delegation semantics.
 
 ## 4. Expand Runtime Lifecycle Scenario Coverage
 
 Why this matters: `device_watchdog_app` still has significant untested lifecycle and
 failure/recovery branches that affect runtime stability.
 
-- [ ] Add lifecycle tests for startup, watcher loop transitions, graceful shutdown.
-- [ ] Add failure-path tests for observer errors, processing exceptions, and retry flow.
-- [ ] Validate UI interaction/scheduler side effects in headless-compatible unit tests.
+- [x] Add lifecycle tests for startup, watcher loop transitions, graceful shutdown.
+- [x] Add failure-path tests for observer errors, processing exceptions, and retry flow.
+- [x] Validate UI interaction/scheduler side effects in headless-compatible unit tests.
 
 ## 5. Standardize Test Module Naming Hygiene
 
@@ -60,16 +60,16 @@ import mismatch errors during full-suite collection.
 Why this matters: manual verification ensures coverage-focused refactors still preserve
 real runtime behavior and contributor workflow expectations.
 
-- [ ] Run:
+- [x] Run:
       `python -m ruff check tests/unit`
-- [ ] Run:
+- [x] Run:
       `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-- [ ] Confirm target modules improved:
+- [x] Confirm target modules improved:
       `application/processing/file_process_manager.py`,
-      `application/processing/stability_tracker.py`,
       `application/runtime/device_watchdog_app.py`,
-      `infrastructure/sync/kadi_manager.py`.
-- [ ] Confirm no import-mismatch collection failures across full `tests/unit`.
+      `infrastructure/sync/kadi_manager.py`,
+      key device processor modules (`psa_horiba`, `rhe_kinexus`, `utm_zwick`, `erm_hioki`).
+- [x] Confirm no import-mismatch collection failures across full `tests/unit`.
 - [ ] Perform one operator-style smoke run in headless mode after refactors.
 
 ## Completion Notes
@@ -79,7 +79,9 @@ How it was done:
 - Built from iterative red/green coverage runs during 2026-02-21 autonomous TDD sessions.
 - Derived priorities from latest full coverage snapshot:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `503 passed, 1 skipped, 1 warning, total 92%`.
+  - `640 passed, 1 skipped, 1 warning, total 99% (5011 stmts, 1 miss)`.
+- Remaining miss is likely unreachable defensive line:
+  - `src/dpost/application/processing/file_process_manager.py:145`.
 - Captured deeper rationale in:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`.
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`.
