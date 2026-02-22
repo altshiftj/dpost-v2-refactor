@@ -564,3 +564,31 @@ Validation:
 - `python -m pytest -q` -> `744 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `709 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Processor Runtime Context Hook for Separator Injection (2026-02-22)
+
+Intended action:
+- Reduce active-path fallback reliance on plugin-local `current().id_separator`
+  lookups (notably Kinexus/PSA processors) without a broad plugin/factory API
+  rewrite.
+
+Observed outcome:
+- `src/dpost/application/processing/file_processor_abstract.py`
+  - added no-op `configure_runtime_context(...)` hook (default compatible)
+- `src/dpost/application/processing/file_process_manager.py`
+  - `_resolve_processor(...)` now always calls
+    `processor.configure_runtime_context(id_separator=...)` using the manager's
+    `config_service`
+- `src/dpost/device_plugins/rhe_kinexus/file_processor.py`
+  - overrides `configure_runtime_context(...)` to set `_id_separator` only when
+    the processor was constructed without an explicit separator
+- `src/dpost/device_plugins/psa_horiba/file_processor.py`
+  - same override behavior as Kinexus
+- Tests expanded to cover:
+  - manager runtime-context injection into resolved processors
+  - Kinexus/PSA hook behavior (populate fallback, preserve explicit override)
+
+Validation:
+- `python -m pytest -q` -> `747 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `712 passed, 1 skipped, 1 warning`, `100%` total coverage (`5335 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

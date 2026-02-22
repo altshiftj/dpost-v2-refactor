@@ -592,10 +592,17 @@ class FileProcessManager:
     # ------------------------------------------------------------------
     def _resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
         if self.file_processor is not None:
-            return self.file_processor
+            processor = self.file_processor
+        else:
+            # Fall back to loading a processor via the factory based on the resolved device.
+            # The factory caches instances per device, so repeated calls are inexpensive.
+            processor = self._processor_factory.get_for_device(device.identifier)
         # Fall back to loading a processor via the factory based on the resolved device.
-        # The factory caches instances per device, so repeated calls are inexpensive.
-        return self._processor_factory.get_for_device(device.identifier)
+        # Apply runtime context after construction to reduce processor-global config lookups.
+        processor.configure_runtime_context(
+            id_separator=self.config_service.current.id_separator,
+        )
+        return processor
 
     @staticmethod
     def _strip_internal_stage_suffix(path: Path) -> Path:

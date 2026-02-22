@@ -74,6 +74,11 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._raw_to_stage: Dict[str, str] = {}
 
+    def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
+        """Capture runtime separator when constructed without explicit override."""
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
+
     def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         element = Path(path)
         logger.debug("Kinexus: preprocessing path=%s", element)

@@ -875,6 +875,30 @@ def test_resolve_processor_uses_factory_when_instance_processor_missing(
     assert calls == [config_service.devices[0].identifier]
 
 
+def test_resolve_processor_injects_runtime_context_into_processor(
+    manager_bundle,
+    config_service,
+) -> None:
+    """Resolved processors should receive runtime naming context from the manager."""
+    manager, _ = manager_bundle
+
+    class _ProcessorWithContext(DummyProcessor):
+        def __init__(self) -> None:
+            super().__init__()
+            self.context_calls: list[str | None] = []
+
+        def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
+            self.context_calls.append(id_separator)
+
+    processor = _ProcessorWithContext()
+    manager.file_processor = processor
+
+    resolved = manager._resolve_processor(config_service.devices[0])
+
+    assert resolved is processor
+    assert processor.context_calls == [config_service.current.id_separator]
+
+
 def test_strip_internal_stage_suffix_removes_countered_suffix() -> None:
     """Strip internal staged marker from filenames while preserving extension."""
     source = Path("C:/tmp/sample.__staged__3.csv")

@@ -149,6 +149,16 @@ class FileProcessorABS(ABC):
 
         return False
 
+    def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
+        """Optionally apply runtime wiring context after processor construction.
+
+        The default implementation is a no-op so existing processors remain
+        compatible. Processors may override this to capture runtime naming or
+        storage settings that are only known after plugin instantiation.
+        """
+
+        return None
+
     @abstractmethod
     def device_specific_processing(
         self,

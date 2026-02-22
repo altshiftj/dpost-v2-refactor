@@ -32,6 +32,17 @@ def test_preprocessing_handles_missing_and_unsupported_files(tmp_path: Path) -> 
     assert processor.device_specific_preprocessing(str(unsupported)) is None
 
 
+def test_configure_runtime_context_sets_separator_only_when_missing() -> None:
+    """Runtime context hook should populate fallback separator but preserve explicit overrides."""
+    processor = FileProcessorPSAHoriba(build_config())
+    processor.configure_runtime_context(id_separator="__")
+    assert processor._resolve_id_separator() == "__"  # noqa: SLF001
+
+    explicit = FileProcessorPSAHoriba(build_config(), id_separator="-")
+    explicit.configure_runtime_context(id_separator="__")
+    assert explicit._resolve_id_separator() == "-"  # noqa: SLF001
+
+
 def test_handle_csv_skips_finalizing_and_tracked_entries(tmp_path: Path) -> None:
     """Skip CSV handling when item is finalizing already or tracked in state."""
     processor = FileProcessorPSAHoriba(build_config())
