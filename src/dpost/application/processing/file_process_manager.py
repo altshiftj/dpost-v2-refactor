@@ -34,6 +34,9 @@ from dpost.application.session import SessionManager
 from dpost.application.processing.device_resolver import DeviceResolver
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.candidate_metadata import derive_candidate_metadata
+from dpost.application.processing.failure_outcome_policy import (
+    build_failure_move_targets,
+)
 from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
     PreprocessingResult,
@@ -570,16 +573,12 @@ class FileProcessManager:
         exc: Exception,
     ) -> None:
         logger.exception("Error processing %s: %s", path, exc)
-        target = str(candidate.effective_path) if candidate else str(path)
-        prefix = candidate.prefix if candidate else path.stem
-        extension = candidate.extension if candidate else path.suffix
         # Move whichever artefact exists (raw or preprocessed) so nothing lingers in watch folders.
-        safe_move_to_exception(target, prefix, extension)
-        if (
-            candidate
-            and candidate.preprocessed_path
-            and candidate.preprocessed_path != candidate.effective_path
-        ):
-            safe_move_to_exception(str(candidate.preprocessed_path), prefix, extension)
+        for move_target in build_failure_move_targets(path, candidate):
+            safe_move_to_exception(
+                move_target.path,
+                move_target.prefix,
+                move_target.extension,
+            )
         self._register_rejection(str(path), str(exc))
         FILES_FAILED.inc()

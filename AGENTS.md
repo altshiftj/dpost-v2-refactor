@@ -138,17 +138,18 @@
 - Primary objective: reduce architectural risk in orchestration-heavy modules while preserving behavior.
 - Current validated checkpoint:
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
-  - `643 passed, 1 skipped, 1 warning`
-  - `100%` total coverage (`5025 stmts, 0 miss`)
+  - `650 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5061 stmts, 0 miss`)
 - Current priority queue (in order):
   1. `src/dpost/application/processing/file_process_manager.py`
-     - extract remaining pure route-context and failure-outcome policy seams
-  2. `src/dpost/application/processing/stability_tracker.py`
-     - isolate time-window/stability decisions into pure helpers
-  3. deep helper global-config access cleanup (`current()/get_service()` reduction)
+     - extract remaining pure route-context policy seam
+     - separate failure event/outcome construction from side-effect emission
+  2. deep helper global-config access cleanup (`current()/get_service()` reduction)
      - push runtime/config lookup to composition boundaries
-  4. retry policy unification across resolver/watchdog processing flows
+  3. retry policy unification across resolver/watchdog processing flows
      - introduce shared policy value object + contract tests
+  4. test hygiene automation
+     - prevent duplicate test-module basename/import-mismatch regressions
 - Supporting reference docs:
   - `docs/reports/20260221-coverage-informed-architecture-findings.md`
   - `docs/reports/20260221-coverage-to-refactor-insights-deep-dive.md`

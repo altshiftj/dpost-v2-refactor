@@ -10,6 +10,10 @@ from typing import Iterable, Optional
 
 from dpost.application.config import DeviceConfig, StabilityOverride
 from dpost.infrastructure.logging import setup_logger
+from dpost.application.processing.stability_timing_policy import (
+    StabilityTimingPolicy,
+    resolve_stability_timing_policy,
+)
 
 logger = setup_logger(__name__)
 
@@ -34,16 +38,21 @@ class FileStabilityTracker:
         self.file_path = Path(file_path)
         self.device = device
         self._stability_override: Optional[StabilityOverride] = self._resolve_override()
+        self._timing_policy: StabilityTimingPolicy = resolve_stability_timing_policy(
+            self.device,
+            self._stability_override,
+        )
 
     def wait(self) -> StabilityOutcome:
-        deadline = dt.datetime.now() + dt.timedelta(seconds=self._max_wait_seconds())
+        timing = self._timing_policy
+        deadline = dt.datetime.now() + dt.timedelta(seconds=timing.max_wait_seconds)
         last_snapshot = self._snapshot()
         stable_cycles = 0
 
-        poll_seconds = self._poll_seconds()
+        poll_seconds = timing.poll_seconds
         # Optional disappear/reappear grace window (e.g., Office safe-save)
         reappear_deadline: Optional[dt.datetime] = None
-        reappear_window = self._reappear_window_seconds()
+        reappear_window = timing.reappear_window_seconds
         if reappear_window > 0:
             reappear_deadline = dt.datetime.now() + dt.timedelta(
                 seconds=reappear_window
@@ -68,7 +77,7 @@ class FileStabilityTracker:
                 return StabilityOutcome(
                     path=self.file_path,
                     stable=False,
-                    reason=f"Timeout (> {self._max_wait_seconds()}s)",
+                    reason=f"Timeout (> {timing.max_wait_seconds}s)",
                 )
 
             current_snapshot = self._snapshot()
@@ -79,7 +88,7 @@ class FileStabilityTracker:
                 continue
 
             stable_cycles += 1
-            if stable_cycles < self._stable_cycles():
+            if stable_cycles < timing.stable_cycles:
                 self._sleep(poll_seconds)
                 continue
 
@@ -152,39 +161,16 @@ class FileStabilityTracker:
         return None
 
     def _poll_seconds(self) -> float:
-        override = self._stability_override
-        if override is not None and override.poll_seconds is not None:
-            return max(float(override.poll_seconds), 0.0)
-        if self.device is None:
-            return 1.0
-        return max(float(self.device.watcher.poll_seconds), 0.0)
+        return self._timing_policy.poll_seconds
 
     def _max_wait_seconds(self) -> int:
-        override = self._stability_override
-        if override is not None and override.max_wait_seconds is not None:
-            return int(override.max_wait_seconds)
-        if self.device is None:
-            return 300
-        return int(self.device.watcher.max_wait_seconds)
+        return self._timing_policy.max_wait_seconds
 
     def _stable_cycles(self) -> int:
-        override = self._stability_override
-        if override is not None and override.stable_cycles is not None:
-            return int(override.stable_cycles)
-        if self.device is None:
-            return 3
-        return int(self.device.watcher.stable_cycles)
+        return self._timing_policy.stable_cycles
 
     def _reappear_window_seconds(self) -> float:
-        """Return optional disappear/reappear grace period in seconds (0 disables)."""
-        # If an override structure supports this in future, it can be added here similarly to _poll_seconds.
-        if self.device is None:
-            return 0.0
-        try:
-            value = getattr(self.device.watcher, "reappear_window_seconds", 0.0)
-            return float(value) if value else 0.0
-        except Exception:
-            return 0.0
+        return self._timing_policy.reappear_window_seconds
 
     @staticmethod
     def _sleep(seconds: float) -> None:

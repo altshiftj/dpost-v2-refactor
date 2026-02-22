@@ -621,3 +621,51 @@ Top priorities:
       - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
       - `643 passed, 1 skipped, 1 warning`
       - total coverage: `100%` (`5025 stmts, 0 miss`)
+
+### Slice 24: Stability tracker timing-policy seam extraction
+
+- Intended action:
+  - extract time/config resolution logic from `stability_tracker` into a pure
+    helper so the wait loop keeps orchestration responsibility only
+- Expected outcome:
+  - preserve `FileStabilityTracker` behavior while making timing defaults and
+    override precedence directly testable
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/stability_timing_policy.py`
+    - `tests/unit/application/processing/test_stability_timing_policy.py`
+  - updated:
+    - `src/dpost/application/processing/stability_tracker.py`
+      - resolves/stores `StabilityTimingPolicy` once at init
+      - wait loop uses policy values directly; compatibility accessors delegate
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/stability_tracker.py src/dpost/application/processing/stability_timing_policy.py tests/unit/application/processing/test_stability_timing_policy.py tests/unit/application/processing/test_stability_tracker.py` -> pass
+    - `python -m pytest --cov=dpost.application.processing.stability_tracker --cov=dpost.application.processing.stability_timing_policy --cov-report=term-missing -q tests/unit/application/processing/test_stability_tracker.py tests/unit/application/processing/test_stability_timing_policy.py`
+      - `stability_tracker.py` -> `100%`
+      - `stability_timing_policy.py` -> `100%`
+
+### Slice 25: File process manager failure-target policy seam extraction
+
+- Intended action:
+  - extract processing-failure artefact target selection from
+    `_handle_processing_failure` into a pure helper to separate control data
+    from side effects
+- Expected outcome:
+  - preserve failure cleanup behavior while reducing inline branching in manager
+  - improve direct testability of failure cleanup decisions
+- Observed outcome:
+  - added:
+    - `src/dpost/application/processing/failure_outcome_policy.py`
+    - `tests/unit/application/processing/test_failure_outcome_policy.py`
+  - updated:
+    - `src/dpost/application/processing/file_process_manager.py`
+      - consumes `build_failure_move_targets(...)` in `_handle_processing_failure`
+  - validation:
+    - `python -m ruff check src/dpost/application/processing/failure_outcome_policy.py src/dpost/application/processing/file_process_manager.py tests/unit/application/processing/test_failure_outcome_policy.py tests/unit/application/processing/test_file_process_manager_branches.py` -> pass
+    - `python -m pytest --cov=dpost.application.processing.file_process_manager --cov=dpost.application.processing.failure_outcome_policy --cov-report=term-missing -q tests/unit/application/processing/test_failure_outcome_policy.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py`
+      - `file_process_manager.py` -> `100%`
+      - `failure_outcome_policy.py` -> `100%`
+    - full checkpoint:
+      - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+      - `650 passed, 1 skipped, 1 warning`
+      - total coverage: `100%` (`5061 stmts, 0 miss`)

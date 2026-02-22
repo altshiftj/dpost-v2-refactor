@@ -137,14 +137,36 @@ unit coverage.
   - `643 passed, 1 skipped, 1 warning`
   - `100%` total coverage (`5025 stmts, 0 miss`)
 
+### Checkpoint H: Architecture-oriented seam extraction after full coverage (stability/failure policies)
+
+- Completed slices:
+  - added:
+    - `src/dpost/application/processing/stability_timing_policy.py`
+    - `tests/unit/application/processing/test_stability_timing_policy.py`
+    - `src/dpost/application/processing/failure_outcome_policy.py`
+    - `tests/unit/application/processing/test_failure_outcome_policy.py`
+  - updated:
+    - `src/dpost/application/processing/stability_tracker.py`
+    - `src/dpost/application/processing/file_process_manager.py`
+- Validation:
+  - targeted module coverage results:
+    - `stability_tracker.py` -> `100%`
+    - `stability_timing_policy.py` -> `100%`
+    - `file_process_manager.py` -> `100%`
+    - `failure_outcome_policy.py` -> `100%`
+- Full checkpoint:
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit`
+  - `650 passed, 1 skipped, 1 warning`
+  - `100%` total coverage (`5061 stmts, 0 miss`)
+
 ## Active Refactor Queue
 
 1. `src/dpost/application/processing/file_process_manager.py`
-   - extract remaining route-context and failure-outcome policy seams
-2. `src/dpost/application/processing/stability_tracker.py`
-   - isolate time-based decision helpers into pure functions
-3. deep helper global-config access cleanup (`current()/get_service()` reduction)
-4. shared retry policy unification across resolver/watchdog flows
+   - extract remaining route-context policy seam
+   - continue separating failure handling side-effect emission from outcome construction
+2. deep helper global-config access cleanup (`current()/get_service()` reduction)
+3. shared retry policy unification across resolver/watchdog flows
+4. test naming/import hygiene automation (prevent duplicate-basename regressions)
 
 ## Execution Model
 
