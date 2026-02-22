@@ -6,7 +6,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Sequence
+from typing import Callable, Protocol, Sequence
 
 from dotenv import load_dotenv
 from prometheus_client import start_http_server
@@ -43,6 +43,13 @@ class MissingConfiguration(StartupError):
     """Raised when required environment configuration is missing."""
 
 
+class SupportsRunApp(Protocol):
+    """Minimal runtime app contract required by the entrypoint."""
+
+    def run(self) -> None:
+        """Start the runtime event loop."""
+
+
 @dataclass(frozen=True)
 class StartupSettings:
     """Resolved startup settings for dpost runtime bootstrap."""
@@ -60,7 +67,7 @@ class BootstrapContext:
 
     settings: StartupSettings
     config_service: object
-    app: object
+    app: SupportsRunApp
     ui: object
     sync_manager: object
     interactions: object

@@ -24,7 +24,7 @@ def main() -> int:
 
     try:
         context.app.run()
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001  # pylint: disable=broad-exception-caught
         logger.exception("Application terminated unexpectedly: %s", exc)
         return 1
 
