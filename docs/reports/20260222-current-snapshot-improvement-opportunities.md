@@ -464,3 +464,32 @@ Validation:
 - `python -m pytest -q` -> `738 passed, 1 skipped, 1 warning`
 - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `703 passed, 1 skipped, 1 warning`, `100%` total coverage (`5324 stmts, 0 miss`)
 - `python -m ruff check .` -> pass
+
+## Continuation Slice: Rename Manual-Bucket Context Explicit Forwarding (2026-02-22)
+
+Intended action:
+- Remove hidden storage runtime-config reads from the rename-cancel/manual-bucket
+  path by passing explicit rename-folder context through the rename flow and
+  storage helper.
+
+Observed outcome:
+- `src/dpost/infrastructure/storage/filesystem_utils.py`
+  - `move_to_rename_folder(...)` now accepts optional explicit `base_dir` and
+    `id_separator`, forwarding them to `get_rename_path(...)`
+- `src/dpost/application/processing/rename_flow.py`
+  - `RenameService.send_to_manual_bucket(...)` now accepts optional explicit
+    `rename_dir` and `id_separator` and forwards them to
+    `move_to_rename_folder(...)`
+- `src/dpost/application/processing/file_process_manager.py`
+  - cancelled rename path in `_invoke_rename_flow(...)` now passes
+    config-derived `rename_dir` and `id_separator` explicitly into
+    `send_to_manual_bucket(...)`
+- Tests expanded to cover:
+  - rename-flow forwarding of explicit manual-bucket context
+  - manager rename-cancel branch forwarding config-derived rename context
+  - storage rename move helper explicit-context support
+
+Validation:
+- `python -m pytest -q` -> `741 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `706 passed, 1 skipped, 1 warning`, `100%` total coverage (`5325 stmts, 0 miss`)
+- `python -m ruff check .` -> pass

@@ -333,6 +333,43 @@ def test_move_to_exception_folder_accepts_explicit_base_dir_and_separator(
     assert move_args == (str(src), str(dest_dir / "sample-01.txt"))
 
 
+def test_move_to_rename_folder_accepts_explicit_base_dir_and_separator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Rename moves should support explicit path context without runtime globals."""
+    src = tmp_path / "sample.txt"
+    src.write_text("data")
+    dest_dir = tmp_path / "rename"
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        filesystem_utils,
+        "get_rename_path",
+        lambda *args, **kwargs: calls.__setitem__("path", (args, kwargs))
+        or str(dest_dir / "sample-01.txt"),
+    )
+    monkeypatch.setattr(
+        filesystem_utils,
+        "move_item",
+        lambda *args, **kwargs: calls.__setitem__("move", (args, kwargs)),
+    )
+
+    filesystem_utils.move_to_rename_folder(
+        str(src),
+        "sample",
+        ".txt",
+        base_dir=str(dest_dir),
+        id_separator="__",
+    )
+
+    path_args, path_kwargs = calls["path"]
+    move_args, _move_kwargs = calls["move"]
+    assert path_args == ("sample.txt",)
+    assert path_kwargs == {"base_dir": str(dest_dir), "id_separator": "__"}
+    assert move_args == (str(src), str(dest_dir / "sample-01.txt"))
+
+
 def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path, monkeypatch):
     """Return empty mapping when daily-records JSON cannot be parsed."""
     records_path = tmp_path / "records.json"

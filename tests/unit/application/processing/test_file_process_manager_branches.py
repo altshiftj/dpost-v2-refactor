@@ -489,6 +489,48 @@ def test_invoke_rename_flow_retries_until_accept(
     assert prompt_calls == [("initial", None), ("retry-two", "retry-context")]
 
 
+def test_invoke_rename_flow_cancel_forwards_explicit_rename_context(
+    manager_bundle,
+    config_service,
+    tmp_settings,
+    monkeypatch,
+) -> None:
+    """Cancelled rename should send the artefact to manual bucket with config context."""
+    manager, _ = manager_bundle
+    src = tmp_settings.WATCH_DIR / "badprefix.txt"
+    src.write_text("x")
+    candidate = _build_candidate(
+        manager,
+        path=src,
+        prefix="badprefix",
+        extension=".txt",
+        device=config_service.devices[0],
+    )
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        manager._rename_service,
+        "obtain_valid_prefix",
+        lambda _prefix, _reason: RenameOutcome(sanitized_prefix=None, cancelled=True),
+    )
+    monkeypatch.setattr(
+        manager._rename_service,
+        "send_to_manual_bucket",
+        lambda *args, **kwargs: calls.__setitem__("manual", (args, kwargs)),
+    )
+
+    result = manager._pipeline._invoke_rename_flow(candidate, "initial", ".txt")
+
+    manual_args, manual_kwargs = calls["manual"]
+    assert result.status is ProcessingStatus.REJECTED
+    assert result.message == "Rename cancelled by user"
+    assert manual_args == (str(src), "initial", ".txt")
+    assert manual_kwargs == {
+        "rename_dir": str(config_service.current.paths.rename_dir),
+        "id_separator": config_service.current.id_separator,
+    }
+
+
 def test_rename_retry_policy_stage_unappendable_warns_with_context(
     manager_bundle,
     config_service,

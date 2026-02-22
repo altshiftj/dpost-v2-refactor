@@ -299,8 +299,13 @@ class _ProcessingPipeline:
                 retry_prefix, retry_reason
             )
             if outcome.cancelled or not outcome.sanitized_prefix:
+                active_config = manager.config_service.current
                 manager._rename_service.send_to_manual_bucket(
-                    str(candidate.effective_path), retry_prefix, extension
+                    str(candidate.effective_path),
+                    retry_prefix,
+                    extension,
+                    rename_dir=str(active_config.paths.rename_dir),
+                    id_separator=active_config.id_separator,
                 )
                 FILES_FAILED.inc()
                 return ProcessingResult(

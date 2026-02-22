@@ -55,9 +55,21 @@ class RenameService:
             attempted = self._compose_attempted_prefix(decision.values)
 
     def send_to_manual_bucket(
-        self, src_path: str, filename_prefix: str, extension: str
+        self,
+        src_path: str,
+        filename_prefix: str,
+        extension: str,
+        *,
+        rename_dir: str | None = None,
+        id_separator: str | None = None,
     ) -> None:
-        move_to_rename_folder(src_path, filename_prefix, extension)
+        move_to_rename_folder(
+            src_path,
+            filename_prefix,
+            extension,
+            base_dir=rename_dir,
+            id_separator=id_separator,
+        )
         self._interactions.show_info(
             InfoMessages.OPERATION_CANCELLED,
             InfoMessages.MOVED_TO_RENAME,

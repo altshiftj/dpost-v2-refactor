@@ -283,13 +283,24 @@ def move_to_exception_folder(
     )
 
 
-def move_to_rename_folder(src: str, filename_prefix: str, extension: str = "") -> None:
+def move_to_rename_folder(
+    src: str,
+    filename_prefix: str,
+    extension: str = "",
+    *,
+    base_dir: str | None = None,
+    id_separator: str | None = None,
+) -> None:
     """Move an item to the rename folder (unique path)."""
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
         extension=extension,
-        unique_path_func=get_rename_path,
+        unique_path_func=lambda name: get_rename_path(
+            name,
+            base_dir=base_dir,
+            id_separator=id_separator,
+        ),
         log_message="Moved '{}' to rename folder at '{}'",
         log_level=logging.INFO,
     )

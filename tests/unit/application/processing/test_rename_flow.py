@@ -12,14 +12,16 @@ class _InteractionStub:
     def __init__(self, decisions: list[RenameDecision]) -> None:
         self._decisions = decisions
         self.prompts = []
+        self.infos: list[tuple[str, str]] = []
 
     def request_rename(self, prompt):  # type: ignore[no-untyped-def]
         """Return next queued decision while recording prompt payload."""
         self.prompts.append(prompt)
         return self._decisions.pop(0)
 
-    def show_info(self, _title: str, _message: str) -> None:
-        """No-op informational callback for service compatibility."""
+    def show_info(self, title: str, message: str) -> None:
+        """Record informational callback payloads for service assertions."""
+        self.infos.append((title, message))
 
 
 def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> None:
@@ -77,3 +79,28 @@ def test_compose_attempted_prefix_joins_expected_fields() -> None:
         {"name": "mus", "institute": "ipat", "sample_ID": "Sample_A"}
     )
     assert attempted == "mus-ipat-Sample_A"
+
+
+def test_send_to_manual_bucket_forwards_explicit_rename_context(monkeypatch) -> None:
+    """Manual bucket move should forward explicit rename context to storage helper."""
+    interactions = _InteractionStub(decisions=[])
+    service = RenameService(interactions)
+    calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
+
+    monkeypatch.setattr(
+        "dpost.application.processing.rename_flow.move_to_rename_folder",
+        lambda *args, **kwargs: calls.__setitem__("move", (args, kwargs)),
+    )
+
+    service.send_to_manual_bucket(
+        "C:/raw/file.txt",
+        "prefix",
+        ".txt",
+        rename_dir="C:/rename",
+        id_separator="__",
+    )
+
+    move_args, move_kwargs = calls["move"]
+    assert move_args == ("C:/raw/file.txt", "prefix", ".txt")
+    assert move_kwargs == {"base_dir": "C:/rename", "id_separator": "__"}
+    assert interactions.infos
