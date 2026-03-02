@@ -504,7 +504,36 @@
     - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> failed (flush silently skipped missing-context series)
   - green-state:
     - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> `2 passed, 6 deselected`
-    - `python -m pytest -q tests/unit/device_plugins/utm_zwick` -> `16 passed`
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick` -> `17 passed`
+
+---
+
+## 19. Narrow Package-Level Config Context Exports
+- Why this matters: exporting ambient service helpers from
+  `dpost.application.config` makes deep `current()` usage easy to reintroduce
+  outside composition-focused boundaries.
+
+### Checklist
+- [x] Remove package-level re-exports of `current`, `get_service`, and
+      `set_service` from `dpost.application.config`.
+- [x] Update test imports to use `dpost.application.config.context` for ambient
+      helper access where needed.
+- [x] Add namespace guard coverage to prevent reintroducing package-level
+      ambient helper exports.
+
+### Completion Notes
+- How it was done:
+  - narrowed `dpost.application.config` exports to omit ambient helper symbols
+    (`current`, `get_service`, `set_service`);
+  - updated tests that intentionally use ambient context helpers to import
+    `current` from `dpost.application.config.context`;
+  - added a focused namespace-guard unit test.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py::test_config_package_namespace_omits_ambient_service_helpers` -> failed (`current` remained exported at package level)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/integration/test_settings_integration.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake/test_plugin.py` -> `5 passed`
 
 ---
 
@@ -566,5 +595,10 @@
   - checkpoint rerun after section 18:
     - `python -m pytest -q tests/unit` -> `758 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `758 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 19:
+    - `python -m pytest -q tests/unit` -> `759 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `759 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

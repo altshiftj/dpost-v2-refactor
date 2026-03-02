@@ -390,6 +390,26 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 19 Package-Level Config Context Export Narrowing (2026-03-02)
+- Intended actions:
+  - reduce ambient helper surface by removing package-level config re-exports
+    for `current/get_service/set_service`.
+- Observed outcome:
+  - `dpost.application.config` no longer re-exports ambient context helpers;
+  - tests requiring ambient helpers now import from
+    `dpost.application.config.context` explicitly;
+  - added unit guard ensuring ambient helpers remain out of package namespace.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py::test_config_package_namespace_omits_ambient_service_helpers` -> failed (`current` still exported from package)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/integration/test_settings_integration.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake/test_plugin.py` -> `5 passed`
+    - `python -m pytest -q tests/unit` -> `759 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `759 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -402,4 +422,5 @@
 - Section 16 remaining plugin separator fallback cleanup is complete.
 - Section 17 LocalRecord empty-separator fallback cleanup is complete.
 - Section 18 UTM flush runtime-context contract cleanup is complete.
+- Section 19 package-level config context export narrowing is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

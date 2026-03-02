@@ -12,10 +12,10 @@ from dpost.application.config import (
     SessionSettings,
     WatcherSettings,
     activate_device,
-    current,
     init_config,
     reset_service,
 )
+from dpost.application.config.context import current
 
 
 @pytest.fixture
