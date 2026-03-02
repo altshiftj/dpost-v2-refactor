@@ -452,7 +452,11 @@ def test_purge_stale_covers_exception_and_cleanup_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Tolerate stale-move and stale-scan failures while retaining fresh entries."""
-    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
+    processor = FileProcessorRHEKinexus(
+        build_config(),
+        id_separator="-",
+        exception_dir=str(tmp_path / "exceptions"),
+    )
     processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
     now = 100.0
     monkeypatch.setattr(
@@ -534,3 +538,33 @@ def test_purge_stale_covers_exception_and_cleanup_paths(
     assert state.bucket[0].export_path == fresh_export
     assert str(stale_dir_ok) in moved
     assert "raw-ok" not in processor._raw_to_stage
+
+
+def test_purge_stale_requires_exception_dir_context(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Skip stale exception-move calls when exception-dir context is missing."""
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
+    processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
+    now = 100.0
+    watch_dir = (tmp_path / "incoming").resolve()
+    watch_dir.mkdir(parents=True)
+    stale = watch_dir / "stale.rdf"
+    stale.write_bytes(b"raw")
+    processor._state[str(watch_dir)] = _FolderState(
+        pending_raw=deque([_PendingRaw(path=stale, created=now - 10)])
+    )
+    monkeypatch.setattr(
+        "dpost.device_plugins.rhe_kinexus.file_processor.time.time",
+        lambda: now,
+    )
+    move_calls: list[str] = []
+    monkeypatch.setattr(
+        "dpost.device_plugins.rhe_kinexus.file_processor.move_to_exception_folder",
+        lambda path, **_kwargs: move_calls.append(path),
+    )
+
+    processor._purge_stale()
+
+    assert move_calls == []

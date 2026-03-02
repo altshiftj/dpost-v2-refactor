@@ -398,12 +398,17 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         raise RuntimeError("Kinexus id_separator runtime context is not configured")
 
     def _move_to_exception(self, path: Path) -> None:
-        base_dir = self._exception_dir or str(path.parent)
+        base_dir = self._resolve_exception_dir()
         move_to_exception_folder(
             str(path),
             base_dir=base_dir,
             id_separator=self._resolve_id_separator(),
         )
+
+    def _resolve_exception_dir(self) -> str:
+        if self._exception_dir is not None:
+            return self._exception_dir
+        raise RuntimeError("Kinexus exception_dir runtime context is not configured")
 
     @staticmethod
     def _zip_raw(src: Path, dest: Path, arcname: str) -> None:

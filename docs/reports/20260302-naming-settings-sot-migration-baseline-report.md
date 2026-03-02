@@ -311,6 +311,22 @@
     - `python -m pytest -q tests/unit/device_plugins/erm_hioki tests/unit/device_plugins/utm_zwick tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/sem_phenomxl2 tests/unit/device_plugins/extr_haake tests/unit/device_plugins/test_device tests/unit/device_plugins/rhe_kinexus` -> `79 passed`
     - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py` -> `31 passed`
 
+## Progress Update: Section 15 Plugin Exception-Dir Parent Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove plugin-local stale-move exception-dir parent fallback behavior.
+- Observed outcome:
+  - DSV, Kinexus, and PSA stale exception-move paths now require explicit
+    runtime exception-dir context;
+  - stale-move helper tests now cover missing exception-dir no-op behavior;
+  - stale-move success/failure tests now inject explicit exception-dir context
+    in line with runtime composition contracts.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py::test_purge_orphans_requires_explicit_exception_dir_context tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context` -> failed (fallback still moved stale artefacts)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py::test_purge_orphans_requires_explicit_exception_dir_context tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py::test_purge_orphans_moves_files tests/unit/device_plugins/rhe_kinexus/test_file_processor.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_covers_exception_and_cleanup_paths tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_covers_exception_paths` -> `8 passed`
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/rhe_kinexus tests/unit/device_plugins/psa_horiba` -> `71 passed`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -319,4 +335,5 @@
   runtime orchestration hot paths now require explicit naming context.
 - Section 12 storage unique-name separator fallback cleanup is complete.
 - Section 14 post-checklist explicit-context cleanup is complete.
+- Section 15 plugin exception-dir parent fallback cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

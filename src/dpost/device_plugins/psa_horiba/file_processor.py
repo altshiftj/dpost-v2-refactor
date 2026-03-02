@@ -412,12 +412,17 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         raise RuntimeError("PSA id_separator runtime context is not configured")
 
     def _safe_move_to_exception(self, path: Path) -> None:
-        exception_dir = self._exception_dir or str(path.parent)
+        exception_dir = self._resolve_exception_dir()
         safe_move_to_exception(
             str(path),
             exception_dir=exception_dir,
             id_separator=self._resolve_id_separator(),
         )
+
+    def _resolve_exception_dir(self) -> str:
+        if self._exception_dir is not None:
+            return self._exception_dir
+        raise RuntimeError("PSA exception_dir runtime context is not configured")
 
     @staticmethod
     def _zip_ngb(src: Path, dest: Path, arcname: str) -> None:

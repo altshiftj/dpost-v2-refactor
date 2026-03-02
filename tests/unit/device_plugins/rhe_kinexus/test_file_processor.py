@@ -85,7 +85,11 @@ def test_device_specific_processing_reconstructs_from_stage(tmp_path, config_ser
 
 
 def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypatch):
-    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
+    processor = FileProcessorRHEKinexus(
+        build_config(),
+        id_separator="-",
+        exception_dir=str(tmp_path / "exceptions"),
+    )
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0

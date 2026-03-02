@@ -60,7 +60,11 @@ def test_preprocessing_skips_tracked_ngb(tmp_path, monkeypatch):
 
 
 def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypatch):
-    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
+    processor = FileProcessorPSAHoriba(
+        build_config(),
+        id_separator="-",
+        exception_dir=str(tmp_path / "exceptions"),
+    )
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0

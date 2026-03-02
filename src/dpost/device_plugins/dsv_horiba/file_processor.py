@@ -203,7 +203,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
                     try:
                         move_to_exception_folder(
                             str(candidate),
-                            base_dir=self._exception_dir or str(candidate.parent),
+                            base_dir=self._resolve_exception_dir(),
                             id_separator=self._resolve_id_separator(),
                         )
                         logger.info("Moved orphan file to exceptions: '%s'", candidate)
@@ -216,3 +216,8 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         if self._id_separator is not None:
             return self._id_separator
         raise RuntimeError("DSV id_separator runtime context is not configured")
+
+    def _resolve_exception_dir(self) -> str:
+        if self._exception_dir is not None:
+            return self._exception_dir
+        raise RuntimeError("DSV exception_dir runtime context is not configured")

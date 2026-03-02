@@ -526,7 +526,11 @@ def test_purge_stale_covers_exception_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Swallow stale-move and stage-scan failures while retaining fresh queue entries."""
-    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
+    processor = FileProcessorPSAHoriba(
+        build_config(),
+        id_separator="-",
+        exception_dir=str(tmp_path / "exceptions"),
+    )
     processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
     now = 100.0
     monkeypatch.setattr(
@@ -601,3 +605,33 @@ def test_purge_stale_covers_exception_paths(
     assert main_state.sentinel is None
     assert len(main_state.pending_ngb) == 1
     assert main_state.pending_ngb[0].path == fresh_pending
+
+
+def test_purge_stale_requires_exception_dir_context(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Skip stale exception-move calls when exception-dir context is missing."""
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
+    processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
+    now = 100.0
+    incoming = (tmp_path / "incoming").resolve()
+    incoming.mkdir(parents=True)
+    stale = incoming / "stale.ngb"
+    stale.write_bytes(b"ngb")
+    processor._state[str(incoming)] = _FolderState(
+        pending_ngb=deque([_PendingNGB(path=stale, created=now - 10)])
+    )
+    monkeypatch.setattr(
+        "dpost.device_plugins.psa_horiba.file_processor.time.time",
+        lambda: now,
+    )
+    move_calls: list[str] = []
+    monkeypatch.setattr(
+        "dpost.device_plugins.psa_horiba.file_processor.safe_move_to_exception",
+        lambda path, **_kwargs: move_calls.append(path),
+    )
+
+    processor._purge_stale()
+
+    assert move_calls == []

@@ -394,6 +394,38 @@
 
 ---
 
+## 15. Remove Plugin Exception-Dir Parent Fallbacks
+- Why this matters: stale-artifact exception moves should use explicit runtime
+  exception routing context instead of implicit `path.parent` fallback paths.
+
+### Checklist
+- [x] Remove `path.parent` fallback in Kinexus stale move paths and require
+      explicit runtime `exception_dir` context.
+- [x] Remove `path.parent` fallback in PSA stale move paths and require
+      explicit runtime `exception_dir` context.
+- [x] Remove `path.parent` fallback in DSV orphan purge path and require
+      explicit runtime `exception_dir` context.
+- [x] Update focused plugin tests to pass explicit exception-dir context where
+      stale move calls are expected and add coverage for missing exception-dir
+      no-op behavior.
+
+### Completion Notes
+- How it was done:
+  - replaced Kinexus/PSA/DSV stale-move exception-dir parent fallbacks with
+    strict runtime exception-dir resolvers;
+  - added explicit missing-exception-dir branch tests that assert stale-move
+    helpers are skipped when exception-dir context is not configured;
+  - updated stale-move success/failure tests to inject explicit
+    `exception_dir` context where move calls are expected.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py::test_purge_orphans_requires_explicit_exception_dir_context tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context` -> failed (fallback still moved items)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py::test_purge_orphans_requires_explicit_exception_dir_context tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py::test_purge_orphans_moves_files tests/unit/device_plugins/rhe_kinexus/test_file_processor.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_covers_exception_and_cleanup_paths tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_covers_exception_paths` -> `8 passed`
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/rhe_kinexus tests/unit/device_plugins/psa_horiba` -> `71 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
