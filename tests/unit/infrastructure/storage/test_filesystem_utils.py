@@ -380,12 +380,15 @@ def test_move_to_rename_folder_requires_explicit_base_dir(tmp_path: Path) -> Non
         filesystem_utils.move_to_rename_folder(str(src), "sample", ".txt")
 
 
-def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path, monkeypatch):
+def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path):
     """Return empty mapping when daily-records JSON cannot be parsed."""
     records_path = tmp_path / "records.json"
     records_path.write_text("{bad json")
 
-    result = filesystem_utils.load_persisted_records(json_path=records_path)
+    result = filesystem_utils.load_persisted_records(
+        json_path=records_path,
+        id_separator="-",
+    )
 
     assert result == {}
 
@@ -409,7 +412,9 @@ def test_load_persisted_records_returns_localrecord_mapping(
     assert isinstance(result["dev-usr-ipat-sample"], LocalRecord)
 
 
-def test_load_and_save_persisted_records_accept_explicit_json_path(tmp_path: Path) -> None:
+def test_load_and_save_persisted_records_accept_explicit_json_path(
+    tmp_path: Path,
+) -> None:
     """Persistence helpers should work with explicit paths/separators and no patches."""
     records_path = tmp_path / "records.json"
     record = LocalRecord(identifier="dev__usr__ipat__sample", id_separator="__")
@@ -429,6 +434,15 @@ def test_load_persisted_records_requires_explicit_json_path() -> None:
     """Reject persisted-record loads without explicit JSON path context."""
     with pytest.raises(ValueError, match="json_path must be provided explicitly"):
         filesystem_utils.load_persisted_records()
+
+
+def test_load_persisted_records_requires_explicit_separator(tmp_path: Path) -> None:
+    """Reject persisted-record loads without explicit naming separator context."""
+    records_path = tmp_path / "records.json"
+    records_path.write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        filesystem_utils.load_persisted_records(json_path=records_path)
 
 
 def test_save_persisted_records_writes_json(tmp_path: Path, config_service):
@@ -462,7 +476,9 @@ def test_save_persisted_records_requires_explicit_json_path() -> None:
         filesystem_utils.save_persisted_records({})
 
 
-def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.MonkeyPatch):
+def test_move_to_record_folder_uses_record_path_factory(
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Route move-to-record calls through record-path factory and move helper."""
     calls: dict[str, object] = {}
 
@@ -488,7 +504,9 @@ def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.Monk
     assert calls == {"src": "C:/raw/file.txt", "dest": "/records/prefix.txt"}
 
 
-def test_move_to_record_folder_accepts_explicit_context(monkeypatch: pytest.MonkeyPatch):
+def test_move_to_record_folder_accepts_explicit_context(
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Record-folder move helper should forward explicit naming/storage context."""
     calls: dict[str, tuple[tuple[object, ...], dict[str, object]]] = {}
     device = object()

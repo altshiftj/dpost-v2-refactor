@@ -175,12 +175,43 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `732 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 8 Record/Persistence Explicit Separator Contracts (2026-03-02)
+- Intended actions:
+  - remove remaining record/persistence separator inference defaults.
+- Observed outcome:
+  - removed identifier-shape separator inference from
+    `domain/records/local_record.py`;
+  - required explicit `RecordManager.id_separator` constructor wiring and
+    removed filename-prefix separator inference from
+    `application/records/record_manager.py`;
+  - required explicit separator context in persisted-record hydration:
+    `infrastructure/storage/filesystem_utils.load_persisted_records(...)` and
+    `LocalRecord.from_dict(...)`.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py -k from_dict_requires_explicit_separator` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py tests/unit/application/records/test_record_manager.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `76 passed, 1 skipped`
+    - `python -m pytest -q tests/unit` -> `734 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `734 passed, 1 skipped, 1 warning`, `TOTAL 5371 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Section 6 low-risk naming-overload renames are now complete; only the
   optional higher-churn folder rename
   (`infrastructure/runtime/` -> `infrastructure/runtime_adapters/`) remains
   deferred.
-- Naming policy ownership remains centralized in `NamingSettings` and active
-  runtime/storage/sync/plugin paths no longer rely on ambient separator/pattern
-  fallback seams targeted by this wave.
+- Section 8 record/persistence separator-inference cleanup is complete.
+- Naming policy ownership remains centralized in `NamingSettings`, and the
+  runtime orchestration hot paths now require explicit naming context.
+- Remaining low-priority compatibility defaults (deferred follow-up):
+  - `application/processing/error_handling.py`:
+    `resolved_id_separator = id_separator or "-"`.
+  - `application/processing/rename_flow.py`:
+    attempted-prefix fallback separator (`if id_separator else "-"`).
+  - `infrastructure/storage/filesystem_utils.py`:
+    `get_unique_filename(...)` default separator fallback.
+  - `device_plugins/dsv_horiba/file_processor.py`:
+    orphan-move separator fallback (`self._id_separator or "-"`).

@@ -319,6 +319,8 @@ def load_persisted_records(
 
     if json_path is None:
         raise ValueError("json_path must be provided explicitly")
+    if not id_separator:
+        raise ValueError("id_separator must be provided explicitly")
     path = Path(json_path)
     if not path.exists():
         return {}
@@ -326,10 +328,9 @@ def load_persisted_records(
         raw_data = path.read_text(encoding="utf-8")
         records = json.loads(raw_data)
         logger.debug(f"JSON data loaded from '{path}'.")
-        effective_sep = id_separator if id_separator else "-"
         return {
-            id: LocalRecord.from_dict(record_data, id_separator=effective_sep)
-            for id, record_data in records.items()
+            record_id: LocalRecord.from_dict(record_data, id_separator=id_separator)
+            for record_id, record_data in records.items()
         }
     except Exception as exc:
         logger.exception(f"Failed to read or convert JSON file '{path}': {exc}")

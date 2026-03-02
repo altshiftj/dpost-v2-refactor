@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from pyfakefs.fake_filesystem_unittest import Patcher
 
-from dpost.domain.records.local_record import LocalRecord, _resolve_id_separator
+from dpost.domain.records.local_record import LocalRecord
 
 pytestmark = pytest.mark.usefixtures("config_service")
 
@@ -45,14 +45,21 @@ def test_init_with_invalid_identifier(caplog):
     assert "does not conform" in caplog.text
 
 
-def test_resolve_id_separator_detects_alternative_separator() -> None:
-    resolved = _resolve_id_separator("dev:usr:inst:sample_1", "-")
-    assert resolved == ":"
-
-
-def test_init_persists_detected_id_separator_from_identifier() -> None:
-    """Store the detected separator on the record for downstream consumers."""
+def test_init_does_not_infer_separator_from_identifier_shape(caplog) -> None:
+    """Do not auto-detect separators from identifier shape without explicit context."""
+    caplog.set_level("WARNING")
     record = LocalRecord(identifier="dev:usr:inst:sample_1")
+
+    assert record.id_separator == "-"
+    assert record.user == "null"
+    assert record.institute == "null"
+    assert record.sample_name == "null"
+    assert "does not conform" in caplog.text
+
+
+def test_init_parses_identifier_when_separator_is_explicit() -> None:
+    """Parse identifier segments when explicit id-separator context is provided."""
+    record = LocalRecord(identifier="dev:usr:inst:sample_1", id_separator=":")
 
     assert record.id_separator == ":"
     assert record.user == "usr"
@@ -219,7 +226,7 @@ def test_to_dict_from_dict_roundtrip():
     original.files_require_force.update({"/file1.tif"})
 
     data = original.to_dict()
-    restored = LocalRecord.from_dict(data)
+    restored = LocalRecord.from_dict(data, id_separator="-")
 
     assert restored.identifier == original.identifier
     assert restored.user == original.user
@@ -230,3 +237,9 @@ def test_to_dict_from_dict_roundtrip():
     assert restored.is_in_db == original.is_in_db
     assert restored.files_uploaded == original.files_uploaded
     assert restored.files_require_force == original.files_require_force
+
+
+def test_from_dict_requires_explicit_separator() -> None:
+    """Reject persisted-record hydration without explicit separator context."""
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        LocalRecord.from_dict({"identifier": "dev-usr-inst-sample"})

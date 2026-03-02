@@ -24,7 +24,9 @@ def record_manager(fake_sync, tmp_settings):
 
 @pytest.fixture
 def sample_record():
-    return LocalRecord(identifier="dev-usr-ipat-sample", sample_name="sample", date="20240101")
+    return LocalRecord(
+        identifier="dev-usr-ipat-sample", sample_name="sample", date="20240101"
+    )
 
 
 def test_create_record_generates_proper_id_and_sample(record_manager):
@@ -77,7 +79,9 @@ def test_add_item_to_record_saves_it(tmp_path, record_manager):
     file_path = tmp_path / "file.tif"
     file_path.write_text("fake content")
 
-    record = LocalRecord(identifier="dev-usr-ipat-samplex", sample_name="sampleX", date="20240101")
+    record = LocalRecord(
+        identifier="dev-usr-ipat-samplex", sample_name="sampleX", date="20240101"
+    )
     with patch(
         "dpost.application.records.record_manager.save_persisted_records"
     ) as mock_save:
@@ -191,7 +195,9 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
     record_manager._persist_records_dict = {record.identifier: record}
 
     with patch("dpost.application.records.record_manager.save_persisted_records"):
-        with patch.object(record_manager.sync, "sync_record_to_database", return_value=False) as mock_sync:
+        with patch.object(
+            record_manager.sync, "sync_record_to_database", return_value=False
+        ) as mock_sync:
             record_manager.sync_records_to_database()
             mock_sync.assert_called_once_with(record)
 
@@ -221,7 +227,9 @@ def test_persist_records_dict_lazy_loads_once(fake_sync, tmp_path):
         mock_load.assert_called_once()
 
 
-def test_record_manager_loads_records_with_explicit_persistence_context(fake_sync, tmp_path):
+def test_record_manager_loads_records_with_explicit_persistence_context(
+    fake_sync, tmp_path
+):
     """Explicit path/separator constructor args should be forwarded to load helper."""
     records_path = tmp_path / "records.json"
 
@@ -239,10 +247,16 @@ def test_record_manager_loads_records_with_explicit_persistence_context(fake_syn
     mock_load.assert_called_once_with(json_path=records_path, id_separator="_")
 
 
-def test_record_manager_save_records_uses_explicit_persistence_path(fake_sync, tmp_path):
+def test_record_manager_save_records_uses_explicit_persistence_path(
+    fake_sync, tmp_path
+):
     """Explicit persistence path should be forwarded to save helper."""
     records_path = tmp_path / "records.json"
-    manager = RecordManager(sync_manager=fake_sync, persisted_records_path=records_path)
+    manager = RecordManager(
+        sync_manager=fake_sync,
+        persisted_records_path=records_path,
+        id_separator="-",
+    )
     manager._persist_records_dict = {"x": LocalRecord(identifier="x")}
 
     with patch(
@@ -250,7 +264,9 @@ def test_record_manager_save_records_uses_explicit_persistence_path(fake_sync, t
     ) as mock_save:
         manager.save_records()
 
-    mock_save.assert_called_once_with(manager.persist_records_dict, json_path=records_path)
+    mock_save.assert_called_once_with(
+        manager.persist_records_dict, json_path=records_path
+    )
 
 
 @pytest.mark.skip(reason="Deactivated pending review of sync record deletion logic.")
@@ -317,5 +333,10 @@ def test_reload_records_uses_explicit_separator_and_path(fake_sync, tmp_path):
     mock_load.assert_called_once_with(json_path=records_path, id_separator="~")
 
 
-def test_infer_id_separator_defaults_to_dash_for_alnum_prefix(record_manager):
-    assert record_manager._infer_id_separator("sample123") == "-"  # noqa: SLF001
+def test_record_manager_requires_explicit_separator(fake_sync, tmp_path) -> None:
+    """Constructor should require explicit separator wiring from composition."""
+    with pytest.raises(TypeError):
+        RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=tmp_path / "records.json",
+        )

@@ -3,26 +3,14 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field, fields as dc_fields
+from dataclasses import dataclass, field
+from dataclasses import fields as dc_fields
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
 _DEFAULT_ID_SEPARATOR = "-"
-_KNOWN_ID_SEPARATORS: tuple[str, ...] = ("-", ":", "|")
-
-
-def _resolve_id_separator(identifier: str, preferred: str) -> str:
-    """Choose an identifier separator from explicit preference or identifier shape."""
-    if preferred and identifier.count(preferred) >= 3:
-        return preferred
-    for candidate in _KNOWN_ID_SEPARATORS:
-        if candidate == preferred:
-            continue
-        if identifier.count(candidate) >= 3:
-            return candidate
-    return preferred or _DEFAULT_ID_SEPARATOR
 
 
 @dataclass
@@ -50,10 +38,10 @@ class LocalRecord:
     id_separator: str = field(default=_DEFAULT_ID_SEPARATOR, repr=False, compare=False)
 
     def __post_init__(self):
-        """Parse identity segments from identifier using configured/detected separator."""
-        id_separator = _resolve_id_separator(self.identifier, self.id_separator)
+        """Parse identity segments from identifier using explicit separator context."""
+        id_separator = self.id_separator or _DEFAULT_ID_SEPARATOR
         self.id_separator = id_separator
-        parts = self.identifier.split(id_separator)
+        parts = self.identifier.split(self.id_separator)
         if len(parts) >= 4:
             self.device_type = parts[0].lower()
             self.user = parts[1].lower()
@@ -146,9 +134,11 @@ class LocalRecord:
     def from_dict(
         cls,
         data: dict,
-        id_separator: str = _DEFAULT_ID_SEPARATOR,
+        id_separator: str | None = None,
     ) -> "LocalRecord":
         """Build LocalRecord from persisted dict payload."""
+        if not id_separator:
+            raise ValueError("id_separator must be provided explicitly")
         payload = dict(data)
         force_values = payload.get("files_require_force") or []
         if not isinstance(force_values, set):

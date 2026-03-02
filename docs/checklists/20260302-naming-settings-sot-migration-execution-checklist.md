@@ -146,7 +146,8 @@
 - [x] If in scope, execute low-risk rename sequence from RPC:
       `application/config/runtime.py -> application/config/context.py`,
       `infrastructure/runtime/bootstrap_dependencies.py -> startup_dependencies.py`.
-- [ ] If out of scope, record defer decision in active report/checklist notes.
+- [x] If out of scope, record defer decision in active report/checklist notes
+      (N/A for this wave; rename slice executed in-scope).
 - [x] Update imports/tests/docs consistently if rename slice is executed.
 
 ### Completion Notes
@@ -196,6 +197,38 @@
 
 ---
 
+## 8. Retire Record/Persistence Separator Inference Defaults
+- Why this matters: record hydration and record creation should use explicit
+  `NamingSettings` separator context and must not infer from identifier shape.
+
+### Checklist
+- [x] Remove `LocalRecord` identifier-shape separator inference helper and keep
+      parsing explicit-context driven.
+- [x] Require explicit `RecordManager.id_separator` constructor wiring and
+      remove filename-prefix separator inference helper.
+- [x] Require explicit `id_separator` for persisted-record hydration in:
+      `filesystem_utils.load_persisted_records(...)`,
+      `LocalRecord.from_dict(...)`.
+- [x] Add/adjust focused tests in:
+      `tests/unit/domain/records/test_local_record.py`,
+      `tests/unit/application/records/test_record_manager.py`,
+      `tests/unit/infrastructure/storage/test_filesystem_utils.py`.
+
+### Completion Notes
+- How it was done:
+  - removed `LocalRecord` `_resolve_id_separator(...)` auto-detection path;
+  - made `RecordManager` constructor explicitly require `id_separator`;
+  - removed `RecordManager._infer_id_separator(...)`;
+  - made persisted-record load/hydration fail fast when separator context is
+    omitted.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py -k from_dict_requires_explicit_separator` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py tests/unit/application/records/test_record_manager.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `76 passed, 1 skipped`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -219,3 +252,8 @@
   - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `732 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
   - `python -m ruff check .` -> `All checks passed!`
   - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 8:
+    - `python -m pytest -q tests/unit` -> `734 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `734 passed, 1 skipped, 1 warning`, `TOTAL 5371 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

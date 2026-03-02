@@ -40,21 +40,20 @@ class RecordManager:
         sync_manager: SyncAdapterPort,
         *,
         persisted_records_path: str | Path | None = None,
-        id_separator: str | None = None,
+        id_separator: str,
     ):
         """
         Initialize RecordManager with synchronization capabilities.
 
         Args:
             sync_manager: Interface for syncing records to external database
+            id_separator: Explicit runtime naming separator
         """
         self.sync = sync_manager
         # Lazy-loaded dictionary of all persisted records
         self._persist_records_dict: Optional[Dict[str, LocalRecord]] = None
         self._persisted_records_path = (
-            Path(persisted_records_path)
-            if persisted_records_path is not None
-            else None
+            Path(persisted_records_path) if persisted_records_path is not None else None
         )
         self._id_separator = id_separator
 
@@ -112,15 +111,14 @@ class RecordManager:
             dev_kadi_record_id=(device.metadata.record_kadi_id if device else None),
             id_separator=self._id_separator,
         )
-        id_separator = self._infer_id_separator(filename_prefix)
-        sample_name = filename_prefix.split(id_separator)[-1]
+        sample_name = filename_prefix.split(self._id_separator)[-1]
 
         # Create new record with current date
         record = LocalRecord(
             identifier=record_id,
             sample_name=sample_name,
             date=datetime.datetime.now().strftime("%Y%m%d"),
-            id_separator=id_separator,
+            id_separator=self._id_separator,
         )
 
         # Store and persist the new record
@@ -310,11 +308,3 @@ class RecordManager:
         logger.debug(
             f"Persisted updated state for record '{record.identifier}' after sync."
         )
-
-    @staticmethod
-    def _infer_id_separator(filename_prefix: str) -> str:
-        """Infer record identifier separator from a normalized filename prefix."""
-        for char in filename_prefix:
-            if not char.isalnum():
-                return char
-        return "-"
