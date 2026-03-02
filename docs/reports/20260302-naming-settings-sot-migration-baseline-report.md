@@ -215,6 +215,25 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `735 passed, 1 skipped, 1 warning`, `TOTAL 5377 stmts, 0 miss, 100%`
     - `python -m ruff check src/dpost/application/processing/rename_flow.py tests/unit/application/processing/test_rename_flow.py` -> `All checks passed!`
 
+## Progress Update: Section 10 DSV Orphan Separator Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove DSV plugin orphan-move `"-"` separator fallback.
+- Observed outcome:
+  - replaced DSV orphan-move separator fallback with strict runtime separator
+    resolution in `device_plugins/dsv_horiba/file_processor.py`;
+  - updated DSV unit tests so orphan-move success/failure scenarios pass
+    explicit runtime separator context;
+  - added explicit test coverage that missing runtime separator context no
+    longer triggers orphan-move calls.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py -k requires_explicit_separator_context` -> failed (orphan move still executed via fallback separator)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py` -> `12 passed`
+    - `python -m pytest -q tests/unit` -> `736 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `736 passed, 1 skipped, 1 warning`, `TOTAL 5381 stmts, 0 miss, 100%`
+    - `python -m ruff check src/dpost/device_plugins/dsv_horiba/file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py` -> `All checks passed!`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Section 6 low-risk naming-overload renames are now complete; only the
@@ -229,5 +248,3 @@
     `resolved_id_separator = id_separator or "-"`.
   - `infrastructure/storage/filesystem_utils.py`:
     `get_unique_filename(...)` default separator fallback.
-  - `device_plugins/dsv_horiba/file_processor.py`:
-    orphan-move separator fallback (`self._id_separator or "-"`).

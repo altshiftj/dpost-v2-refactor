@@ -20,7 +20,9 @@ def processor() -> FileProcessorDSVHoriba:
 def test_configure_runtime_context_sets_missing_separator_and_exception_dir() -> None:
     """Populate missing runtime naming/exception context but preserve explicit overrides."""
     processor = FileProcessorDSVHoriba(build_config())
-    processor.configure_runtime_context(id_separator="__", exception_dir="C:/exceptions")
+    processor.configure_runtime_context(
+        id_separator="__", exception_dir="C:/exceptions"
+    )
 
     assert processor._id_separator == "__"  # noqa: SLF001
     assert processor._exception_dir == "C:/exceptions"  # noqa: SLF001
@@ -165,6 +167,7 @@ def test_purge_orphans_logs_warning_when_move_to_exception_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Swallow orphan-move failures while still dropping stale batch entries."""
+    processor.configure_runtime_context(id_separator="-")
     processor.device_config.batch.ttl_seconds = 5
     now = 100.0
     watch_dir = tmp_path / "incoming"
@@ -188,3 +191,36 @@ def test_purge_orphans_logs_warning_when_move_to_exception_fails(
     processor._purge_orphans()
 
     assert "sample" not in processor._batches
+
+
+def test_purge_orphans_requires_explicit_separator_context(
+    tmp_path: Path,
+    processor: FileProcessorDSVHoriba,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Skip orphan-move calls when separator context has not been configured."""
+    processor.device_config.batch.ttl_seconds = 5
+    now = 100.0
+    watch_dir = tmp_path / "incoming"
+    watch_dir.mkdir()
+    stale = watch_dir / "stale.wdb"
+    stale.write_bytes(b"raw")
+    processor._batches["sample"] = {
+        "files": [stale],
+        "t": now - 10,
+        "ready": False,
+    }
+    monkeypatch.setattr(
+        "dpost.device_plugins.dsv_horiba.file_processor.time.time",
+        lambda: now,
+    )
+    move_calls: list[str] = []
+    monkeypatch.setattr(
+        "dpost.device_plugins.dsv_horiba.file_processor.move_to_exception_folder",
+        lambda path, **_kwargs: move_calls.append(path),
+    )
+
+    processor._purge_orphans()
+
+    assert "sample" not in processor._batches
+    assert move_calls == []

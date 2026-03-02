@@ -257,6 +257,31 @@
 
 ---
 
+## 10. Remove DSV Orphan Separator Fallback
+- Why this matters: plugin orphan cleanup should honor explicit runtime naming
+  context and must not silently fall back to `"-"` separators.
+
+### Checklist
+- [x] Remove `FileProcessorDSVHoriba` orphan-move separator fallback.
+- [x] Add explicit runtime separator resolver behavior in
+      `dsv_horiba/file_processor.py`.
+- [x] Update focused DSV tests for explicit runtime separator context.
+
+### Completion Notes
+- How it was done:
+  - replaced `self._id_separator or "-"` in DSV orphan-move path with a strict
+    runtime separator resolver;
+  - kept orphan purge behavior resilient by continuing to log-and-continue when
+    runtime context is missing;
+  - updated DSV tests to assert explicit separator-context behavior.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py -k requires_explicit_separator_context` -> failed (orphan move still executed via fallback separator)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py` -> `12 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -288,4 +313,8 @@
   - checkpoint rerun after section 9:
     - `python -m pytest -q tests/unit` -> `735 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `735 passed, 1 skipped, 1 warning`, `TOTAL 5377 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+  - checkpoint rerun after section 10:
+    - `python -m pytest -q tests/unit` -> `736 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `736 passed, 1 skipped, 1 warning`, `TOTAL 5381 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`

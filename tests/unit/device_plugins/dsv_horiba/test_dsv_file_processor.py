@@ -57,6 +57,7 @@ def test_processing_zips_raw_and_moves_txt(tmp_path, config_service):
 
 def test_purge_orphans_moves_files(tmp_path, monkeypatch):
     processor = FileProcessorDSVHoriba(build_config())
+    processor.configure_runtime_context(id_separator="-")
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0
