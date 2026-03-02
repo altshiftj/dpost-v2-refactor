@@ -15,7 +15,7 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
 )
 from dpost.application.processing.processing_pipeline_runtime import (
-    ProcessingPipelineRuntime,
+    ProcessingPipelineRuntimePort,
 )
 from dpost.application.processing.record_flow import handle_unappendable_record
 from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
@@ -38,7 +38,7 @@ logger = setup_logger(__name__)
 class _ProcessingPipeline:
     """Internal helper that orchestrates the multi-stage processing pipeline."""
 
-    def __init__(self, runtime: ProcessingPipelineRuntime) -> None:
+    def __init__(self, runtime: ProcessingPipelineRuntimePort) -> None:
         self._runtime = runtime
 
     def process(self, src_path: Path) -> ProcessingResult:

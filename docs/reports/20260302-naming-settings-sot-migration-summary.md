@@ -17,6 +17,8 @@
 - Processor runtime-context mapping is now encapsulated in
   `processor_runtime_context.py`, reducing `FileProcessManager` stage
   responsibility.
+- `_ProcessingPipeline` now depends on a runtime-checkable protocol contract
+  (`ProcessingPipelineRuntimePort`) rather than a concrete runtime adapter type.
 - Naming policy APIs now require explicit separator/pattern context at
   signature level (with runtime guards for empty/`None` values).
 - Remaining separator and exception-path fallback seams in active scope were retired.
@@ -25,7 +27,7 @@
 ## Final Validation Snapshot
 - `python -m ruff check .` -> `All checks passed!`
 - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
-- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5541 stmts, 0 miss, 100%`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
 - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
 ## Historical Execution Artifacts

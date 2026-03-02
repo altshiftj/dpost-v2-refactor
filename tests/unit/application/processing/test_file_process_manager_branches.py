@@ -20,6 +20,7 @@ from dpost.application.processing.file_processor_abstract import ProcessingOutpu
 from dpost.application.processing.processing_pipeline import _ProcessingPipeline
 from dpost.application.processing.processing_pipeline_runtime import (
     ProcessingPipelineRuntime,
+    ProcessingPipelineRuntimePort,
 )
 from dpost.application.processing.rename_flow import RenameOutcome
 from dpost.application.processing.stability_tracker import (
@@ -92,6 +93,7 @@ def test_init_uses_processing_pipeline_runtime_adapter(manager_bundle) -> None:
     manager, _ = manager_bundle
 
     assert isinstance(manager._pipeline_runtime, ProcessingPipelineRuntime)
+    assert isinstance(manager._pipeline_runtime, ProcessingPipelineRuntimePort)
 
 
 def test_process_item_defers_when_resolution_requests_retry(

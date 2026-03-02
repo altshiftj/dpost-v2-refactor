@@ -803,6 +803,45 @@
 
 ---
 
+## 28. Introduce Processing Pipeline Runtime Protocol Contract
+- Why this matters: pipeline orchestration should depend on a stable runtime
+  contract, not a concrete adapter implementation type, to make extraction and
+  substitution safer as decomposition continues.
+
+### Checklist
+- [x] Add a runtime-checkable `ProcessingPipelineRuntimePort` protocol covering
+      pipeline-consumed runtime methods/properties.
+- [x] Update `_ProcessingPipeline` constructor typing to depend on the protocol
+      contract.
+- [x] Add focused coverage asserting runtime adapter wiring satisfies the
+      protocol seam.
+
+### Completion Notes
+- How it was done:
+  - added `ProcessingPipelineRuntimePort` to
+    `src/dpost/application/processing/processing_pipeline_runtime.py` with
+    runtime-checkable structural typing and explicit runtime collaborator
+    method/property contract;
+  - updated `ProcessingPipelineRuntime` typing to satisfy the protocol and
+    tightened adapter method/property return annotations;
+  - updated `src/dpost/application/processing/processing_pipeline.py` so
+    `_ProcessingPipeline` depends on `ProcessingPipelineRuntimePort` instead of
+    the concrete adapter class;
+  - extended manager branch test coverage to assert runtime adapter satisfies
+    the protocol contract at initialization.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> failed (`ImportError: cannot import name 'ProcessingPipelineRuntimePort'`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> `1 passed, 32 deselected`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/processing_pipeline.py src/dpost/application/processing/processing_pipeline_runtime.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -901,5 +940,10 @@
   - checkpoint rerun after section 27:
     - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5541 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 28:
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

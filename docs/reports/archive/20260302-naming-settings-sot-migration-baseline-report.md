@@ -589,6 +589,32 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 28 Processing Pipeline Runtime Protocol Contract (2026-03-02)
+- Intended actions:
+  - introduce an explicit protocol contract for pipeline/runtime interactions so
+    `_ProcessingPipeline` no longer depends on a concrete adapter type.
+- Observed outcome:
+  - added runtime-checkable
+    `ProcessingPipelineRuntimePort` in
+    `application/processing/processing_pipeline_runtime.py`;
+  - tightened adapter typing annotations so `ProcessingPipelineRuntime` conforms
+    to the protocol seam;
+  - updated `_ProcessingPipeline` constructor typing to accept
+    `ProcessingPipelineRuntimePort`;
+  - added branch coverage assertion that manager runtime adapter satisfies the
+    protocol.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> failed (`ImportError: cannot import name 'ProcessingPipelineRuntimePort'`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> `1 passed, 32 deselected`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/processing_pipeline.py src/dpost/application/processing/processing_pipeline_runtime.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -610,4 +636,5 @@
 - Section 25 naming-policy signature-level explicit-context cleanup is complete.
 - Section 26 processing-pipeline runtime adapter decoupling is complete.
 - Section 27 processor runtime-context helper extraction is complete.
+- Section 28 processing-pipeline runtime protocol contract is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

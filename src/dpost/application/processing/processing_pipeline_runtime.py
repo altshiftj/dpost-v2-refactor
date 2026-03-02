@@ -2,35 +2,92 @@
 
 from __future__ import annotations
 
+from contextlib import AbstractContextManager
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Protocol, runtime_checkable
 
 from dpost.application.processing.file_processor_abstract import FileProcessorABS
 from dpost.application.processing.rename_flow import RenameOutcome
 from dpost.domain.processing.models import ProcessingCandidate, RouteContext
 
 if TYPE_CHECKING:
-    from dpost.application.config import DeviceConfig
+    from dpost.application.config import ConfigService, DeviceConfig
+    from dpost.application.ports import UserInteractionPort
     from dpost.application.processing.device_resolver import DeviceResolution
     from dpost.application.processing.file_process_manager import FileProcessManager
+    from dpost.application.records.record_manager import RecordManager
 
 
-class ProcessingPipelineRuntime:
+@runtime_checkable
+class ProcessingPipelineRuntimePort(Protocol):
+    """Runtime collaborator contract consumed by the processing pipeline."""
+
+    @property
+    def config_service(self) -> ConfigService: ...
+
+    @property
+    def records(self) -> RecordManager: ...
+
+    @property
+    def interactions(self) -> UserInteractionPort: ...
+
+    def is_internal_staging_path(self, path: Path) -> bool: ...
+
+    def strip_internal_stage_suffix(self, path: Path) -> Path: ...
+
+    def resolve_device(self, path: Path) -> DeviceResolution: ...
+
+    def register_rejection(self, path: str, reason: str) -> None: ...
+
+    def safe_move_to_exception_with_context(self, src_path: str) -> None: ...
+
+    def activate_device(
+        self, device: DeviceConfig
+    ) -> AbstractContextManager[object | None]: ...
+
+    def resolve_processor(self, device: DeviceConfig) -> FileProcessorABS: ...
+
+    def handle_processing_failure(
+        self,
+        path: Path,
+        candidate: Optional[ProcessingCandidate],
+        exc: Exception,
+    ) -> None: ...
+
+    def persist_candidate_record(self, context: RouteContext) -> Optional[str]: ...
+
+    def move_to_exception_bucket(self, src_path: str) -> None: ...
+
+    def obtain_valid_prefix(
+        self,
+        retry_prefix: str,
+        retry_reason: str | None,
+    ) -> RenameOutcome: ...
+
+    def send_to_manual_bucket(
+        self,
+        effective_path: str,
+        retry_prefix: str,
+        extension: str,
+    ) -> None: ...
+
+
+class ProcessingPipelineRuntime(ProcessingPipelineRuntimePort):
     """Runtime adapter for pipeline access to manager-owned collaborators."""
 
     def __init__(self, manager: FileProcessManager) -> None:
         self._manager = manager
 
     @property
-    def config_service(self):
+    def config_service(self) -> ConfigService:
         return self._manager.config_service
 
     @property
-    def records(self):
+    def records(self) -> RecordManager:
         return self._manager.records
 
     @property
-    def interactions(self):
+    def interactions(self) -> UserInteractionPort:
         return self._manager.interactions
 
     def is_internal_staging_path(self, path: Path) -> bool:
@@ -48,7 +105,9 @@ class ProcessingPipelineRuntime:
     def safe_move_to_exception_with_context(self, src_path: str) -> None:
         self._manager._safe_move_to_exception_with_context(src_path)
 
-    def activate_device(self, device: DeviceConfig):
+    def activate_device(
+        self, device: DeviceConfig
+    ) -> AbstractContextManager[object | None]:
         return self._manager.config_service.activate_device(device)
 
     def resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
