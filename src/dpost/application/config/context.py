@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from typing import Iterable
 
 from .schema import DeviceConfig, PCConfig
-from .service import ConfigService, ActiveConfig
+from .service import ActiveConfig, ConfigService
 
 __all__ = [
     "init_config",

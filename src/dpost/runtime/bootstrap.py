@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from prometheus_client import start_http_server
 
 from dpost.infrastructure.logging import setup_logger
-from dpost.infrastructure.runtime import bootstrap_dependencies
+from dpost.infrastructure.runtime import startup_dependencies
 from dpost.plugins.loading import get_devices_for_pc
 
 try:
@@ -28,11 +28,11 @@ logger = setup_logger(__name__)
 DEFAULT_PROMETHEUS_PORT = 8000
 DEFAULT_OBSERVABILITY_PORT = 8001
 
-UiInteractionAdapter = bootstrap_dependencies.UiInteractionAdapter
-UiTaskScheduler = bootstrap_dependencies.UiTaskScheduler
-DeviceWatchdogApp = bootstrap_dependencies.DeviceWatchdogApp
-init_dirs = bootstrap_dependencies.init_runtime_dirs
-_build_config_service = bootstrap_dependencies.build_config_service
+UiInteractionAdapter = startup_dependencies.UiInteractionAdapter
+UiTaskScheduler = startup_dependencies.UiTaskScheduler
+DeviceWatchdogApp = startup_dependencies.DeviceWatchdogApp
+init_dirs = startup_dependencies.init_runtime_dirs
+_build_config_service = startup_dependencies.build_config_service
 
 
 class StartupError(RuntimeError):
@@ -77,9 +77,9 @@ class BootstrapContext:
 def bootstrap(
     settings: StartupSettings | None = None,
     *,
-    ui_factory: Callable[[], object] = bootstrap_dependencies.default_ui_factory,
+    ui_factory: Callable[[], object] = startup_dependencies.default_ui_factory,
     sync_manager_factory: Callable[[object], object] = (
-        bootstrap_dependencies.default_sync_manager_factory
+        startup_dependencies.default_sync_manager_factory
     ),
 ) -> BootstrapContext:
     """Initialise config, services, and app runtime stack for dpost startup."""

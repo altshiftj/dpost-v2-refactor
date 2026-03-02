@@ -138,21 +138,61 @@
 
 ---
 
-## 6. Deferred Naming-Clarity Renames (Optional Slice)
+## 6. Naming-Clarity Renames (Follow-up Slice)
 - Why this matters: naming-overload cleanup can improve readability, but it
   should not distract from explicit-context migration risk reduction.
 
 ### Checklist
-- [ ] If in scope, execute low-risk rename sequence from RPC:
+- [x] If in scope, execute low-risk rename sequence from RPC:
       `application/config/runtime.py -> application/config/context.py`,
       `infrastructure/runtime/bootstrap_dependencies.py -> startup_dependencies.py`.
-- [x] If out of scope, record defer decision in active report/checklist notes.
+- [ ] If out of scope, record defer decision in active report/checklist notes.
 - [x] Update imports/tests/docs consistently if rename slice is executed.
 
 ### Completion Notes
-- How it was done: runtime naming-overload renames remain out of scope for this
-  migration wave (explicit-context seam retirement only). No rename/import churn
-  was introduced in this checkpoint.
+- How it was done: follow-up cleanup run executed the low-risk rename pair:
+  - `src/dpost/application/config/runtime.py` ->
+    `src/dpost/application/config/context.py`
+  - `src/dpost/infrastructure/runtime/bootstrap_dependencies.py` ->
+    `src/dpost/infrastructure/runtime/startup_dependencies.py`
+  Updated imports/tests and active planning/checklist/report docs to align.
+  Validation:
+  - `python -m pytest -q tests/unit/application/config/test_context.py tests/unit/infrastructure/runtime/test_startup_dependencies.py tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py` -> `24 passed`
+
+---
+
+## 7. Remove Remaining Contract/Compatibility Seams
+- Why this matters: after fallback retirement, remaining implicit constructor
+  defaults and compatibility shims still hide dependency wiring intent.
+
+### Checklist
+- [x] Make rename-loop attempted-prefix composition separator-aware using
+      explicit naming context.
+- [x] Remove ambient session timeout lookup by requiring explicit
+      `SessionManager.timeout_provider`.
+- [x] Require explicit `FileProcessManager.config_service` injection and remove
+      constructor global fallback.
+- [x] Remove `DeviceResolution.deferred` compatibility helper and use explicit
+      enum-kind checks in resolver tests/callers.
+
+### Completion Notes
+- How it was done:
+  - `RenameService` now composes retry attempted prefixes with the injected
+    `id_separator` context.
+  - `SessionManager` now requires an explicit timeout provider and no longer
+    reads ambient config via `current()`.
+  - `FileProcessManager` now requires explicit `config_service` injection
+    instead of `get_service()` fallback.
+  - `DeviceResolution.deferred` compatibility property was removed and tests
+    were updated to assert `kind is DeviceResolutionKind.DEFER`.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py -k explicit_separator_for_retry_attempt` -> failed (expected separator mismatch)
+    - `python -m pytest -q tests/unit/application/session/test_session_manager.py -k requires_explicit_timeout_provider` -> failed (did not raise `TypeError`)
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k init_requires_explicit_config_service` -> failed (implicit runtime fallback path)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py tests/unit/application/session/test_session_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_device_resolver.py` -> `80 passed`
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/unit/infrastructure/runtime/test_startup_dependencies.py tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py tests/unit/application/processing/test_rename_flow.py tests/unit/application/session/test_session_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_device_resolver.py` -> `104 passed`
 
 ---
 
@@ -176,6 +216,6 @@
 - How it was done:
   - `python -m ruff check src/dpost/application/naming/policy.py src/dpost/infrastructure/storage/filesystem_utils.py src/dpost/infrastructure/sync/kadi_manager.py src/dpost/device_plugins/rhe_kinexus/file_processor.py src/dpost/device_plugins/psa_horiba/file_processor.py tests/unit/application/naming/test_policy.py tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py` -> `All checks passed!`
   - `python -m pytest -q tests/unit/application/naming/test_policy.py tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_routing_helpers.py tests/unit/application/records/test_record_manager.py` -> `167 passed, 1 skipped`
-  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `729 passed, 1 skipped, 1 warning`, `TOTAL 5391 stmts, 0 miss, 100%`
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `732 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
   - `python -m ruff check .` -> `All checks passed!`
   - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

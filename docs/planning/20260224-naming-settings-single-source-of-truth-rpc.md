@@ -78,20 +78,22 @@
 - No separator inference/fallback in domain/infrastructure naming consumers.
 - Naming-related tests pass with explicit-context behavior.
 
-## Deferred Follow-up: Runtime Naming Overload Cleanup (Documented for Later)
+## Runtime Naming Overload Cleanup (Follow-up Status)
 - Goal: reduce naming ambiguity where "runtime" currently refers to different concerns across layers.
 - Clarification of current intent:
   - `src/dpost/runtime/` owns startup/composition policy.
-  - `src/dpost/application/config/runtime.py` owns active config context helpers.
+  - `src/dpost/application/config/context.py` owns active config context helpers.
   - `src/dpost/infrastructure/runtime/` owns concrete runtime adapters.
-- Recommended low-risk rename path (deferred):
-  1. Rename `src/dpost/application/config/runtime.py` to
-     `src/dpost/application/config/context.py`.
-  2. Rename `src/dpost/infrastructure/runtime/bootstrap_dependencies.py` to
-     `src/dpost/infrastructure/runtime/startup_dependencies.py`.
-  3. Optional final step (higher churn): rename folder
-     `src/dpost/infrastructure/runtime/` to
-     `src/dpost/infrastructure/runtime_adapters/`.
+- Follow-up status (2026-03-02):
+  - Completed:
+    1. Renamed `src/dpost/application/config/runtime.py` to
+       `src/dpost/application/config/context.py`.
+    2. Renamed `src/dpost/infrastructure/runtime/bootstrap_dependencies.py` to
+       `src/dpost/infrastructure/runtime/startup_dependencies.py`.
+  - Deferred:
+    3. Optional final step (higher churn): rename folder
+       `src/dpost/infrastructure/runtime/` to
+       `src/dpost/infrastructure/runtime_adapters/`.
 - Rationale:
   - improves contributor readability without changing architecture boundaries.
   - keeps dependency direction unchanged while reducing overloaded terminology.

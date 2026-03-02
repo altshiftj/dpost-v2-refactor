@@ -144,10 +144,43 @@
   - `python -m ruff check .` -> `All checks passed!`
   - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Follow-up Cleanup Run (2026-03-02)
+- Intended actions:
+  - execute deferred low-risk naming-clarity renames,
+  - remove remaining constructor/runtime compatibility seams in
+    rename/session/processing/resolver paths.
+- Observed outcome:
+  - renamed runtime-overloaded modules:
+    - `application/config/runtime.py` -> `application/config/context.py`
+    - `infrastructure/runtime/bootstrap_dependencies.py` ->
+      `infrastructure/runtime/startup_dependencies.py`
+  - updated package/runtime/test imports to new module names;
+  - made rename retry attempted-prefix composition separator-aware using
+    explicit `id_separator`;
+  - removed ambient `current()` fallback from `SessionManager` by requiring an
+    explicit timeout-provider dependency;
+  - removed `FileProcessManager` implicit `get_service()` fallback and required
+    explicit `config_service`;
+  - removed `DeviceResolution.deferred` compatibility helper and standardized
+    on explicit `DeviceResolutionKind` checks in tests.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py -k explicit_separator_for_retry_attempt` -> failed (expected separator mismatch)
+    - `python -m pytest -q tests/unit/application/session/test_session_manager.py -k requires_explicit_timeout_provider` -> failed (did not raise `TypeError`)
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k init_requires_explicit_config_service` -> failed (implicit config fallback path)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py tests/unit/application/session/test_session_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_device_resolver.py` -> `80 passed`
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/unit/infrastructure/runtime/test_startup_dependencies.py tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py tests/unit/application/processing/test_rename_flow.py tests/unit/application/session/test_session_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_device_resolver.py` -> `104 passed`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `732 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
-- Section 6 (runtime naming-overload file/folder renames) remains explicitly
-  deferred as planned in the RPC.
+- Section 6 low-risk naming-overload renames are now complete; only the
+  optional higher-churn folder rename
+  (`infrastructure/runtime/` -> `infrastructure/runtime_adapters/`) remains
+  deferred.
 - Naming policy ownership remains centralized in `NamingSettings` and active
   runtime/storage/sync/plugin paths no longer rely on ambient separator/pattern
   fallback seams targeted by this wave.

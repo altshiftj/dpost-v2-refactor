@@ -1,10 +1,10 @@
-"""Unit coverage for infrastructure runtime bootstrap dependency helpers."""
+"""Unit coverage for infrastructure runtime startup dependency helpers."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-import dpost.infrastructure.runtime.bootstrap_dependencies as deps
+import dpost.infrastructure.runtime.startup_dependencies as deps
 from dpost.infrastructure.runtime.ui_adapters import UiInteractionAdapter, UiTaskScheduler
 
 

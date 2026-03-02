@@ -1,6 +1,6 @@
 """dpost-owned configuration schemas, services, and runtime helpers."""
 
-from dpost.application.config.runtime import (
+from dpost.application.config.context import (
     activate_device,
     current,
     get_service,
