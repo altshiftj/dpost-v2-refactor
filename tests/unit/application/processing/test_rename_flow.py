@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from dpost.application.ports import RenameDecision
 from dpost.application.processing.rename_flow import RenameService
 
@@ -49,7 +51,12 @@ def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> Non
     )
     analyses = iter(
         [
-            {"valid": False, "sanitized": None, "reasons": ["bad"], "highlight_spans": []},
+            {
+                "valid": False,
+                "sanitized": None,
+                "reasons": ["bad"],
+                "highlight_spans": [],
+            },
             {
                 "valid": True,
                 "sanitized": "mus-ipat-Sample_A",
@@ -66,6 +73,7 @@ def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> Non
     outcome = service.obtain_valid_prefix(
         current_prefix="invalid-prefix",
         contextual_reason="record exists",
+        id_separator="-",
     )
 
     assert outcome.cancelled is False
@@ -80,7 +88,8 @@ def test_obtain_valid_prefix_retries_until_analysis_is_valid(monkeypatch) -> Non
 def test_compose_attempted_prefix_joins_expected_fields() -> None:
     """Join rename user/institute/sample values into attempted prefix."""
     attempted = RenameService._compose_attempted_prefix(  # noqa: SLF001
-        {"name": "mus", "institute": "ipat", "sample_ID": "Sample_A"}
+        {"name": "mus", "institute": "ipat", "sample_ID": "Sample_A"},
+        id_separator="-",
     )
     assert attempted == "mus-ipat-Sample_A"
 
@@ -152,7 +161,9 @@ def test_obtain_valid_prefix_forwards_explicit_naming_context(monkeypatch) -> No
     }
 
 
-def test_obtain_valid_prefix_uses_explicit_separator_for_retry_attempt(monkeypatch) -> None:
+def test_obtain_valid_prefix_uses_explicit_separator_for_retry_attempt(
+    monkeypatch,
+) -> None:
     """Build retry attempted-prefix values using explicit naming separator context."""
     decisions = [
         RenameDecision(
@@ -177,7 +188,12 @@ def test_obtain_valid_prefix_uses_explicit_separator_for_retry_attempt(monkeypat
     )
     analyses = iter(
         [
-            {"valid": False, "sanitized": None, "reasons": ["bad"], "highlight_spans": []},
+            {
+                "valid": False,
+                "sanitized": None,
+                "reasons": ["bad"],
+                "highlight_spans": [],
+            },
             {
                 "valid": True,
                 "sanitized": "mus__ipat__Sample_A",
@@ -200,3 +216,11 @@ def test_obtain_valid_prefix_uses_explicit_separator_for_retry_attempt(monkeypat
     assert outcome.sanitized_prefix == "mus__ipat__Sample_A"
     assert len(interactions.prompts) == 2
     assert interactions.prompts[1].attempted_prefix == "u1__ipat__bad!"
+
+
+def test_obtain_valid_prefix_requires_explicit_separator() -> None:
+    """Fail fast when rename flow is invoked without explicit separator context."""
+    service = RenameService(_InteractionStub(decisions=[]))
+
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        service.obtain_valid_prefix(current_prefix="invalid-prefix")

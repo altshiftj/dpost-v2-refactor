@@ -229,6 +229,34 @@
 
 ---
 
+## 9. Remove Rename-Flow Separator Fallback
+- Why this matters: rename retry prompts should compose attempted prefixes with
+  explicit naming context only, not implicit `"-"` fallback behavior.
+
+### Checklist
+- [x] Require explicit `id_separator` in
+      `RenameService.obtain_valid_prefix(...)`.
+- [x] Remove separator fallback from
+      `RenameService._compose_attempted_prefix(...)`.
+- [x] Update focused tests in:
+      `tests/unit/application/processing/test_rename_flow.py` and affected
+      processing orchestration tests.
+
+### Completion Notes
+- How it was done:
+  - added fail-fast separator validation to rename flow before policy calls;
+  - passed validated separator through both violation analysis and retry
+    attempted-prefix composition;
+  - removed implicit `"-"` fallback from attempted-prefix composition helper.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py -k requires_explicit_separator` -> failed (raised filename-pattern error first)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_routing_helpers.py` -> `48 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -257,3 +285,7 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `734 passed, 1 skipped, 1 warning`, `TOTAL 5371 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 9:
+    - `python -m pytest -q tests/unit` -> `735 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `735 passed, 1 skipped, 1 warning`, `TOTAL 5377 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`

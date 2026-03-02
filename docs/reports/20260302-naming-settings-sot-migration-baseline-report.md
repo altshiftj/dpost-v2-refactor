@@ -197,6 +197,24 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 9 Rename-Flow Separator Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove retry attempted-prefix separator fallback in rename flow.
+- Observed outcome:
+  - `RenameService.obtain_valid_prefix(...)` now fail-fast validates explicit
+    separator context before invoking naming-policy helpers;
+  - `RenameService._compose_attempted_prefix(...)` now composes with the
+    validated explicit separator and no longer defaults to `"-"`.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py -k requires_explicit_separator` -> failed (raised filename-pattern error first)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_rename_flow.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_routing_helpers.py` -> `48 passed`
+    - `python -m pytest -q tests/unit` -> `735 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `735 passed, 1 skipped, 1 warning`, `TOTAL 5377 stmts, 0 miss, 100%`
+    - `python -m ruff check src/dpost/application/processing/rename_flow.py tests/unit/application/processing/test_rename_flow.py` -> `All checks passed!`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Section 6 low-risk naming-overload renames are now complete; only the
@@ -209,8 +227,6 @@
 - Remaining low-priority compatibility defaults (deferred follow-up):
   - `application/processing/error_handling.py`:
     `resolved_id_separator = id_separator or "-"`.
-  - `application/processing/rename_flow.py`:
-    attempted-prefix fallback separator (`if id_separator else "-"`).
   - `infrastructure/storage/filesystem_utils.py`:
     `get_unique_filename(...)` default separator fallback.
   - `device_plugins/dsv_horiba/file_processor.py`:

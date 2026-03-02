@@ -36,11 +36,12 @@ class RenameService:
         filename_pattern: Pattern[str] | None = None,
         id_separator: str | None = None,
     ) -> RenameOutcome:
+        separator = self._require_id_separator(id_separator)
         attempted = current_prefix
         analysis = explain_filename_violation(
             attempted,
             filename_pattern=filename_pattern,
-            id_separator=id_separator,
+            id_separator=separator,
         )
         reason_hint = contextual_reason
 
@@ -54,7 +55,7 @@ class RenameService:
             analysis = analyze_user_input(
                 decision.values,
                 filename_pattern=filename_pattern,
-                id_separator=id_separator,
+                id_separator=separator,
             )
             if analysis["valid"]:
                 return RenameOutcome(
@@ -63,7 +64,7 @@ class RenameService:
 
             attempted = self._compose_attempted_prefix(
                 decision.values,
-                id_separator=id_separator,
+                id_separator=separator,
             )
 
     def send_to_manual_bucket(
@@ -101,13 +102,18 @@ class RenameService:
         return self._interactions.request_rename(prompt)
 
     @staticmethod
+    def _require_id_separator(id_separator: str | None) -> str:
+        if not id_separator:
+            raise ValueError("id_separator must be provided explicitly")
+        return id_separator
+
+    @staticmethod
     def _compose_attempted_prefix(
         user_input: dict,
         *,
-        id_separator: str | None = None,
+        id_separator: str,
     ) -> str:
-        separator = id_separator if id_separator else "-"
-        return separator.join(
+        return id_separator.join(
             (
                 user_input.get("name", ""),
                 user_input.get("institute", ""),
