@@ -369,6 +369,27 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 18 UTM Flush Runtime-Context Contract Tightening (2026-03-02)
+- Intended actions:
+  - remove silent skip behavior when UTM deferred flush runs without explicit
+    runtime context.
+- Observed outcome:
+  - UTM `flush_incomplete()` now requires explicit runtime `id_separator` and
+    `dest_dir` context during staged flush execution;
+  - missing-context flush calls now fail fast instead of logging/continuing;
+  - added focused branch tests for missing-context error and configured flush
+    success.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> failed (flush silently skipped missing-context series)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> `2 passed, 6 deselected`
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick` -> `17 passed`
+    - `python -m pytest -q tests/unit` -> `758 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `758 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -380,4 +401,5 @@
 - Section 15 plugin exception-dir parent fallback cleanup is complete.
 - Section 16 remaining plugin separator fallback cleanup is complete.
 - Section 17 LocalRecord empty-separator fallback cleanup is complete.
+- Section 18 UTM flush runtime-context contract cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

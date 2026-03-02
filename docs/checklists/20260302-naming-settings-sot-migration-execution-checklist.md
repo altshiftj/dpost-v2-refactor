@@ -480,6 +480,34 @@
 
 ---
 
+## 18. Tighten UTM Flush Runtime-Context Contract
+- Why this matters: `flush_incomplete()` silently skipped staged flush work
+  when runtime context was missing, which hid wiring errors in deferred
+  processing paths.
+
+### Checklist
+- [x] Remove silent missing-context skip behavior from UTM flush path.
+- [x] Require explicit runtime `id_separator` and `dest_dir` context during
+      flush execution.
+- [x] Add focused branch tests for missing-context failure and configured
+      flush success.
+
+### Completion Notes
+- How it was done:
+  - updated UTM flush execution to resolve runtime separator/destination
+    context explicitly before per-series processing;
+  - removed silent skip logging branch for missing runtime context;
+  - added focused tests covering explicit missing-context error and configured
+    staged flush behavior.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> failed (flush silently skipped missing-context series)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py -k "flush_incomplete_requires_explicit_separator_context or flush_incomplete_processes_staged_series_with_runtime_context"` -> `2 passed, 6 deselected`
+    - `python -m pytest -q tests/unit/device_plugins/utm_zwick` -> `16 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -533,5 +561,10 @@
   - checkpoint rerun after section 17:
     - `python -m pytest -q tests/unit` -> `755 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `755 passed, 1 skipped, 1 warning`, `TOTAL 5447 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 18:
+    - `python -m pytest -q tests/unit` -> `758 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `758 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

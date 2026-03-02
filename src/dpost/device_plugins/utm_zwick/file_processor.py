@@ -186,19 +186,16 @@ class FileProcessorUTMZwick(FileProcessorABS):
             with self._lock:
                 self._series[state.series_key] = state
 
+            device_abbr = getattr(self.device_config.metadata, "device_abbr", None)
+            id_separator = self._resolve_id_separator()
+            dest_dir = self._resolve_dest_dir()
+
             try:
-                device_abbr = getattr(self.device_config.metadata, "device_abbr", None)
-                if self._id_separator is None or self._dest_dir is None:
-                    logger.debug(
-                        "UTM: skipping flush for '%s' due missing runtime context",
-                        state.sample,
-                    )
-                    continue
                 record_dir = get_record_path(
                     state.sample,
                     device_abbr,
-                    id_separator=self._id_separator,
-                    dest_dir=self._dest_dir,
+                    id_separator=id_separator,
+                    dest_dir=dest_dir,
                     current_device=self._current_device,
                 )
                 output = self.device_specific_processing(
@@ -277,3 +274,8 @@ class FileProcessorUTMZwick(FileProcessorABS):
         if self._id_separator is not None:
             return self._id_separator
         raise RuntimeError("UTM id_separator runtime context is not configured")
+
+    def _resolve_dest_dir(self) -> str:
+        if self._dest_dir is not None:
+            return self._dest_dir
+        raise RuntimeError("UTM dest_dir runtime context is not configured")

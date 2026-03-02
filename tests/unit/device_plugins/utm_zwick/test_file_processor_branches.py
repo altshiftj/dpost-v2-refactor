@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from dpost.device_plugins.utm_zwick.file_processor import (
     FileProcessorUTMZwick,
     _SeriesState,
@@ -172,3 +174,61 @@ def test_move_staged_artifact_logs_warning_on_move_failure(
         failure_label="raw",
         id_separator="-",
     )
+
+
+def test_resolve_dest_dir_requires_runtime_context() -> None:
+    """Require explicit runtime destination directory context."""
+    processor = FileProcessorUTMZwick(build_config())
+
+    with pytest.raises(RuntimeError, match="dest_dir runtime context"):
+        processor._resolve_dest_dir()  # noqa: SLF001
+
+    processor.configure_runtime_context(dest_dir="C:/records")
+
+    assert processor._resolve_dest_dir() == "C:/records"  # noqa: SLF001
+
+
+def test_flush_incomplete_requires_explicit_separator_context(
+    tmp_path: Path,
+) -> None:
+    """Reject flush processing when runtime separator context is missing."""
+    processor = FileProcessorUTMZwick(build_config())
+    sentinel = tmp_path / "sample.xlsx"
+    sentinel.write_text("xlsx")
+    processor._series = {  # noqa: SLF001
+        "sample": _SeriesState(
+            series_key="sample",
+            sample="usr-inst-sample",
+            sentinel_xlsx=sentinel,
+            last_update=datetime.now() - timedelta(seconds=999),
+        )
+    }
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.flush_incomplete()
+
+
+def test_flush_incomplete_processes_staged_series_with_runtime_context(
+    tmp_path: Path,
+) -> None:
+    """Flush staged series into record storage when runtime context is configured."""
+    processor = FileProcessorUTMZwick(build_config())
+    sentinel = tmp_path / "sample.xlsx"
+    sentinel.write_text("xlsx")
+    processor._series = {  # noqa: SLF001
+        "sample": _SeriesState(
+            series_key="sample",
+            sample="usr-inst-sample",
+            sentinel_xlsx=sentinel,
+            last_update=datetime.now() - timedelta(seconds=999),
+        )
+    }
+    processor.configure_runtime_context(
+        id_separator="-",
+        dest_dir=str(tmp_path / "records"),
+    )
+
+    outputs = processor.flush_incomplete()
+
+    assert len(outputs) == 1
+    assert outputs[0].datatype == "xlsx"
