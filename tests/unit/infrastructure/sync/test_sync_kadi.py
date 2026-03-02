@@ -115,14 +115,22 @@ def sync_mgr(fake_ui, monkeypatch):
 
 def test_get_db_user_from_local_record_user_found(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
-    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
+    user = sync_mgr._get_db_user_from_local_record(
+        dummy_mgr,
+        local_record,
+        id_separator=local_record.id_separator,
+    )
     assert user is not None
 
 
 def test_get_db_user_from_local_record_user_not_found(sync_mgr, local_record, fake_ui):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.user.side_effect = Exception("User not found")
-    user = sync_mgr._get_db_user_from_local_record(dummy_mgr, local_record)
+    user = sync_mgr._get_db_user_from_local_record(
+        dummy_mgr,
+        local_record,
+        id_separator=local_record.id_separator,
+    )
     assert user is None
     assert fake_ui.errors
 
@@ -131,7 +139,12 @@ def test_get_or_create_db_user_group_existing(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.group.return_value = DummyKadiGroup("existing_group")
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(
+        dummy_mgr,
+        local_record,
+        user,
+        id_separator=local_record.id_separator,
+    )
     assert group.id == "existing_group"
 
 
@@ -144,7 +157,12 @@ def test_get_or_create_db_user_group_create(sync_mgr, local_record):
     dummy_mgr = DummyKadiManager()
     dummy_mgr.group.side_effect = side_effect
     user = DummyKadiUser("abc-ipat")
-    group = sync_mgr._get_or_create_db_user_rawdata_group(dummy_mgr, local_record, user)
+    group = sync_mgr._get_or_create_db_user_rawdata_group(
+        dummy_mgr,
+        local_record,
+        user,
+        id_separator=local_record.id_separator,
+    )
     assert group.id == "created_group"
 
 
@@ -291,7 +309,11 @@ def test_get_db_user_uses_record_separator_without_identifier_inference(sync_mgr
     record = LocalRecord(identifier="dev:alice:ipat:sample", id_separator=":")
     dummy_mgr = DummyKadiManager()
 
-    sync_mgr._get_db_user_from_local_record(dummy_mgr, record)
+    sync_mgr._get_db_user_from_local_record(
+        dummy_mgr,
+        record,
+        id_separator=record.id_separator,
+    )
 
     dummy_mgr.user.assert_called_once_with(
         username="alice:ipat",
@@ -307,7 +329,11 @@ def test_sync_manager_accepts_explicit_separator_resolver(fake_ui):
     )
 
     record = LocalRecord(identifier="dev-user-ipat-sample", id_separator="-")
-    sync_mgr._get_db_user_from_local_record(dummy_mgr, record)
+    sync_mgr._get_db_user_from_local_record(
+        dummy_mgr,
+        record,
+        id_separator=sync_mgr._id_separator_for_record(record),
+    )
 
     dummy_mgr.user.assert_called_once_with(
         username="user|ipat",

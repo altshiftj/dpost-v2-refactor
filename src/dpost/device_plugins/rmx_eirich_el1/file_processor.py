@@ -22,6 +22,20 @@ class FileProcessorEirich(FileProcessorABS):
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
         self.device_config = device_config
+        self._id_separator: str | None = None
+
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
+    ) -> None:
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
 
     def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
         return PreprocessingResult.passthrough(path)
@@ -63,7 +77,7 @@ class FileProcessorEirich(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator="-",
+            id_separator=self._runtime_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="tabular")
@@ -72,3 +86,6 @@ class FileProcessorEirich(FileProcessorABS):
         filename = Path(filepath).name.lower()
         patterns = self.device_config.files.filename_patterns
         return any(fnmatch(filename, pattern.lower()) for pattern in patterns)
+
+    def _runtime_id_separator(self) -> str:
+        return self._id_separator or "-"

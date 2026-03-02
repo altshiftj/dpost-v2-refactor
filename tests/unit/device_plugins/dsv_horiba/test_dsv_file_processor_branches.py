@@ -88,6 +88,7 @@ def test_processing_falls_back_to_single_file_move_when_batch_missing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Move file directly when no dissolved batch context is available."""
+    processor.configure_runtime_context(id_separator="-")
     src = tmp_path / "sample.txt"
     src.write_text("export")
     record_dir = tmp_path / "record"
@@ -120,6 +121,7 @@ def test_processing_tolerates_raw_unlink_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Continue processing when deleting staged raw files fails."""
+    processor.configure_runtime_context(id_separator="-")
     watch_dir = tmp_path / "incoming"
     watch_dir.mkdir()
     record_dir = tmp_path / "record"

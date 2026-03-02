@@ -23,6 +23,20 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
 
     def __init__(self, device_config: DeviceConfig) -> None:
         super().__init__(device_config)
+        self._id_separator: str | None = None
+
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
+    ) -> None:
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
 
     def device_specific_preprocessing(self, path: str) -> PreprocessingResult:
         candidate = Path(path)
@@ -71,7 +85,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
                 record_path,
                 file_id,
                 extension,
-                id_separator="-",
+                id_separator=self._runtime_id_separator(),
             )
             move_item(src, destination)
             return ProcessingOutput(final_path=destination, datatype="img")
@@ -113,7 +127,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
                         str(record_dir),
                         base,
                         suffix,
-                        id_separator="-",
+                        id_separator=self._runtime_id_separator(),
                     )
                 )
             try:
@@ -128,3 +142,6 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
             logger.debug("Removed ELID directory '%s'", elid_dir)
         except Exception as exc:  # noqa: BLE001
             logger.error("Could not remove directory '%s': %s", elid_dir, exc)
+
+    def _runtime_id_separator(self) -> str:
+        return self._id_separator or "-"

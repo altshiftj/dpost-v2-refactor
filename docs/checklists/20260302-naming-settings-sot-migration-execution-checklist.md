@@ -360,6 +360,40 @@
 
 ---
 
+## 14. Post-Checklist Explicit-Context Cleanup
+- Why this matters: even after fallback retirement, hardcoded separator usage
+  and stale runtime-path docs can quietly reintroduce naming drift and
+  contributor confusion.
+
+### Checklist
+- [x] Replace hardcoded plugin `id_separator="-"` usage in unique-name
+      generation with runtime separator context.
+- [x] Tighten Kadi sync helper seams so separator context is forwarded
+      explicitly through helper calls.
+- [x] Align architecture docs to `runtime_adapters` path naming and update
+      stale `NamingSettings` docstring wording.
+
+### Completion Notes
+- How it was done:
+  - updated plugin processors to use injected runtime `id_separator` for
+    `get_unique_filename(...)` calls (Hioki, DSV, Kinexus, UTM, SEM, EXTR,
+    EIRICH EL1/R01, test-device processor);
+  - tightened Kadi `_prepare_resources(...)` to forward explicit separator to
+    user-lookup helper and updated helper signatures to require explicit
+    separator context;
+  - updated architecture baseline/contract/responsibility catalog references
+    from `infrastructure/runtime` to `infrastructure/runtime_adapters`, and
+    refreshed stale `NamingSettings` docstring language.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/erm_hioki/test_file_processor.py::test_processing_uses_configured_separator_for_unique_filename tests/unit/device_plugins/utm_zwick/test_file_processor.py::test_device_specific_processing_moves_staged_series` -> failed (hardcoded separator persisted)
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi_branches.py::test_prepare_resources_threads_separator_across_resource_builders` -> failed (separator not forwarded to user helper seam)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/erm_hioki tests/unit/device_plugins/utm_zwick tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/sem_phenomxl2 tests/unit/device_plugins/extr_haake tests/unit/device_plugins/test_device tests/unit/device_plugins/rhe_kinexus` -> `79 passed`
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py` -> `31 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.

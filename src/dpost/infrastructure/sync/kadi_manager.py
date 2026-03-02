@@ -85,7 +85,11 @@ class KadiSyncManager:
         device_record_id = local_record.device_type
 
         # Build per-user and per-device scaffolding so ownership metadata stays consistent in Kadi.
-        db_user = self._get_db_user_from_local_record(db_manager, local_record)
+        db_user = self._get_db_user_from_local_record(
+            db_manager,
+            local_record,
+            id_separator=id_separator,
+        )
         user_collection = self._get_or_create_db_user_rawdata_collection(
             db_manager, local_record, db_user, id_separator=id_separator
         )
@@ -141,12 +145,11 @@ class KadiSyncManager:
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
         *,
-        id_separator: str | None = None,
+        id_separator: str,
     ) -> KadiCollection:
-        separator = id_separator or self._id_separator_for_record(local_record)
         collection_id = (
-            f"{local_record.user}{separator}{local_record.institute}"
-            f"{separator}rawdata{separator}collection"
+            f"{local_record.user}{id_separator}{local_record.institute}"
+            f"{id_separator}rawdata{id_separator}collection"
         )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
@@ -236,12 +239,11 @@ class KadiSyncManager:
         local_record: LocalRecord,
         db_user: Optional[KadiUser],
         *,
-        id_separator: str | None = None,
+        id_separator: str,
     ) -> KadiGroup:
-        separator = id_separator or self._id_separator_for_record(local_record)
         group_id = (
-            f"{local_record.user}{separator}{local_record.institute}"
-            f"{separator}rawdata{separator}group"
+            f"{local_record.user}{id_separator}{local_record.institute}"
+            f"{id_separator}rawdata{id_separator}group"
         )
         title = f"{local_record.user.upper()}@{local_record.institute.upper()}: Raw Data Records"
         add_user_info = {"user_id": db_user.id, "role": "admin"} if db_user else None
@@ -271,10 +273,9 @@ class KadiSyncManager:
         db_manager: KadiManager,
         local_record: LocalRecord,
         *,
-        id_separator: str | None = None,
+        id_separator: str,
     ) -> Optional[KadiUser]:
-        separator = id_separator or self._id_separator_for_record(local_record)
-        user_id = f"{local_record.user}{separator}{local_record.institute}"
+        user_id = f"{local_record.user}{id_separator}{local_record.institute}"
         try:
             return db_manager.user(username=user_id, identity_type="local")
         except Exception:

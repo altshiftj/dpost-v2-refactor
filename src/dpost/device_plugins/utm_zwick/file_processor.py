@@ -137,6 +137,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         state = self._pop_series_state(raw_prefix)
         if state is None:
             raise KeyError(f"No staged series for '{raw_prefix}'")
+        id_separator = self._runtime_id_separator()
 
         self._move_staged_artifact(
             source=state.last_zs2,
@@ -144,6 +145,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             filename_prefix=file_id,
             success_label="raw zs2",
             failure_label="zs2",
+            id_separator=id_separator,
         )
         self._move_staged_artifact(
             source=state.sentinel_xlsx,
@@ -151,6 +153,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
             filename_prefix=file_id,
             success_label="results",
             failure_label="results",
+            id_separator=id_separator,
         )
 
         datatype = "xlsx" if state.sentinel_xlsx else "zs2"
@@ -237,6 +240,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         filename_prefix: str,
         success_label: str,
         failure_label: str,
+        id_separator: str,
     ) -> None:
         if source is None or not source.exists():
             return
@@ -245,7 +249,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
                 str(record_dir),
                 filename_prefix,
                 source.suffix,
-                id_separator="-",
+                id_separator=id_separator,
             )
         )
         try:
@@ -268,3 +272,6 @@ class FileProcessorUTMZwick(FileProcessorABS):
     @staticmethod
     def _series_key(stem: str) -> str:
         return stem
+
+    def _runtime_id_separator(self) -> str:
+        return self._id_separator or "-"

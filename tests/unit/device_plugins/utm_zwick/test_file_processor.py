@@ -100,6 +100,7 @@ def test_device_specific_processing_moves_staged_series(
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()
+    processor.configure_runtime_context(id_separator=":")
 
     unique_paths = [
         str(record_dir / "prefix-01.zs2"),
@@ -120,8 +121,8 @@ def test_device_specific_processing_moves_staged_series(
     assert Path(output.final_path) == record_dir
     assert output.datatype == "xlsx"
     assert mock_unique.call_args_list == [
-        call(str(record_dir), "prefix", ".zs2", id_separator="-"),
-        call(str(record_dir), "prefix", ".xlsx", id_separator="-"),
+        call(str(record_dir), "prefix", ".zs2", id_separator=":"),
+        call(str(record_dir), "prefix", ".xlsx", id_separator=":"),
     ]
     assert mock_move.call_args_list == [
         call(str(zs2), unique_paths[0]),

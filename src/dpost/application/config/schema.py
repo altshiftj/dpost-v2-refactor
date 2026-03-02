@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping, Optional, Pattern, Sequence
-import os
-import re
 
 __all__ = [
     "PathSettings",
@@ -92,8 +92,7 @@ class PathSettings:
 @dataclass(slots=True)
 class NamingSettings:
     """
-    Defines how file and record identifiers are structured across the app.
-    Needs to be fully resolved as it currently clashes with settings in config/constants.py.
+    Defines canonical file and record identifier structure across runtime flows.
     """
 
     id_separator: str = "-"

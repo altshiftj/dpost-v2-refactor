@@ -52,3 +52,14 @@ def test_test_device_processor_reports_appendability_and_matching_rules() -> Non
     assert processor.matches_file("C:/raw/sample.tif") is True
     assert processor.matches_file("C:/raw/sample.txt") is True
     assert processor.matches_file("C:/raw/sample.csv") is False
+
+
+def test_test_device_processor_runtime_separator_configuration() -> None:
+    """Apply runtime separator once and preserve explicit overrides."""
+    processor = ReferenceTestFileProcessor(build_config())
+    processor.configure_runtime_context(id_separator=":")
+    assert processor._id_separator == ":"  # noqa: SLF001
+
+    processor._id_separator = "-"  # noqa: SLF001
+    processor.configure_runtime_context(id_separator="|")
+    assert processor._id_separator == "-"  # noqa: SLF001

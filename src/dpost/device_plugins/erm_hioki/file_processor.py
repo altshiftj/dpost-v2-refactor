@@ -147,7 +147,7 @@ class FileProcessorHioki(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator="-",
+            id_separator=self._runtime_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
@@ -163,7 +163,7 @@ class FileProcessorHioki(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator="-",
+            id_separator=self._runtime_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
@@ -179,7 +179,7 @@ class FileProcessorHioki(FileProcessorABS):
             str(record_dir),
             file_id,
             extension,
-            id_separator="-",
+            id_separator=self._runtime_id_separator(),
         )
         move_item(src, destination)
 
@@ -275,3 +275,6 @@ class FileProcessorHioki(FileProcessorABS):
             shutil.copy2(src, dest)
         except shutil.SameFileError:
             return
+
+    def _runtime_id_separator(self) -> str:
+        return self._id_separator or "-"

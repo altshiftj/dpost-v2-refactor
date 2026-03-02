@@ -144,7 +144,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
                 record_path,
                 file_id,
                 src.suffix.lower(),
-                id_separator="-",
+                id_separator=self._resolve_id_separator(),
             )
             move_item(str(src), destination)
             return ProcessingOutput(final_path=destination, datatype="txt")
@@ -171,7 +171,7 @@ class FileProcessorDSVHoriba(FileProcessorABS):
                 record_path,
                 file_id,
                 ".txt",
-                id_separator="-",
+                id_separator=self._resolve_id_separator(),
             )
             move_item(str(txt_file), destination)
             logger.debug("Moved txt file '%s' to '%s'", txt_file, destination)

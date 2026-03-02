@@ -136,13 +136,22 @@ def test_prepare_resources_threads_separator_across_resource_builders(
     db_record = SimpleNamespace(id="db-record-id")
     captured: dict[str, object] = {}
 
-    monkeypatch.setattr(
-        sync_mgr,
-        "_get_db_user_from_local_record",
-        lambda _db_manager, _local_record: db_user,
-    )
+    def fake_get_db_user(
+        _db_manager,
+        _local_record,
+        *,
+        id_separator: str,
+    ):
+        captured["user_lookup_separator"] = id_separator
+        return db_user
 
-    def fake_user_collection(_db_manager, _local_record, _db_user, *, id_separator=None):
+    def fake_user_collection(
+        _db_manager,
+        _local_record,
+        _db_user,
+        *,
+        id_separator: str,
+    ):
         captured["user_separator"] = id_separator
         return user_collection
 
@@ -158,6 +167,11 @@ def test_prepare_resources_threads_separator_across_resource_builders(
         captured["device_separator"] = id_separator
         return device_collection
 
+    monkeypatch.setattr(
+        sync_mgr,
+        "_get_db_user_from_local_record",
+        fake_get_db_user,
+    )
     monkeypatch.setattr(
         sync_mgr,
         "_get_or_create_db_user_rawdata_collection",
@@ -177,6 +191,7 @@ def test_prepare_resources_threads_separator_across_resource_builders(
     context = sync_mgr._prepare_resources(db_manager, record)
 
     assert captured == {
+        "user_lookup_separator": "|",
         "user_separator": "|",
         "device_user_id": "dev|usr",
         "device_record_id": "dev",

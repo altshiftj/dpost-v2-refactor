@@ -92,3 +92,22 @@ def test_should_queue_modified_requires_explicit_runtime_naming_context() -> Non
 
     assert processor.should_queue_modified("CC_usr-ipat-sample.csv") is False
     assert processor.should_queue_modified("usr-ipat-sample.csv") is False
+
+
+def test_processing_uses_configured_separator_for_unique_filename(tmp_path: Path) -> None:
+    """Use injected runtime separator when creating unique output filenames."""
+    config = build_config()
+    processor = FileProcessorHioki(config, id_separator=":")
+
+    source = tmp_path / "sample.xlsx"
+    source.write_text("sheet data", encoding="utf-8")
+    record_dir = tmp_path / "records"
+
+    output = processor.device_specific_processing(
+        str(source),
+        str(record_dir),
+        "ERM-sample",
+        ".xlsx",
+    )
+
+    assert Path(output.final_path).name == "ERM-sample:01.xlsx"

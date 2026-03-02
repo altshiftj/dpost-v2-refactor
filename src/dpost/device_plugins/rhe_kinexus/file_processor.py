@@ -297,7 +297,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                     str(record_dir),
                     base_prefix,
                     pair.export_path.suffix.lower(),
-                    id_separator="-",
+                    id_separator=self._resolve_id_separator(),
                 )
             )
             basename = unique_export_path.stem

@@ -132,6 +132,7 @@ def test_move_staged_artifact_returns_early_for_none_or_missing_source(
         filename_prefix="prefix",
         success_label="ok",
         failure_label="fail",
+        id_separator="-",
     )
     FileProcessorUTMZwick._move_staged_artifact(
         source=tmp_path / "missing.zs2",
@@ -139,6 +140,7 @@ def test_move_staged_artifact_returns_early_for_none_or_missing_source(
         filename_prefix="prefix",
         success_label="ok",
         failure_label="fail",
+        id_separator="-",
     )
 
 
@@ -168,4 +170,5 @@ def test_move_staged_artifact_logs_warning_on_move_failure(
         filename_prefix="prefix",
         success_label="raw",
         failure_label="raw",
+        id_separator="-",
     )

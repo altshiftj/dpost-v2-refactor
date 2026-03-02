@@ -288,6 +288,29 @@
   - `python -m ruff check .` -> `All checks passed!`
   - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 14 Post-Checklist Explicit-Context Cleanup (2026-03-02)
+- Intended actions:
+  - remove residual hardcoded plugin separator usage in unique-name generation,
+  - tighten Kadi sync separator forwarding seams,
+  - align architecture/runtime path docs and stale naming docstrings.
+- Observed outcome:
+  - plugin processors now pass runtime separator context to
+    `get_unique_filename(...)` instead of hardcoded `"-"` values;
+  - Kadi `_prepare_resources(...)` now forwards explicit separator context into
+    user lookup helper wiring and related helper signatures require explicit
+    separator values;
+  - architecture baseline/contract/responsibility docs were aligned to
+    `runtime_adapters` naming;
+  - stale `NamingSettings` docstring wording referencing legacy constants was
+    removed.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/erm_hioki/test_file_processor.py::test_processing_uses_configured_separator_for_unique_filename tests/unit/device_plugins/utm_zwick/test_file_processor.py::test_device_specific_processing_moves_staged_series` -> failed (hardcoded separator paths)
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi_branches.py::test_prepare_resources_threads_separator_across_resource_builders` -> failed (separator not forwarded through helper seam)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/erm_hioki tests/unit/device_plugins/utm_zwick tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/sem_phenomxl2 tests/unit/device_plugins/extr_haake tests/unit/device_plugins/test_device tests/unit/device_plugins/rhe_kinexus` -> `79 passed`
+    - `python -m pytest -q tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py` -> `31 passed`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -295,4 +318,5 @@
 - Naming policy ownership remains centralized in `NamingSettings`, and the
   runtime orchestration hot paths now require explicit naming context.
 - Section 12 storage unique-name separator fallback cleanup is complete.
+- Section 14 post-checklist explicit-context cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

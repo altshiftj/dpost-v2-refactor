@@ -57,3 +57,14 @@ def test_file_processor_probe_rejects_unsupported_extension(tmp_path):
     probe = processor.probe_file(str(src))
 
     assert probe.is_mismatch()
+
+
+def test_configure_runtime_context_sets_missing_separator_only() -> None:
+    """Apply injected separator once and preserve explicit overrides."""
+    processor = FileProcessorEXTRHaake(build_config())
+    processor.configure_runtime_context(id_separator=":")
+    assert processor._id_separator == ":"  # noqa: SLF001
+
+    processor._id_separator = "-"  # noqa: SLF001
+    processor.configure_runtime_context(id_separator="|")
+    assert processor._id_separator == "-"  # noqa: SLF001

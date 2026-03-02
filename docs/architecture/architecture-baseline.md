@@ -31,7 +31,7 @@
 - Bootstrap and startup wiring:
 - `src/dpost/runtime/bootstrap.py`
 - Runtime bootstrap infrastructure dependencies boundary:
-- `src/dpost/infrastructure/runtime/bootstrap_dependencies.py`
+- `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py`
 - New runtime composition scaffold:
 - `src/dpost/runtime/composition.py`
 - Runtime orchestration application service:
@@ -60,17 +60,17 @@
   UI factories (`HeadlessRuntimeUI` for headless mode, `TKinterRuntimeUI` for
   desktop mode).
 - dpost headless runtime UI adapter:
-- `src/dpost/infrastructure/runtime/headless_ui.py`
+- `src/dpost/infrastructure/runtime_adapters/headless_ui.py`
 - dpost runtime UI factory adapter:
-- `src/dpost/infrastructure/runtime/ui_factory.py`
+- `src/dpost/infrastructure/runtime_adapters/ui_factory.py`
 - dpost runtime desktop UI boundary:
-- `src/dpost/infrastructure/runtime/desktop_ui.py`
+- `src/dpost/infrastructure/runtime_adapters/desktop_ui.py`
 - dpost runtime desktop UI implementation:
-- `src/dpost/infrastructure/runtime/tkinter_ui.py`
+- `src/dpost/infrastructure/runtime_adapters/tkinter_ui.py`
 - dpost runtime desktop rename-dialog boundary:
-- `src/dpost/infrastructure/runtime/dialogs.py`
+- `src/dpost/infrastructure/runtime_adapters/dialogs.py`
 - dpost runtime UI adapters boundary:
-- `src/dpost/infrastructure/runtime/ui_adapters.py`
+- `src/dpost/infrastructure/runtime_adapters/ui_adapters.py`
 - dpost canonical logging infrastructure:
 - `src/dpost/infrastructure/logging.py`
 - dpost observability infrastructure:
@@ -95,7 +95,7 @@
 - `src/dpost/application/runtime/device_watchdog_app.py`
 - Transition dependency shim retirement:
 - `src/dpost/application/runtime/runtime_dependencies.py` (retired)
-- `src/dpost/infrastructure/runtime/config_dependencies.py` (retired)
+- `src/dpost/infrastructure/runtime_adapters/config_dependencies.py` (retired)
 - Processing orchestration:
 - `src/dpost/application/processing/file_process_manager.py`
 - dpost processing helper module set:

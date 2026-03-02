@@ -26,6 +26,7 @@ def test_preprocessing_returns_passthrough_when_ready(tmp_path):
 
 def test_processing_zips_raw_and_moves_txt(tmp_path, config_service):
     processor = FileProcessorDSVHoriba(build_config())
+    processor.configure_runtime_context(id_separator="-")
     watch_dir = tmp_path / "incoming"
     watch_dir.mkdir()
     record_dir = tmp_path / "record"
