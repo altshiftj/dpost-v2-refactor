@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from dpost.device_plugins.erm_hioki.file_processor import FileProcessorHioki
 from dpost.device_plugins.erm_hioki.settings import build_config
 from dpost.infrastructure.storage.filesystem_utils import get_unique_filename
@@ -27,6 +29,7 @@ def test_processing_moves_measurement_and_forces_cc_aggregate(
 ) -> None:
     config = build_config()
     processor = FileProcessorHioki(config)
+    processor.configure_runtime_context(id_separator="-")
 
     measurement = tmp_path / "usr-ipat-sample_20251222132219.csv"
     measurement.write_text("measurement")
@@ -111,3 +114,18 @@ def test_processing_uses_configured_separator_for_unique_filename(tmp_path: Path
     )
 
     assert Path(output.final_path).name == "ERM-sample:01.xlsx"
+
+
+def test_processing_requires_explicit_separator_context(tmp_path: Path) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = FileProcessorHioki(build_config())
+    source = tmp_path / "sample.xlsx"
+    source.write_text("sheet data", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            str(source),
+            str(tmp_path / "records"),
+            "ERM-sample",
+            ".xlsx",
+        )

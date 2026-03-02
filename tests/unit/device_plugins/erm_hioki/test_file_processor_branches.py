@@ -38,7 +38,7 @@ def test_processing_routes_excel_and_generic_extensions(
     monkeypatch,
 ) -> None:
     """Route Excel and non-CSV extensions through dedicated processing helpers."""
-    processor = FileProcessorHioki(build_config())
+    processor = FileProcessorHioki(build_config(), id_separator="-")
     record_dir = tmp_path / "record"
     record_dir.mkdir()
     xlsx_src = tmp_path / "sample.xlsx"

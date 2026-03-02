@@ -77,7 +77,7 @@ class FileProcessorEirich(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator=self._runtime_id_separator(),
+            id_separator=self._resolve_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="tabular")
@@ -87,5 +87,7 @@ class FileProcessorEirich(FileProcessorABS):
         patterns = self.device_config.files.filename_patterns
         return any(fnmatch(filename, pattern.lower()) for pattern in patterns)
 
-    def _runtime_id_separator(self) -> str:
-        return self._id_separator or "-"
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        raise RuntimeError("Eirich R01 id_separator runtime context is not configured")

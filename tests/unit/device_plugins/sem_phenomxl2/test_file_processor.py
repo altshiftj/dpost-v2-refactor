@@ -62,6 +62,22 @@ def test_configure_runtime_context_sets_missing_separator_only() -> None:
     assert processor._id_separator == "-"  # noqa: SLF001
 
 
+def test_device_specific_processing_requires_explicit_separator_context(
+    tmp_path: Path,
+) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = FileProcessorSEMPhenomXL2(device_config=build_config())
+    src_file = tmp_path / "image.tif"
+    src_file.write_text("image data")
+    record_dir = tmp_path / "record"
+    record_dir.mkdir()
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            str(src_file), str(record_dir), "prefix", ".tif"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Appendable logic
 # ---------------------------------------------------------------------------
@@ -85,6 +101,7 @@ def test_is_appendable_true(dummy_record, processor):
 def test_device_specific_processing_tif_branch(tmp_path, processor):
     src_file = tmp_path / "image.tif"
     src_file.write_text("image data")
+    processor.configure_runtime_context(id_separator="-")
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()
@@ -135,6 +152,7 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
 
     record_dir = tmp_path / "record"
     record_dir.mkdir()
+    processor.configure_runtime_context(id_separator="-")
 
     with (
         patch(

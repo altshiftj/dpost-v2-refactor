@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.extr_haake.file_processor import (
     FileProcessorEXTRHaake,
@@ -24,6 +26,7 @@ def test_build_config_basics():
 def test_file_processor_moves_excel(tmp_path, config_service):
     config = build_config()
     processor = FileProcessorEXTRHaake(config)
+    processor.configure_runtime_context(id_separator="-")
 
     src = tmp_path / "sample.xlsx"
     src.write_text("sheet data")
@@ -68,3 +71,18 @@ def test_configure_runtime_context_sets_missing_separator_only() -> None:
     processor._id_separator = "-"  # noqa: SLF001
     processor.configure_runtime_context(id_separator="|")
     assert processor._id_separator == "-"  # noqa: SLF001
+
+
+def test_processing_requires_explicit_separator_context(tmp_path) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = FileProcessorEXTRHaake(build_config())
+    src = tmp_path / "sample.xlsx"
+    src.write_text("sheet data", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            str(src),
+            str(tmp_path / "records"),
+            "prefix",
+            ".xlsx",
+        )

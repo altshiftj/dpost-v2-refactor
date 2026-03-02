@@ -47,7 +47,7 @@ class TestFileProcessor(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator=self._runtime_id_separator(),
+            id_separator=self._resolve_id_separator(),
         )
         move_item(src_path, destination)
         logger.debug("Test processor moved '%s' to '%s'", src_path, destination)
@@ -69,5 +69,7 @@ class TestFileProcessor(FileProcessorABS):
     def matches_file(self, filepath: str) -> bool:
         return Path(filepath).suffix.lower() in {".tif", ".txt"}
 
-    def _runtime_id_separator(self) -> str:
-        return self._id_separator or "-"
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        raise RuntimeError("Test device id_separator runtime context is not configured")

@@ -137,7 +137,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
         state = self._pop_series_state(raw_prefix)
         if state is None:
             raise KeyError(f"No staged series for '{raw_prefix}'")
-        id_separator = self._runtime_id_separator()
+        id_separator = self._resolve_id_separator()
 
         self._move_staged_artifact(
             source=state.last_zs2,
@@ -273,5 +273,7 @@ class FileProcessorUTMZwick(FileProcessorABS):
     def _series_key(stem: str) -> str:
         return stem
 
-    def _runtime_id_separator(self) -> str:
-        return self._id_separator or "-"
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        raise RuntimeError("UTM id_separator runtime context is not configured")

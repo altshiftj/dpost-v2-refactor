@@ -139,3 +139,25 @@ def test_device_specific_processing_raises_without_staging(tmp_path, processor):
         processor.device_specific_processing(
             str(tmp_path / "ghost.xlsx"), str(record_dir), "prefix", ".xlsx"
         )
+
+
+def test_device_specific_processing_requires_explicit_separator_context(
+    tmp_path: Path,
+) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = FileProcessorUTMZwick(device_config=build_config())
+    zs2 = tmp_path / "usr-inst-sample_a.zs2"
+    xlsx = tmp_path / "usr-inst-sample_a.xlsx"
+    zs2.write_text("raw-bytes")
+    xlsx.write_text("xlsx-content")
+
+    processor.device_specific_preprocessing(str(zs2))
+    processor.device_specific_preprocessing(str(xlsx))
+
+    record_dir = tmp_path / "record"
+    record_dir.mkdir()
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            str(xlsx), str(record_dir), "prefix", ".xlsx"
+        )

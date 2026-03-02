@@ -147,7 +147,7 @@ class FileProcessorHioki(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator=self._runtime_id_separator(),
+            id_separator=self._resolve_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
@@ -163,7 +163,7 @@ class FileProcessorHioki(FileProcessorABS):
             record_path,
             file_id,
             extension,
-            id_separator=self._runtime_id_separator(),
+            id_separator=self._resolve_id_separator(),
         )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
@@ -179,7 +179,7 @@ class FileProcessorHioki(FileProcessorABS):
             str(record_dir),
             file_id,
             extension,
-            id_separator=self._runtime_id_separator(),
+            id_separator=self._resolve_id_separator(),
         )
         move_item(src, destination)
 
@@ -276,5 +276,7 @@ class FileProcessorHioki(FileProcessorABS):
         except shutil.SameFileError:
             return
 
-    def _runtime_id_separator(self) -> str:
-        return self._id_separator or "-"
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        raise RuntimeError("Hioki id_separator runtime context is not configured")

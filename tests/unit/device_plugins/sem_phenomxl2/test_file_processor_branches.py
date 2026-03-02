@@ -13,7 +13,9 @@ from dpost.device_plugins.sem_phenomxl2.settings import build_config
 @pytest.fixture
 def processor() -> FileProcessorSEMPhenomXL2:
     """Return SEM processor configured for branch tests."""
-    return FileProcessorSEMPhenomXL2(build_config())
+    candidate = FileProcessorSEMPhenomXL2(build_config())
+    candidate.configure_runtime_context(id_separator="-")
+    return candidate
 
 
 def test_zip_export_returns_placeholder_when_export_folder_missing(

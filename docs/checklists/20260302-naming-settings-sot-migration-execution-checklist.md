@@ -426,6 +426,37 @@
 
 ---
 
+## 16. Retire Remaining Plugin Separator Fallback Resolvers
+- Why this matters: lingering plugin-local `self._id_separator or "-"` helpers
+  kept implicit naming behavior alive in direct plugin execution paths.
+
+### Checklist
+- [x] Remove fallback resolver behavior from remaining plugin processors:
+      `extr_haake`, `sem_phenomxl2`, `test_device`,
+      `rmx_eirich_el1`, `rmx_eirich_r01`, `erm_hioki`, `utm_zwick`.
+- [x] Require explicit runtime separator context in those processors and fail
+      fast when context was not configured.
+- [x] Update focused plugin tests so happy paths inject explicit runtime
+      separator context, and add missing-context branch coverage.
+
+### Completion Notes
+- How it was done:
+  - replaced plugin-local fallback resolvers with strict
+    `_resolve_id_separator(...)` methods that raise when runtime separator
+    context is missing;
+  - updated affected plugin happy-path tests to call
+    `configure_runtime_context(id_separator=...)` before processing;
+  - added focused missing-context tests for EXTR, SEM, test-device, Eirich
+    EL1/R01, Hioki, and UTM processing paths.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake/test_plugin.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py::test_device_specific_processing_requires_explicit_separator_context tests/unit/device_plugins/test_device/test_test_device_file_processor.py::test_test_device_processor_requires_explicit_separator_context tests/unit/device_plugins/mix_eirich/test_file_processor.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/erm_hioki/test_file_processor.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/utm_zwick/test_file_processor.py::test_device_specific_processing_requires_explicit_separator_context` -> `7 failed` (fallback still processed with implicit separator)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake tests/unit/device_plugins/sem_phenomxl2 tests/unit/device_plugins/test_device tests/unit/device_plugins/mix_eirich tests/unit/device_plugins/erm_hioki tests/unit/device_plugins/utm_zwick` -> `62 passed`
+    - `python -m ruff check src/dpost/device_plugins/erm_hioki/file_processor.py src/dpost/device_plugins/extr_haake/file_processor.py src/dpost/device_plugins/rmx_eirich_el1/file_processor.py src/dpost/device_plugins/rmx_eirich_r01/file_processor.py src/dpost/device_plugins/sem_phenomxl2/file_processor.py src/dpost/device_plugins/test_device/file_processor.py src/dpost/device_plugins/utm_zwick/file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py tests/unit/device_plugins/extr_haake/test_plugin.py tests/unit/device_plugins/mix_eirich/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor.py` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -469,5 +500,10 @@
   - checkpoint rerun after sections 12-13:
     - `python -m pytest -q tests/unit` -> `738 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `738 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 16:
+    - `python -m pytest -q tests/unit` -> `754 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `754 passed, 1 skipped, 1 warning`, `TOTAL 5446 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

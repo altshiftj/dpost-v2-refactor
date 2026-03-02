@@ -327,6 +327,29 @@
     - `python -m pytest -q tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py::test_purge_orphans_requires_explicit_exception_dir_context tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_requires_exception_dir_context tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py::test_purge_orphans_moves_files tests/unit/device_plugins/rhe_kinexus/test_file_processor.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py::test_purge_stale_covers_exception_and_cleanup_paths tests/unit/device_plugins/psa_horiba/test_purge_and_reconstruct.py::test_purge_stale_moves_pending_bucket_sentinel_and_stage tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py::test_purge_stale_covers_exception_paths` -> `8 passed`
     - `python -m pytest -q tests/unit/device_plugins/dsv_horiba tests/unit/device_plugins/rhe_kinexus tests/unit/device_plugins/psa_horiba` -> `71 passed`
 
+## Progress Update: Section 16 Remaining Plugin Separator Fallback Retirement (2026-03-02)
+- Intended actions:
+  - remove remaining plugin-local `self._id_separator or "-"` fallback
+    resolver behavior.
+- Observed outcome:
+  - strict runtime separator resolver methods now back remaining plugin
+    processors (`extr_haake`, `sem_phenomxl2`, `test_device`,
+    `rmx_eirich_el1`, `rmx_eirich_r01`, `erm_hioki`, `utm_zwick`);
+  - plugin processing now fails fast when separator context was not configured
+    instead of silently using `"-"`;
+  - updated plugin tests inject explicit runtime separator context on happy
+    paths and cover missing-context failure branches.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake/test_plugin.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py::test_device_specific_processing_requires_explicit_separator_context tests/unit/device_plugins/test_device/test_test_device_file_processor.py::test_test_device_processor_requires_explicit_separator_context tests/unit/device_plugins/mix_eirich/test_file_processor.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/erm_hioki/test_file_processor.py::test_processing_requires_explicit_separator_context tests/unit/device_plugins/utm_zwick/test_file_processor.py::test_device_specific_processing_requires_explicit_separator_context` -> `7 failed` (fallback still processed without explicit context)
+  - green-state:
+    - `python -m pytest -q tests/unit/device_plugins/extr_haake tests/unit/device_plugins/sem_phenomxl2 tests/unit/device_plugins/test_device tests/unit/device_plugins/mix_eirich tests/unit/device_plugins/erm_hioki tests/unit/device_plugins/utm_zwick` -> `62 passed`
+    - `python -m ruff check src/dpost/device_plugins/erm_hioki/file_processor.py src/dpost/device_plugins/extr_haake/file_processor.py src/dpost/device_plugins/rmx_eirich_el1/file_processor.py src/dpost/device_plugins/rmx_eirich_r01/file_processor.py src/dpost/device_plugins/sem_phenomxl2/file_processor.py src/dpost/device_plugins/test_device/file_processor.py src/dpost/device_plugins/utm_zwick/file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py tests/unit/device_plugins/extr_haake/test_plugin.py tests/unit/device_plugins/mix_eirich/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `754 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `754 passed, 1 skipped, 1 warning`, `TOTAL 5446 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -336,4 +359,5 @@
 - Section 12 storage unique-name separator fallback cleanup is complete.
 - Section 14 post-checklist explicit-context cleanup is complete.
 - Section 15 plugin exception-dir parent fallback cleanup is complete.
+- Section 16 remaining plugin separator fallback cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

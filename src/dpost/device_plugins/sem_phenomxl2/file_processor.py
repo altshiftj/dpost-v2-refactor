@@ -85,7 +85,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
                 record_path,
                 file_id,
                 extension,
-                id_separator=self._runtime_id_separator(),
+                id_separator=self._resolve_id_separator(),
             )
             move_item(src, destination)
             return ProcessingOutput(final_path=destination, datatype="img")
@@ -127,7 +127,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
                         str(record_dir),
                         base,
                         suffix,
-                        id_separator=self._runtime_id_separator(),
+                        id_separator=self._resolve_id_separator(),
                     )
                 )
             try:
@@ -143,5 +143,7 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         except Exception as exc:  # noqa: BLE001
             logger.error("Could not remove directory '%s': %s", elid_dir, exc)
 
-    def _runtime_id_separator(self) -> str:
-        return self._id_separator or "-"
+    def _resolve_id_separator(self) -> str:
+        if self._id_separator is not None:
+            return self._id_separator
+        raise RuntimeError("SEM id_separator runtime context is not configured")

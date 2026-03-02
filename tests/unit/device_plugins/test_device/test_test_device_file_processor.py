@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 import dpost.device_plugins.test_device.file_processor as processor_module
 from dpost.device_plugins.test_device.file_processor import (
     TestFileProcessor as ReferenceTestFileProcessor,
@@ -26,6 +28,7 @@ def test_test_device_processor_moves_file_and_returns_output(tmp_path: Path) -> 
     ) or Path(source).replace(Path(target))
     try:
         processor = ReferenceTestFileProcessor(build_config())
+        processor.configure_runtime_context(id_separator="-")
         result = processor.device_specific_processing(
             src_path=str(src),
             record_path=str(tmp_path / "dest"),
@@ -63,3 +66,20 @@ def test_test_device_processor_runtime_separator_configuration() -> None:
     processor._id_separator = "-"  # noqa: SLF001
     processor.configure_runtime_context(id_separator="|")
     assert processor._id_separator == "-"  # noqa: SLF001
+
+
+def test_test_device_processor_requires_explicit_separator_context(
+    tmp_path: Path,
+) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = ReferenceTestFileProcessor(build_config())
+    src = tmp_path / "source.txt"
+    src.write_text("payload", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            src_path=str(src),
+            record_path=str(tmp_path / "dest"),
+            file_id="record-id",
+            extension=".txt",
+        )

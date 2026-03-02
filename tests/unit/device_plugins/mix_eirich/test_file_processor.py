@@ -147,6 +147,7 @@ def test_processing_defaults_and_device_specific_processing(
 ) -> None:
     config = config_builder()
     processor = processor_cls(config)
+    processor.configure_runtime_context(id_separator="-")
     src = tmp_path / "Eirich_export.txt"
     src.write_text("payload", encoding="utf-8")
     record_dir = tmp_path / "records"
@@ -166,3 +167,29 @@ def test_processing_defaults_and_device_specific_processing(
     assert output.datatype == "tabular"
     assert Path(output.final_path).exists()
     assert not src.exists()
+
+
+@pytest.mark.parametrize(
+    ("config_builder", "processor_cls"),
+    [
+        (build_el1_config, FileProcessorEirichEL1),
+        (build_r01_config, FileProcessorEirichR01),
+    ],
+)
+def test_processing_requires_explicit_separator_context(
+    tmp_path: Path,
+    config_builder,
+    processor_cls,
+) -> None:
+    """Reject processing when runtime separator context was not configured."""
+    processor = processor_cls(config_builder())
+    src = tmp_path / "Eirich_export.txt"
+    src.write_text("payload", encoding="utf-8")
+
+    with pytest.raises(RuntimeError, match="id_separator runtime context"):
+        processor.device_specific_processing(
+            src_path=str(src),
+            record_path=str(tmp_path / "records"),
+            file_id="user-sample",
+            extension=".txt",
+        )
