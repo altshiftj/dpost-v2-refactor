@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from prometheus_client import start_http_server
 
 from dpost.infrastructure.logging import setup_logger
-from dpost.infrastructure.runtime import startup_dependencies
+from dpost.infrastructure.runtime_adapters import startup_dependencies
 from dpost.plugins.loading import get_devices_for_pc
 
 try:

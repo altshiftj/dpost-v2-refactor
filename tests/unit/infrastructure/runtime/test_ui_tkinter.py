@@ -4,7 +4,9 @@ from unittest.mock import patch, MagicMock
 import tkinter.messagebox as messagebox
 from dpost.application.interactions import DialogPrompts
 from dpost.application.ports import SessionPromptDetails
-from dpost.infrastructure.runtime.tkinter_ui import TKinterRuntimeUI as TKinterUI
+from dpost.infrastructure.runtime_adapters.tkinter_ui import (
+    TKinterRuntimeUI as TKinterUI,
+)
 
 
 @pytest.fixture
@@ -39,7 +41,9 @@ def test_show_error(ui_instance):
 
 
 def test_show_rename_dialog(ui_instance):
-    with patch("dpost.infrastructure.runtime.tkinter_ui.RenameDialog") as MockDialog:
+    with patch(
+        "dpost.infrastructure.runtime_adapters.tkinter_ui.RenameDialog"
+    ) as MockDialog:
         MockDialog.return_value.result = {
             "name": "alice",
             "institute": "lab",
@@ -52,7 +56,9 @@ def test_show_rename_dialog(ui_instance):
 def test_prompt_rename_returns_dialog_result(ui_instance):
     """prompt_rename should return the RenameDialog result payload."""
 
-    with patch("dpost.infrastructure.runtime.tkinter_ui.RenameDialog") as MockDialog:
+    with patch(
+        "dpost.infrastructure.runtime_adapters.tkinter_ui.RenameDialog"
+    ) as MockDialog:
         MockDialog.return_value.result = {"name": "alice"}
 
         result = ui_instance.prompt_rename()
@@ -152,7 +158,10 @@ def test_compose_session_message_includes_users_and_records(ui_instance):
 
 def test_run_on_ui_sync_executes_via_after(ui_instance, monkeypatch):
     ui_instance._ui_thread_id = 999
-    monkeypatch.setattr("dpost.infrastructure.runtime.tkinter_ui.threading.get_ident", lambda: 1)
+    monkeypatch.setattr(
+        "dpost.infrastructure.runtime_adapters.tkinter_ui.threading.get_ident",
+        lambda: 1,
+    )
 
     def run_after(delay, callback):
         callback()
@@ -166,7 +175,10 @@ def test_run_on_ui_sync_executes_via_after(ui_instance, monkeypatch):
 
 def test_run_on_ui_sync_propagates_exception(ui_instance, monkeypatch):
     ui_instance._ui_thread_id = 999
-    monkeypatch.setattr("dpost.infrastructure.runtime.tkinter_ui.threading.get_ident", lambda: 1)
+    monkeypatch.setattr(
+        "dpost.infrastructure.runtime_adapters.tkinter_ui.threading.get_ident",
+        lambda: 1,
+    )
 
     def run_after(delay, callback):
         callback()
@@ -180,9 +192,11 @@ def test_run_on_ui_sync_propagates_exception(ui_instance, monkeypatch):
 def test_show_done_dialog_requires_callable(ui_instance):
     details = SessionPromptDetails(users=[], records=[])
 
-    with patch("dpost.infrastructure.runtime.tkinter_ui.tk.Toplevel"), patch(
-        "dpost.infrastructure.runtime.tkinter_ui.tk.Label"
-    ), patch("dpost.infrastructure.runtime.tkinter_ui.tk.Button"):
+    with (
+        patch("dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Toplevel"),
+        patch("dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Label"),
+        patch("dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Button"),
+    ):
         with pytest.raises(TypeError):
             ui_instance.show_done_dialog(details, on_done_callback=None)
 
@@ -199,9 +213,20 @@ def test_show_done_dialog_replaces_existing_dialog(ui_instance):
     label = MagicMock()
     button = MagicMock()
 
-    with patch("dpost.infrastructure.runtime.tkinter_ui.tk.Toplevel", return_value=new_dialog), patch(
-        "dpost.infrastructure.runtime.tkinter_ui.tk.Label", return_value=label
-    ), patch("dpost.infrastructure.runtime.tkinter_ui.tk.Button", return_value=button):
+    with (
+        patch(
+            "dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Toplevel",
+            return_value=new_dialog,
+        ),
+        patch(
+            "dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Label",
+            return_value=label,
+        ),
+        patch(
+            "dpost.infrastructure.runtime_adapters.tkinter_ui.tk.Button",
+            return_value=button,
+        ),
+    ):
         ui_instance.show_done_dialog(details, on_done_callback=lambda: None)
 
     old_dialog.destroy.assert_called_once()

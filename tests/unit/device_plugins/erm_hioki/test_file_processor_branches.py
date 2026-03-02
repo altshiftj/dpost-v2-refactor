@@ -25,7 +25,12 @@ def test_preprocessing_probe_and_identity_branches(tmp_path: Path) -> None:
     assert processor.probe_file(str(export)).is_match() is True
     assert processor.probe_file(str(text)).is_mismatch() is True
     assert processor.get_device_id() == "hioki_blb"
-    assert processor.is_appendable(LocalRecord(identifier="dev-user-ipat-sample"), "p", ".csv") is True
+    assert (
+        processor.is_appendable(
+            LocalRecord(identifier="dev-user-ipat-sample"), "p", ".csv"
+        )
+        is True
+    )
 
 
 def test_processing_routes_excel_and_generic_extensions(
@@ -44,7 +49,9 @@ def test_processing_routes_excel_and_generic_extensions(
 
     monkeypatch.setattr(
         "dpost.device_plugins.erm_hioki.file_processor.get_unique_filename",
-        lambda _record_path, file_id, extension: str(record_dir / f"{file_id}{extension}"),
+        lambda _record_path, file_id, extension, **_kwargs: str(
+            record_dir / f"{file_id}{extension}"
+        ),
     )
     monkeypatch.setattr(
         "dpost.device_plugins.erm_hioki.file_processor.move_item",

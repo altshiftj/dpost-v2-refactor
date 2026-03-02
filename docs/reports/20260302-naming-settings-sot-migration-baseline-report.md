@@ -270,17 +270,29 @@
   - green-state:
     - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> `111 passed`
 
+## Progress Update: Section 13 Runtime Adapter Folder Rename Completion (2026-03-02)
+- Intended actions:
+  - complete deferred high-churn runtime adapter folder rename.
+- Observed outcome:
+  - renamed `src/dpost/infrastructure/runtime/` to
+    `src/dpost/infrastructure/runtime_adapters/`;
+  - updated source/test import paths from
+    `dpost.infrastructure.runtime.*` to
+    `dpost.infrastructure.runtime_adapters.*`;
+  - aligned active migration docs with completed rename state.
+- Validation:
+  - `python -m pytest -q tests/unit/infrastructure/runtime tests/unit/runtime tests/unit/application/runtime` -> `125 passed, 1 warning`
+  - `python -m ruff check src/dpost/application/runtime/device_watchdog_app.py src/dpost/runtime/bootstrap.py src/dpost/runtime/composition.py src/dpost/infrastructure/runtime_adapters tests/unit/infrastructure/runtime/test_dialogs.py tests/unit/infrastructure/runtime/test_headless_ui.py tests/unit/infrastructure/runtime/test_startup_dependencies.py tests/unit/infrastructure/runtime/test_ui_adapters.py tests/unit/infrastructure/runtime/test_ui_factory.py tests/unit/infrastructure/runtime/test_ui_tkinter.py` -> `All checks passed!`
+  - `python -m pytest -q tests/unit` -> `738 passed, 1 skipped, 1 warning`
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `738 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
+  - `python -m ruff check .` -> `All checks passed!`
+  - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
-- Section 6 low-risk naming-overload renames are now complete; only the
-  optional higher-churn folder rename
-  (`infrastructure/runtime/` -> `infrastructure/runtime_adapters/`) remains
-  deferred.
+- Sections 6 and 13 runtime naming-overload rename slices are complete.
 - Section 8 record/persistence separator-inference cleanup is complete.
 - Naming policy ownership remains centralized in `NamingSettings`, and the
   runtime orchestration hot paths now require explicit naming context.
 - Section 12 storage unique-name separator fallback cleanup is complete.
-- Only deferred follow-up now:
-  - optional higher-churn rename:
-    `src/dpost/infrastructure/runtime/` ->
-    `src/dpost/infrastructure/runtime_adapters/`.
+- No deferred compatibility fallback seams remain in active migration scope.

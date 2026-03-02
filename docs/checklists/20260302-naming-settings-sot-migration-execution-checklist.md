@@ -337,6 +337,29 @@
 
 ---
 
+## 13. Complete Runtime Adapter Folder Rename
+- Why this matters: finishing the `runtime` -> `runtime_adapters` rename removes
+  overloaded terminology and keeps adapter ownership obvious.
+
+### Checklist
+- [x] Rename `src/dpost/infrastructure/runtime/` to
+      `src/dpost/infrastructure/runtime_adapters/`.
+- [x] Update imports in source and tests to new module path.
+- [x] Update active planning/checklist/report docs to reflect completion.
+
+### Completion Notes
+- How it was done:
+  - renamed infrastructure adapter folder to `runtime_adapters`;
+  - rewired source + test imports from
+    `dpost.infrastructure.runtime.*` to
+    `dpost.infrastructure.runtime_adapters.*`;
+  - updated active migration docs to mark folder rename complete.
+  Validation:
+  - `python -m pytest -q tests/unit/infrastructure/runtime tests/unit/runtime tests/unit/application/runtime` -> `125 passed, 1 warning`
+  - `python -m ruff check src/dpost/application/runtime/device_watchdog_app.py src/dpost/runtime/bootstrap.py src/dpost/runtime/composition.py src/dpost/infrastructure/runtime_adapters tests/unit/infrastructure/runtime/test_dialogs.py tests/unit/infrastructure/runtime/test_headless_ui.py tests/unit/infrastructure/runtime/test_startup_dependencies.py tests/unit/infrastructure/runtime/test_ui_adapters.py tests/unit/infrastructure/runtime/test_ui_factory.py tests/unit/infrastructure/runtime/test_ui_tkinter.py` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -377,3 +400,8 @@
     - `python -m pytest -q tests/unit` -> `737 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `737 passed, 1 skipped, 1 warning`, `TOTAL 5383 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
+  - checkpoint rerun after sections 12-13:
+    - `python -m pytest -q tests/unit` -> `738 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `738 passed, 1 skipped, 1 warning`, `TOTAL 5385 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

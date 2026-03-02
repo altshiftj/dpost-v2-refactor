@@ -6,7 +6,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from dpost.application.ports import RenamePrompt, SessionPromptDetails
-from dpost.infrastructure.runtime.ui_adapters import UiInteractionAdapter, UiTaskScheduler
+from dpost.infrastructure.runtime_adapters.ui_adapters import (
+    UiInteractionAdapter,
+    UiTaskScheduler,
+)
 
 
 @dataclass
@@ -104,7 +107,9 @@ def test_ui_interaction_adapter_request_rename_adds_contextual_reason() -> None:
     assert prompt.analysis["reasons"] == ["suffix invalid"]
 
 
-def test_ui_interaction_adapter_request_rename_returns_cancelled_when_ui_returns_none() -> None:
+def test_ui_interaction_adapter_request_rename_returns_cancelled_when_ui_returns_none() -> (
+    None
+):
     """Return cancelled decision when rename UI reports cancellation."""
     ui = _UiStub(rename_result=None)
     adapter = UiInteractionAdapter(ui)

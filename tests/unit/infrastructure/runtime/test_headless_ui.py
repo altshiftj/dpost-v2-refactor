@@ -7,7 +7,7 @@ import threading
 import pytest
 
 from dpost.application.ports import SessionPromptDetails
-from dpost.infrastructure.runtime.headless_ui import HeadlessRuntimeUI
+from dpost.infrastructure.runtime_adapters.headless_ui import HeadlessRuntimeUI
 
 
 def test_headless_ui_noninteractive_methods_return_expected_defaults() -> None:

@@ -83,16 +83,14 @@
 - Clarification of current intent:
   - `src/dpost/runtime/` owns startup/composition policy.
   - `src/dpost/application/config/context.py` owns active config context helpers.
-  - `src/dpost/infrastructure/runtime/` owns concrete runtime adapters.
+  - `src/dpost/infrastructure/runtime_adapters/` owns concrete runtime adapters.
 - Follow-up status (2026-03-02):
   - Completed:
     1. Renamed `src/dpost/application/config/runtime.py` to
        `src/dpost/application/config/context.py`.
     2. Renamed `src/dpost/infrastructure/runtime/bootstrap_dependencies.py` to
        `src/dpost/infrastructure/runtime/startup_dependencies.py`.
-  - Deferred:
-    3. Optional final step (higher churn): rename folder
-       `src/dpost/infrastructure/runtime/` to
+    3. Renamed folder `src/dpost/infrastructure/runtime/` to
        `src/dpost/infrastructure/runtime_adapters/`.
 - Rationale:
   - improves contributor readability without changing architecture boundaries.

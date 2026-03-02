@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import dpost.infrastructure.runtime.startup_dependencies as deps
-from dpost.infrastructure.runtime.ui_adapters import UiInteractionAdapter, UiTaskScheduler
+import dpost.infrastructure.runtime_adapters.startup_dependencies as deps
+from dpost.infrastructure.runtime_adapters.ui_adapters import (
+    UiInteractionAdapter,
+    UiTaskScheduler,
+)
 
 
 @dataclass
@@ -70,8 +73,8 @@ def test_build_config_service_loads_plugins_and_initialises_service() -> None:
     original_load_device = deps.load_device_plugin
     original_init_config = deps.init_config
     deps.load_pc_plugin = lambda _pc: _PluginStub(pc_config)
-    deps.load_device_plugin = (
-        lambda name: _PluginStub(device_a if name == "dev-a" else device_b)
+    deps.load_device_plugin = lambda name: _PluginStub(
+        device_a if name == "dev-a" else device_b
     )
     deps.init_config = (
         lambda pc, devices: captured.update({"pc": pc, "devices": list(devices)})

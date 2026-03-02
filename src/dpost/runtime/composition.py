@@ -7,7 +7,7 @@ from typing import Callable, Sequence
 
 from dpost.application.ports import SyncAdapterPort
 from dpost.application.services import compose_runtime_context
-from dpost.infrastructure.runtime import resolve_ui_factory
+from dpost.infrastructure.runtime_adapters import resolve_ui_factory
 from dpost.infrastructure.sync import NoopSyncAdapter
 from dpost.plugins import PluginProfile
 from dpost.plugins.profile_selection import resolve_plugin_profile_selection

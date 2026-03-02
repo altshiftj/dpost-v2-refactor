@@ -9,7 +9,7 @@ from typing import Any, Callable
 
 from dpost.application.interactions import DialogPrompts, InfoMessages
 from dpost.application.ports import SessionPromptDetails, UserInterface
-from dpost.infrastructure.runtime.dialogs import RenameDialog
+from dpost.infrastructure.runtime_adapters.dialogs import RenameDialog
 
 
 class TKinterRuntimeUI(UserInterface):

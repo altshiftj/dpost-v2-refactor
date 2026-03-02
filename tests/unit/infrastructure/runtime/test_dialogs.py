@@ -1,8 +1,10 @@
 import pytest
 from unittest.mock import patch, MagicMock
 from dpost.application.interactions import DialogPrompts
-from dpost.infrastructure.runtime.dialogs import EntryWithPlaceholder, RenameDialog
-
+from dpost.infrastructure.runtime_adapters.dialogs import (
+    EntryWithPlaceholder,
+    RenameDialog,
+)
 
 # ---------------------------------------------------------------------
 # EntryWithPlaceholder Tests
@@ -52,10 +54,13 @@ def rename_dialog_setup(fake_ui):
                 "highlight_spans": [(0, 3)],
             }
 
-        with patch("tkinter.simpledialog.Dialog.wait_window"), patch(
-            "tkinter.simpledialog.Dialog.grab_set"
+        with (
+            patch("tkinter.simpledialog.Dialog.wait_window"),
+            patch("tkinter.simpledialog.Dialog.grab_set"),
         ):
-            dialog = RenameDialog(fake_ui.get_root(), attempted_filename, violation_info)
+            dialog = RenameDialog(
+                fake_ui.get_root(), attempted_filename, violation_info
+            )
         return dialog
 
     return _build_dialog
@@ -95,7 +100,9 @@ def test_rename_dialog_focus_primary_input_ignores_focus_exceptions(
     rename_dialog_setup,
 ):
     dialog = rename_dialog_setup()
-    with patch.object(dialog.user_entry, "focus_force", side_effect=RuntimeError("focus failed")):
+    with patch.object(
+        dialog.user_entry, "focus_force", side_effect=RuntimeError("focus failed")
+    ):
         dialog._focus_primary_input()
 
 
@@ -120,9 +127,11 @@ def test_rename_dialog_ok_flow(rename_dialog_setup):
     dialog.institute_entry.insert(0, "I")
     dialog.sample_entry.insert(0, "S")
 
-    with patch.object(dialog, "validate", return_value=True), patch.object(
-        dialog, "withdraw"
-    ), patch.object(dialog, "update_idletasks"):
+    with (
+        patch.object(dialog, "validate", return_value=True),
+        patch.object(dialog, "withdraw"),
+        patch.object(dialog, "update_idletasks"),
+    ):
         dialog.ok()
 
     assert dialog.result == {"name": "U", "institute": "I", "sample_ID": "S"}

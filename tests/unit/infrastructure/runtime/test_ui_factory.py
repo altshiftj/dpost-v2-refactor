@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import dpost.infrastructure.runtime.ui_factory as ui_factory_module
-from dpost.infrastructure.runtime.headless_ui import HeadlessRuntimeUI
+import dpost.infrastructure.runtime_adapters.ui_factory as ui_factory_module
+from dpost.infrastructure.runtime_adapters.headless_ui import HeadlessRuntimeUI
 
 
 def test_resolve_ui_factory_returns_desktop_factory_for_desktop_mode() -> None:
