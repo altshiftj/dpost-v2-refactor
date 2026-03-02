@@ -1,7 +1,7 @@
 # Naming Settings SoT Migration Summary
 
 ## Date
-- 2026-03-02
+- 2026-03-03
 
 ## Status
 - Completed
@@ -19,6 +19,9 @@
   responsibility.
 - `_ProcessingPipeline` now depends on a runtime-checkable protocol contract
   (`ProcessingPipelineRuntimePort`) rather than a concrete runtime adapter type.
+- Low-value wrapper-only stage helpers were consolidated in
+  `FileProcessManager` and `_ProcessingPipeline` to reduce orchestration
+  indirection without changing behavior.
 - Naming policy APIs now require explicit separator/pattern context at
   signature level (with runtime guards for empty/`None` values).
 - Remaining separator and exception-path fallback seams in active scope were retired.
@@ -27,7 +30,7 @@
 ## Final Validation Snapshot
 - `python -m ruff check .` -> `All checks passed!`
 - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
-- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5530 stmts, 0 miss, 100%`
 - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
 ## Historical Execution Artifacts

@@ -842,6 +842,48 @@
 
 ---
 
+## 29. Consolidate Low-Value Stage Wrapper Sprawl in Processing Orchestration
+- Why this matters: thin pass-through helpers increase cognitive load without
+  adding stable extension points. Collapsing wrapper-only stages keeps
+  orchestration intent obvious while preserving behavior.
+
+### Checklist
+- [x] Inline `FileProcessManager` wrapper-only record-processing stages that
+      only delegated without policy decisions.
+- [x] Inline immediate-sync error emission + failure-outcome build pass-through
+      wrappers while retaining the tested failure-emitter seam.
+- [x] Remove `_ProcessingPipeline` wrapper-only preprocess/route helper layers
+      that only forwarded calls.
+
+### Completion Notes
+- How it was done:
+  - in
+    `src/dpost/application/processing/file_process_manager.py`:
+    - inlined `add_item_to_record(...)` processing/finalization flow and
+      removed `_process_record_artifact_stage(...)`,
+      `_assign_record_datatype_stage(...)`, and
+      `_finalize_record_output_stage(...)`;
+    - inlined immediate-sync error emission call in
+      `_post_persist_side_effects_stage(...)` and removed
+      `_emit_immediate_sync_error_stage(...)`;
+    - inlined failure-outcome build in `_handle_processing_failure(...)` and
+      removed `_build_processing_failure_outcome_stage(...)`.
+  - in `src/dpost/application/processing/processing_pipeline.py`:
+    - removed `_preprocess_stage(...)` and called `_build_candidate(...)`
+      directly;
+    - removed `_build_route_context(...)` indirection and moved route-context
+      construction into `_route_decision_stage(...)`.
+  Validation:
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5530 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -945,5 +987,10 @@
   - checkpoint rerun after section 28:
     - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5544 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 29:
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5530 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

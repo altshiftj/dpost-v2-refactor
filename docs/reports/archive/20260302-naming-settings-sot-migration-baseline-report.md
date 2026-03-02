@@ -615,6 +615,33 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 29 Processing Orchestration Wrapper-Sprawl Consolidation (2026-03-03)
+- Intended actions:
+  - reduce low-value stage-wrapper indirection in processing orchestration while
+    preserving behavior and the meaningful seams (`failure_outcome_policy`,
+    failure emitter, runtime adapter contract).
+- Observed outcome:
+  - in `file_process_manager.py`, inlined wrapper-only
+    `add_item_to_record(...)` processing/finalization stages and removed:
+    `_process_record_artifact_stage(...)`,
+    `_assign_record_datatype_stage(...)`, and
+    `_finalize_record_output_stage(...)`;
+  - inlined immediate-sync error emitter invocation and failure-outcome
+    construction within existing stage methods (removed
+    `_emit_immediate_sync_error_stage(...)` and
+    `_build_processing_failure_outcome_stage(...)`);
+  - in `processing_pipeline.py`, removed wrapper-only `_preprocess_stage(...)`
+    and `_build_route_context(...)` indirection layers, keeping
+    `_route_decision_stage(...)` as the single routing-context seam.
+- Validation:
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5530 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -637,4 +664,5 @@
 - Section 26 processing-pipeline runtime adapter decoupling is complete.
 - Section 27 processor runtime-context helper extraction is complete.
 - Section 28 processing-pipeline runtime protocol contract is complete.
+- Section 29 processing orchestration wrapper-sprawl consolidation is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

@@ -110,7 +110,7 @@ class _ProcessingPipeline:
             with runtime.activate_device(request.device):
                 # Ensure downstream helpers read the selected device's configuration.
                 processor = runtime.resolve_processor(request.device)
-                item = self._preprocess_stage(request, processor)
+                item = self._build_candidate(request, processor)
                 if isinstance(item, ProcessingResult):
                     return item
                 candidate = item
@@ -123,14 +123,6 @@ class _ProcessingPipeline:
             ) from exc
         # Defensive exhaustiveness guard; all valid control flow paths return or raise above.
         raise RuntimeError("Unreachable code in _execute_pipeline")  # pragma: no cover
-
-    def _preprocess_stage(
-        self,
-        request: ProcessingRequest,
-        processor: FileProcessorABS,
-    ) -> ProcessingCandidate | ProcessingResult:
-        """Run preprocessing and return a routable candidate or deferred result."""
-        return self._build_candidate(request, processor)
 
     def _build_candidate(
         self, request: ProcessingRequest, processor: FileProcessorABS
@@ -177,7 +169,8 @@ class _ProcessingPipeline:
             metadata.preprocessed_path,
         )
 
-    def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
+    def _route_decision_stage(self, candidate: ProcessingCandidate) -> RouteContext:
+        """Resolve routing decision context for a candidate artifact."""
         runtime = self._runtime
         active_config = runtime.config_service.current
         sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
@@ -193,10 +186,6 @@ class _ProcessingPipeline:
             record,
             is_valid_format,
         )
-
-    def _route_decision_stage(self, candidate: ProcessingCandidate) -> RouteContext:
-        """Resolve routing decision context for a candidate artifact."""
-        return self._build_route_context(candidate)
 
     def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
         if context.decision is RoutingDecision.ACCEPT:

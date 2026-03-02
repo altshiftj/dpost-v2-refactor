@@ -182,21 +182,16 @@ class FileProcessManager:
             device,
             processor,
         )
-        output: ProcessingOutput = self._process_record_artifact_stage(
-            processor,
+        output: ProcessingOutput = processor.device_specific_processing(
             src_path,
             record_path,
             file_id,
             extension,
         )
-
-        self._assign_record_datatype_stage(record, output)
-        return self._finalize_record_output_stage(
-            output,
-            record,
-            record_path,
-            src_path,
-        )
+        record.datatype = output.datatype
+        logger.debug("Processed %s -> %s", src_path, output.final_path)
+        self._post_persist_side_effects_stage(output, record, record_path, src_path)
+        return output.final_path
 
     def _resolve_record_processor_stage(
         self,
@@ -241,42 +236,6 @@ class FileProcessManager:
             context.file_id,
         )
 
-    def _process_record_artifact_stage(
-        self,
-        processor: FileProcessorABS,
-        src_path: str,
-        record_path: str,
-        file_id: str,
-        extension: str,
-    ) -> ProcessingOutput:
-        """Invoke processor and return normalized output for record persistence."""
-        return processor.device_specific_processing(
-            src_path,
-            record_path,
-            file_id,
-            extension,
-        )
-
-    def _assign_record_datatype_stage(
-        self,
-        record,
-        output: ProcessingOutput,
-    ) -> None:
-        """Assign processor-reported datatype onto the target record."""
-        record.datatype = output.datatype
-
-    def _finalize_record_output_stage(
-        self,
-        output: ProcessingOutput,
-        record,
-        record_path: str,
-        src_path: str,
-    ) -> str:
-        """Finalize persistence side effects and return the output path."""
-        logger.debug("Processed %s -> %s", src_path, output.final_path)
-        self._post_persist_side_effects_stage(output, record, record_path, src_path)
-        return output.final_path
-
     def _post_persist_side_effects_stage(
         self,
         output: ProcessingOutput,
@@ -298,7 +257,9 @@ class FileProcessManager:
                 if not self.records.all_records_uploaded():
                     self.records.sync_records_to_database()
             except Exception as exc:  # noqa: BLE001
-                self._emit_immediate_sync_error_stage(src_path, exc)
+                emit_immediate_sync_error(
+                    src_path, exc, self._immediate_sync_error_sink
+                )
 
     def _persist_candidate_record_stage(self, context: RouteContext) -> Optional[str]:
         """Persist accepted candidate artifact and return final output path."""
@@ -453,19 +414,8 @@ class FileProcessManager:
         candidate: Optional[ProcessingCandidate],
         exc: Exception,
     ) -> None:
-        failure_outcome = self._build_processing_failure_outcome_stage(
-            path, candidate, exc
-        )
+        failure_outcome = build_processing_failure_outcome(path, candidate, exc)
         self._emit_processing_failure_outcome_stage(path, exc, failure_outcome)
-
-    def _build_processing_failure_outcome_stage(
-        self,
-        path: Path,
-        candidate: Optional[ProcessingCandidate],
-        exc: Exception,
-    ) -> ProcessingFailureOutcome:
-        """Classify failure artifacts and rejection payload without side effects."""
-        return build_processing_failure_outcome(path, candidate, exc)
 
     def _emit_processing_failure_outcome_stage(
         self,
@@ -480,10 +430,6 @@ class FileProcessManager:
             failure_outcome,
             self._failure_emission_sink,
         )
-
-    def _emit_immediate_sync_error_stage(self, src_path: str, exc: Exception) -> None:
-        """Apply immediate-sync failure logging and user error reporting."""
-        emit_immediate_sync_error(src_path, exc, self._immediate_sync_error_sink)
 
     def _emit_post_persist_bookkeeping_stage(
         self,
