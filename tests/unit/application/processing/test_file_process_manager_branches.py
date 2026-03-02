@@ -18,6 +18,9 @@ from dpost.application.processing.failure_outcome_policy import (
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.file_processor_abstract import ProcessingOutput
 from dpost.application.processing.processing_pipeline import _ProcessingPipeline
+from dpost.application.processing.processing_pipeline_runtime import (
+    ProcessingPipelineRuntime,
+)
 from dpost.application.processing.rename_flow import RenameOutcome
 from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
@@ -82,6 +85,13 @@ def test_init_uses_dedicated_processing_pipeline_type(manager_bundle) -> None:
     manager, _ = manager_bundle
 
     assert isinstance(manager._pipeline, _ProcessingPipeline)
+
+
+def test_init_uses_processing_pipeline_runtime_adapter(manager_bundle) -> None:
+    """Construct manager with an explicit runtime adapter for pipeline dependencies."""
+    manager, _ = manager_bundle
+
+    assert isinstance(manager._pipeline_runtime, ProcessingPipelineRuntime)
 
 
 def test_process_item_defers_when_resolution_requests_retry(

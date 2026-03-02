@@ -536,6 +536,33 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 26 Processing Pipeline Runtime Adapter Decoupling (2026-03-02)
+- Intended actions:
+  - add a dedicated runtime adapter seam so the extracted processing pipeline no
+    longer reaches manager internals directly.
+- Observed outcome:
+  - added
+    `application/processing/processing_pipeline_runtime.py` with
+    `ProcessingPipelineRuntime` as the manager-collaborator adapter;
+  - updated
+    `application/processing/processing_pipeline.py` to consume the runtime
+    adapter seam;
+  - updated
+    `FileProcessManager` wiring to create and inject
+    `self._pipeline_runtime`;
+  - added branch coverage asserting adapter wiring during manager
+    initialization.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> failed (`ModuleNotFoundError: dpost.application.processing.processing_pipeline_runtime`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py` -> `33 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_record_persistence_context.py tests/unit/application/naming/test_policy.py` -> `30 passed`
+    - `python -m pytest -q tests/unit` -> `767 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `767 passed, 1 skipped, 1 warning`, `TOTAL 5524 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -555,4 +582,5 @@
 - Section 23 `FileProcessManager` pipeline module extraction is complete.
 - Section 24 record-persistence context helper extraction is complete.
 - Section 25 naming-policy signature-level explicit-context cleanup is complete.
+- Section 26 processing-pipeline runtime adapter decoupling is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

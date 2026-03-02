@@ -726,6 +726,44 @@
 
 ---
 
+## 26. Add Pipeline Runtime Adapter Seam for Manager Decoupling
+- Why this matters: the extracted processing pipeline should depend on a narrow
+  runtime adapter seam instead of directly coupling to `FileProcessManager`
+  internals, so future decomposition can proceed with lower churn risk.
+
+### Checklist
+- [x] Add a dedicated `processing_pipeline_runtime.py` runtime adapter exposing
+      only pipeline-required manager collaborators.
+- [x] Update `processing_pipeline.py` to use the runtime adapter seam.
+- [x] Keep manager-owned orchestration behavior unchanged while wiring explicit
+      runtime adapter initialization.
+
+### Completion Notes
+- How it was done:
+  - added
+    `src/dpost/application/processing/processing_pipeline_runtime.py` with
+    `ProcessingPipelineRuntime`;
+  - updated
+    `src/dpost/application/processing/processing_pipeline.py` to accept/use the
+    runtime adapter abstraction instead of direct manager coupling;
+  - updated
+    `src/dpost/application/processing/file_process_manager.py` to instantiate
+    and inject `self._pipeline_runtime` into `_ProcessingPipeline`;
+  - added focused branch coverage in
+    `tests/unit/application/processing/test_file_process_manager_branches.py`
+    asserting runtime adapter wiring.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_processing_pipeline_runtime_adapter` -> failed (`ModuleNotFoundError: dpost.application.processing.processing_pipeline_runtime`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py` -> `33 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_record_persistence_context.py tests/unit/application/naming/test_policy.py` -> `30 passed`
+    - `python -m pytest -q tests/unit` -> `767 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `767 passed, 1 skipped, 1 warning`, `TOTAL 5524 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -814,5 +852,10 @@
   - checkpoint rerun after section 25:
     - `python -m pytest -q tests/unit` -> `766 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `766 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 26:
+    - `python -m pytest -q tests/unit` -> `767 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `767 passed, 1 skipped, 1 warning`, `TOTAL 5524 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

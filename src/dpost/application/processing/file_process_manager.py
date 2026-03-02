@@ -41,6 +41,9 @@ from dpost.application.processing.post_persist_bookkeeping import (
     emit_post_persist_bookkeeping,
 )
 from dpost.application.processing.processing_pipeline import _ProcessingPipeline
+from dpost.application.processing.processing_pipeline_runtime import (
+    ProcessingPipelineRuntime,
+)
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_persistence_context import (
     RecordPersistenceContext,
@@ -116,7 +119,8 @@ class FileProcessManager:
         self._immediate_sync_error_sink = (
             immediate_sync_error_sink or self._default_immediate_sync_error_sink()
         )
-        self._pipeline = _ProcessingPipeline(self)
+        self._pipeline_runtime = ProcessingPipelineRuntime(self)
+        self._pipeline = _ProcessingPipeline(self._pipeline_runtime)
         self._immediate_sync = immediate_sync
         self._startup_sync_attempted = False
         self._modified_event_gate = ModifiedEventGate(
