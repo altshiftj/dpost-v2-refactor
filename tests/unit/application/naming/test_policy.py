@@ -52,7 +52,7 @@ def test_generate_record_id_uses_explicit_device_context() -> None:
 
 def test_generate_record_id_requires_separator() -> None:
     """Reject record ID generation when separator context is not supplied."""
-    with pytest.raises(ValueError, match="id_separator must be provided"):
+    with pytest.raises(TypeError, match="required keyword-only argument: 'id_separator'"):
         policy.generate_record_id(
             "mus-ipat-sample_1",
             dev_kadi_record_id="REC01",
@@ -79,7 +79,7 @@ def test_generate_file_id_uses_explicit_context() -> None:
 
 def test_generate_file_id_requires_separator() -> None:
     """Reject file ID generation when separator context is missing."""
-    with pytest.raises(ValueError, match="id_separator must be provided"):
+    with pytest.raises(TypeError, match="required keyword-only argument: 'id_separator'"):
         policy.generate_file_id("mus-ipat-sample_1", device_abbr="RHE")
 
 
@@ -94,9 +94,12 @@ def test_parse_and_prefix_helpers_require_explicit_context() -> None:
     stem, suffix = policy.parse_filename("C:/tmp/demo.txt")
     assert (stem, suffix) == ("demo", ".txt")
 
-    with pytest.raises(ValueError, match="filename_pattern must be provided"):
+    with pytest.raises(
+        TypeError,
+        match="required keyword-only argument: 'filename_pattern'",
+    ):
         policy.is_valid_prefix("mus-ipat-sample_1", id_separator="-")
-    with pytest.raises(ValueError, match="id_separator must be provided"):
+    with pytest.raises(TypeError, match="required keyword-only argument: 'id_separator'"):
         policy.sanitize_prefix(" MuS - IPAT - Sample Name ")
 
     assert (
@@ -114,9 +117,12 @@ def test_parse_and_prefix_helpers_require_explicit_context() -> None:
 
 def test_analysis_helpers_require_explicit_context() -> None:
     """Violation and rename-input analysis should reject missing naming policy."""
-    with pytest.raises(ValueError, match="filename_pattern must be provided"):
+    with pytest.raises(
+        TypeError,
+        match="required keyword-only argument: 'filename_pattern'",
+    ):
         policy.explain_filename_violation("u1-ipat-sample!", id_separator="-")
-    with pytest.raises(ValueError, match="id_separator must be provided"):
+    with pytest.raises(TypeError, match="required keyword-only argument: 'id_separator'"):
         policy.analyze_user_input(
             {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"},
             filename_pattern=FILENAME_PATTERN,
@@ -138,3 +144,18 @@ def test_analysis_helpers_require_explicit_context() -> None:
     assert analysis["valid"] is True
     assert analysis["sanitized"] == "mus-ipat-Sample_Name"
 
+
+def test_prefix_helpers_reject_empty_separator_value() -> None:
+    """Reject explicit empty separator values even with strict function signatures."""
+    with pytest.raises(ValueError, match="id_separator must be provided"):
+        policy.sanitize_prefix("mus-ipat-sample_1", id_separator="")
+
+
+def test_prefix_helpers_reject_explicit_none_pattern_value() -> None:
+    """Reject explicit None patterns passed at runtime despite strict signatures."""
+    with pytest.raises(ValueError, match="filename_pattern must be provided"):
+        policy.is_valid_prefix(
+            "mus-ipat-sample_1",
+            filename_pattern=None,  # type: ignore[arg-type]
+            id_separator="-",
+        )

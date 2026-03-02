@@ -22,14 +22,14 @@ from dpost.domain.naming.prefix_policy import (
 from dpost.domain.naming.prefix_policy import sanitize_prefix as sanitize_prefix_policy
 
 
-def _require_id_separator(id_separator: str | None) -> str:
+def _require_id_separator(id_separator: str) -> str:
     if not id_separator:
         raise ValueError("id_separator must be provided explicitly")
     return id_separator
 
 
 def _require_filename_pattern(
-    filename_pattern: Pattern[str] | None,
+    filename_pattern: Pattern[str],
 ) -> Pattern[str]:
     if filename_pattern is None:
         raise ValueError("filename_pattern must be provided explicitly")
@@ -45,7 +45,7 @@ def generate_record_id(
     filename_prefix: str,
     dev_kadi_record_id: str | None = None,
     *,
-    id_separator: str | None = None,
+    id_separator: str,
     current_device=None,
 ) -> str:
     """Generate record identifier from explicit naming and device context."""
@@ -69,7 +69,7 @@ def generate_file_id(
     filename_prefix: str,
     device_abbr: str | None = None,
     *,
-    id_separator: str | None = None,
+    id_separator: str,
     current_device=None,
 ) -> str:
     """Generate file identifier from explicit naming and device context."""
@@ -92,8 +92,8 @@ def generate_file_id(
 def is_valid_prefix(
     raw_prefix: str,
     *,
-    filename_pattern: Pattern[str] | None = None,
-    id_separator: str | None = None,
+    filename_pattern: Pattern[str],
+    id_separator: str,
 ) -> bool:
     """Validate filename prefix using explicit naming policy settings."""
     pattern = _require_filename_pattern(filename_pattern)
@@ -105,7 +105,7 @@ def is_valid_prefix(
     )
 
 
-def sanitize_prefix(raw_prefix: str, *, id_separator: str | None = None) -> str:
+def sanitize_prefix(raw_prefix: str, *, id_separator: str) -> str:
     """Sanitize filename prefix using explicit naming separator."""
     separator = _require_id_separator(id_separator)
     return sanitize_prefix_policy(
@@ -117,8 +117,8 @@ def sanitize_prefix(raw_prefix: str, *, id_separator: str | None = None) -> str:
 def sanitize_and_validate(
     raw_prefix: str,
     *,
-    filename_pattern: Pattern[str] | None = None,
-    id_separator: str | None = None,
+    filename_pattern: Pattern[str],
+    id_separator: str,
 ) -> tuple[str, bool]:
     """Return `(sanitized_prefix, is_valid)` under explicit naming configuration."""
     pattern = _require_filename_pattern(filename_pattern)
@@ -133,8 +133,8 @@ def sanitize_and_validate(
 def explain_filename_violation(
     filename: str,
     *,
-    filename_pattern: Pattern[str] | None = None,
-    id_separator: str | None = None,
+    filename_pattern: Pattern[str],
+    id_separator: str,
 ) -> dict:
     """Analyze violation details for a filename under explicit naming settings."""
     pattern = _require_filename_pattern(filename_pattern)
@@ -149,8 +149,8 @@ def explain_filename_violation(
 def analyze_user_input(
     dialog_result: dict | None,
     *,
-    filename_pattern: Pattern[str] | None = None,
-    id_separator: str | None = None,
+    filename_pattern: Pattern[str],
+    id_separator: str,
 ) -> dict:
     """Validate/sanitize rename dialog values under explicit naming settings."""
     pattern = _require_filename_pattern(filename_pattern)

@@ -515,6 +515,27 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 25 Naming Policy Signature-Level Explicit-Context Contracts (2026-03-02)
+- Intended actions:
+  - enforce explicit separator/pattern requirements at naming facade function
+    signatures.
+- Observed outcome:
+  - tightened `application/naming/policy.py` signatures so explicit
+    `id_separator` / `filename_pattern` context is required where applicable;
+  - updated naming facade tests to assert missing-context `TypeError` behavior;
+  - retained defensive runtime guard coverage for empty-separator and explicit
+    `None` pattern values.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `4 failed` (old optional signatures still raised `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `11 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_routing_helpers.py tests/unit/application/processing/test_rename_flow.py tests/unit/application/records/test_record_manager.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py` -> `38 passed, 1 skipped`
+    - `python -m pytest -q tests/unit` -> `766 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `766 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -533,4 +554,5 @@
 - Section 22 `LocalRecord` signature-level strictness cleanup is complete.
 - Section 23 `FileProcessManager` pipeline module extraction is complete.
 - Section 24 record-persistence context helper extraction is complete.
+- Section 25 naming-policy signature-level explicit-context cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

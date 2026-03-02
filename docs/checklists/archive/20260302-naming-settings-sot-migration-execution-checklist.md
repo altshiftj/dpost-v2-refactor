@@ -691,6 +691,41 @@
 
 ---
 
+## 25. Tighten Naming Policy Signature-Level Explicit Context Contracts
+- Why this matters: naming facade helpers should require explicit separator and
+  filename-pattern context at the call signature, not only through runtime
+  checks, to prevent accidental implicit usage.
+
+### Checklist
+- [x] Make application naming facade helpers require explicit signature-level
+      `id_separator` and `filename_pattern` where applicable.
+- [x] Update naming facade tests to assert signature-level missing-context
+      failures (`TypeError`) and retain runtime empty/`None` guard coverage.
+- [x] Validate routing/rename/record flows continue to pass explicit naming
+      context after signature tightening.
+
+### Completion Notes
+- How it was done:
+  - tightened function signatures in
+    `src/dpost/application/naming/policy.py` to require explicit
+    `id_separator` / `filename_pattern` values;
+  - updated unit tests in
+    `tests/unit/application/naming/test_policy.py` for signature-level
+    missing-context assertions and added explicit defensive coverage for
+    empty-separator and explicit-`None` pattern values;
+  - revalidated routing/rename/record flows that invoke naming helpers.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `4 failed` (policy signatures still accepted omitted explicit-context arguments and raised `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `11 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_routing_helpers.py tests/unit/application/processing/test_rename_flow.py tests/unit/application/records/test_record_manager.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py` -> `38 passed, 1 skipped`
+    - `python -m pytest -q tests/unit` -> `766 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `766 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -774,5 +809,10 @@
   - checkpoint rerun after sections 23-24:
     - `python -m pytest -q tests/unit` -> `764 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `764 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 25:
+    - `python -m pytest -q tests/unit` -> `766 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `766 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

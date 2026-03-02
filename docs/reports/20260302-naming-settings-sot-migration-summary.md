@@ -12,13 +12,15 @@
 - `LocalRecord` construction and hydration now require explicit separator context.
 - `FileProcessManager` orchestration was decomposed into dedicated pipeline and
   record-persistence helper modules.
+- Naming policy APIs now require explicit separator/pattern context at
+  signature level (with runtime guards for empty/`None` values).
 - Remaining separator and exception-path fallback seams in active scope were retired.
 - Unit suite remains fully green with full unit coverage.
 
 ## Final Validation Snapshot
 - `python -m ruff check .` -> `All checks passed!`
-- `python -m pytest -q tests/unit` -> `764 passed, 1 skipped, 1 warning`
-- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `764 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+- `python -m pytest -q tests/unit` -> `766 passed, 1 skipped, 1 warning`
+- `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `766 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
 - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
 ## Historical Execution Artifacts
