@@ -19,6 +19,8 @@
 - `docs/reports/`
 - `docs/planning/`
 - `docs/checklists/`
+- Naming-settings single-source roadmap:
+- `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
 - Test contract split:
 - `tests/unit/`, `tests/integration/`, `tests/manual/` for canonical `dpost`
   behavior and boundary tests

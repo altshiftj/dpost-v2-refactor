@@ -106,6 +106,9 @@
 - Function names should reflect side effects: route/decision functions should
   not imply persistence or sync side effects; persistence/sync functions should
   state that intent directly.
+- Naming settings consolidation direction (single source of truth in schema)
+  is tracked in:
+  - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
 
 ## Documentation Rules
 - Architecture-impacting changes require:
