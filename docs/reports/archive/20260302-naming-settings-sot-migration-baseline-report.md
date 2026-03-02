@@ -470,6 +470,51 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 23 FileProcessManager Pipeline Module Extraction (2026-03-02)
+- Intended actions:
+  - decompose the embedded processing pipeline implementation from
+    `FileProcessManager`.
+- Observed outcome:
+  - moved `_ProcessingPipeline` from
+    `application/processing/file_process_manager.py` to
+    `application/processing/processing_pipeline.py`;
+  - kept manager runtime wiring stable (`self._pipeline`) and updated
+    pipeline-related monkeypatch path coverage in branch tests;
+  - reduced `file_process_manager.py` orchestration footprint while preserving
+    behavior.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_dedicated_processing_pipeline_type` -> failed (`ModuleNotFoundError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k "test_init_uses_dedicated_processing_pipeline_type or test_non_accept_route_stage_uses_record_flow_for_unappendable or test_process_item_defers_when_resolution_requests_retry"` -> `3 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `49 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+
+## Progress Update: Section 24 Record Persistence Context Helper Extraction (2026-03-02)
+- Intended actions:
+  - extract record-persistence context assembly from manager stage code.
+- Observed outcome:
+  - added
+    `application/processing/record_persistence_context.py` with
+    `RecordPersistenceContext` and
+    `build_record_persistence_context(...)`;
+  - updated
+    `FileProcessManager._resolve_record_persistence_context_stage(...)` to
+    delegate to the helper while preserving explicit
+    separator/path/device context forwarding;
+  - added focused helper unit coverage.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_record_persistence_context.py` -> failed (`ModuleNotFoundError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_record_persistence_context.py` -> `2 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `49 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py src/dpost/application/processing/record_persistence_context.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_record_persistence_context.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `764 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `764 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -486,4 +531,6 @@
 - Section 20 config lifecycle helper re-export cleanup is complete.
 - Section 21 explicit `LocalRecord` constructor separator cleanup is complete.
 - Section 22 `LocalRecord` signature-level strictness cleanup is complete.
+- Section 23 `FileProcessManager` pipeline module extraction is complete.
+- Section 24 record-persistence context helper extraction is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

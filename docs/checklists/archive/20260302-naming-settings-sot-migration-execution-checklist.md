@@ -628,6 +628,69 @@
 
 ---
 
+## 23. Decompose Embedded Processing Pipeline from FileProcessManager
+- Why this matters: keeping a large embedded pipeline class in
+  `file_process_manager.py` makes ownership boundaries harder to reason about
+  and increases orchestration-module churn risk.
+
+### Checklist
+- [x] Extract the embedded `_ProcessingPipeline` implementation to a dedicated
+      module while preserving manager-facing behavior.
+- [x] Keep `FileProcessManager` runtime wiring stable (`self._pipeline` contract
+      and stage method usage unchanged).
+- [x] Update affected tests/monkeypatch targets for moved pipeline module seams.
+
+### Completion Notes
+- How it was done:
+  - moved `_ProcessingPipeline` from
+    `src/dpost/application/processing/file_process_manager.py` to
+    `src/dpost/application/processing/processing_pipeline.py`;
+  - updated `FileProcessManager` to import and instantiate the extracted
+    pipeline type without changing public manager behavior;
+  - adjusted branch test monkeypatch target from manager module path to
+    pipeline module path for `handle_unappendable_record`.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k test_init_uses_dedicated_processing_pipeline_type` -> failed (`ModuleNotFoundError: dpost.application.processing.processing_pipeline`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py -k "test_init_uses_dedicated_processing_pipeline_type or test_non_accept_route_stage_uses_record_flow_for_unappendable or test_process_item_defers_when_resolution_requests_retry"` -> `3 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `49 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+
+---
+
+## 24. Extract Record Persistence Context Assembly Helper
+- Why this matters: record persistence context assembly (record/device/path/id)
+  is orchestration policy that is easier to test and maintain as a dedicated
+  helper seam than as inline manager branching.
+
+### Checklist
+- [x] Add `record_persistence_context.py` with explicit context assembly
+      function and typed return payload.
+- [x] Delegate
+      `FileProcessManager._resolve_record_persistence_context_stage(...)` to the
+      new helper while preserving explicit naming/storage inputs.
+- [x] Add focused unit coverage for helper behavior and explicit separator
+      requirement.
+
+### Completion Notes
+- How it was done:
+  - added `src/dpost/application/processing/record_persistence_context.py` with
+    `RecordPersistenceContext` + `build_record_persistence_context(...)`;
+  - updated `FileProcessManager` context-resolution stage to delegate to the
+    helper and return the same tuple contract;
+  - added targeted helper unit tests at
+    `tests/unit/application/processing/test_record_persistence_context.py`.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_record_persistence_context.py` -> failed (`ModuleNotFoundError: dpost.application.processing.record_persistence_context`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_record_persistence_context.py` -> `2 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `49 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processing_pipeline.py src/dpost/application/processing/record_persistence_context.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_record_persistence_context.py` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -706,5 +769,10 @@
   - checkpoint rerun after section 22:
     - `python -m pytest -q tests/unit` -> `761 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `761 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after sections 23-24:
+    - `python -m pytest -q tests/unit` -> `764 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `764 passed, 1 skipped, 1 warning`, `TOTAL 5481 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

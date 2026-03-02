@@ -17,6 +17,7 @@ from dpost.application.processing.failure_outcome_policy import (
 )
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.file_processor_abstract import ProcessingOutput
+from dpost.application.processing.processing_pipeline import _ProcessingPipeline
 from dpost.application.processing.rename_flow import RenameOutcome
 from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
@@ -74,6 +75,13 @@ def _build_candidate(
         device=device,
         preprocessed_path=None,
     )
+
+
+def test_init_uses_dedicated_processing_pipeline_type(manager_bundle) -> None:
+    """Construct manager with the extracted processing pipeline implementation."""
+    manager, _ = manager_bundle
+
+    assert isinstance(manager._pipeline, _ProcessingPipeline)
 
 
 def test_process_item_defers_when_resolution_requests_retry(
@@ -341,7 +349,7 @@ def test_non_accept_route_stage_uses_record_flow_for_unappendable(
 
     monkeypatch.setattr(manager._pipeline, "_invoke_rename_flow", fake_invoke)
     monkeypatch.setattr(
-        "dpost.application.processing.file_process_manager.handle_unappendable_record",
+        "dpost.application.processing.processing_pipeline.handle_unappendable_record",
         fake_handle,
     )
 

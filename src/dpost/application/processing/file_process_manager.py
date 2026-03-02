@@ -4,19 +4,14 @@ from __future__ import annotations
 
 import queue
 import re
-from dataclasses import replace
 from pathlib import Path
 from typing import Optional, Tuple
 
 from dpost.application.config import ConfigService, DeviceConfig
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
-from dpost.application.naming.policy import generate_file_id, parse_filename
+from dpost.application.naming.policy import generate_file_id
 from dpost.application.ports import SyncAdapterPort, UserInteractionPort
-from dpost.application.processing.candidate_metadata import derive_candidate_metadata
-from dpost.application.processing.device_resolver import (
-    DeviceResolutionKind,
-    DeviceResolver,
-)
+from dpost.application.processing.device_resolver import DeviceResolver
 from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.failure_emitter import (
     ProcessingFailureEmissionSink,
@@ -28,7 +23,6 @@ from dpost.application.processing.failure_outcome_policy import (
 )
 from dpost.application.processing.file_processor_abstract import (
     FileProcessorABS,
-    PreprocessingResult,
     ProcessingOutput,
 )
 from dpost.application.processing.force_path_policy import (
@@ -46,27 +40,24 @@ from dpost.application.processing.post_persist_bookkeeping import (
     build_post_persist_bookkeeping_plan,
     emit_post_persist_bookkeeping,
 )
+from dpost.application.processing.processing_pipeline import _ProcessingPipeline
 from dpost.application.processing.processor_factory import FileProcessorFactory
-from dpost.application.processing.record_flow import handle_unappendable_record
+from dpost.application.processing.record_persistence_context import (
+    RecordPersistenceContext,
+    build_record_persistence_context,
+)
 from dpost.application.processing.record_utils import (
     apply_device_defaults,
     get_or_create_record,
     update_record,
 )
 from dpost.application.processing.rename_flow import RenameService
-from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
-from dpost.application.processing.route_context_policy import build_route_context
-from dpost.application.processing.routing import fetch_record_for_prefix
-from dpost.application.processing.stability_tracker import FileStabilityTracker
 from dpost.application.records.record_manager import RecordManager
 from dpost.application.session import SessionManager
 from dpost.domain.processing.models import (
     ProcessingCandidate,
-    ProcessingRequest,
     ProcessingResult,
-    ProcessingStatus,
     RouteContext,
-    RoutingDecision,
 )
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
@@ -82,269 +73,6 @@ _INTERNAL_STAGING_SUFFIX_RE = re.compile(
     r"\.__staged__(\d+)?",
     re.IGNORECASE,
 )
-
-
-class _ProcessingPipeline:
-    """Internal helper that orchestrates the multi-stage processing pipeline."""
-
-    def __init__(self, manager: "FileProcessManager") -> None:
-        self._manager = manager
-
-    def process(self, src_path: Path) -> ProcessingResult:
-        # Stage 1: resolve a device; may return early with a ProcessingResult.
-        resolved = self._resolve_device_stage(src_path)
-        if isinstance(resolved, ProcessingResult):
-            return resolved
-        # Stage 2: wait for artifact stability before entering preprocessing/routing.
-        prepared = self._stabilize_artifact_stage(resolved)
-        if isinstance(prepared, ProcessingResult):
-            return prepared
-        return self._execute_pipeline(prepared)
-
-    def _resolve_device_stage(self, path: Path) -> ProcessingRequest | ProcessingResult:
-        manager = self._manager
-
-        if manager._is_internal_staging_path(path):
-            message = f"Ignoring internal staging path: {path}"
-            logger.debug(message)
-            return ProcessingResult(ProcessingStatus.DEFERRED, message)
-
-        # Device resolver combines selector rules with lightweight processor probes.
-        resolution = manager._device_resolver.resolve(path)
-        device = resolution.selected
-        reason = resolution.reason or "Invalid file type"
-        if resolution.kind is DeviceResolutionKind.DEFER:
-            logger.debug("Processing deferred for %s: %s", path, reason)
-            return ProcessingResult(
-                ProcessingStatus.DEFERRED,
-                reason,
-                retry_delay=resolution.retry_delay,
-            )
-        if resolution.kind is DeviceResolutionKind.REJECT:
-            return self._reject_immediately(path, reason)
-        assert device is not None  # ACCEPT outcomes guarantee a selected device.
-        return ProcessingRequest(source=path, device=device)
-
-    def _stabilize_artifact_stage(
-        self,
-        request: ProcessingRequest,
-    ) -> ProcessingRequest | ProcessingResult:
-        manager = self._manager
-        # Block until the artefact stops changing (device overrides can tweak thresholds).
-        stability_outcome = FileStabilityTracker(request.source, request.device).wait()
-        if stability_outcome.deferred:
-            reason = stability_outcome.reason or "File deferred by stability guard"
-            logger.debug("Processing deferred for %s: %s", request.source, reason)
-            return ProcessingResult(
-                ProcessingStatus.DEFERRED,
-                reason,
-                retry_delay=stability_outcome.retry_delay,
-            )
-        if stability_outcome.rejected:
-            reason = stability_outcome.reason or "File rejected by stability guard"
-            manager._register_rejection(str(request.source), reason)
-            manager._safe_move_to_exception_with_context(str(request.source))
-            FILES_FAILED.inc()
-            return ProcessingResult(ProcessingStatus.REJECTED, reason)
-        if not request.source.exists():
-            reason = f"Path '{request.source.name}' disappeared before stability confirmation"
-            logger.debug("Processing deferred for %s: %s", request.source, reason)
-            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
-        return request
-
-    def _execute_pipeline(self, request: ProcessingRequest) -> ProcessingResult:
-        manager = self._manager
-        candidate: Optional[ProcessingCandidate] = None
-        try:
-            with manager.config_service.activate_device(request.device):
-                # Ensure downstream helpers read the selected device's configuration.
-                processor = manager._resolve_processor(request.device)
-                item = self._preprocess_stage(request, processor)
-                if isinstance(item, ProcessingResult):
-                    return item
-                candidate = item
-                context = self._route_decision_stage(candidate)
-                return self._dispatch_route(context)
-        except Exception as exc:
-            manager._handle_processing_failure(request.source, candidate, exc)
-            raise RuntimeError(
-                f"File processing failed for {request.source}: {exc}"
-            ) from exc
-        # Defensive exhaustiveness guard; all valid control flow paths return or raise above.
-        raise RuntimeError("Unreachable code in _execute_pipeline")  # pragma: no cover
-
-    def _preprocess_stage(
-        self,
-        request: ProcessingRequest,
-        processor: FileProcessorABS,
-    ) -> ProcessingCandidate | ProcessingResult:
-        """Run preprocessing and return a routable candidate or deferred result."""
-        return self._build_candidate(request, processor)
-
-    def _build_candidate(
-        self, request: ProcessingRequest, processor: FileProcessorABS
-    ) -> ProcessingCandidate | ProcessingResult:
-        preprocessed = processor.device_specific_preprocessing(str(request.source))
-        if preprocessed is None:
-            return ProcessingResult(
-                ProcessingStatus.DEFERRED, "Awaiting paired artefacts"
-            )
-        assert isinstance(
-            preprocessed, PreprocessingResult
-        )  # type narrowing for Pylance
-
-        prefix, extension, effective_path, preprocessed_path = (
-            self._derive_candidate_metadata(request, preprocessed)
-        )
-
-        return ProcessingCandidate(
-            original_path=request.source,
-            effective_path=effective_path,
-            prefix=prefix,
-            extension=extension,
-            processor=processor,
-            device=request.device,
-            preprocessed_path=preprocessed_path,
-        )
-
-    def _derive_candidate_metadata(
-        self,
-        request: ProcessingRequest,
-        preprocessed: PreprocessingResult,
-    ) -> tuple[str, str, Path, Optional[Path]]:
-        """Resolve prefix/extension and effective paths for candidate routing."""
-        metadata = derive_candidate_metadata(
-            request.source,
-            preprocessed,
-            strip_internal_stage_suffix=self._manager._strip_internal_stage_suffix,
-            parse_filename_fn=parse_filename,
-        )
-        return (
-            metadata.prefix,
-            metadata.extension,
-            metadata.effective_path,
-            metadata.preprocessed_path,
-        )
-
-    def _build_route_context(self, candidate: ProcessingCandidate) -> RouteContext:
-        manager = self._manager
-        active_config = manager.config_service.current
-        sanitized_prefix, is_valid_format, record = fetch_record_for_prefix(
-            manager.records,
-            candidate.prefix,
-            candidate.device,
-            filename_pattern=active_config.filename_pattern,
-            id_separator=active_config.id_separator,
-        )
-        return build_route_context(
-            candidate,
-            sanitized_prefix,
-            record,
-            is_valid_format,
-        )
-
-    def _route_decision_stage(self, candidate: ProcessingCandidate) -> RouteContext:
-        """Resolve routing decision context for a candidate artifact."""
-        return self._build_route_context(candidate)
-
-    def _dispatch_route(self, context: RouteContext) -> ProcessingResult:
-        if context.decision is RoutingDecision.ACCEPT:
-            return self._persist_and_sync_stage(context)
-
-        return self._non_accept_route_stage(context)
-
-    def _persist_and_sync_stage(self, context: RouteContext) -> ProcessingResult:
-        """Persist processed output and trigger sync behavior for accepted routes."""
-        manager = self._manager
-        final_path = manager._persist_candidate_record_stage(context)
-        if final_path is None:
-            return ProcessingResult(ProcessingStatus.PROCESSED, "Processed item")
-        return ProcessingResult(
-            ProcessingStatus.PROCESSED, "Processed item", Path(final_path)
-        )
-
-    def _non_accept_route_stage(self, context: RouteContext) -> ProcessingResult:
-        """Handle non-ACCEPT routing outcomes (rename-required or unappendable)."""
-        manager = self._manager
-        candidate = context.candidate
-
-        def rename_delegate(path, prefix, ext, contextual_reason=None):
-            return self._invoke_rename_flow(candidate, prefix, ext, contextual_reason)
-
-        if context.decision is RoutingDecision.UNAPPENDABLE:
-            return handle_unappendable_record(
-                manager.interactions, rename_delegate, context
-            )
-
-        # Remaining non-ACCEPT cases fall back to the rename flow.
-        return self._invoke_rename_flow(
-            candidate, candidate.prefix, candidate.extension
-        )
-
-    def _invoke_rename_flow(
-        self,
-        candidate: ProcessingCandidate,
-        current_prefix: str,
-        extension: str,
-        contextual_reason: Optional[str] = None,
-    ) -> ProcessingResult:
-        manager = self._manager
-        retry_prefix = current_prefix
-        retry_reason = contextual_reason
-
-        while True:
-            # UI-driven rename can either supply a sanitized prefix or bail out to manual processing.
-            active_config = manager.config_service.current
-            outcome = manager._rename_service.obtain_valid_prefix(
-                retry_prefix,
-                retry_reason,
-                filename_pattern=active_config.filename_pattern,
-                id_separator=active_config.id_separator,
-            )
-            if outcome.cancelled or not outcome.sanitized_prefix:
-                manager._rename_service.send_to_manual_bucket(
-                    str(candidate.effective_path),
-                    retry_prefix,
-                    extension,
-                    rename_dir=str(active_config.paths.rename_dir),
-                    id_separator=active_config.id_separator,
-                )
-                FILES_FAILED.inc()
-                return ProcessingResult(
-                    ProcessingStatus.REJECTED, "Rename cancelled by user"
-                )
-
-            updated_candidate = replace(candidate, prefix=outcome.sanitized_prefix)
-            context = self._route_decision_stage(updated_candidate)
-            if context.decision is RoutingDecision.ACCEPT:
-                return self._persist_and_sync_stage(context)
-
-            retry_prefix, retry_reason = self._rename_retry_policy_stage(context)
-
-    def _rename_retry_policy_stage(
-        self,
-        context: RouteContext,
-    ) -> tuple[str, Optional[str]]:
-        """Return next rename-loop prompt policy for non-ACCEPT routing outcomes."""
-        manager = self._manager
-        policy = build_rename_retry_prompt(context)
-        if policy.warning_title and policy.warning_message:
-            manager.interactions.show_warning(
-                policy.warning_title,
-                policy.warning_message,
-            )
-        return policy.next_prefix, policy.contextual_reason
-
-    def _reject_immediately(self, path: Path, reason: str) -> ProcessingResult:
-        manager = self._manager
-        if manager._is_internal_staging_path(path):
-            logger.info("Internal staging folder ignored: %s", path)
-            manager._register_rejection(str(path), reason)
-            return ProcessingResult(ProcessingStatus.DEFERRED, reason)
-        manager._move_to_exception_bucket_stage(str(path))
-        manager._register_rejection(str(path), reason)
-        FILES_FAILED.inc()
-        return ProcessingResult(ProcessingStatus.REJECTED, reason)
 
 
 class FileProcessManager:
@@ -483,30 +211,27 @@ class FileProcessManager:
         processor: FileProcessorABS,
     ) -> tuple[LocalRecord, FileProcessorABS, str, str]:
         """Resolve record, processor context, and naming paths for persistence."""
-        resolved_device = device or self.config_service.current_device()
-        resolved_record = get_or_create_record(
-            self.records,
-            record,
-            filename_prefix,
-            resolved_device,
-        )
-        device_abbr = resolved_device.metadata.device_abbr if resolved_device else None
-        apply_device_defaults(resolved_record, resolved_device)
         active_config = self.config_service.current
-        record_path = get_record_path(
-            filename_prefix,
-            device_abbr,
+        context: RecordPersistenceContext = build_record_persistence_context(
+            records=self.records,
+            existing_record=record,
+            filename_prefix=filename_prefix,
+            device=device,
+            processor=processor,
             id_separator=active_config.id_separator,
             dest_dir=active_config.paths.dest_dir,
-            current_device=resolved_device,
+            current_device_provider=self.config_service.current_device,
+            get_or_create_record_fn=get_or_create_record,
+            apply_device_defaults_fn=apply_device_defaults,
+            get_record_path_fn=get_record_path,
+            generate_file_id_fn=generate_file_id,
         )
-        file_id = generate_file_id(
-            filename_prefix,
-            device_abbr,
-            id_separator=active_config.id_separator,
-            current_device=resolved_device,
+        return (
+            context.record,
+            context.processor,
+            context.record_path,
+            context.file_id,
         )
-        return resolved_record, processor, record_path, file_id
 
     def _process_record_artifact_stage(
         self,
