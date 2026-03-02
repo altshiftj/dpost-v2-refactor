@@ -102,11 +102,6 @@ class DeviceResolution:
     def matched(self) -> bool:
         return self.kind is DeviceResolutionKind.ACCEPT
 
-    @property
-    def deferred(self) -> bool:
-        """Compatibility helper for callers still checking boolean defer state."""
-        return self.kind is DeviceResolutionKind.DEFER
-
 
 class DeviceResolver:
     """Combine selector rules and processor probes to choose a device."""
@@ -197,7 +192,9 @@ class DeviceResolver:
             )
 
         if selected is None:
-            return DeviceResolution.reject(reason=reason, assessments=tuple(assessments))
+            return DeviceResolution.reject(
+                reason=reason, assessments=tuple(assessments)
+            )
         return DeviceResolution.accept(
             selected,
             reason=reason,

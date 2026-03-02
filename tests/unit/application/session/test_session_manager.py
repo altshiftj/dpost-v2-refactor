@@ -1,7 +1,9 @@
-from dpost.application.config import current
-from dpost.domain.records.local_record import LocalRecord
+import pytest
 from dpost.application.session.session_manager import SessionManager
+from dpost.domain.records.local_record import LocalRecord
 from types import SimpleNamespace
+
+_DEFAULT_TIMEOUT_SECONDS = 42
 
 
 def _make_record(identifier: str = "udr_01-mus-ipat-sample_a") -> LocalRecord:
@@ -12,7 +14,7 @@ def _make_record(identifier: str = "udr_01-mus-ipat-sample_a") -> LocalRecord:
 def test_start_session(fake_ui, config_service):
     """When start_session() is called on an inactive session it should schedule a timeout."""
     fake_ui.auto_close_session = False
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
 
     assert not session_manager.session_active
     assert session_manager.timer_id is None
@@ -26,7 +28,7 @@ def test_start_session(fake_ui, config_service):
 
 
 def test_note_activity_starts_session(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     record = _make_record()
 
     session_manager.note_activity(record)
@@ -37,7 +39,7 @@ def test_note_activity_starts_session(fake_ui, config_service):
 
 
 def test_note_activity_refreshes_timer_and_details(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     first = _make_record("udr_01-mus-ipat-sample_a")
     second = _make_record("udr_01-mus-ipat-sample_b")
 
@@ -51,11 +53,11 @@ def test_note_activity_refreshes_timer_and_details(fake_ui, config_service):
         f"{first.sample_name}",
         f"{second.sample_name}",
     )
-    assert fake_ui.scheduled_tasks[-1][0] == current().session_timeout * 1000
+    assert fake_ui.scheduled_tasks[-1][0] == _DEFAULT_TIMEOUT_SECONDS * 1000
 
 
 def test_note_activity_tracks_multiple_users(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     primary = _make_record("udr_01-mus-ipat-sample_a")
     secondary = _make_record("udr_01-jfi-ipat-sample_b")
 
@@ -73,7 +75,7 @@ def test_note_activity_tracks_multiple_users(fake_ui, config_service):
 
 
 def test_note_activity_counts_increment(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     record = _make_record("udr_01-mus-ipat-sample_a")
 
     session_manager.note_activity(record)
@@ -90,7 +92,7 @@ def test_end_session_calls_callback(fake_ui, config_service):
     def on_done():
         ended.append(True)
 
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, end_session_callback=on_done)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, end_session_callback=on_done)
     session_manager.session_active = True
     session_manager.timer_id = 1
 
@@ -102,18 +104,18 @@ def test_end_session_calls_callback(fake_ui, config_service):
 
 
 def test_reset_timer_reschedules(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     session_manager.session_active = True
     session_manager.timer_id = 1
 
     session_manager.reset_timer()
 
     assert session_manager.timer_id == 2
-    assert fake_ui.scheduled_tasks[-1][0] == current().session_timeout * 1000
+    assert fake_ui.scheduled_tasks[-1][0] == _DEFAULT_TIMEOUT_SECONDS * 1000
 
 
 def test_reset_timer_when_inactive_does_nothing(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     session_manager.session_active = False
     session_manager.timer_id = None
 
@@ -130,14 +132,14 @@ def test_auto_end_session(fake_ui, config_service):
     def on_done():
         ended.append(True)
 
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, end_session_callback=on_done)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, end_session_callback=on_done)
     session_manager.start_session()
 
     assert session_manager.session_active is False
     assert ended == [True]
 
 def test_start_session_noop_when_already_active(fake_ui, config_service):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     session_manager.session_active = True
     session_manager.timer_id = 5
 
@@ -148,12 +150,13 @@ def test_start_session_noop_when_already_active(fake_ui, config_service):
     assert fake_ui.scheduled_tasks == []
 
 
-def test_reset_timer_ignores_disabled_timeout(fake_ui, monkeypatch):
-    session_manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+def test_reset_timer_ignores_disabled_timeout(fake_ui):
+    session_manager = SessionManager(
+        interactions=fake_ui,
+        scheduler=fake_ui,
+        timeout_provider=lambda: -1,
+    )
     session_manager.session_active = True
-
-    stub = type("StubConfig", (), {"session_timeout": -1})()
-    monkeypatch.setattr("dpost.application.session.session_manager.current", lambda: stub)
 
     session_manager.reset_timer()
 
@@ -175,6 +178,12 @@ def test_start_session_uses_explicit_timeout_provider(fake_ui, config_service):
     assert fake_ui.scheduled_tasks[-1][0] == 7000
 
 
+def test_session_manager_requires_explicit_timeout_provider(fake_ui, config_service):
+    """Constructor should require explicit timeout-provider wiring from composition."""
+    with pytest.raises(TypeError):
+        SessionManager(interactions=fake_ui, scheduler=fake_ui)
+
+
 def test_explicit_timeout_provider_can_disable_timeout(fake_ui, config_service):
     """Negative injected timeout should disable scheduling without monkeypatching globals."""
     session_manager = SessionManager(
@@ -192,7 +201,7 @@ def test_explicit_timeout_provider_can_disable_timeout(fake_ui, config_service):
 
 def test_session_manager_properties_and_summary(fake_ui, config_service):
     """Expose active/interactive state and immutable summary snapshot."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, interactive=False)
 
     assert manager.is_active is False
     assert manager.interactive is False
@@ -205,7 +214,7 @@ def test_session_manager_properties_and_summary(fake_ui, config_service):
 
 def test_set_interactive_noop_when_value_unchanged(fake_ui, config_service):
     """Keep state unchanged without refreshing prompt when mode already matches."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=True)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, interactive=True)
     manager.session_active = True
     manager.set_interactive(True)
 
@@ -218,7 +227,7 @@ def test_set_interactive_refreshes_prompt_when_enabling_active_session(
     config_service,
 ):
     """Refresh done-prompt when interactive mode is re-enabled mid-session."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, interactive=False)
     manager.session_active = True
     manager._session_users = ["mus-ipat"]
     manager._session_records = ["sample_a"]
@@ -232,7 +241,7 @@ def test_set_interactive_refreshes_prompt_when_enabling_active_session(
 
 def test_note_activity_headless_mode_suppresses_prompt_history(fake_ui, config_service):
     """Track activity in headless mode without showing done prompts."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, interactive=False)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS, interactive=False)
     record = _make_record("udr_01-mus-ipat-sample_a")
 
     manager.note_activity(record)
@@ -245,14 +254,14 @@ def test_note_activity_headless_mode_suppresses_prompt_history(fake_ui, config_s
 
 def test_format_record_label_returns_unknown_for_empty_label(fake_ui, config_service):
     """Normalize missing labels to human-readable placeholder text."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
     assert manager._format_record_label(None) == "Unknown Sample"  # noqa: SLF001
     assert manager._format_record_label("") == "Unknown Sample"  # noqa: SLF001
 
 
 def test_derive_user_tag_handles_missing_or_partial_identity(fake_ui, config_service):
     """Return None when user missing, user-only when institute missing, or both when present."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
 
     no_user = SimpleNamespace(user="null", institute="ipat")
     user_only = SimpleNamespace(user="mus", institute=None)
@@ -268,7 +277,7 @@ def test_derive_sample_label_falls_back_to_identifier_and_none(
     config_service,
 ):
     """Derive sample from identifier parts, identifier value, or None."""
-    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui)
+    manager = SessionManager(interactions=fake_ui, scheduler=fake_ui, timeout_provider=lambda: _DEFAULT_TIMEOUT_SECONDS)
 
     from_identifier = SimpleNamespace(
         sample_name="null",
@@ -285,3 +294,4 @@ def test_derive_sample_label_falls_back_to_identifier_and_none(
     assert manager._derive_sample_label(from_identifier) == "sample_a"  # noqa: SLF001
     assert manager._derive_sample_label(short_identifier) == "invalid"  # noqa: SLF001
     assert manager._derive_sample_label(missing_identifier) is None  # noqa: SLF001
+

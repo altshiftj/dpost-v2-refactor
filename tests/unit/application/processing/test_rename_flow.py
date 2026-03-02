@@ -150,3 +150,53 @@ def test_obtain_valid_prefix_forwards_explicit_naming_context(monkeypatch) -> No
         "filename_pattern": calls["explain"][1]["filename_pattern"],
         "id_separator": "__",
     }
+
+
+def test_obtain_valid_prefix_uses_explicit_separator_for_retry_attempt(monkeypatch) -> None:
+    """Build retry attempted-prefix values using explicit naming separator context."""
+    decisions = [
+        RenameDecision(
+            cancelled=False,
+            values={"name": "u1", "institute": "ipat", "sample_ID": "bad!"},
+        ),
+        RenameDecision(
+            cancelled=False,
+            values={"name": "mus", "institute": "ipat", "sample_ID": "Sample_A"},
+        ),
+    ]
+    interactions = _InteractionStub(decisions=decisions)
+    service = RenameService(interactions)
+
+    monkeypatch.setattr(
+        "dpost.application.processing.rename_flow.explain_filename_violation",
+        lambda _attempted, **_kwargs: {
+            "valid": False,
+            "reasons": ["initial"],
+            "highlight_spans": [],
+        },
+    )
+    analyses = iter(
+        [
+            {"valid": False, "sanitized": None, "reasons": ["bad"], "highlight_spans": []},
+            {
+                "valid": True,
+                "sanitized": "mus__ipat__Sample_A",
+                "reasons": [],
+                "highlight_spans": [],
+            },
+        ]
+    )
+    monkeypatch.setattr(
+        "dpost.application.processing.rename_flow.analyze_user_input",
+        lambda _values, **_kwargs: next(analyses),
+    )
+
+    outcome = service.obtain_valid_prefix(
+        current_prefix="invalid-prefix",
+        id_separator="__",
+    )
+
+    assert outcome.cancelled is False
+    assert outcome.sanitized_prefix == "mus__ipat__Sample_A"
+    assert len(interactions.prompts) == 2
+    assert interactions.prompts[1].attempted_prefix == "u1__ipat__bad!"

@@ -67,7 +67,6 @@ def test_resolve_missing_path_selects_reappear_device(tmp_path: Path):
 
     assert resolution.selected == device
     assert resolution.kind is DeviceResolutionKind.ACCEPT
-    assert resolution.deferred is False
     assert resolution.retry_delay is None
     assert "waiting for reappearance" in resolution.reason
 
@@ -81,7 +80,6 @@ def test_resolve_missing_path_defers_without_reappear(tmp_path: Path):
 
     assert resolution.selected is None
     assert resolution.kind is DeviceResolutionKind.DEFER
-    assert resolution.deferred is True
     assert "disappeared" in resolution.reason
 
 
@@ -94,7 +92,6 @@ def test_resolve_defers_for_deferred_devices(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.kind is DeviceResolutionKind.DEFER
-    assert resolution.deferred is True
     assert resolution.retry_delay == 4.5
     assert "dev1" in resolution.reason
 
@@ -107,7 +104,6 @@ def test_resolve_defers_for_empty_directory(tmp_path: Path):
     resolution = resolver.resolve(target)
 
     assert resolution.kind is DeviceResolutionKind.DEFER
-    assert resolution.deferred is True
     assert "Deferred until" in resolution.reason
 
 
@@ -124,7 +120,6 @@ def test_resolve_with_no_candidates_for_file_reports_unmatched_reason(
 
     assert resolution.selected is None
     assert resolution.kind is DeviceResolutionKind.REJECT
-    assert resolution.deferred is False
     assert resolution.reason == "No device selectors matched the file"
 
 
@@ -197,7 +192,7 @@ def test_device_resolution_matched_property_reflects_selection() -> None:
     assert matched.matched is True
     assert unmatched.matched is False
     assert deferred_with_selected.matched is False
-    assert deferred_with_selected.deferred is True
+    assert deferred_with_selected.kind is DeviceResolutionKind.DEFER
 
 
 def test_device_resolution_accept_requires_selected_device() -> None:

@@ -8,7 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Optional, Tuple
 
-from dpost.application.config import ConfigService, DeviceConfig, get_service
+from dpost.application.config import ConfigService, DeviceConfig
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
 from dpost.application.naming.policy import generate_file_id, parse_filename
 from dpost.application.ports import SyncAdapterPort, UserInteractionPort
@@ -360,7 +360,7 @@ class FileProcessManager:
         interactions: UserInteractionPort,
         sync_manager: SyncAdapterPort,
         session_manager: SessionManager,
-        config_service: ConfigService | None = None,
+        config_service: ConfigService,
         file_processor: FileProcessorABS | None = None,
         immediate_sync: bool = False,
         failure_emission_sink: ProcessingFailureEmissionSink | None = None,
@@ -368,7 +368,7 @@ class FileProcessManager:
     ) -> None:
         self.interactions = interactions
         self.session_manager = session_manager
-        self.config_service = config_service or get_service()
+        self.config_service = config_service
         self.file_processor = file_processor
         active_config = self.config_service.current
         self.records = RecordManager(

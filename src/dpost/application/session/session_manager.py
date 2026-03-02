@@ -20,7 +20,6 @@ from dpost.application.ports import (
     TaskScheduler,
     UserInteractionPort,
 )
-from dpost.application.config import current
 from dpost.infrastructure.logging import setup_logger
 
 if TYPE_CHECKING:
@@ -51,9 +50,9 @@ class SessionManager:
         self,
         interactions: UserInteractionPort,
         scheduler: TaskScheduler,
+        timeout_provider: Callable[[], float | int],
         end_session_callback=None,
         interactive: bool = True,
-        timeout_provider: Callable[[], float | int] | None = None,
     ) -> None:
         self._interactions = interactions
         self._scheduler = scheduler
@@ -63,7 +62,7 @@ class SessionManager:
         self._session_users: list[str] = []
         self._session_records: list[str] = []
         self._interactive = interactive
-        self._timeout_provider = timeout_provider or self._default_timeout_provider
+        self._timeout_provider = timeout_provider
 
     @property
     def is_active(self) -> bool:
@@ -198,8 +197,3 @@ class SessionManager:
                 return separator.join(parts[3:])
             return identifier
         return None
-
-    @staticmethod
-    def _default_timeout_provider() -> float | int:
-        """Resolve session timeout from the active runtime config."""
-        return current().session_timeout

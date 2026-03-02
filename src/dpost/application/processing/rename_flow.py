@@ -11,9 +11,7 @@ from dpost.application.naming.policy import (
     explain_filename_violation,
 )
 from dpost.application.ports import RenameDecision, RenamePrompt, UserInteractionPort
-from dpost.infrastructure.storage.filesystem_utils import (
-    move_to_rename_folder,
-)
+from dpost.infrastructure.storage.filesystem_utils import move_to_rename_folder
 
 
 @dataclass
@@ -63,7 +61,10 @@ class RenameService:
                     sanitized_prefix=analysis["sanitized"], cancelled=False
                 )
 
-            attempted = self._compose_attempted_prefix(decision.values)
+            attempted = self._compose_attempted_prefix(
+                decision.values,
+                id_separator=id_separator,
+            )
 
     def send_to_manual_bucket(
         self,
@@ -100,8 +101,13 @@ class RenameService:
         return self._interactions.request_rename(prompt)
 
     @staticmethod
-    def _compose_attempted_prefix(user_input: dict) -> str:
-        return "-".join(
+    def _compose_attempted_prefix(
+        user_input: dict,
+        *,
+        id_separator: str | None = None,
+    ) -> str:
+        separator = id_separator if id_separator else "-"
+        return separator.join(
             (
                 user_input.get("name", ""),
                 user_input.get("institute", ""),

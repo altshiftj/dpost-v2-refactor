@@ -1107,3 +1107,18 @@ def test_should_queue_modified_delegates_to_modified_event_gate(
     monkeypatch.setattr(manager._modified_event_gate, "should_queue", lambda _p: True)
 
     assert manager.should_queue_modified("C:/watch/file.csv") is True
+
+
+def test_init_requires_explicit_config_service() -> None:
+    """Constructor should reject implicit global config-service fallback wiring."""
+    ui = HeadlessUI()
+    sync = DummySyncManager(ui)
+    session = FakeSessionManager(interactions=ui, scheduler=ui)
+
+    with pytest.raises(TypeError):
+        FileProcessManager(
+            interactions=ui,
+            sync_manager=sync,
+            session_manager=session,
+            file_processor=DummyProcessor(),
+        )
