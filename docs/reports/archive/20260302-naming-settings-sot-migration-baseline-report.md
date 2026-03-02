@@ -642,6 +642,31 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 30 Sprawl Stop-Line and Boundary Clarification (2026-03-03)
+- Intended actions:
+  - finish the post-consolidation posture by accepting an explicit stop-line
+    and reducing remaining low-value facade/adapter boilerplate.
+- Observed outcome:
+  - finalized sprawl posture RPC status and stop-line criteria in
+    `docs/planning/20260303-processing-sprawl-posture-rpc.md`;
+  - simplified application naming facade implementation shape in
+    `application/naming/policy.py` by reducing alias-heavy imports and
+    consolidating repeated explicit naming-context validation;
+  - simplified `processing_pipeline_runtime.py` local implementation by caching
+    stable collaborators + centralizing active-config lookup while preserving
+    dynamic seam behavior used by branch tests.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `7 failed, 45 passed` (callable caching altered dynamic seam behavior)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `11 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/processing_pipeline_runtime.py src/dpost/application/naming/policy.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5526 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -665,4 +690,5 @@
 - Section 27 processor runtime-context helper extraction is complete.
 - Section 28 processing-pipeline runtime protocol contract is complete.
 - Section 29 processing orchestration wrapper-sprawl consolidation is complete.
+- Section 30 sprawl stop-line and boundary clarification follow-through is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

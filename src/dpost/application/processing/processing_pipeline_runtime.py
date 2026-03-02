@@ -11,7 +11,7 @@ from dpost.application.processing.rename_flow import RenameOutcome
 from dpost.domain.processing.models import ProcessingCandidate, RouteContext
 
 if TYPE_CHECKING:
-    from dpost.application.config import ConfigService, DeviceConfig
+    from dpost.application.config import ActiveConfig, ConfigService, DeviceConfig
     from dpost.application.ports import UserInteractionPort
     from dpost.application.processing.device_resolver import DeviceResolution
     from dpost.application.processing.file_process_manager import FileProcessManager
@@ -77,18 +77,25 @@ class ProcessingPipelineRuntime(ProcessingPipelineRuntimePort):
 
     def __init__(self, manager: FileProcessManager) -> None:
         self._manager = manager
+        # Cache stable collaborators and compute active config lazily.
+        self._config_service = manager.config_service
+        self._records = manager.records
+        self._interactions = manager.interactions
+
+    def _active_config(self) -> ActiveConfig:
+        return self._config_service.current
 
     @property
     def config_service(self) -> ConfigService:
-        return self._manager.config_service
+        return self._config_service
 
     @property
     def records(self) -> RecordManager:
-        return self._manager.records
+        return self._records
 
     @property
     def interactions(self) -> UserInteractionPort:
-        return self._manager.interactions
+        return self._interactions
 
     def is_internal_staging_path(self, path: Path) -> bool:
         return self._manager._is_internal_staging_path(path)
@@ -108,7 +115,7 @@ class ProcessingPipelineRuntime(ProcessingPipelineRuntimePort):
     def activate_device(
         self, device: DeviceConfig
     ) -> AbstractContextManager[object | None]:
-        return self._manager.config_service.activate_device(device)
+        return self._config_service.activate_device(device)
 
     def resolve_processor(self, device: DeviceConfig) -> FileProcessorABS:
         return self._manager._resolve_processor(device)
@@ -132,7 +139,7 @@ class ProcessingPipelineRuntime(ProcessingPipelineRuntimePort):
         retry_prefix: str,
         retry_reason: str | None,
     ) -> RenameOutcome:
-        active_config = self._manager.config_service.current
+        active_config = self._active_config()
         return self._manager._rename_service.obtain_valid_prefix(
             retry_prefix,
             retry_reason,
@@ -146,7 +153,7 @@ class ProcessingPipelineRuntime(ProcessingPipelineRuntimePort):
         retry_prefix: str,
         extension: str,
     ) -> None:
-        active_config = self._manager.config_service.current
+        active_config = self._active_config()
         self._manager._rename_service.send_to_manual_bucket(
             effective_path,
             retry_prefix,

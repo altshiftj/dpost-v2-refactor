@@ -4,22 +4,7 @@ from __future__ import annotations
 
 from typing import Pattern
 
-from dpost.domain.naming.identifiers import generate_file_id as generate_file_id_policy
-from dpost.domain.naming.identifiers import (
-    generate_record_id as generate_record_id_policy,
-)
-from dpost.domain.naming.identifiers import parse_filename as parse_filename_policy
-from dpost.domain.naming.prefix_policy import (
-    analyze_user_input as analyze_user_input_policy,
-)
-from dpost.domain.naming.prefix_policy import (
-    explain_filename_violation as explain_filename_violation_policy,
-)
-from dpost.domain.naming.prefix_policy import is_valid_prefix as is_valid_prefix_policy
-from dpost.domain.naming.prefix_policy import (
-    sanitize_and_validate as sanitize_and_validate_policy,
-)
-from dpost.domain.naming.prefix_policy import sanitize_prefix as sanitize_prefix_policy
+from dpost.domain.naming import identifiers, prefix_policy
 
 
 def _require_id_separator(id_separator: str) -> str:
@@ -36,9 +21,20 @@ def _require_filename_pattern(
     return filename_pattern
 
 
+def _require_naming_context(
+    *,
+    filename_pattern: Pattern[str],
+    id_separator: str,
+) -> tuple[Pattern[str], str]:
+    return (
+        _require_filename_pattern(filename_pattern),
+        _require_id_separator(id_separator),
+    )
+
+
 def parse_filename(src_path: str) -> tuple[str, str]:
     """Return filename stem and suffix for a path-like string."""
-    return parse_filename_policy(src_path)
+    return identifiers.parse_filename(src_path)
 
 
 def generate_record_id(
@@ -58,7 +54,7 @@ def generate_record_id(
             )
         resolved_record_id = device.metadata.record_kadi_id
     separator = _require_id_separator(id_separator)
-    return generate_record_id_policy(
+    return identifiers.generate_record_id(
         filename_prefix,
         dev_kadi_record_id=resolved_record_id,
         id_separator=separator,
@@ -82,7 +78,7 @@ def generate_file_id(
             )
         resolved_device_abbr = device.metadata.device_abbr
     separator = _require_id_separator(id_separator)
-    return generate_file_id_policy(
+    return identifiers.generate_file_id(
         filename_prefix,
         device_abbr=resolved_device_abbr,
         id_separator=separator,
@@ -96,9 +92,11 @@ def is_valid_prefix(
     id_separator: str,
 ) -> bool:
     """Validate filename prefix using explicit naming policy settings."""
-    pattern = _require_filename_pattern(filename_pattern)
-    separator = _require_id_separator(id_separator)
-    return is_valid_prefix_policy(
+    pattern, separator = _require_naming_context(
+        filename_pattern=filename_pattern,
+        id_separator=id_separator,
+    )
+    return prefix_policy.is_valid_prefix(
         raw_prefix,
         filename_pattern=pattern,
         id_separator=separator,
@@ -108,7 +106,7 @@ def is_valid_prefix(
 def sanitize_prefix(raw_prefix: str, *, id_separator: str) -> str:
     """Sanitize filename prefix using explicit naming separator."""
     separator = _require_id_separator(id_separator)
-    return sanitize_prefix_policy(
+    return prefix_policy.sanitize_prefix(
         raw_prefix,
         id_separator=separator,
     )
@@ -121,9 +119,11 @@ def sanitize_and_validate(
     id_separator: str,
 ) -> tuple[str, bool]:
     """Return `(sanitized_prefix, is_valid)` under explicit naming configuration."""
-    pattern = _require_filename_pattern(filename_pattern)
-    separator = _require_id_separator(id_separator)
-    return sanitize_and_validate_policy(
+    pattern, separator = _require_naming_context(
+        filename_pattern=filename_pattern,
+        id_separator=id_separator,
+    )
+    return prefix_policy.sanitize_and_validate(
         raw_prefix,
         filename_pattern=pattern,
         id_separator=separator,
@@ -137,9 +137,11 @@ def explain_filename_violation(
     id_separator: str,
 ) -> dict:
     """Analyze violation details for a filename under explicit naming settings."""
-    pattern = _require_filename_pattern(filename_pattern)
-    separator = _require_id_separator(id_separator)
-    return explain_filename_violation_policy(
+    pattern, separator = _require_naming_context(
+        filename_pattern=filename_pattern,
+        id_separator=id_separator,
+    )
+    return prefix_policy.explain_filename_violation(
         filename,
         filename_pattern=pattern,
         id_separator=separator,
@@ -153,9 +155,11 @@ def analyze_user_input(
     id_separator: str,
 ) -> dict:
     """Validate/sanitize rename dialog values under explicit naming settings."""
-    pattern = _require_filename_pattern(filename_pattern)
-    separator = _require_id_separator(id_separator)
-    return analyze_user_input_policy(
+    pattern, separator = _require_naming_context(
+        filename_pattern=filename_pattern,
+        id_separator=id_separator,
+    )
+    return prefix_policy.analyze_user_input(
         dialog_result,
         filename_pattern=pattern,
         id_separator=separator,

@@ -884,6 +884,48 @@
 
 ---
 
+## 30. Sprawl Posture Stop-Line and Boundary Clarification Follow-Through
+- Why this matters: after reducing wrapper-only indirection, we need an explicit
+  stop-line to avoid refactor churn and keep naming/runtime boundaries readable
+  without reintroducing accidental complexity.
+
+### Checklist
+- [x] Finalize sprawl-posture RPC with accepted stop-line criteria.
+- [x] Reduce low-value `policy.py` facade boilerplate while preserving explicit
+      naming-context contracts.
+- [x] Keep `processing_pipeline_runtime` behavior stable while simplifying local
+      adapter implementation details.
+
+### Completion Notes
+- How it was done:
+  - updated
+    `docs/planning/20260303-processing-sprawl-posture-rpc.md` from `Proposed`
+    to `Accepted` and added explicit "Stop-Line" criteria and current posture
+    checkpoint;
+  - simplified domain-facade wiring in
+    `src/dpost/application/naming/policy.py` by:
+    - importing domain naming modules directly (`identifiers`,
+      `prefix_policy`) instead of many aliased function imports;
+    - consolidating repeated explicit naming-context validation via
+      `_require_naming_context(...)`;
+  - simplified `src/dpost/application/processing/processing_pipeline_runtime.py`
+    by caching stable collaborators (`config_service`, `records`,
+    `interactions`) and centralizing active-config retrieval with
+    `_active_config(...)`, while preserving dynamic manager seam behavior.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `7 failed, 45 passed` (runtime adapter callable caching broke monkeypatched dynamic seams)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/naming/test_policy.py` -> `11 passed`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/application/processing/test_processor_runtime_context.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/processing_pipeline_runtime.py src/dpost/application/naming/policy.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5526 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -992,5 +1034,10 @@
   - checkpoint rerun after section 29:
     - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5530 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 30:
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5526 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
