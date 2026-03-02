@@ -13,24 +13,18 @@ def sample_record():
         identifier="dev-jdoe-ipat-sample_1",
         datatype="tiff",
         date="20250405",
+        id_separator="-",
     )
 
 
-def test_init_defaults():
-    record = LocalRecord()
-    assert record.identifier == "null"
-    assert record.user == "null"
-    assert record.institute == "null"
-    assert record.sample_name == "null"
-    assert record.datatype == "null"
-    assert record.date == "null"
-    assert record.is_in_db is False
-    assert record.files_uploaded == {}
-    assert record.files_require_force == set()
+def test_init_rejects_missing_separator_value() -> None:
+    """Reject record construction when explicit separator context is omitted."""
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        LocalRecord()
 
 
 def test_init_with_identifier():
-    record = LocalRecord(identifier="dev-usr-inst-sample_1")
+    record = LocalRecord(identifier="dev-usr-inst-sample_1", id_separator="-")
     assert record.user == "usr"
     assert record.institute == "inst"
     assert record.sample_name == "sample_1"
@@ -38,7 +32,7 @@ def test_init_with_identifier():
 
 def test_init_with_invalid_identifier(caplog):
     caplog.set_level("WARNING")
-    record = LocalRecord(identifier="invalid")
+    record = LocalRecord(identifier="invalid", id_separator="-")
     assert record.user == "null"
     assert record.institute == "null"
     assert record.sample_name == "null"
@@ -48,7 +42,7 @@ def test_init_with_invalid_identifier(caplog):
 def test_init_does_not_infer_separator_from_identifier_shape(caplog) -> None:
     """Do not auto-detect separators from identifier shape without explicit context."""
     caplog.set_level("WARNING")
-    record = LocalRecord(identifier="dev:usr:inst:sample_1")
+    record = LocalRecord(identifier="dev:usr:inst:sample_1", id_separator="-")
 
     assert record.id_separator == "-"
     assert record.user == "null"
@@ -228,6 +222,7 @@ def test_to_dict_from_dict_roundtrip():
         date="20250405",
         is_in_db=True,
         files_uploaded={"/file1.tif": True, "/file2.tif": False},
+        id_separator="-",
     )
     original.files_require_force.update({"/file1.tif"})
 

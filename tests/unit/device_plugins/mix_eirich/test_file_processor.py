@@ -162,7 +162,10 @@ def test_processing_defaults_and_device_specific_processing(
 
     assert preprocessed is not None
     assert preprocessed.effective_path == str(src)
-    assert processor.is_appendable(LocalRecord(), "user-sample", ".txt") is True
+    assert (
+        processor.is_appendable(LocalRecord(id_separator="-"), "user-sample", ".txt")
+        is True
+    )
     assert processor.get_device_id() == expected_device_id
     assert output.datatype == "tabular"
     assert Path(output.final_path).exists()

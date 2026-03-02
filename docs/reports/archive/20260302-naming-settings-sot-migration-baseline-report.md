@@ -431,6 +431,26 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 21 Explicit LocalRecord Constructor Separator Context (2026-03-02)
+- Intended actions:
+  - finish interrupted `LocalRecord` strict-separator constructor cleanup.
+- Observed outcome:
+  - `LocalRecord.id_separator` typing is now normalized to `str` with
+    fail-fast missing/empty validation still enforced in `__post_init__`;
+  - direct unit-test `LocalRecord(...)` constructor call sites now pass
+    explicit separator context (`id_separator="-"`) where required;
+  - focused missing-separator constructor coverage remains in
+    `tests/unit/domain/records/test_local_record.py`.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py` -> failed (test fixtures/callers omitted explicit separator context)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_processor_abstract.py tests/unit/application/processing/test_record_utils.py tests/unit/application/processing/test_route_context_policy.py tests/unit/application/session/test_session_manager.py tests/unit/application/records/test_record_manager.py tests/unit/domain/processing/test_routing.py tests/unit/domain/records/test_local_record.py tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py tests/unit/device_plugins/extr_haake/test_plugin.py tests/unit/device_plugins/mix_eirich/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py` -> `232 passed, 1 skipped`
+    - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5450 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -445,4 +465,5 @@
 - Section 18 UTM flush runtime-context contract cleanup is complete.
 - Section 19 package-level config context export narrowing is complete.
 - Section 20 config lifecycle helper re-export cleanup is complete.
+- Section 21 explicit `LocalRecord` constructor separator cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

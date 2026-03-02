@@ -62,7 +62,7 @@ def test_determine_routing_decision_requires_rename_for_invalid_new_item() -> No
 def test_determine_routing_decision_requires_rename_for_invalid_existing_record() -> None:
     """Prioritize name validity over appendability for existing records."""
     policy = StubAppendabilityPolicy(appendable=True)
-    record = LocalRecord(identifier="dev-user-org-sample_1")
+    record = LocalRecord(identifier="dev-user-org-sample_1", id_separator="-")
 
     decision = determine_routing_decision(
         record=record,
@@ -79,7 +79,7 @@ def test_determine_routing_decision_requires_rename_for_invalid_existing_record(
 def test_determine_routing_decision_accepts_appendable_existing_record() -> None:
     """Accept valid items when processor confirms appendability."""
     policy = StubAppendabilityPolicy(appendable=True)
-    record = LocalRecord(identifier="dev-user-org-sample_1")
+    record = LocalRecord(identifier="dev-user-org-sample_1", id_separator="-")
 
     decision = determine_routing_decision(
         record=record,
@@ -96,7 +96,7 @@ def test_determine_routing_decision_accepts_appendable_existing_record() -> None
 def test_determine_routing_decision_rejects_unappendable_existing_record() -> None:
     """Return UNAPPENDABLE when an existing valid record cannot append the file."""
     policy = StubAppendabilityPolicy(appendable=False)
-    record = LocalRecord(identifier="dev-user-org-sample_1")
+    record = LocalRecord(identifier="dev-user-org-sample_1", id_separator="-")
 
     decision = determine_routing_decision(
         record=record,

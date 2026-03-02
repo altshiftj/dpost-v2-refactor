@@ -567,6 +567,36 @@
 
 ---
 
+## 21. Require Explicit `LocalRecord` Constructor Separator Context
+- Why this matters: allowing implicit `LocalRecord` constructor separator values
+  keeps a core domain object partially outside explicit naming policy wiring.
+
+### Checklist
+- [x] Normalize `LocalRecord.id_separator` field typing to explicit string
+      context and keep fail-fast missing/empty validation.
+- [x] Rewire direct unit-test `LocalRecord(...)` constructor call sites to pass
+      explicit separator context.
+- [x] Keep focused unit coverage for missing-separator construction failure.
+
+### Completion Notes
+- How it was done:
+  - normalized `LocalRecord.id_separator` typing to `str` with explicit
+    missing/empty validation retained in `__post_init__`;
+  - updated direct unit-test constructor call sites to pass
+    `id_separator="-"` where explicit context is required;
+  - retained focused missing-separator unit coverage in
+    `tests/unit/domain/records/test_local_record.py`.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py` -> failed (`LocalRecord` fixtures/call sites omitted explicit separator context)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_file_processor_abstract.py tests/unit/application/processing/test_record_utils.py tests/unit/application/processing/test_route_context_policy.py tests/unit/application/session/test_session_manager.py tests/unit/application/records/test_record_manager.py tests/unit/domain/processing/test_routing.py tests/unit/domain/records/test_local_record.py tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/erm_hioki/test_file_processor_branches.py tests/unit/device_plugins/extr_haake/test_plugin.py tests/unit/device_plugins/mix_eirich/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py` -> `232 passed, 1 skipped`
+    - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5450 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -635,5 +665,10 @@
   - checkpoint rerun after section 20:
     - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 21:
+    - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5450 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

@@ -260,7 +260,7 @@ def test_probe_file_branches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
 def test_is_appendable_always_true() -> None:
     """Return appendable marker used by routing for PSA outputs."""
     processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
-    record = LocalRecord(identifier="dev-user-ipat-sample")
+    record = LocalRecord(identifier="dev-user-ipat-sample", id_separator="-")
 
     assert processor.is_appendable(record, "prefix", ".csv") is True
 

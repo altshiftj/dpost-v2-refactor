@@ -25,7 +25,7 @@ def test_build_route_context_delegates_to_decision_policy(config_service) -> Non
         device=config_service.devices[0],
         preprocessed_path=None,
     )
-    record = LocalRecord(identifier="dev-user-inst-sample")
+    record = LocalRecord(identifier="dev-user-inst-sample", id_separator="-")
     calls: list[tuple[object, ...]] = []
 
     def fake_decide(existing_record, is_valid_format, prefix, extension, processor):

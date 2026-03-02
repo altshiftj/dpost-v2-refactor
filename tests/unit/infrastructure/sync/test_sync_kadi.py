@@ -98,6 +98,7 @@ def local_record(tmp_path):
         sample_name="sample1",
         datatype="tif",
         date="20250405",
+        id_separator="-",
     )
     record.files_uploaded[str(fake_file.resolve())] = False
     return record
@@ -212,6 +213,7 @@ def test_upload_record_files_success(sync_mgr):
         sample_name="sample1",
         datatype="tif",
         date="20250405",
+        id_separator="-",
     )
     record.files_uploaded = {
         "/dummy/path/file1.tif": False,
@@ -238,6 +240,7 @@ def test_upload_record_files_uses_force_for_overwrites(sync_mgr):
         sample_name="sample1",
         datatype="tif",
         date="20250405",
+        id_separator="-",
     )
     path_force = "/dummy/path/file1.tif"
     path_normal = "/dummy/path/file2.tif"
@@ -263,6 +266,7 @@ def test_upload_record_files_missing(sync_mgr):
         sample_name="sample1",
         datatype="tif",
         date="20250405",
+        id_separator="-",
     )
     path_missing = "/dummy/path/file1.tif"
     path_ok = "/dummy/path/file2.tif"
@@ -289,7 +293,7 @@ def test_upload_record_files_missing(sync_mgr):
 
 
 def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
-    record = LocalRecord(identifier="abc-ipat-sample1")
+    record = LocalRecord(identifier="abc-ipat-sample1", id_separator="-")
     record.files_uploaded = {
         "/dummy/path/missing1.tif": False,
         "/dummy/path/missing2.tif": False,

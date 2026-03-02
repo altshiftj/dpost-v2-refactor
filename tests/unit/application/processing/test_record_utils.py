@@ -32,7 +32,7 @@ class _DeviceStub:
 def test_get_or_create_record_returns_existing_record_without_creation() -> None:
     """Return existing record directly and avoid creating a new one."""
     records = Mock()
-    existing = LocalRecord(identifier="dev-usr-ins-sample")
+    existing = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
 
     resolved = get_or_create_record(records, existing, "prefix", device=object())
 
@@ -43,7 +43,7 @@ def test_get_or_create_record_returns_existing_record_without_creation() -> None
 def test_get_or_create_record_creates_new_record_when_missing() -> None:
     """Create a record through record manager when no existing record is passed."""
     records = Mock()
-    created = LocalRecord(identifier="dev-usr-ins-sample")
+    created = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
     records.create_record.return_value = created
 
     resolved = get_or_create_record(records, None, "prefix", device="device-x")
@@ -54,7 +54,7 @@ def test_get_or_create_record_creates_new_record_when_missing() -> None:
 
 def test_apply_device_defaults_noops_when_device_is_none() -> None:
     """Leave record defaults unchanged when no active device is provided."""
-    record = LocalRecord(identifier="dev-usr-ins-sample")
+    record = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
     record.default_description = "keep"
     record.default_tags = ["keep-tag"]
 
@@ -66,7 +66,7 @@ def test_apply_device_defaults_noops_when_device_is_none() -> None:
 
 def test_apply_device_defaults_sets_description_and_tags_when_missing() -> None:
     """Populate missing defaults from active device metadata."""
-    record = LocalRecord(identifier="dev-usr-ins-sample")
+    record = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
     device = _DeviceStub(
         metadata=_MetadataStub(
             default_record_description="Device default description",
@@ -84,7 +84,7 @@ def test_update_record_delegates_to_record_manager() -> None:
     """Forward processed path tracking to record manager and return new count."""
     records = Mock()
     records.add_item_to_record.return_value = 3
-    record = LocalRecord(identifier="dev-usr-ins-sample")
+    record = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
 
     total = update_record(records, "C:/records/file.csv", record)
 
@@ -95,7 +95,7 @@ def test_update_record_delegates_to_record_manager() -> None:
 def test_manage_session_is_explicit_noop() -> None:
     """Perform no session side effects to preserve current no-op semantics."""
     session = Mock()
-    record = LocalRecord(identifier="dev-usr-ins-sample")
+    record = LocalRecord(identifier="dev-usr-ins-sample", id_separator="-")
 
     result = manage_session(session, record)
 

@@ -15,7 +15,12 @@ from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
 
 def _build_record(identifier: str = "dev-user-ipat-sample") -> LocalRecord:
     """Create a local record with deterministic metadata defaults for sync tests."""
-    record = LocalRecord(identifier=identifier, datatype="csv", sample_name="sample")
+    record = LocalRecord(
+        identifier=identifier,
+        datatype="csv",
+        sample_name="sample",
+        id_separator="-",
+    )
     record.default_description = "desc"
     record.default_tags = ["tag-a", "tag-b"]
     return record

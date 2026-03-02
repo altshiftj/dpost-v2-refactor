@@ -76,7 +76,7 @@ def test_probe_file_returns_match_for_marker_text(
 
 def test_identity_helpers_are_stable(processor: FileProcessorDSVHoriba) -> None:
     """Expose stable plugin identity and appendability behavior."""
-    record = LocalRecord(identifier="dev-user-ipat-sample")
+    record = LocalRecord(identifier="dev-user-ipat-sample", id_separator="-")
 
     assert processor.get_device_id() == "dsv_horiba"
     assert processor.is_appendable(record, "prefix", ".txt") is True

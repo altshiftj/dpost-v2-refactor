@@ -27,7 +27,9 @@ def test_preprocessing_probe_and_identity_branches(tmp_path: Path) -> None:
     assert processor.get_device_id() == "hioki_blb"
     assert (
         processor.is_appendable(
-            LocalRecord(identifier="dev-user-ipat-sample"), "p", ".csv"
+            LocalRecord(identifier="dev-user-ipat-sample", id_separator="-"),
+            "p",
+            ".csv",
         )
         is True
     )

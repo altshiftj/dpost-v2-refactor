@@ -10,8 +10,6 @@ from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_ID_SEPARATOR = "-"
-
 
 @dataclass
 class LocalRecord:
@@ -35,14 +33,14 @@ class LocalRecord:
     # Transient sync defaults (not persisted)
     default_description: Optional[str] = field(default=None, repr=False, compare=False)
     default_tags: List[str] = field(default_factory=list, repr=False, compare=False)
-    id_separator: str = field(default=_DEFAULT_ID_SEPARATOR, repr=False, compare=False)
+    id_separator: str = field(default="", repr=False, compare=False)
 
     def __post_init__(self):
         """Parse identity segments from identifier using explicit separator context."""
         if not self.id_separator:
             raise ValueError("id_separator must be provided explicitly")
         id_separator = self.id_separator
-        parts = self.identifier.split(self.id_separator)
+        parts = self.identifier.split(id_separator)
         if len(parts) >= 4:
             self.device_type = parts[0].lower()
             self.user = parts[1].lower()

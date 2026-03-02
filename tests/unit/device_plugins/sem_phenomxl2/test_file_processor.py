@@ -27,6 +27,7 @@ def dummy_record():
         sample_name="sample_a",
         datatype="tiff",
         date="20250405",
+        id_separator="-",
     )
 
 

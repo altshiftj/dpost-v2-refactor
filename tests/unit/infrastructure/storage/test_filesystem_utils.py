@@ -412,7 +412,10 @@ def test_load_persisted_records_returns_localrecord_mapping(
     """Load JSON payload into LocalRecord objects keyed by record id."""
     records_path = tmp_path / "records.json"
     payload = {
-        "dev-usr-ipat-sample": LocalRecord(identifier="dev-usr-ipat-sample").to_dict()
+        "dev-usr-ipat-sample": LocalRecord(
+            identifier="dev-usr-ipat-sample",
+            id_separator="-",
+        ).to_dict()
     }
     records_path.write_text(json.dumps(payload), encoding="utf-8")
 
@@ -462,7 +465,7 @@ def test_save_persisted_records_writes_json(tmp_path: Path, config_service):
     """Serialize LocalRecord mapping to JSON file."""
     records_path = tmp_path / "records.json"
 
-    record = LocalRecord(identifier="dev-user-inst-sample")
+    record = LocalRecord(identifier="dev-user-inst-sample", id_separator="-")
 
     filesystem_utils.save_persisted_records({"id": record}, json_path=records_path)
 

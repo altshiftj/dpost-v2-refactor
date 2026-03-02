@@ -7,7 +7,7 @@ _DEFAULT_TIMEOUT_SECONDS = 42
 
 
 def _make_record(identifier: str = "udr_01-mus-ipat-sample_a") -> LocalRecord:
-    return LocalRecord(identifier=identifier)
+    return LocalRecord(identifier=identifier, id_separator="-")
 
 
 

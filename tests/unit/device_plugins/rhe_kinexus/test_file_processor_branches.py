@@ -264,7 +264,7 @@ def test_probe_file_returns_unknown_when_text_read_fails(
 def test_identity_helpers_are_stable() -> None:
     """Expose stable identity/appendability contracts used by routing policy."""
     processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
-    record = LocalRecord(identifier="dev-user-ipat-sample")
+    record = LocalRecord(identifier="dev-user-ipat-sample", id_separator="-")
 
     assert processor.is_appendable(record, "prefix", ".csv") is True
     assert processor.get_device_id() == "rhe_kinexus"

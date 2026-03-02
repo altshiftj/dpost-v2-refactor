@@ -25,7 +25,10 @@ def record_manager(fake_sync, tmp_settings):
 @pytest.fixture
 def sample_record():
     return LocalRecord(
-        identifier="dev-usr-ipat-sample", sample_name="sample", date="20240101"
+        identifier="dev-usr-ipat-sample",
+        sample_name="sample",
+        date="20240101",
+        id_separator="-",
     )
 
 
@@ -80,7 +83,10 @@ def test_add_item_to_record_saves_it(tmp_path, record_manager):
     file_path.write_text("fake content")
 
     record = LocalRecord(
-        identifier="dev-usr-ipat-samplex", sample_name="sampleX", date="20240101"
+        identifier="dev-usr-ipat-samplex",
+        sample_name="sampleX",
+        date="20240101",
+        id_separator="-",
     )
     with patch(
         "dpost.application.records.record_manager.save_persisted_records"
@@ -97,7 +103,7 @@ def test_remove_item_from_record_persists_state(tmp_path, record_manager):
     file_path = tmp_path / "f1.txt"
     file_path.write_text("faux")
 
-    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record = LocalRecord(identifier="dev-usr-ipat-samplex", id_separator="-")
     record.files_uploaded = {str(file_path): False, "f2.txt": False}
     record_manager._persist_records_dict = {record.identifier: record}
 
@@ -116,7 +122,7 @@ def test_remove_item_from_record_clears_force_flag(tmp_path, record_manager):
     file_path.write_text("faux")
 
     resolved = str(file_path.resolve())
-    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record = LocalRecord(identifier="dev-usr-ipat-samplex", id_separator="-")
     record.files_uploaded = {resolved: False, "f2.txt": False}
     record.files_require_force = {resolved}
     record_manager._persist_records_dict = {record.identifier: record}
@@ -144,7 +150,7 @@ def test_remove_item_from_record_removes_directory_tracked_children(
 
     normalized_dir = str(record_dir.resolve())
     normalized_child = str(child.resolve())
-    record = LocalRecord(identifier="dev-usr-ipat-samplex")
+    record = LocalRecord(identifier="dev-usr-ipat-samplex", id_separator="-")
     record.files_uploaded = {normalized_dir: False, normalized_child: False}
     record_manager._persist_records_dict = {record.identifier: record}
 
@@ -159,7 +165,7 @@ def test_remove_item_from_record_removes_directory_tracked_children(
 
 
 def test_get_record_by_id_case_insensitive(record_manager):
-    record = LocalRecord(identifier="rem-usr-ipat-sampleZ")
+    record = LocalRecord(identifier="rem-usr-ipat-sampleZ", id_separator="-")
     record_manager._persist_records_dict = {"rem-usr-ipat-samplez": record}
     assert record_manager.get_record_by_id("REM-usr-IPAT-SampleZ") == record
 
@@ -172,7 +178,7 @@ def test_get_record_by_id_case_insensitive(record_manager):
     ],
 )
 def test_all_records_uploaded(record_manager, uploaded_map, expected):
-    record = LocalRecord(identifier="r1")
+    record = LocalRecord(identifier="r1", id_separator="-")
     record.files_uploaded = uploaded_map
     record_manager._persist_records_dict = {record.identifier: record}
 
@@ -180,7 +186,7 @@ def test_all_records_uploaded(record_manager, uploaded_map, expected):
 
 
 def test_sync_records_to_database_skips_non_ipat(record_manager):
-    record = LocalRecord(identifier="dev-usr-other-sample")
+    record = LocalRecord(identifier="dev-usr-other-sample", id_separator="-")
     record.files_uploaded = {"f": False}
     record_manager._persist_records_dict = {"r": record}
 
@@ -190,7 +196,7 @@ def test_sync_records_to_database_skips_non_ipat(record_manager):
 
 
 def test_sync_records_to_database_uploads_ipat(record_manager):
-    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record = LocalRecord(identifier="dev-usr-ipat-sample", id_separator="-")
     record.files_uploaded = {"f": False}
     record_manager._persist_records_dict = {record.identifier: record}
 
@@ -203,7 +209,7 @@ def test_sync_records_to_database_uploads_ipat(record_manager):
 
 
 def test_sync_records_to_database_skips_already_uploaded_ipat_record(record_manager):
-    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record = LocalRecord(identifier="dev-usr-ipat-sample", id_separator="-")
     record.files_uploaded = {"f": True}
     record_manager._persist_records_dict = {record.identifier: record}
 
@@ -215,7 +221,7 @@ def test_sync_records_to_database_skips_already_uploaded_ipat_record(record_mana
 def test_persist_records_dict_lazy_loads_once(fake_sync, tmp_path):
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
-        return_value={"x": LocalRecord(identifier="x")},
+        return_value={"x": LocalRecord(identifier="x", id_separator="-")},
     ) as mock_load:
         manager = RecordManager(
             sync_manager=fake_sync,
@@ -235,7 +241,7 @@ def test_record_manager_loads_records_with_explicit_persistence_context(
 
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
-        return_value={"x": LocalRecord(identifier="x")},
+        return_value={"x": LocalRecord(identifier="x", id_separator="-")},
     ) as mock_load:
         manager = RecordManager(
             sync_manager=fake_sync,
@@ -257,7 +263,7 @@ def test_record_manager_save_records_uses_explicit_persistence_path(
         persisted_records_path=records_path,
         id_separator="-",
     )
-    manager._persist_records_dict = {"x": LocalRecord(identifier="x")}
+    manager._persist_records_dict = {"x": LocalRecord(identifier="x", id_separator="-")}
 
     with patch(
         "dpost.application.records.record_manager.save_persisted_records"
@@ -271,7 +277,7 @@ def test_record_manager_save_records_uses_explicit_persistence_path(
 
 @pytest.mark.skip(reason="Deactivated pending review of sync record deletion logic.")
 def test_sync_record_deletes_if_no_files_remain(record_manager):
-    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record = LocalRecord(identifier="dev-usr-ipat-sample", id_separator="-")
     record.files_uploaded = {"dummy_path": False}
     record_manager._persist_records_dict = {"dev-usr-ipat-sample": record}
     record_manager.sync.sync_record_to_database = MagicMock(return_value=False)
@@ -287,8 +293,8 @@ def test_sync_record_deletes_if_no_files_remain(record_manager):
 
 def test_get_num_records_counts_loaded(record_manager):
     record_manager._persist_records_dict = {
-        "r1": LocalRecord(identifier="r1"),
-        "r2": LocalRecord(identifier="r2"),
+        "r1": LocalRecord(identifier="r1", id_separator="-"),
+        "r2": LocalRecord(identifier="r2", id_separator="-"),
     }
 
     assert record_manager.get_num_records() == 2
@@ -297,7 +303,7 @@ def test_get_num_records_counts_loaded(record_manager):
 def test_reload_records_refreshes_cache(fake_sync, tmp_path):
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
-        return_value={"initial": LocalRecord(identifier="initial")},
+        return_value={"initial": LocalRecord(identifier="initial", id_separator="-")},
     ):
         manager = RecordManager(
             sync_manager=fake_sync,
@@ -308,7 +314,7 @@ def test_reload_records_refreshes_cache(fake_sync, tmp_path):
 
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
-        return_value={"fresh": LocalRecord(identifier="fresh")},
+        return_value={"fresh": LocalRecord(identifier="fresh", id_separator="-")},
     ):
         manager.reload_records()
 
@@ -326,7 +332,7 @@ def test_reload_records_uses_explicit_separator_and_path(fake_sync, tmp_path):
 
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
-        return_value={"fresh": LocalRecord(identifier="fresh")},
+        return_value={"fresh": LocalRecord(identifier="fresh", id_separator="-")},
     ) as mock_load:
         manager.reload_records()
 

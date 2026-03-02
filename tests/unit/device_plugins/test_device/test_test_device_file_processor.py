@@ -48,7 +48,7 @@ def test_test_device_processor_moves_file_and_returns_output(tmp_path: Path) -> 
 def test_test_device_processor_reports_appendability_and_matching_rules() -> None:
     """Accept appends and match only supported reference extensions."""
     processor = ReferenceTestFileProcessor(build_config())
-    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record = LocalRecord(identifier="dev-usr-ipat-sample", id_separator="-")
 
     assert processor.is_appendable(record, "usr-ipat-sample", ".txt") is True
     assert processor.get_device_id() == "test_device"

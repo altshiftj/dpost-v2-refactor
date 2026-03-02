@@ -40,7 +40,7 @@ def test_preprocessing_result_constructors_cover_prefix_and_extension_helpers() 
 def test_file_processor_defaults_cover_probe_and_modified_event_behavior() -> None:
     """Exercise default preprocessing, appendability, probe, and modified-event hooks."""
     processor = _MinimalProcessor(device_config=object())
-    record = LocalRecord(identifier="dev-usr-ipat-sample")
+    record = LocalRecord(identifier="dev-usr-ipat-sample", id_separator="-")
 
     preprocessing = processor.device_specific_preprocessing("C:/raw/input.dat")
     probe = processor.probe_file("C:/raw/input.dat")
