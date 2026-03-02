@@ -17,8 +17,7 @@ if str(SRC_ROOT) not in sys.path:
 # Also add project root for any relative test package imports
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-from dpost.application.config import init_config, reset_service
-from dpost.application.config.context import current
+from dpost.application.config.context import current, init_config, reset_service
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from dpost.device_plugins.test_device.settings import (
     build_config as build_device_config,

@@ -11,11 +11,13 @@ from dpost.application.config import (
     PCConfig,
     SessionSettings,
     WatcherSettings,
+)
+from dpost.application.config.context import (
     activate_device,
+    current,
     init_config,
     reset_service,
 )
-from dpost.application.config.context import current
 
 
 @pytest.fixture

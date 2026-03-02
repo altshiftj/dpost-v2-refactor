@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from dpost.application.config import init_config, reset_service
+from dpost.application.config.context import init_config, reset_service
 from dpost.application.naming.policy import generate_file_id, generate_record_id
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.stability_tracker import (

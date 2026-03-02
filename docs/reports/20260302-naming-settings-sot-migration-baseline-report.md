@@ -410,6 +410,27 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 20 Config Lifecycle Helper Re-Export Removal (2026-03-02)
+- Intended actions:
+  - remove package-level config re-exports for `init_config`,
+    `reset_service`, and `activate_device`.
+- Observed outcome:
+  - `dpost.application.config` no longer re-exports lifecycle/context helper
+    symbols;
+  - runtime-adapter and test call sites now import lifecycle helpers from
+    `dpost.application.config.context` explicitly;
+  - added namespace guard coverage for lifecycle helper export boundaries.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py::test_config_package_namespace_omits_context_lifecycle_helpers` -> failed (`init_config` still exported from package)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/integration/test_settings_integration.py` -> `29 passed`
+    - `python -m pytest -q tests/unit/infrastructure/runtime/test_startup_dependencies.py` -> `6 passed`
+    - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -423,4 +444,5 @@
 - Section 17 LocalRecord empty-separator fallback cleanup is complete.
 - Section 18 UTM flush runtime-context contract cleanup is complete.
 - Section 19 package-level config context export narrowing is complete.
+- Section 20 config lifecycle helper re-export cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

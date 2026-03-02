@@ -1,6 +1,5 @@
-"""dpost-owned configuration schemas, services, and runtime helpers."""
+"""dpost-owned configuration schemas and runtime config service contracts."""
 
-from dpost.application.config.context import activate_device, init_config, reset_service
 from dpost.application.config.schema import (
     DeviceConfig,
     DeviceFileSelectors,
@@ -31,7 +30,4 @@ __all__ = [
     "SessionSettings",
     "StabilityOverride",
     "WatcherSettings",
-    "activate_device",
-    "init_config",
-    "reset_service",
 ]

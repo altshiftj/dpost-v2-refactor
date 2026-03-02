@@ -20,3 +20,10 @@ def test_config_package_namespace_omits_ambient_service_helpers() -> None:
     assert not hasattr(config_api, "current")
     assert not hasattr(config_api, "get_service")
     assert not hasattr(config_api, "set_service")
+
+
+def test_config_package_namespace_omits_context_lifecycle_helpers() -> None:
+    """Keep config lifecycle/context helpers scoped to config.context module."""
+    assert not hasattr(config_api, "init_config")
+    assert not hasattr(config_api, "reset_service")
+    assert not hasattr(config_api, "activate_device")

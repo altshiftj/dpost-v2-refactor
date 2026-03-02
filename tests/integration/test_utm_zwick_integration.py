@@ -6,7 +6,7 @@ from typing import Any, cast
 
 import pytest
 
-from dpost.application.config import init_config, reset_service
+from dpost.application.config.context import init_config, reset_service
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.domain.records.local_record import LocalRecord
 from dpost.device_plugins.utm_zwick.settings import build_config as build_utm_config

@@ -537,6 +537,36 @@
 
 ---
 
+## 20. Remove Package Re-Exports for Config Lifecycle Helpers
+- Why this matters: package-level re-exports of `init_config`,
+  `reset_service`, and `activate_device` keep ambient lifecycle helpers too
+  close to general config imports.
+
+### Checklist
+- [x] Remove package-level re-exports of `init_config`, `reset_service`, and
+      `activate_device` from `dpost.application.config`.
+- [x] Rewire call sites to import lifecycle helpers explicitly from
+      `dpost.application.config.context`.
+- [x] Add namespace guard coverage so lifecycle helper re-exports are not
+      reintroduced.
+
+### Completion Notes
+- How it was done:
+  - removed lifecycle helper re-exports from
+    `src/dpost/application/config/__init__.py`;
+  - updated runtime-adapter and test call sites to import lifecycle/context
+    helpers from `dpost.application.config.context`;
+  - added focused namespace guard test asserting package-level config omits
+    lifecycle helper symbols.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py::test_config_package_namespace_omits_context_lifecycle_helpers` -> failed (`init_config` remained exported at package level)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/config/test_context.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/integration/test_settings_integration.py` -> `29 passed`
+    - `python -m pytest -q tests/unit/infrastructure/runtime/test_startup_dependencies.py` -> `6 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -600,5 +630,10 @@
   - checkpoint rerun after section 19:
     - `python -m pytest -q tests/unit` -> `759 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `759 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 20:
+    - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

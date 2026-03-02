@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Iterable
 
-from dpost.application.config import ConfigService, DeviceConfig, init_config
+from dpost.application.config import ConfigService, DeviceConfig
+from dpost.application.config.context import init_config
 from dpost.application.runtime import DeviceWatchdogApp
 from dpost.infrastructure.runtime_adapters.desktop_ui import get_desktop_ui_class
 from dpost.infrastructure.runtime_adapters.ui_adapters import (

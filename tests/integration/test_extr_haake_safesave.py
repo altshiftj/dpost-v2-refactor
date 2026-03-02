@@ -9,7 +9,7 @@ from typing import Any, cast
 
 import pytest
 
-from dpost.application.config import init_config, reset_service
+from dpost.application.config.context import init_config, reset_service
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.runtime.device_watchdog_app import DeviceWatchdogApp
 from dpost.device_plugins.extr_haake.settings import (

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from dpost.application.config import activate_device
+from dpost.application.config.context import activate_device
 from dpost.application.naming.policy import generate_file_id, generate_record_id
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.file_processor_abstract import ProcessingOutput
