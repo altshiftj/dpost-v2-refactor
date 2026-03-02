@@ -287,8 +287,8 @@ def test_upload_record_files_returns_false_when_all_missing(sync_mgr):
     assert record.files_require_force == set()
 
 
-def test_get_db_user_uses_inferred_separator_from_identifier(sync_mgr):
-    record = LocalRecord(identifier="dev:alice:ipat:sample", id_separator="-")
+def test_get_db_user_uses_record_separator_without_identifier_inference(sync_mgr):
+    record = LocalRecord(identifier="dev:alice:ipat:sample", id_separator=":")
     dummy_mgr = DummyKadiManager()
 
     sync_mgr._get_db_user_from_local_record(dummy_mgr, record)

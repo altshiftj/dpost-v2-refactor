@@ -37,12 +37,6 @@ _PROBENAME_KEY = "probenname"
 _MAX_PREFIX_BYTES = 200_000
 
 
-def _runtime_id_separator() -> str:
-    from dpost.application.config import current
-
-    return current().id_separator
-
-
 def _is_ngb(path: Path) -> bool:
     return path.suffix.lower() == ".ngb"
 
@@ -76,10 +70,12 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         self,
         device_config: DeviceConfig,
         id_separator: str | None = None,
+        exception_dir: str | None = None,
     ) -> None:
         super().__init__(device_config)
         self.device_config = device_config
         self._id_separator = id_separator
+        self._exception_dir = exception_dir
         self._state: Dict[str, _FolderState] = {}
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._ngb_to_stage: Dict[str, str] = {}
@@ -89,10 +85,16 @@ class FileProcessorPSAHoriba(FileProcessorABS):
         *,
         id_separator: str | None = None,
         filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
     ) -> None:
         """Capture runtime separator when constructed without explicit override."""
         if self._id_separator is None and id_separator is not None:
             self._id_separator = id_separator
+        if self._exception_dir is None and exception_dir is not None:
+            self._exception_dir = exception_dir
 
     def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         item = Path(path)
@@ -407,10 +409,15 @@ class FileProcessorPSAHoriba(FileProcessorABS):
     def _resolve_id_separator(self) -> str:
         if self._id_separator is not None:
             return self._id_separator
-        try:
-            return _runtime_id_separator()
-        except RuntimeError:
-            return "-"
+        raise RuntimeError("PSA id_separator runtime context is not configured")
+
+    def _safe_move_to_exception(self, path: Path) -> None:
+        exception_dir = self._exception_dir or str(path.parent)
+        safe_move_to_exception(
+            str(path),
+            exception_dir=exception_dir,
+            id_separator=self._resolve_id_separator(),
+        )
 
     @staticmethod
     def _zip_ngb(src: Path, dest: Path, arcname: str) -> None:
@@ -492,7 +499,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                             pending.path,
                         )
                         try:
-                            safe_move_to_exception(str(pending.path))
+                            self._safe_move_to_exception(pending.path)
                         except Exception:  # noqa: BLE001
                             logger.exception(
                                 "PSA: failed to move %s to exception", pending.path
@@ -516,7 +523,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                                 reason,
                             )
                             try:
-                                safe_move_to_exception(str(path))
+                                self._safe_move_to_exception(path)
                             except Exception:  # noqa: BLE001
                                 logger.exception(
                                     "PSA: failed to move %s to exception", path
@@ -534,7 +541,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                         sentinel.csv_path,
                     )
                     try:
-                        safe_move_to_exception(str(sentinel.csv_path))
+                        self._safe_move_to_exception(sentinel.csv_path)
                     except Exception:  # noqa: BLE001
                         logger.exception(
                             "PSA: failed to move %s to exception", sentinel.csv_path
@@ -567,7 +574,7 @@ class FileProcessorPSAHoriba(FileProcessorABS):
                         "PSA: moving stale staging folder '%s' to exception", child
                     )
                     try:
-                        safe_move_to_exception(str(child))
+                        self._safe_move_to_exception(child)
                     except Exception:  # noqa: BLE001
                         logger.exception(
                             "PSA: failed to move stale staging folder %s to exception",

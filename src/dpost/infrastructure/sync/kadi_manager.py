@@ -4,16 +4,16 @@ import os
 from dataclasses import dataclass
 from typing import Callable, Optional
 
+from kadi_apy import KadiManager
+from kadi_apy.lib.resources.collections import Collection as KadiCollection
+from kadi_apy.lib.resources.groups import Group as KadiGroup
+from kadi_apy.lib.resources.records import Record as KadiRecord
+from kadi_apy.lib.resources.users import User as KadiUser
+
 from dpost.application.interactions import ErrorMessages
 from dpost.application.ports import UserInteractionPort
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
-from kadi_apy import KadiManager
-from kadi_apy.lib.resources.records import Record as KadiRecord
-from kadi_apy.lib.resources.groups import Group as KadiGroup
-from kadi_apy.lib.resources.users import User as KadiUser
-from kadi_apy.lib.resources.collections import Collection as KadiCollection
-
 
 logger = setup_logger(__name__)
 
@@ -35,8 +35,6 @@ class DataSyncContext:
 class KadiSyncManager:
     """Synchronise `LocalRecord` instances with the Kadi database."""
 
-    _DEFAULT_ID_SEPARATOR = "-"
-    _KNOWN_ID_SEPARATORS: tuple[str, ...] = ("-", ":", "|")
     _DUPLICATE_MEMBERSHIP_MARKERS: tuple[str, ...] = (
         "already",
         "duplicate",
@@ -53,7 +51,7 @@ class KadiSyncManager:
         """Initialise the sync manager with UI-agnostic collaborators."""
         self.interactions = interactions
         self._id_separator_resolver = (
-            id_separator_resolver or self._infer_id_separator_from_record
+            id_separator_resolver or self._separator_from_record
         )
         factory = db_manager_factory or KadiManager
         self.db_manager = factory()
@@ -358,23 +356,17 @@ class KadiSyncManager:
 
         try:
             separator = self._id_separator_resolver(local_record)
-        except Exception:
-            separator = None
-        if isinstance(separator, str) and separator:
-            return separator
-        return self._DEFAULT_ID_SEPARATOR
+        except Exception as exc:
+            raise ValueError(
+                f"id_separator resolver failed for record '{local_record.identifier}'"
+            ) from exc
+        if not isinstance(separator, str) or not separator:
+            raise ValueError(
+                f"id_separator resolver returned no separator for record '{local_record.identifier}'"
+            )
+        return separator
 
-    @classmethod
-    def _infer_id_separator_from_record(cls, local_record: LocalRecord) -> str:
-        """Infer separator from record preference and identifier shape."""
-
-        preferred = getattr(local_record, "id_separator", cls._DEFAULT_ID_SEPARATOR)
-        identifier = str(getattr(local_record, "identifier", ""))
-        if isinstance(preferred, str) and preferred and identifier.count(preferred) >= 3:
-            return preferred
-        for candidate in cls._KNOWN_ID_SEPARATORS:
-            if candidate == preferred:
-                continue
-            if identifier.count(candidate) >= 3:
-                return candidate
-        return preferred if isinstance(preferred, str) and preferred else cls._DEFAULT_ID_SEPARATOR
+    @staticmethod
+    def _separator_from_record(local_record: LocalRecord) -> str | None:
+        """Read separator directly from the LocalRecord explicit naming context."""
+        return getattr(local_record, "id_separator", None)

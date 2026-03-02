@@ -12,6 +12,36 @@ from dpost.device_plugins.utm_zwick.file_processor import (
 from dpost.device_plugins.utm_zwick.settings import build_config
 
 
+def test_configure_runtime_context_sets_missing_storage_fields_only() -> None:
+    """Populate missing runtime naming/storage context and preserve existing values."""
+    processor = FileProcessorUTMZwick(build_config())
+    current_device = object()
+
+    processor.configure_runtime_context(
+        id_separator="__",
+        dest_dir="C:/records",
+        current_device=current_device,
+    )
+
+    assert processor._id_separator == "__"  # noqa: SLF001
+    assert processor._dest_dir == "C:/records"  # noqa: SLF001
+    assert processor._current_device is current_device  # noqa: SLF001
+
+    existing_device = object()
+    processor._id_separator = "-"  # noqa: SLF001
+    processor._dest_dir = "C:/existing"  # noqa: SLF001
+    processor._current_device = existing_device  # noqa: SLF001
+    processor.configure_runtime_context(
+        id_separator="++",
+        dest_dir="C:/ignored",
+        current_device=object(),
+    )
+
+    assert processor._id_separator == "-"  # noqa: SLF001
+    assert processor._dest_dir == "C:/existing"  # noqa: SLF001
+    assert processor._current_device is existing_device  # noqa: SLF001
+
+
 def test_preprocessing_returns_ttl_ready_zs2_path(
     tmp_path: Path,
     monkeypatch,

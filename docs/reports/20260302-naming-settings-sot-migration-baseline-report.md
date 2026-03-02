@@ -118,3 +118,36 @@
   - `python -m pytest -q tests/unit/application/naming/test_policy.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py` -> `65 passed`
   - `python -m pytest -q tests/unit/application/records/test_record_manager.py tests/unit/application/processing/test_routing_helpers.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `51 passed, 1 skipped`
   - `python -m ruff check ...` (changed files in this slice) -> pass
+
+## Progress Update: Sections 3-5 Completed (2026-03-02)
+- Intended actions:
+  - remove ambient storage defaults from `filesystem_utils.py`,
+  - tighten Kadi separator policy to explicit resolver behavior,
+  - remove Kinexus/PSA runtime separator fallbacks.
+- Observed outcome:
+  - storage helpers now require explicit context for record/rename/exception
+    paths and persisted-record JSON paths (`id_separator`, `dest_dir`,
+    `base_dir`, `json_path`) with fail-fast validation;
+  - runtime/composition boundaries now inject explicit naming + storage context
+    (`id_separator`, `filename_pattern`, `dest_dir`, `rename_dir`,
+    `exception_dir`, `current_device`) into processor runtime hooks;
+  - Kadi sync no longer infers separator from record identifier patterns and
+    now enforces explicit/valid separator resolver outputs;
+  - Kinexus/PSA processor fallback separator logic was retired; separator usage
+    now depends on explicit constructor/runtime injection;
+  - DSV/UTM runtime context hooks were aligned to explicit runtime context
+    propagation and covered in branch tests.
+- Validation:
+  - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> `91 passed`
+  - `python -m pytest -q tests/unit/application/naming/test_policy.py tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/sync/test_sync_kadi_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_routing_helpers.py tests/unit/application/records/test_record_manager.py` -> `167 passed, 1 skipped`
+  - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `729 passed, 1 skipped, 1 warning`, `TOTAL 5391 stmts, 0 miss, 100%`
+  - `python -m ruff check .` -> `All checks passed!`
+  - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
+## Final Status for This Wave
+- Sections 1-5 of the migration checklist are complete.
+- Section 6 (runtime naming-overload file/folder renames) remains explicitly
+  deferred as planned in the RPC.
+- Naming policy ownership remains centralized in `NamingSettings` and active
+  runtime/storage/sync/plugin paths no longer rely on ambient separator/pattern
+  fallback seams targeted by this wave.

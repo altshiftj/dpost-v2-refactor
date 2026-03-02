@@ -69,7 +69,7 @@ def test_purge_orphans_moves_files(tmp_path, monkeypatch):
     moved: list[str] = []
     monkeypatch.setattr(
         f"{module_path}.move_to_exception_folder",
-        lambda path: moved.append(path),
+        lambda path, **_kwargs: moved.append(path),
     )
 
     watch_dir = tmp_path / "incoming"

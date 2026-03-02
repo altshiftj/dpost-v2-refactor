@@ -92,7 +92,7 @@ def bootstrap(
     )
 
     config_service = _build_config_service(resolved.pc_name, resolved.device_names)
-    init_dirs()
+    init_dirs(config_service)
 
     start_http_server(resolved.prometheus_port)
     logger.info(

@@ -184,7 +184,14 @@ def test_add_item_to_record_force_paths_marked(manager_components, config_servic
     assert record is not None
 
     device_abbr = device.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     force_path = Path(record_path) / f"{file_id}_cc.csv"
     meas_path = Path(record_path) / f"{file_id}_meas.txt"

@@ -79,7 +79,14 @@ def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, m
         )
 
     device_abbr = device.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = str(Path(record_path) / f"{file_id}-cc.csv")
     agg_path = str(Path(record_path) / f"{file_id}-results.csv")
@@ -153,7 +160,14 @@ def test_force_paths_relative_to_record_dir_are_forced(config_service, tmp_setti
         )
 
     device_abbr = device.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = str(Path(record_path) / f"{file_id}-cc.csv")
     agg_path = str(Path(record_path) / f"{file_id}-results.csv")

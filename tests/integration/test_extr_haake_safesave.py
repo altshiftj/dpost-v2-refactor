@@ -56,7 +56,7 @@ def app_with_extr_haake(tmp_path):
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
-    init_dirs()
+    init_dirs([str(path) for path in service.current.directory_list])
 
     # Use stub observer so we can drive events ourselves
     observer_stub = FakeObserver()

@@ -123,7 +123,11 @@ def test_bootstrap_starts_services(monkeypatch):
     calls = {"prom": None, "obs": None, "init_dirs": 0}
 
     monkeypatch.setattr(bootstrap_mod, "_build_config_service", lambda *_: "config")
-    monkeypatch.setattr(bootstrap_mod, "init_dirs", lambda: calls.__setitem__("init_dirs", calls["init_dirs"] + 1))
+    monkeypatch.setattr(
+        bootstrap_mod,
+        "init_dirs",
+        lambda _config: calls.__setitem__("init_dirs", calls["init_dirs"] + 1),
+    )
     monkeypatch.setattr(bootstrap_mod, "start_http_server", lambda port: calls.__setitem__("prom", port))
     monkeypatch.setattr(bootstrap_mod, "start_observability_server", lambda port: calls.__setitem__("obs", port))
     monkeypatch.setattr(

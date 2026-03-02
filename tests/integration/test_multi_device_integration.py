@@ -16,7 +16,7 @@ from tests.helpers.task_runner import drain_scheduled_tasks
 @pytest.fixture
 def processing_components(config_service):
     """Return a tuple of (FileProcessManager, HeadlessUI) wired to the test config."""
-    init_dirs()
+    init_dirs([str(path) for path in config_service.current.directory_list])
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
     session = cast(Any, FakeSessionManager(interactions=ui, scheduler=ui))

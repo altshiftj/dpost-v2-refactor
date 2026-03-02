@@ -11,7 +11,7 @@ from dpost.device_plugins.psa_horiba.settings import build_config
 
 @pytest.fixture
 def processor() -> FileProcessorPSAHoriba:
-    return FileProcessorPSAHoriba(build_config())
+    return FileProcessorPSAHoriba(build_config(), id_separator="-")
 
 
 def test_sentinel_flush_creates_numbered_artifacts(tmp_path, processor, config_service):

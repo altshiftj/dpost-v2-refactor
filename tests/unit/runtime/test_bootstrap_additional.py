@@ -106,7 +106,7 @@ def test_bootstrap_warns_when_observability_server_is_unavailable(monkeypatch) -
     app = object()
 
     monkeypatch.setattr(bootstrap_mod, "_build_config_service", lambda *_: "config")
-    monkeypatch.setattr(bootstrap_mod, "init_dirs", lambda: None)
+    monkeypatch.setattr(bootstrap_mod, "init_dirs", lambda _config: None)
     monkeypatch.setattr(bootstrap_mod, "start_http_server", lambda _port: None)
     monkeypatch.setattr(bootstrap_mod, "start_observability_server", None)
     monkeypatch.setattr(

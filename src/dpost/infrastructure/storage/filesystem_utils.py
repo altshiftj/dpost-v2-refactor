@@ -16,46 +16,12 @@ import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
-from dpost.application.config import current
 from dpost.infrastructure.logging import setup_logger
 
 if TYPE_CHECKING:
     from dpost.domain.records.local_record import LocalRecord
 
 logger = setup_logger(__name__)
-
-
-def _active_config():
-    return current()
-
-
-def _directory_list() -> tuple[Path, ...]:
-    return _active_config().directory_list
-
-
-def _dest_dir() -> Path:
-    return _active_config().paths.dest_dir
-
-
-def _rename_dir() -> Path:
-    return _active_config().paths.rename_dir
-
-
-def _exceptions_dir() -> Path:
-    return _active_config().paths.exceptions_dir
-
-
-def _daily_records_path() -> Path:
-    return _active_config().paths.daily_records_json
-
-
-def _id_sep() -> str:
-    return _active_config().id_separator
-
-
-def _current_device():
-    return _active_config().device
-
 
 # -------------------------------
 # PATH MANAGEMENT
@@ -64,11 +30,9 @@ def _current_device():
 
 def init_dirs(directories: Optional[list[str]] = None) -> None:
     """Ensure required directory structure exists."""
-
-    if directories is not None:
-        target_dirs = [Path(p) for p in directories]
-    else:
-        target_dirs = [Path(p) for p in _directory_list()]
+    if directories is None:
+        raise ValueError("directories must be provided explicitly")
+    target_dirs = [Path(p) for p in directories]
 
     for dir_path in target_dirs:
         dir_path.mkdir(parents=True, exist_ok=True)
@@ -83,8 +47,11 @@ def get_record_path(
     current_device=None,
 ) -> str:
     """Compute (and create) the destination record folder for a prefix."""
-
-    sep = id_separator if id_separator is not None else _id_sep()
+    if not id_separator:
+        raise ValueError("id_separator must be provided explicitly")
+    if dest_dir is None:
+        raise ValueError("dest_dir must be provided explicitly")
+    sep = id_separator
     parts = filename_prefix.split(sep)
     if len(parts) < 3:
         raise ValueError(
@@ -94,13 +61,13 @@ def get_record_path(
     sample_id = sep.join(parts[2:])
 
     if device_abbr is None:
-        device = current_device if current_device is not None else _current_device()
+        device = current_device
         if device and device.metadata.device_abbr:
             device_abbr = device.metadata.device_abbr
     if device_abbr:
         sample_id = f"{device_abbr}-{sample_id}"
 
-    root = Path(dest_dir) if dest_dir is not None else _dest_dir()
+    root = Path(dest_dir)
     record_path = root / institute.upper() / user_id.upper() / sample_id
     record_path.mkdir(parents=True, exist_ok=True)
     return str(record_path)
@@ -118,7 +85,7 @@ def get_unique_filename(
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
 
-    sep = id_separator if id_separator is not None else _id_sep()
+    sep = id_separator if id_separator else "-"
     counter = 1
     for existing in dir_path.iterdir():
         if existing.is_file() and existing.suffix == extension:
@@ -143,8 +110,9 @@ def get_rename_path(
     id_separator: str | None = None,
 ) -> str:
     """Return a unique path under the rename folder for the given name."""
-
-    base = Path(base_dir) if base_dir is not None else _rename_dir()
+    if base_dir is None:
+        raise ValueError("base_dir must be provided explicitly")
+    base = Path(base_dir)
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(
         str(base),
@@ -161,8 +129,9 @@ def get_exception_path(
     id_separator: str | None = None,
 ) -> str:
     """Return a unique path under the exceptions folder for the given name."""
-
-    base = Path(base_dir) if base_dir is not None else _exceptions_dir()
+    if base_dir is None:
+        raise ValueError("base_dir must be provided explicitly")
+    base = Path(base_dir)
     filename_prefix, extension = Path(name).stem, Path(name).suffix
     return get_unique_filename(
         str(base),
@@ -265,6 +234,8 @@ def move_to_exception_folder(
     id_separator: str | None = None,
 ) -> None:
     """Move an item to the exceptions folder (unique path)."""
+    if base_dir is None:
+        raise ValueError("base_dir must be provided explicitly")
     if filename_prefix is None:
         filename_prefix = Path(src_path).stem
     if extension is None:
@@ -292,6 +263,8 @@ def move_to_rename_folder(
     id_separator: str | None = None,
 ) -> None:
     """Move an item to the rename folder (unique path)."""
+    if base_dir is None:
+        raise ValueError("base_dir must be provided explicitly")
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
@@ -316,6 +289,10 @@ def move_to_record_folder(
     current_device=None,
 ) -> None:
     """Move an item to the computed record folder (unique filename)."""
+    if not id_separator:
+        raise ValueError("id_separator must be provided explicitly")
+    if dest_dir is None:
+        raise ValueError("dest_dir must be provided explicitly")
     _move_to_folder(
         src=src,
         filename_prefix=filename_prefix,
@@ -340,14 +317,16 @@ def load_persisted_records(
 
     from dpost.domain.records.local_record import LocalRecord
 
-    path = Path(json_path) if json_path is not None else _daily_records_path()
+    if json_path is None:
+        raise ValueError("json_path must be provided explicitly")
+    path = Path(json_path)
     if not path.exists():
         return {}
     try:
         raw_data = path.read_text(encoding="utf-8")
         records = json.loads(raw_data)
         logger.debug(f"JSON data loaded from '{path}'.")
-        effective_sep = id_separator if id_separator is not None else _id_sep()
+        effective_sep = id_separator if id_separator else "-"
         return {
             id: LocalRecord.from_dict(record_data, id_separator=effective_sep)
             for id, record_data in records.items()
@@ -363,8 +342,9 @@ def save_persisted_records(
     json_path: str | Path | None = None,
 ):
     """Serialize LocalRecord mapping to JSON for day-level persistence."""
-
-    path = Path(json_path) if json_path is not None else _daily_records_path()
+    if json_path is None:
+        raise ValueError("json_path must be provided explicitly")
+    path = Path(json_path)
     try:
         serialized = json.dumps(
             {key: record.to_dict() for key, record in daily_records_dict.items()},

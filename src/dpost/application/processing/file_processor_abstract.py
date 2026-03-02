@@ -155,6 +155,10 @@ class FileProcessorABS(ABC):
         *,
         id_separator: str | None = None,
         filename_pattern: Pattern[str] | None = None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
     ) -> None:
         """Optionally apply runtime wiring context after processor construction.
 

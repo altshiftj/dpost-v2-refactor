@@ -6,13 +6,13 @@ from typing import Iterable
 
 from dpost.application.config import ConfigService, DeviceConfig, init_config
 from dpost.application.runtime import DeviceWatchdogApp
-from dpost.infrastructure.storage.filesystem_utils import init_dirs
-from dpost.infrastructure.sync.kadi import KadiSyncAdapter
 from dpost.infrastructure.runtime.desktop_ui import get_desktop_ui_class
 from dpost.infrastructure.runtime.ui_adapters import (
     UiInteractionAdapter,
     UiTaskScheduler,
 )
+from dpost.infrastructure.storage.filesystem_utils import init_dirs
+from dpost.infrastructure.sync.kadi import KadiSyncAdapter
 from dpost.plugins.loading import load_device_plugin, load_pc_plugin
 
 default_ui_factory = get_desktop_ui_class()
@@ -25,9 +25,9 @@ def default_sync_manager_factory(interactions: object) -> KadiSyncAdapter:
     return sync_manager
 
 
-def init_runtime_dirs() -> None:
-    """Initialise runtime directory structure for the active config service."""
-    init_dirs()
+def init_runtime_dirs(config_service: ConfigService) -> None:
+    """Initialise runtime directory structure for the provided config service."""
+    init_dirs([str(path) for path in config_service.current.directory_list])
 
 
 def build_config_service(pc_name: str, device_names: Iterable[str]) -> ConfigService:

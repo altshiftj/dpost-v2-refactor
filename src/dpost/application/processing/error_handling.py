@@ -25,12 +25,14 @@ def safe_move_to_exception(
     try:
         filename_prefix: str = prefix if prefix is not None else ""
         file_extension: str = extension if extension is not None else ""
+        resolved_exception_dir = exception_dir or str(Path(path_like).parent)
+        resolved_id_separator = id_separator or "-"
         move_to_exception_folder(
             path_like,
             filename_prefix,
             file_extension,
-            base_dir=exception_dir,
-            id_separator=id_separator,
+            base_dir=resolved_exception_dir,
+            id_separator=resolved_id_separator,
         )
     except FileNotFoundError:
         logger.debug("Path already removed while moving to exceptions: %s", path_like)

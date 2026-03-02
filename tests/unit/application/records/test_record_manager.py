@@ -15,7 +15,11 @@ def record_manager(fake_sync, tmp_settings):
         "dpost.application.records.record_manager.load_persisted_records",
         return_value={},
     ):
-        return RecordManager(sync_manager=fake_sync)
+        return RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=tmp_settings.DAILY_RECORDS_JSON,
+            id_separator="-",
+        )
 
 
 @pytest.fixture
@@ -41,13 +45,20 @@ def test_create_record_generates_proper_id_and_sample(record_manager):
     assert record.identifier in record_manager.get_all_records()
 
 
-def test_create_record_forwards_explicit_separator_to_generate_record_id(fake_sync) -> None:
+def test_create_record_forwards_explicit_separator_to_generate_record_id(
+    fake_sync,
+    tmp_path,
+) -> None:
     """Record creation should forward constructor separator to naming helper."""
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
         return_value={},
     ):
-        manager = RecordManager(sync_manager=fake_sync, id_separator="__")
+        manager = RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=tmp_path / "records.json",
+            id_separator="__",
+        )
 
     with patch(
         "dpost.application.records.record_manager.generate_record_id",
@@ -195,12 +206,16 @@ def test_sync_records_to_database_skips_already_uploaded_ipat_record(record_mana
         mock_sync.assert_not_called()
 
 
-def test_persist_records_dict_lazy_loads_once(fake_sync):
+def test_persist_records_dict_lazy_loads_once(fake_sync, tmp_path):
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
         return_value={"x": LocalRecord(identifier="x")},
     ) as mock_load:
-        manager = RecordManager(sync_manager=fake_sync)
+        manager = RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=tmp_path / "records.json",
+            id_separator="-",
+        )
         _ = manager.persist_records_dict
         _ = manager.persist_records_dict
         mock_load.assert_called_once()
@@ -263,12 +278,16 @@ def test_get_num_records_counts_loaded(record_manager):
     assert record_manager.get_num_records() == 2
 
 
-def test_reload_records_refreshes_cache(fake_sync):
+def test_reload_records_refreshes_cache(fake_sync, tmp_path):
     with patch(
         "dpost.application.records.record_manager.load_persisted_records",
         return_value={"initial": LocalRecord(identifier="initial")},
     ):
-        manager = RecordManager(sync_manager=fake_sync)
+        manager = RecordManager(
+            sync_manager=fake_sync,
+            persisted_records_path=tmp_path / "records.json",
+            id_separator="-",
+        )
         assert set(manager.persist_records_dict) == {"initial"}
 
     with patch(

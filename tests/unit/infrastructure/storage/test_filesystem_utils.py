@@ -22,29 +22,50 @@ def test_init_dirs_uses_explicit_directory_list(tmp_path: Path):
     assert two.exists()
 
 
+def test_init_dirs_requires_explicit_directory_list() -> None:
+    """Fail fast when directory list is omitted."""
+    with pytest.raises(ValueError, match="directories must be provided explicitly"):
+        filesystem_utils.init_dirs()
+
+
 def test_get_record_path_raises_for_invalid_prefix(monkeypatch: pytest.MonkeyPatch):
     """Raise when prefix does not include user/institute/sample segments."""
-    monkeypatch.setattr(filesystem_utils, "_id_sep", lambda: "-")
-    monkeypatch.setattr(filesystem_utils, "_dest_dir", lambda: Path("C:/tmp"))
-
     with pytest.raises(ValueError, match="does not contain three segments"):
-        filesystem_utils.get_record_path("invalid-prefix")
+        filesystem_utils.get_record_path(
+            "invalid-prefix",
+            id_separator="-",
+            dest_dir=Path("C:/tmp"),
+        )
+
+
+def test_get_record_path_requires_explicit_id_separator(tmp_path: Path) -> None:
+    """Reject record-path requests that omit explicit id-separator context."""
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        filesystem_utils.get_record_path(
+            "mus-ipat-sampleA",
+            dest_dir=tmp_path,
+        )
+
+
+def test_get_record_path_requires_explicit_dest_dir() -> None:
+    """Reject record-path requests that omit explicit destination context."""
+    with pytest.raises(ValueError, match="dest_dir must be provided explicitly"):
+        filesystem_utils.get_record_path(
+            "mus-ipat-sampleA",
+            id_separator="-",
+        )
 
 
 def test_get_record_path_uses_active_device_abbreviation(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ):
-    """Prefix sample folder with active device abbreviation when available."""
-    monkeypatch.setattr(filesystem_utils, "_id_sep", lambda: "-")
-    monkeypatch.setattr(filesystem_utils, "_dest_dir", lambda: tmp_path)
-    monkeypatch.setattr(
-        filesystem_utils,
-        "_current_device",
-        lambda: SimpleNamespace(metadata=SimpleNamespace(device_abbr="SEM")),
+    """Prefix sample folder with explicit runtime device abbreviation when available."""
+    resolved = filesystem_utils.get_record_path(
+        "mus-ipat-sampleA",
+        id_separator="-",
+        dest_dir=tmp_path,
+        current_device=SimpleNamespace(metadata=SimpleNamespace(device_abbr="SEM")),
     )
-
-    resolved = filesystem_utils.get_record_path("mus-ipat-sampleA")
 
     assert Path(resolved).name == "SEM-sampleA"
 
@@ -64,30 +85,6 @@ def test_get_record_path_accepts_explicit_context_without_global_config(tmp_path
     assert resolved_path.parent.name == "MUS"
     assert resolved_path.parent.parent.name == "IPAT"
     assert resolved_path.name == "XRD-sampleA"
-
-
-def test_current_device_returns_active_config_device(monkeypatch: pytest.MonkeyPatch):
-    """Return device from active config helper."""
-    sentinel_device = object()
-    monkeypatch.setattr(
-        filesystem_utils,
-        "_active_config",
-        lambda: SimpleNamespace(device=sentinel_device),
-    )
-
-    assert filesystem_utils._current_device() is sentinel_device  # noqa: SLF001
-
-
-def test_exceptions_dir_returns_active_config_path(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Return exceptions directory from active config wrapper."""
-    sentinel_path = Path("C:/tmp/exceptions")
-    monkeypatch.setattr(
-        filesystem_utils,
-        "_active_config",
-        lambda: SimpleNamespace(paths=SimpleNamespace(exceptions_dir=sentinel_path)),
-    )
-
-    assert filesystem_utils._exceptions_dir() == sentinel_path  # noqa: SLF001
 
 
 def test_move_item_removes_empty_placeholder(tmp_path: Path):
@@ -176,21 +173,16 @@ def test_unique_path_helpers_accept_explicit_separator(
     assert Path(resolved).name == "item__02.csv"
 
 
-def test_get_exception_path_uses_default_exceptions_dir_when_not_provided(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Fallback exception path helper should use active exceptions dir wrapper."""
-    exceptions_dir = tmp_path / "exceptions"
-    exceptions_dir.mkdir()
-    (exceptions_dir / "item-01.csv").write_text("1")
+def test_get_exception_path_requires_explicit_base_dir() -> None:
+    """Reject exception-path requests that omit explicit base directory context."""
+    with pytest.raises(ValueError, match="base_dir must be provided explicitly"):
+        filesystem_utils.get_exception_path("item.csv")
 
-    monkeypatch.setattr(filesystem_utils, "_exceptions_dir", lambda: exceptions_dir)
-    monkeypatch.setattr(filesystem_utils, "_id_sep", lambda: "-")
 
-    resolved = filesystem_utils.get_exception_path("item.csv")
-
-    assert Path(resolved).name == "item-02.csv"
+def test_get_rename_path_requires_explicit_base_dir() -> None:
+    """Reject rename-path requests that omit explicit base directory context."""
+    with pytest.raises(ValueError, match="base_dir must be provided explicitly"):
+        filesystem_utils.get_rename_path("item.csv")
 
 
 def test_move_item_raises_when_fallback_move_fails(
@@ -333,6 +325,15 @@ def test_move_to_exception_folder_accepts_explicit_base_dir_and_separator(
     assert move_args == (str(src), str(dest_dir / "sample-01.txt"))
 
 
+def test_move_to_exception_folder_requires_explicit_base_dir(tmp_path: Path) -> None:
+    """Reject exception moves that omit explicit exception directory context."""
+    src = tmp_path / "sample.txt"
+    src.write_text("data")
+
+    with pytest.raises(ValueError, match="base_dir must be provided explicitly"):
+        filesystem_utils.move_to_exception_folder(str(src), id_separator="-")
+
+
 def test_move_to_rename_folder_accepts_explicit_base_dir_and_separator(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -370,21 +371,27 @@ def test_move_to_rename_folder_accepts_explicit_base_dir_and_separator(
     assert move_args == (str(src), str(dest_dir / "sample-01.txt"))
 
 
+def test_move_to_rename_folder_requires_explicit_base_dir(tmp_path: Path) -> None:
+    """Reject rename moves that omit explicit rename directory context."""
+    src = tmp_path / "sample.txt"
+    src.write_text("data")
+
+    with pytest.raises(ValueError, match="base_dir must be provided explicitly"):
+        filesystem_utils.move_to_rename_folder(str(src), "sample", ".txt")
+
+
 def test_load_persisted_records_invalid_json_returns_empty(tmp_path: Path, monkeypatch):
     """Return empty mapping when daily-records JSON cannot be parsed."""
     records_path = tmp_path / "records.json"
     records_path.write_text("{bad json")
 
-    monkeypatch.setattr(filesystem_utils, "_daily_records_path", lambda: records_path)
-
-    result = filesystem_utils.load_persisted_records()
+    result = filesystem_utils.load_persisted_records(json_path=records_path)
 
     assert result == {}
 
 
 def test_load_persisted_records_returns_localrecord_mapping(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ):
     """Load JSON payload into LocalRecord objects keyed by record id."""
     records_path = tmp_path / "records.json"
@@ -393,10 +400,10 @@ def test_load_persisted_records_returns_localrecord_mapping(
     }
     records_path.write_text(json.dumps(payload), encoding="utf-8")
 
-    monkeypatch.setattr(filesystem_utils, "_daily_records_path", lambda: records_path)
-    monkeypatch.setattr(filesystem_utils, "_id_sep", lambda: "-")
-
-    result = filesystem_utils.load_persisted_records()
+    result = filesystem_utils.load_persisted_records(
+        json_path=records_path,
+        id_separator="-",
+    )
 
     assert set(result.keys()) == {"dev-usr-ipat-sample"}
     assert isinstance(result["dev-usr-ipat-sample"], LocalRecord)
@@ -418,14 +425,19 @@ def test_load_and_save_persisted_records_accept_explicit_json_path(tmp_path: Pat
     assert loaded["id"].id_separator == "__"
 
 
-def test_save_persisted_records_writes_json(tmp_path: Path, monkeypatch, config_service):
+def test_load_persisted_records_requires_explicit_json_path() -> None:
+    """Reject persisted-record loads without explicit JSON path context."""
+    with pytest.raises(ValueError, match="json_path must be provided explicitly"):
+        filesystem_utils.load_persisted_records()
+
+
+def test_save_persisted_records_writes_json(tmp_path: Path, config_service):
     """Serialize LocalRecord mapping to JSON file."""
     records_path = tmp_path / "records.json"
-    monkeypatch.setattr(filesystem_utils, "_daily_records_path", lambda: records_path)
 
     record = LocalRecord(identifier="dev-user-inst-sample")
 
-    filesystem_utils.save_persisted_records({"id": record})
+    filesystem_utils.save_persisted_records({"id": record}, json_path=records_path)
 
     payload = json.loads(records_path.read_text())
     assert "id" in payload
@@ -433,17 +445,21 @@ def test_save_persisted_records_writes_json(tmp_path: Path, monkeypatch, config_
 
 def test_save_persisted_records_handles_write_failures(monkeypatch: pytest.MonkeyPatch):
     """Swallow write exceptions after logging when persistence path cannot be written."""
+    monkeypatch.setattr(
+        Path,
+        "write_text",
+        lambda _self, _serialized, encoding="utf-8": (_ for _ in ()).throw(
+            OSError("write denied")
+        ),
+    )
 
-    class _BrokenPath:
-        def write_text(self, _serialized: str, encoding: str = "utf-8") -> None:
-            raise OSError("write denied")
+    filesystem_utils.save_persisted_records({}, json_path="broken.json")
 
-        def __str__(self) -> str:
-            return "broken.json"
 
-    monkeypatch.setattr(filesystem_utils, "_daily_records_path", lambda: _BrokenPath())
-
-    filesystem_utils.save_persisted_records({})
+def test_save_persisted_records_requires_explicit_json_path() -> None:
+    """Reject persisted-record saves without explicit JSON path context."""
+    with pytest.raises(ValueError, match="json_path must be provided explicitly"):
+        filesystem_utils.save_persisted_records({})
 
 
 def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.MonkeyPatch):
@@ -461,7 +477,13 @@ def test_move_to_record_folder_uses_record_path_factory(monkeypatch: pytest.Monk
         lambda src, dest: calls.update({"src": src, "dest": dest}),
     )
 
-    filesystem_utils.move_to_record_folder("C:/raw/file.txt", "prefix", ".txt")
+    filesystem_utils.move_to_record_folder(
+        "C:/raw/file.txt",
+        "prefix",
+        ".txt",
+        id_separator="-",
+        dest_dir="C:/Data",
+    )
 
     assert calls == {"src": "C:/raw/file.txt", "dest": "/records/prefix.txt"}
 
@@ -501,3 +523,24 @@ def test_move_to_record_folder_accepts_explicit_context(monkeypatch: pytest.Monk
         "current_device": device,
     }
     assert move_args == ("C:/raw/file.txt", "/records/prefix.txt")
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "message"),
+    [
+        ({"dest_dir": "C:/Data"}, "id_separator must be provided explicitly"),
+        ({"id_separator": "-"}, "dest_dir must be provided explicitly"),
+    ],
+)
+def test_move_to_record_folder_requires_explicit_context(
+    kwargs: dict[str, str],
+    message: str,
+) -> None:
+    """Reject record moves when required naming/storage context is missing."""
+    with pytest.raises(ValueError, match=message):
+        filesystem_utils.move_to_record_folder(
+            "C:/raw/file.txt",
+            "prefix",
+            ".txt",
+            **kwargs,
+        )

@@ -54,6 +54,19 @@ def test_init_uses_injected_db_manager_factory() -> None:
     assert sync_mgr.db_manager is sentinel_db_manager
 
 
+def test_init_default_separator_resolver_uses_record_separator() -> None:
+    """Default resolver should read separator directly from LocalRecord context."""
+    interactions = _InteractionSpy()
+    sync_mgr = KadiSyncManager(
+        interactions=interactions,
+        db_manager_factory=lambda: _DbManagerContext(),
+    )
+    record = _build_record("dev:user:ipat:sample")
+    record.id_separator = ":"
+
+    assert sync_mgr._id_separator_for_record(record) == ":"
+
+
 def test_sync_record_to_database_happy_path_sets_in_db(monkeypatch) -> None:
     """Run full sync orchestration and mark the record as synced."""
     interactions = _InteractionSpy()
@@ -444,15 +457,14 @@ def test_upload_record_files_skips_uploaded_entries_and_reraises_other_errors() 
 
 
 @pytest.mark.parametrize(
-    ("resolver", "expected"),
+    "resolver",
     [
-        (lambda _record: (_ for _ in ()).throw(RuntimeError("boom")), "-"),
-        (lambda _record: "", "-"),
-        (lambda _record: ":", ":"),
+        lambda _record: (_ for _ in ()).throw(RuntimeError("boom")),
+        lambda _record: "",
     ],
 )
-def test_id_separator_for_record_applies_fallback_policy(resolver, expected) -> None:
-    """Fallback to default separator when resolver fails or returns invalid data."""
+def test_id_separator_for_record_rejects_invalid_resolver_output(resolver) -> None:
+    """Raise when the injected separator resolver fails or returns invalid data."""
     sync_mgr = KadiSyncManager(
         interactions=_InteractionSpy(),
         id_separator_resolver=resolver,
@@ -460,24 +472,17 @@ def test_id_separator_for_record_applies_fallback_policy(resolver, expected) -> 
     )
     record = _build_record("dev-user-ipat-sample")
 
-    assert sync_mgr._id_separator_for_record(record) == expected
+    with pytest.raises(ValueError, match="id_separator"):
+        sync_mgr._id_separator_for_record(record)
 
 
-def test_infer_id_separator_prefers_record_separator_when_shape_matches() -> None:
-    """Honor record separator when identifier already uses it with full segment shape."""
+def test_id_separator_for_record_uses_valid_explicit_resolver_output() -> None:
+    """Return resolver output when explicit separator context is valid."""
+    sync_mgr = KadiSyncManager(
+        interactions=_InteractionSpy(),
+        id_separator_resolver=lambda _record: ":",
+        db_manager_factory=lambda: _DbManagerContext(),
+    )
     record = _build_record("dev:user:ipat:sample")
-    record.id_separator = ":"
 
-    inferred = KadiSyncManager._infer_id_separator_from_record(record)
-
-    assert inferred == ":"
-
-
-def test_infer_id_separator_detects_alternative_separator_from_identifier() -> None:
-    """Detect a different separator when record preference does not match shape."""
-    record = _build_record("dev:user:ipat:sample")
-    record.id_separator = "-"
-
-    inferred = KadiSyncManager._infer_id_separator_from_record(record)
-
-    assert inferred == ":"
+    assert sync_mgr._id_separator_for_record(record) == ":"

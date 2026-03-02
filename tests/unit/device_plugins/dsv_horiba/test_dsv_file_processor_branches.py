@@ -17,6 +17,23 @@ def processor() -> FileProcessorDSVHoriba:
     return FileProcessorDSVHoriba(build_config())
 
 
+def test_configure_runtime_context_sets_missing_separator_and_exception_dir() -> None:
+    """Populate missing runtime naming/exception context but preserve explicit overrides."""
+    processor = FileProcessorDSVHoriba(build_config())
+    processor.configure_runtime_context(id_separator="__", exception_dir="C:/exceptions")
+
+    assert processor._id_separator == "__"  # noqa: SLF001
+    assert processor._exception_dir == "C:/exceptions"  # noqa: SLF001
+
+    explicit = FileProcessorDSVHoriba(build_config())
+    explicit._id_separator = "-"  # noqa: SLF001
+    explicit._exception_dir = "C:/explicit"  # noqa: SLF001
+    explicit.configure_runtime_context(id_separator="__", exception_dir="C:/injected")
+
+    assert explicit._id_separator == "-"  # noqa: SLF001
+    assert explicit._exception_dir == "C:/explicit"  # noqa: SLF001
+
+
 def test_probe_file_returns_unknown_when_text_read_fails(
     tmp_path: Path,
     processor: FileProcessorDSVHoriba,
@@ -165,7 +182,7 @@ def test_purge_orphans_logs_warning_when_move_to_exception_fails(
     )
     monkeypatch.setattr(
         "dpost.device_plugins.dsv_horiba.file_processor.move_to_exception_folder",
-        lambda _path: (_ for _ in ()).throw(RuntimeError("move failed")),
+        lambda _path, **_kwargs: (_ for _ in ()).throw(RuntimeError("move failed")),
     )
 
     processor._purge_orphans()

@@ -119,7 +119,7 @@ def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, Headless
 
     pc_config, device_configs, paths = _build_uber_config(tmp_path)
     config_service = init_config(pc_config, device_configs)
-    init_dirs()
+    init_dirs([str(path) for path in config_service.current.directory_list])
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui)

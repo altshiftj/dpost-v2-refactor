@@ -91,7 +91,7 @@ def multi_processor_app(tmp_path, monkeypatch):
     pc_config = build_pc_config(override_paths=overrides)
     device_configs = [spec["config_builder"]() for spec in DEVICE_PLUGIN_SPECS]
     config_service = init_config(pc_config, device_configs)
-    init_dirs()
+    init_dirs([str(path) for path in config_service.current.directory_list])
 
     loader = PluginLoader(load_entrypoints=False, load_builtins=False)
     for spec in DEVICE_PLUGIN_SPECS:

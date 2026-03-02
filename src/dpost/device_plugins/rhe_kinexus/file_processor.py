@@ -36,12 +36,6 @@ from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir
 logger = setup_logger(__name__)
 
 
-def _runtime_id_separator() -> str:
-    from dpost.application.config import current
-
-    return current().id_separator
-
-
 @dataclass
 class _Sentinel:
     export_path: Path
@@ -66,10 +60,12 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         self,
         device_config: DeviceConfig,
         id_separator: str | None = None,
+        exception_dir: str | None = None,
     ) -> None:
         super().__init__(device_config)
         self.device_config = device_config
         self._id_separator = id_separator
+        self._exception_dir = exception_dir
         self._state: Dict[str, _FolderState] = {}
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._raw_to_stage: Dict[str, str] = {}
@@ -79,10 +75,16 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         *,
         id_separator: str | None = None,
         filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
     ) -> None:
         """Capture runtime separator when constructed without explicit override."""
         if self._id_separator is None and id_separator is not None:
             self._id_separator = id_separator
+        if self._exception_dir is None and exception_dir is not None:
+            self._exception_dir = exception_dir
 
     def device_specific_preprocessing(self, path: str) -> Optional[PreprocessingResult]:
         element = Path(path)
@@ -390,10 +392,15 @@ class FileProcessorRHEKinexus(FileProcessorABS):
     def _resolve_id_separator(self) -> str:
         if self._id_separator is not None:
             return self._id_separator
-        try:
-            return _runtime_id_separator()
-        except RuntimeError:
-            return "-"
+        raise RuntimeError("Kinexus id_separator runtime context is not configured")
+
+    def _move_to_exception(self, path: Path) -> None:
+        base_dir = self._exception_dir or str(path.parent)
+        move_to_exception_folder(
+            str(path),
+            base_dir=base_dir,
+            id_separator=self._resolve_id_separator(),
+        )
 
     @staticmethod
     def _zip_raw(src: Path, dest: Path, arcname: str) -> None:
@@ -420,7 +427,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                 if now - pending.created > ttl:
                     if pending.path.exists():
                         try:
-                            move_to_exception_folder(str(pending.path))
+                            self._move_to_exception(pending.path)
                             logger.info(
                                 "Kinexus: moved stale pending native '%s' to exception",
                                 pending.path,
@@ -443,7 +450,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                     ):
                         if component.exists():
                             try:
-                                move_to_exception_folder(str(component))
+                                self._move_to_exception(component)
                                 logger.info(
                                     "Kinexus: moved stale queued %s '%s' to exception",
                                     label,
@@ -463,7 +470,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
             if sentinel and now - sentinel.created > ttl:
                 if sentinel.export_path.exists():
                     try:
-                        move_to_exception_folder(str(sentinel.export_path))
+                        self._move_to_exception(sentinel.export_path)
                         logger.info(
                             "Kinexus: moved stale sentinel export '%s' to exception",
                             sentinel.export_path,
@@ -489,7 +496,7 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                 )
                 for child in stale_dirs:
                     try:
-                        move_to_exception_folder(str(child))
+                        self._move_to_exception(child)
                         logger.info(
                             "Kinexus: moved stale staging folder '%s' to exception",
                             child,

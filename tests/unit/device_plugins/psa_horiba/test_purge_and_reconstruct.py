@@ -17,7 +17,7 @@ from dpost.device_plugins.psa_horiba.settings import build_config
 
 
 def test_preprocessing_skips_finalizing_csv(tmp_path):
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     watch_dir = tmp_path / "incoming"
     watch_dir.mkdir()
 
@@ -39,7 +39,7 @@ def test_preprocessing_skips_finalizing_csv(tmp_path):
 
 
 def test_preprocessing_skips_tracked_ngb(tmp_path, monkeypatch):
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     watch_dir = tmp_path / "incoming"
     watch_dir.mkdir()
 
@@ -60,7 +60,7 @@ def test_preprocessing_skips_tracked_ngb(tmp_path, monkeypatch):
 
 
 def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypatch):
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     processor.device_config.batch.ttl_seconds = 5
 
     now = 100.0
@@ -73,7 +73,7 @@ def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypat
     moved: list[str] = []
     monkeypatch.setattr(
         f"{module_path}.safe_move_to_exception",
-        lambda path: moved.append(path),
+        lambda path, **_kwargs: moved.append(path),
     )
 
     watch_dir = tmp_path / "incoming"
@@ -127,7 +127,7 @@ def test_purge_stale_moves_pending_bucket_sentinel_and_stage(tmp_path, monkeypat
 
 
 def test_reconstruct_batch_from_stage_pairs_by_stem(tmp_path):
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "Batch.__staged__1"
     stage_dir.mkdir()
 
@@ -149,7 +149,7 @@ def test_reconstruct_batch_from_stage_pairs_by_stem(tmp_path):
 
 
 def test_reconstruct_batch_from_stage_raises_when_empty(tmp_path):
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "Empty.__staged__1"
     stage_dir.mkdir()
 

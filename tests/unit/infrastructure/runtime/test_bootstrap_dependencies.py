@@ -41,16 +41,21 @@ def test_default_sync_manager_factory_assigns_interactions() -> None:
 
 def test_init_runtime_dirs_delegates_to_storage_initializer() -> None:
     """Call the shared storage directory initializer once."""
-    calls = {"count": 0}
+    calls: dict[str, object] = {"directories": None}
+    config_service = type(
+        "Config",
+        (),
+        {"current": type("Current", (), {"directory_list": ("C:/A", "C:/B")})()},
+    )()
 
     original = deps.init_dirs
-    deps.init_dirs = lambda: calls.__setitem__("count", calls["count"] + 1)
+    deps.init_dirs = lambda directories: calls.__setitem__("directories", directories)
     try:
-        deps.init_runtime_dirs()
+        deps.init_runtime_dirs(config_service)
     finally:
         deps.init_dirs = original
 
-    assert calls["count"] == 1
+    assert calls["directories"] == ["C:/A", "C:/B"]
 
 
 def test_build_config_service_loads_plugins_and_initialises_service() -> None:

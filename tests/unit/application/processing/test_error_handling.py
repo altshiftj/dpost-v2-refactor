@@ -22,7 +22,7 @@ def test_safe_move_to_exception_ignores_missing(monkeypatch):
             "missing.txt",
             "prefix",
             ".txt",
-            {"base_dir": None, "id_separator": None},
+            {"base_dir": ".", "id_separator": "-"},
         )
     ]
 

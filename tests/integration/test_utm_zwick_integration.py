@@ -37,7 +37,7 @@ def utm_processing_manager(tmp_path):
     )
 
     service = init_config(pc_config, [utm_config])
-    init_dirs()
+    init_dirs([str(path) for path in service.current.directory_list])
 
     ui = HeadlessUI()
     sync = DummySyncManager(ui)
@@ -79,7 +79,16 @@ def _emit_and_process(
             raise ValueError(f"Unknown token in order: {token}")
         fpm.process_item(str(p))
 
-    return Path(get_record_path(prefix, "UTM"))
+    active_config = fpm.config_service.current
+    return Path(
+        get_record_path(
+            prefix,
+            "UTM",
+            id_separator=active_config.id_separator,
+            dest_dir=active_config.paths.dest_dir,
+            current_device=fpm.config_service.current_device(),
+        )
+    )
 
 
 def _expect_exists(record_dir: Path, *names: str) -> None:

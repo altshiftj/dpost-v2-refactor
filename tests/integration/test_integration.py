@@ -30,7 +30,7 @@ def real_processing_app(config_service, tmp_settings, monkeypatch):
     """Build a DeviceWatchdogApp wired to real processors and a stub observer."""
     ui = HeadlessUI(use_virtual_time=True)
     sync = DummySyncManager(ui)
-    init_dirs()
+    init_dirs([str(path) for path in config_service.current.directory_list])
 
     observer_stub = FakeObserver()
     app = DeviceWatchdogApp(

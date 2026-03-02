@@ -45,6 +45,10 @@ class FileProcessorHioki(FileProcessorABS):
         *,
         id_separator: str | None = None,
         filename_pattern: Pattern[str] | None = None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
     ) -> None:
         """Capture runtime naming context when constructed without explicit values."""
         if self._id_separator is None and id_separator is not None:

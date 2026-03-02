@@ -24,7 +24,6 @@ from dpost.device_plugins.test_device.settings import (
 )
 from dpost.infrastructure.storage.filesystem_utils import init_dirs
 from dpost.pc_plugins.test_pc.settings import build_config as build_pc_config
-from tests.helpers.fake_handler import FakeFileEventHandler
 from tests.helpers.fake_observer import FakeObserver
 from tests.helpers.fake_process_manager import FakeFileProcessManager
 from tests.helpers.fake_processor import DummyProcessor
@@ -70,7 +69,7 @@ def config_service(tmp_path):
     )
 
     service = init_config(pc_config, [device_config])
-    init_dirs()
+    init_dirs([str(path) for path in current().directory_list])
     yield service
     reset_service()
 
@@ -131,11 +130,6 @@ def fake_observer():
 
 
 @pytest.fixture
-def fake_handler():
-    return FakeFileEventHandler
-
-
-@pytest.fixture
 def fake_session_manager():
     return FakeSessionManager
 
@@ -147,7 +141,7 @@ def fake_file_process_manager():
 
 @pytest.fixture
 def watchdog_app(config_service, fake_ui, fake_sync):
-    init_dirs()
+    init_dirs([str(path) for path in current().directory_list])
     observer_stub = FakeObserver()
     app = DeviceWatchdogApp(
         ui=fake_ui,

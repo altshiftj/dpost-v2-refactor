@@ -33,6 +33,24 @@ class FileProcessorDSVHoriba(FileProcessorABS):
         super().__init__(device_config)
         self.device_config = device_config
         self._batches: dict[str, dict[str, Any]] = {}
+        self._exception_dir: str | None = None
+        self._id_separator: str | None = None
+
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
+    ) -> None:
+        """Capture exception-folder and naming context after runtime composition."""
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
+        if self._exception_dir is None and exception_dir is not None:
+            self._exception_dir = exception_dir
 
     def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
         candidate = Path(path)
@@ -173,7 +191,11 @@ class FileProcessorDSVHoriba(FileProcessorABS):
             for candidate in files:
                 if isinstance(candidate, Path) and candidate.exists():
                     try:
-                        move_to_exception_folder(str(candidate))
+                        move_to_exception_folder(
+                            str(candidate),
+                            base_dir=self._exception_dir or str(candidate.parent),
+                            id_separator=self._id_separator or "-",
+                        )
                         logger.info("Moved orphan file to exceptions: '%s'", candidate)
                     except Exception as exc:  # noqa: BLE001
                         logger.warning(

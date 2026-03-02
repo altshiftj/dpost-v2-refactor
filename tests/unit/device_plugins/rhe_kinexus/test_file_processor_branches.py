@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 
-import dpost.device_plugins.rhe_kinexus.file_processor as kinexus_fp
 from dpost.device_plugins.rhe_kinexus.file_processor import (
     FileProcessorRHEKinexus,
     _FlushBatch,
@@ -24,7 +23,7 @@ from dpost.domain.records.local_record import LocalRecord
 
 def test_preprocessing_handles_missing_and_unsupported_files(tmp_path: Path) -> None:
     """Return deferred for missing paths and ignore unsupported file extensions."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     missing_export = tmp_path / "missing.csv"
     unsupported = tmp_path / "notes.txt"
     unsupported.write_text("note")
@@ -34,19 +33,31 @@ def test_preprocessing_handles_missing_and_unsupported_files(tmp_path: Path) -> 
 
 
 def test_configure_runtime_context_sets_separator_only_when_missing() -> None:
-    """Runtime context hook should populate fallback separator but preserve explicit overrides."""
+    """Runtime context hook should populate missing naming/exception context only."""
     processor = FileProcessorRHEKinexus(build_config())
-    processor.configure_runtime_context(id_separator="__")
+    processor.configure_runtime_context(
+        id_separator="__",
+        exception_dir="C:/exceptions",
+    )
     assert processor._resolve_id_separator() == "__"  # noqa: SLF001
+    assert processor._exception_dir == "C:/exceptions"  # noqa: SLF001
 
-    explicit = FileProcessorRHEKinexus(build_config(), id_separator="-")
-    explicit.configure_runtime_context(id_separator="__")
+    explicit = FileProcessorRHEKinexus(
+        build_config(),
+        id_separator="-",
+        exception_dir="C:/explicit",
+    )
+    explicit.configure_runtime_context(
+        id_separator="__",
+        exception_dir="C:/injected",
+    )
     assert explicit._resolve_id_separator() == "-"  # noqa: SLF001
+    assert explicit._exception_dir == "C:/explicit"  # noqa: SLF001
 
 
 def test_handle_export_pairs_with_pending_native(tmp_path: Path) -> None:
     """Consume oldest pending native when a compatible export arrives."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     export_path = folder / "sample.csv"
@@ -66,7 +77,7 @@ def test_handle_export_pairs_with_pending_native(tmp_path: Path) -> None:
 
 def test_handle_export_skips_finalizing_and_tracked_exports(tmp_path: Path) -> None:
     """Return early for exports already tracked by finalizing batches or state."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     export_path = folder / "tracked.csv"
@@ -97,7 +108,7 @@ def test_handle_export_replaces_existing_sentinel_when_new_export_arrives(
     tmp_path: Path,
 ) -> None:
     """Replace older sentinel when a different export arrives before native flush."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     old_export = folder / "old.csv"
@@ -117,7 +128,7 @@ def test_handle_export_replaces_existing_sentinel_when_new_export_arrives(
 
 def test_handle_native_branches_for_staged_tracked_and_pending(tmp_path: Path) -> None:
     """Return staged path, skip tracked native, or queue pending native by branch."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     native = folder / "sample.rdf"
@@ -146,7 +157,7 @@ def test_handle_native_flush_survives_move_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Continue flush bookkeeping even when staging move operations fail."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     export_a = folder / "a.csv"
@@ -204,7 +215,7 @@ def test_probe_file_branches(
     expected_match: bool,
 ) -> None:
     """Cover native/mismatch/inconclusive/match probe branches."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     target = tmp_path / filename
     target.write_text("content", encoding="utf-8")
     if filename.endswith(".csv") and snippet is not None:
@@ -225,7 +236,7 @@ def test_probe_file_returns_unknown_when_text_read_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Return unknown probe decision when text prefix extraction fails."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     target = tmp_path / "sample.csv"
     target.write_text("content", encoding="utf-8")
     monkeypatch.setattr(
@@ -242,7 +253,7 @@ def test_probe_file_returns_unknown_when_text_read_fails(
 
 def test_identity_helpers_are_stable() -> None:
     """Expose stable identity/appendability contracts used by routing policy."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     record = LocalRecord(identifier="dev-user-ipat-sample")
 
     assert processor.is_appendable(record, "prefix", ".csv") is True
@@ -262,33 +273,20 @@ def test_constructor_accepts_explicit_id_separator_for_sequence_helper(
     assert processor._next_sequence_basename(record_dir, "prefix") == "prefix__03"
 
 
-def test_runtime_id_separator_reads_active_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Runtime separator helper should proxy through active config accessor."""
-    monkeypatch.setattr(
-        "dpost.application.config.current",
-        lambda: type("Cfg", (), {"id_separator": "__"})(),
-    )
-
-    assert kinexus_fp._runtime_id_separator() == "__"
-
-
-def test_resolve_id_separator_falls_back_when_runtime_config_unavailable(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Use default '-' separator when runtime config service is not initialised."""
+def test_resolve_id_separator_requires_explicit_runtime_context() -> None:
+    """Reject separator resolution when processor has no explicit naming context."""
     processor = FileProcessorRHEKinexus(build_config())
-    monkeypatch.setattr(
-        kinexus_fp,
-        "_runtime_id_separator",
-        lambda: (_ for _ in ()).throw(RuntimeError("no config")),
-    )
 
-    assert processor._resolve_id_separator() == "-"
+    with pytest.raises(
+        RuntimeError,
+        match="id_separator runtime context is not configured",
+    ):
+        processor._resolve_id_separator()
 
 
 def test_processing_requires_pending_batch_for_file_source(tmp_path: Path) -> None:
     """Reject direct file finalization when no matching staged batch exists."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     src = tmp_path / "direct.rdf"
     src.write_bytes(b"raw")
     record_dir = tmp_path / "record"
@@ -311,7 +309,7 @@ def test_processing_raises_when_staged_pair_components_are_missing(
     expected_message: str,
 ) -> None:
     """Fail finalization if staged pair components disappear before move/zip."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     export_path = stage_dir / "pair.csv"
@@ -339,7 +337,7 @@ def test_processing_directory_cleanup_ignores_rmdir_and_map_pop_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Keep processing success even if cleanup steps raise defensive exceptions."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     export_path = stage_dir / "pair.csv"
@@ -440,7 +438,7 @@ def test_purge_stale_covers_exception_and_cleanup_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Tolerate stale-move and stale-scan failures while retaining fresh entries."""
-    processor = FileProcessorRHEKinexus(build_config())
+    processor = FileProcessorRHEKinexus(build_config(), id_separator="-")
     processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
     now = 100.0
     monkeypatch.setattr(
@@ -493,7 +491,7 @@ def test_purge_stale_covers_exception_and_cleanup_paths(
     }
     moved: list[str] = []
 
-    def fake_move(path: str) -> None:
+    def fake_move(path: str, **_kwargs) -> None:
         name = Path(path).name
         if name in {"pending_fail.rdf", "bucket_export_fail.csv", "sentinel_fail.csv"}:
             raise RuntimeError("move failed")

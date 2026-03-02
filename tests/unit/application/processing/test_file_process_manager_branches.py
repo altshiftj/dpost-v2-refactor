@@ -885,15 +885,28 @@ def test_resolve_processor_injects_runtime_context_into_processor(
     class _ProcessorWithContext(DummyProcessor):
         def __init__(self) -> None:
             super().__init__()
-            self.context_calls: list[tuple[str | None, object | None]] = []
+            self.context_calls: list[dict[str, object | None]] = []
 
         def configure_runtime_context(
             self,
             *,
             id_separator: str | None = None,
             filename_pattern=None,
+            dest_dir: str | None = None,
+            rename_dir: str | None = None,
+            exception_dir: str | None = None,
+            current_device=None,
         ) -> None:
-            self.context_calls.append((id_separator, filename_pattern))
+            self.context_calls.append(
+                {
+                    "id_separator": id_separator,
+                    "filename_pattern": filename_pattern,
+                    "dest_dir": dest_dir,
+                    "rename_dir": rename_dir,
+                    "exception_dir": exception_dir,
+                    "current_device": current_device,
+                }
+            )
 
     processor = _ProcessorWithContext()
     manager.file_processor = processor
@@ -902,10 +915,14 @@ def test_resolve_processor_injects_runtime_context_into_processor(
 
     assert resolved is processor
     assert processor.context_calls == [
-        (
-            config_service.current.id_separator,
-            config_service.current.filename_pattern,
-        )
+        {
+            "id_separator": config_service.current.id_separator,
+            "filename_pattern": config_service.current.filename_pattern,
+            "dest_dir": str(config_service.current.paths.dest_dir),
+            "rename_dir": str(config_service.current.paths.rename_dir),
+            "exception_dir": str(config_service.current.paths.exceptions_dir),
+            "current_device": config_service.devices[0],
+        }
     ]
 
 

@@ -602,6 +602,10 @@ class FileProcessManager:
         processor.configure_runtime_context(
             id_separator=active_config.id_separator,
             filename_pattern=active_config.filename_pattern,
+            dest_dir=str(active_config.paths.dest_dir),
+            rename_dir=str(active_config.paths.rename_dir),
+            exception_dir=str(active_config.paths.exceptions_dir),
+            current_device=device,
         )
         return processor
 

@@ -23,7 +23,7 @@ from dpost.domain.records.local_record import LocalRecord
 
 def test_preprocessing_handles_missing_and_unsupported_files(tmp_path: Path) -> None:
     """Return deferred for missing items and ignore unknown extension files."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     missing_csv = tmp_path / "missing.csv"
     unsupported = tmp_path / "notes.txt"
     unsupported.write_text("note")
@@ -33,19 +33,31 @@ def test_preprocessing_handles_missing_and_unsupported_files(tmp_path: Path) -> 
 
 
 def test_configure_runtime_context_sets_separator_only_when_missing() -> None:
-    """Runtime context hook should populate fallback separator but preserve explicit overrides."""
+    """Runtime context hook should populate missing naming/exception context only."""
     processor = FileProcessorPSAHoriba(build_config())
-    processor.configure_runtime_context(id_separator="__")
+    processor.configure_runtime_context(
+        id_separator="__",
+        exception_dir="C:/exceptions",
+    )
     assert processor._resolve_id_separator() == "__"  # noqa: SLF001
+    assert processor._exception_dir == "C:/exceptions"  # noqa: SLF001
 
-    explicit = FileProcessorPSAHoriba(build_config(), id_separator="-")
-    explicit.configure_runtime_context(id_separator="__")
+    explicit = FileProcessorPSAHoriba(
+        build_config(),
+        id_separator="-",
+        exception_dir="C:/explicit",
+    )
+    explicit.configure_runtime_context(
+        id_separator="__",
+        exception_dir="C:/injected",
+    )
     assert explicit._resolve_id_separator() == "-"  # noqa: SLF001
+    assert explicit._exception_dir == "C:/explicit"  # noqa: SLF001
 
 
 def test_handle_csv_skips_finalizing_and_tracked_entries(tmp_path: Path) -> None:
     """Skip CSV handling when item is finalizing already or tracked in state."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     csv_path = folder / "tracked.csv"
@@ -76,7 +88,7 @@ def test_handle_csv_parse_failure_and_pending_ngb_pairing(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Fallback to empty metadata and pair queued NGB when pending queue exists."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     csv_path = folder / "sample.csv"
@@ -101,7 +113,7 @@ def test_handle_csv_parse_failure_and_pending_ngb_pairing(
 
 def test_handle_csv_replaces_existing_sentinel(tmp_path: Path) -> None:
     """Replace stale sentinel when a new CSV sentinel arrives before NGB."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     old_csv = folder / "old.csv"
@@ -126,7 +138,7 @@ def test_handle_csv_replaces_existing_sentinel(tmp_path: Path) -> None:
 
 def test_handle_csv_skips_already_bucketed_csv(tmp_path: Path) -> None:
     """Return early when CSV is already tracked inside the pending bucket."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     csv_path = folder / "bucket.csv"
@@ -142,7 +154,7 @@ def test_handle_csv_skips_already_bucketed_csv(tmp_path: Path) -> None:
 
 def test_handle_ngb_branches_for_staged_tracked_and_pending(tmp_path: Path) -> None:
     """Return staged path, skip tracked NGB, or queue NGB for later CSV."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     ngb_path = folder / "sample.ngb"
@@ -170,7 +182,7 @@ def test_handle_ngb_flush_survives_move_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Continue staging bookkeeping even when move operations fail."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     folder = tmp_path / "incoming"
     folder.mkdir()
     csv_a = folder / "a.csv"
@@ -213,7 +225,7 @@ def test_handle_ngb_flush_survives_move_failures(
 
 def test_probe_file_branches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Cover mismatch, unknown, inconclusive, and match probe outcomes."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     txt_path = tmp_path / "sample.txt"
     txt_path.write_text("x")
     mismatch = processor.probe_file(str(txt_path))
@@ -247,7 +259,7 @@ def test_probe_file_branches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
 
 def test_is_appendable_always_true() -> None:
     """Return appendable marker used by routing for PSA outputs."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     record = LocalRecord(identifier="dev-user-ipat-sample")
 
     assert processor.is_appendable(record, "prefix", ".csv") is True
@@ -255,7 +267,7 @@ def test_is_appendable_always_true() -> None:
 
 def test_processing_requires_pending_batch_for_file_source(tmp_path: Path) -> None:
     """Reject direct file finalization when no batch is pending."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     src = tmp_path / "direct.ngb"
     src.write_bytes(b"ngb")
 
@@ -273,7 +285,7 @@ def test_processing_reconstructs_batch_when_stage_dir_not_cached(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Reconstruct staged batch when src dir exists but cache has been cleared."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     record_dir = tmp_path / "record"
@@ -309,7 +321,7 @@ def test_processing_raises_when_staged_components_are_missing(
     expected_message: str,
 ) -> None:
     """Fail processing when staged CSV/NGB pair has disappeared."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     csv_path = stage_dir / "pair.csv"
@@ -338,7 +350,7 @@ def test_processing_cleanup_ignores_directory_and_map_failures(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Keep successful output when cleanup hooks raise defensive exceptions."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     csv_path = stage_dir / "pair.csv"
@@ -421,17 +433,15 @@ def test_tracking_helpers_and_next_sequence_basename(
     assert processor._next_sequence_basename(record_dir, "prefix") == "prefix-10"
 
 
-def test_resolve_id_separator_falls_back_when_runtime_config_unavailable(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Use default '-' separator when runtime config service is unavailable."""
+def test_resolve_id_separator_requires_explicit_runtime_context() -> None:
+    """Reject separator resolution when processor has no explicit naming context."""
     processor = FileProcessorPSAHoriba(build_config())
-    monkeypatch.setattr(
-        "dpost.device_plugins.psa_horiba.file_processor._runtime_id_separator",
-        lambda: (_ for _ in ()).throw(RuntimeError("no config")),
-    )
 
-    assert processor._resolve_id_separator() == "-"
+    with pytest.raises(
+        RuntimeError,
+        match="id_separator runtime context is not configured",
+    ):
+        processor._resolve_id_separator()
 
 
 def test_zip_ngb_keeps_zip_when_unlink_fails(
@@ -459,7 +469,7 @@ def test_parse_csv_metadata_handles_empty_lines_and_split_edge_cases(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Return empty metadata for empty text and tolerate empty split payloads."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     csv_path = tmp_path / "sample.csv"
     csv_path.write_text("x", encoding="utf-8")
     monkeypatch.setattr(
@@ -484,7 +494,7 @@ def test_reconstruct_batch_from_stage_wraps_pairs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Wrap reconstructed staging pairs into PSA flush-batch dataclasses."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     stage_dir = tmp_path / "batch.__staged__1"
     stage_dir.mkdir()
     csv_path = stage_dir / "pair.csv"
@@ -516,7 +526,7 @@ def test_purge_stale_covers_exception_paths(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Swallow stale-move and stage-scan failures while retaining fresh queue entries."""
-    processor = FileProcessorPSAHoriba(build_config())
+    processor = FileProcessorPSAHoriba(build_config(), id_separator="-")
     processor.device_config.batch = type("BatchCfg", (), {"ttl_seconds": 5})()
     now = 100.0
     monkeypatch.setattr(
@@ -562,7 +572,7 @@ def test_purge_stale_covers_exception_paths(
     stale_dir = main_dir / "S.__staged__1"
     stale_dir.mkdir()
 
-    def fake_move(path: str) -> None:
+    def fake_move(path: str, **_kwargs) -> None:
         if Path(path).name in {
             "stale_pending.ngb",
             "stale.csv",

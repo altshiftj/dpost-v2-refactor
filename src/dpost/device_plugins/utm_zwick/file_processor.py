@@ -45,6 +45,27 @@ class FileProcessorUTMZwick(FileProcessorABS):
         self.device_config = device_config
         self._series: Dict[str, _SeriesState] = {}
         self._lock = threading.Lock()
+        self._id_separator: str | None = None
+        self._dest_dir: str | None = None
+        self._current_device = None
+
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern=None,
+        dest_dir: str | None = None,
+        rename_dir: str | None = None,
+        exception_dir: str | None = None,
+        current_device=None,
+    ) -> None:
+        """Capture runtime naming/storage context used by flush operations."""
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
+        if self._dest_dir is None and dest_dir is not None:
+            self._dest_dir = dest_dir
+        if self._current_device is None and current_device is not None:
+            self._current_device = current_device
 
     def device_specific_preprocessing(
         self, src_path: str
@@ -164,7 +185,19 @@ class FileProcessorUTMZwick(FileProcessorABS):
 
             try:
                 device_abbr = getattr(self.device_config.metadata, "device_abbr", None)
-                record_dir = get_record_path(state.sample, device_abbr)
+                if self._id_separator is None or self._dest_dir is None:
+                    logger.debug(
+                        "UTM: skipping flush for '%s' due missing runtime context",
+                        state.sample,
+                    )
+                    continue
+                record_dir = get_record_path(
+                    state.sample,
+                    device_abbr,
+                    id_separator=self._id_separator,
+                    dest_dir=self._dest_dir,
+                    current_device=self._current_device,
+                )
                 output = self.device_specific_processing(
                     str(primary),
                     record_dir,

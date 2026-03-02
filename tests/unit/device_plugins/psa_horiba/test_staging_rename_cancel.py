@@ -22,7 +22,7 @@ def _write_pair(watch_dir: Path, stem: str, probenname: str | None = None, ngb_p
 
 def test_staged_folder_moves_as_one_on_rename_cancel(tmp_settings):
     # Arrange: build processor and a batch with one bucket pair + one sentinel pair
-    proc = FileProcessorPSAHoriba(build_config())
+    proc = FileProcessorPSAHoriba(build_config(), id_separator="-")
     watch_dir = tmp_settings.WATCH_DIR
     watch_dir.mkdir(parents=True, exist_ok=True)
 
@@ -53,7 +53,13 @@ def test_staged_folder_moves_as_one_on_rename_cancel(tmp_settings):
     ui.show_rename_dialog_return = None  # explicit cancel
     renamer = RenameService(ui)
 
-    renamer.send_to_manual_bucket(str(stage_dir), stage_dir.stem, "")
+    renamer.send_to_manual_bucket(
+        str(stage_dir),
+        stage_dir.stem,
+        "",
+        rename_dir=str(tmp_settings.RENAME_DIR),
+        id_separator="-",
+    )
 
     # Assert: info message shown and the entire staging folder moved under rename dir
     assert ui.calls["show_info"][-1] == (InfoMessages.OPERATION_CANCELLED, InfoMessages.MOVED_TO_RENAME)

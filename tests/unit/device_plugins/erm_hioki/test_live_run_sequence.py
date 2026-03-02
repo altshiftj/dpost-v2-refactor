@@ -53,7 +53,7 @@ def hioki_manager(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
 
     service = init_config(pc_config, [device_config])
-    init_dirs()
+    init_dirs([str(path) for path in service.current.directory_list])
 
     monkeypatch.setattr(
         FileStabilityTracker,
@@ -88,7 +88,14 @@ def test_measurement_processed_even_when_aggregate_exists(hioki_manager):
     cc_file.write_text("cc-data")
 
     device_abbr = device_config.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     expected_measurement = get_unique_filename(record_path, file_id, ".csv")
 
@@ -110,7 +117,14 @@ def test_measurement_creates_second_file_when_aggregate_exists(hioki_manager):
     cc_file.write_text("cc-data")
 
     device_abbr = device_config.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     expected_first = get_unique_filename(record_path, file_id, ".csv")
 
@@ -137,7 +151,14 @@ def test_aggregate_update_marks_force_after_upload(hioki_manager):
     manager.process_item(str(aggregate))
 
     device_abbr = device_config.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     results_path = Path(record_path) / f"{file_id}-results.csv"
     record_id = generate_record_id(
@@ -165,7 +186,14 @@ def test_cc_update_marks_force_after_upload(hioki_manager):
     manager.process_item(str(cc_file))
 
     device_abbr = device_config.metadata.device_abbr
-    record_path = get_record_path(prefix, device_abbr)
+    active = manager.config_service.current
+    record_path = get_record_path(
+        prefix,
+        device_abbr,
+        id_separator=active.id_separator,
+        dest_dir=active.paths.dest_dir,
+        current_device=manager.config_service.current_device(),
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = Path(record_path) / f"{file_id}-cc.csv"
     record_id = generate_record_id(
@@ -187,7 +215,16 @@ def test_full_lab_sequence_marks_measurements_and_force_updates(hioki_manager):
     manager, device_config, paths = hioki_manager
     prefix = "jfi-ipat-hioki_test"
     device_abbr = device_config.metadata.device_abbr
-    record_path = Path(get_record_path(prefix, device_abbr))
+    active = manager.config_service.current
+    record_path = Path(
+        get_record_path(
+            prefix,
+            device_abbr,
+            id_separator=active.id_separator,
+            dest_dir=active.paths.dest_dir,
+            current_device=manager.config_service.current_device(),
+        )
+    )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     record_id = generate_record_id(
         prefix,
