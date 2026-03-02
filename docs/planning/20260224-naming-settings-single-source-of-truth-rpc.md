@@ -12,10 +12,12 @@
 - Team direction: make naming rules explicit, centralized, and constructor-driven.
 
 ## Working Tracker Set
-- Baseline findings report:
-  - `docs/reports/20260302-naming-settings-sot-migration-baseline-report.md`
-- Execution checklist:
-  - `docs/checklists/20260302-naming-settings-sot-migration-execution-checklist.md`
+- Completion summary:
+  - `docs/reports/20260302-naming-settings-sot-migration-summary.md`
+- Archived baseline/progress report:
+  - `docs/reports/archive/20260302-naming-settings-sot-migration-baseline-report.md`
+- Archived execution checklist:
+  - `docs/checklists/archive/20260302-naming-settings-sot-migration-execution-checklist.md`
 
 ## Why Current Policy Architecture Exists (How It Got Here)
 - The current `application/naming/policy.py` facade and related seams were introduced as an intentional migration bridge, not as final architecture.
