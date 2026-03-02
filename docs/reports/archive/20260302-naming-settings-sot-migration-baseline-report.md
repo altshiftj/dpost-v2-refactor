@@ -451,6 +451,25 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 22 LocalRecord Signature-Level Strictness (2026-03-02)
+- Intended actions:
+  - enforce explicit separator requirements at `LocalRecord` signature level.
+- Observed outcome:
+  - `LocalRecord.id_separator` is now a required keyword-only constructor
+    argument;
+  - `LocalRecord.from_dict(...)` now requires explicit `id_separator` in the
+    method signature;
+  - focused hydration coverage now includes empty-string separator rejection.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py -k "test_init_rejects_missing_separator_value or test_from_dict_requires_explicit_separator"` -> `2 failed` (runtime-validation exception type mismatch)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py` -> `23 passed`
+    - `python -m pytest -q tests/unit` -> `761 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `761 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -466,4 +485,5 @@
 - Section 19 package-level config context export narrowing is complete.
 - Section 20 config lifecycle helper re-export cleanup is complete.
 - Section 21 explicit `LocalRecord` constructor separator cleanup is complete.
+- Section 22 `LocalRecord` signature-level strictness cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

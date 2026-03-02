@@ -597,6 +597,37 @@
 
 ---
 
+## 22. Tighten `LocalRecord` Signature-Level Separator Contracts
+- Why this matters: runtime validation is useful, but signature-level
+  requirements prevent accidental implicit usage before runtime and keep
+  constructor/hydration contracts explicit at the call site.
+
+### Checklist
+- [x] Make `LocalRecord.id_separator` a required keyword-only constructor
+      argument.
+- [x] Make `LocalRecord.from_dict(...)` require explicit `id_separator`
+      argument at the signature level.
+- [x] Add focused coverage for empty-separator hydration branch after signature
+      tightening.
+
+### Completion Notes
+- How it was done:
+  - introduced keyword-only separator requirement in
+    `domain/records/local_record.py` using dataclass `KW_ONLY`;
+  - removed optional default for `LocalRecord.from_dict(..., id_separator)` so
+    missing separator now fails at call-signature level;
+  - added focused unit coverage for empty-string separator hydration.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py -k "test_init_rejects_missing_separator_value or test_from_dict_requires_explicit_separator"` -> `2 failed` (still raised `ValueError` from runtime validation path)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py` -> `23 passed`
+    - `python -m pytest -q tests/unit` -> `761 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `761 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -670,5 +701,10 @@
   - checkpoint rerun after section 21:
     - `python -m pytest -q tests/unit` -> `760 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `760 passed, 1 skipped, 1 warning`, `TOTAL 5450 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 22:
+    - `python -m pytest -q tests/unit` -> `761 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `761 passed, 1 skipped, 1 warning`, `TOTAL 5451 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

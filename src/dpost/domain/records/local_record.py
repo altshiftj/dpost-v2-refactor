@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from dataclasses import fields as dc_fields
 from pathlib import Path
 from typing import Dict, List, Optional, Set
@@ -33,7 +33,8 @@ class LocalRecord:
     # Transient sync defaults (not persisted)
     default_description: Optional[str] = field(default=None, repr=False, compare=False)
     default_tags: List[str] = field(default_factory=list, repr=False, compare=False)
-    id_separator: str = field(default="", repr=False, compare=False)
+    _: KW_ONLY
+    id_separator: str = field(repr=False, compare=False)
 
     def __post_init__(self):
         """Parse identity segments from identifier using explicit separator context."""
@@ -133,7 +134,7 @@ class LocalRecord:
     def from_dict(
         cls,
         data: dict,
-        id_separator: str | None = None,
+        id_separator: str,
     ) -> "LocalRecord":
         """Build LocalRecord from persisted dict payload."""
         if not id_separator:

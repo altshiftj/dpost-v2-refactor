@@ -19,7 +19,7 @@ def sample_record():
 
 def test_init_rejects_missing_separator_value() -> None:
     """Reject record construction when explicit separator context is omitted."""
-    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+    with pytest.raises(TypeError, match="required keyword-only argument: 'id_separator'"):
         LocalRecord()
 
 
@@ -242,5 +242,11 @@ def test_to_dict_from_dict_roundtrip():
 
 def test_from_dict_requires_explicit_separator() -> None:
     """Reject persisted-record hydration without explicit separator context."""
-    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+    with pytest.raises(TypeError, match="required positional argument: 'id_separator'"):
         LocalRecord.from_dict({"identifier": "dev-usr-inst-sample"})
+
+
+def test_from_dict_rejects_empty_separator_value() -> None:
+    """Reject persisted-record hydration when separator context is empty."""
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        LocalRecord.from_dict({"identifier": "dev-usr-inst-sample"}, id_separator="")
