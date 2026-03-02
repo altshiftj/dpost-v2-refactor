@@ -4,7 +4,7 @@
 - 2026-02-24
 
 ## Status
-- Draft
+- Accepted (Completed 2026-03-02)
 
 ## Context
 - Naming behavior is currently split between explicit context passing and ambient lookups via `current()` wrappers.
