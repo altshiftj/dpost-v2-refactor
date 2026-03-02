@@ -45,6 +45,10 @@ from dpost.application.processing.processing_pipeline_runtime import (
     ProcessingPipelineRuntime,
 )
 from dpost.application.processing.processor_factory import FileProcessorFactory
+from dpost.application.processing.processor_runtime_context import (
+    apply_processor_runtime_context,
+    build_processor_runtime_context,
+)
 from dpost.application.processing.record_persistence_context import (
     RecordPersistenceContext,
     build_record_persistence_context,
@@ -325,17 +329,9 @@ class FileProcessManager:
             # Fall back to loading a processor via the factory based on the resolved device.
             # The factory caches instances per device, so repeated calls are inexpensive.
             processor = self._processor_factory.get_for_device(device.identifier)
-        # Fall back to loading a processor via the factory based on the resolved device.
         # Apply runtime context after construction to reduce processor-global config lookups.
-        active_config = self.config_service.current
-        processor.configure_runtime_context(
-            id_separator=active_config.id_separator,
-            filename_pattern=active_config.filename_pattern,
-            dest_dir=str(active_config.paths.dest_dir),
-            rename_dir=str(active_config.paths.rename_dir),
-            exception_dir=str(active_config.paths.exceptions_dir),
-            current_device=device,
-        )
+        runtime_context = build_processor_runtime_context(self.config_service.current)
+        apply_processor_runtime_context(processor, device, runtime_context)
         return processor
 
     @staticmethod

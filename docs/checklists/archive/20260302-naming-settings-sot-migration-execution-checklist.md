@@ -764,6 +764,45 @@
 
 ---
 
+## 27. Extract Processor Runtime-Context Helper from FileProcessManager
+- Why this matters: `FileProcessManager._resolve_processor` mixed two concerns
+  (processor resolution and runtime-context mapping). Extracting explicit
+  context helpers keeps the manager thinner and makes processor configuration
+  policy independently testable.
+
+### Checklist
+- [x] Add a dedicated processor runtime-context helper module with explicit
+      typed payload.
+- [x] Update `FileProcessManager._resolve_processor(...)` to delegate context
+      build/apply behavior to the helper seam.
+- [x] Add focused unit coverage for runtime-context build/apply behavior.
+
+### Completion Notes
+- How it was done:
+  - added
+    `src/dpost/application/processing/processor_runtime_context.py` with
+    `ProcessorRuntimeContext`,
+    `build_processor_runtime_context(...)`, and
+    `apply_processor_runtime_context(...)`;
+  - updated
+    `src/dpost/application/processing/file_process_manager.py` so
+    `_resolve_processor(...)` resolves processor instances, then delegates
+    runtime-context mapping/injection to the helper seam;
+  - added focused helper unit tests in
+    `tests/unit/application/processing/test_processor_runtime_context.py`.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_processor_runtime_context.py` -> failed (`ModuleNotFoundError: dpost.application.processing.processor_runtime_context`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_file_process_manager_branches.py -k "processor_runtime_context or resolve_processor_injects_runtime_context_into_processor or resolve_processor_uses_factory_when_instance_processor_missing"` -> `4 passed, 31 deselected`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processor_runtime_context.py tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5541 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -857,5 +896,10 @@
   - checkpoint rerun after section 26:
     - `python -m pytest -q tests/unit` -> `767 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `767 passed, 1 skipped, 1 warning`, `TOTAL 5524 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 27:
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5541 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

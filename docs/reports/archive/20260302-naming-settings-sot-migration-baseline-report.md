@@ -563,6 +563,32 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 27 Processor Runtime-Context Helper Extraction (2026-03-02)
+- Intended actions:
+  - extract processor runtime-context mapping from
+    `FileProcessManager._resolve_processor(...)` into a dedicated helper seam.
+- Observed outcome:
+  - added
+    `application/processing/processor_runtime_context.py` with
+    `ProcessorRuntimeContext`,
+    `build_processor_runtime_context(...)`, and
+    `apply_processor_runtime_context(...)`;
+  - updated manager processor resolution stage to delegate explicit runtime
+    context build/apply behavior to the helper seam;
+  - added focused helper coverage validating config-derived context payload and
+    processor context injection.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_processor_runtime_context.py` -> failed (`ModuleNotFoundError: dpost.application.processing.processor_runtime_context`)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_file_process_manager_branches.py -k "processor_runtime_context or resolve_processor_injects_runtime_context_into_processor or resolve_processor_uses_factory_when_instance_processor_missing"` -> `4 passed, 31 deselected`
+    - `python -m pytest -q tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_force_paths_kadi_sync.py` -> `52 passed`
+    - `python -m ruff check src/dpost/application/processing/file_process_manager.py src/dpost/application/processing/processor_runtime_context.py tests/unit/application/processing/test_processor_runtime_context.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `769 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5541 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -583,4 +609,5 @@
 - Section 24 record-persistence context helper extraction is complete.
 - Section 25 naming-policy signature-level explicit-context cleanup is complete.
 - Section 26 processing-pipeline runtime adapter decoupling is complete.
+- Section 27 processor runtime-context helper extraction is complete.
 - No deferred compatibility fallback seams remain in active migration scope.
