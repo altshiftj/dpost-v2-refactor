@@ -457,6 +457,29 @@
 
 ---
 
+## 17. Remove `LocalRecord` Empty-Separator Fallback
+- Why this matters: `LocalRecord.__post_init__` still coerced empty separator
+  values to `"-"`, which allowed implicit naming policy in a core domain path.
+
+### Checklist
+- [x] Remove `LocalRecord` post-init fallback from empty separator to default.
+- [x] Fail fast when `LocalRecord` is constructed with empty separator context.
+- [x] Add focused unit coverage for missing-separator construction.
+
+### Completion Notes
+- How it was done:
+  - updated `LocalRecord.__post_init__` to require non-empty
+    `id_separator` context instead of coercing to `"-"`;
+  - added targeted test coverage for empty-separator construction failure.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py::test_init_rejects_empty_separator_value` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py tests/unit/application/records/test_record_manager.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `90 passed, 1 skipped`
+    - `python -m ruff check src/dpost/domain/records/local_record.py tests/unit/domain/records/test_local_record.py` -> `All checks passed!`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -505,5 +528,10 @@
   - checkpoint rerun after section 16:
     - `python -m pytest -q tests/unit` -> `754 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `754 passed, 1 skipped, 1 warning`, `TOTAL 5446 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+  - checkpoint rerun after section 17:
+    - `python -m pytest -q tests/unit` -> `755 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `755 passed, 1 skipped, 1 warning`, `TOTAL 5447 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches

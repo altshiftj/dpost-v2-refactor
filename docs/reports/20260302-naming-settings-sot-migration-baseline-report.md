@@ -350,6 +350,25 @@
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
 
+## Progress Update: Section 17 `LocalRecord` Empty-Separator Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove residual `LocalRecord` post-init fallback that coerced empty
+    separators to `"-"`.
+- Observed outcome:
+  - `LocalRecord.__post_init__` now requires non-empty `id_separator` context
+    and fails fast when missing;
+  - added focused unit coverage for empty-separator construction failure.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py::test_init_rejects_empty_separator_value` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/domain/records/test_local_record.py tests/unit/application/records/test_record_manager.py tests/unit/infrastructure/sync/test_sync_kadi.py tests/unit/infrastructure/storage/test_filesystem_utils.py` -> `90 passed, 1 skipped`
+    - `python -m ruff check src/dpost/domain/records/local_record.py tests/unit/domain/records/test_local_record.py` -> `All checks passed!`
+    - `python -m pytest -q tests/unit` -> `755 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `755 passed, 1 skipped, 1 warning`, `TOTAL 5447 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+    - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Sections 6 and 13 runtime naming-overload rename slices are complete.
@@ -360,4 +379,5 @@
 - Section 14 post-checklist explicit-context cleanup is complete.
 - Section 15 plugin exception-dir parent fallback cleanup is complete.
 - Section 16 remaining plugin separator fallback cleanup is complete.
+- Section 17 LocalRecord empty-separator fallback cleanup is complete.
 - No deferred compatibility fallback seams remain in active migration scope.

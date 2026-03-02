@@ -67,6 +67,12 @@ def test_init_parses_identifier_when_separator_is_explicit() -> None:
     assert record.sample_name == "sample_1"
 
 
+def test_init_rejects_empty_separator_value() -> None:
+    """Reject record construction when explicit separator context is empty."""
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        LocalRecord(identifier="dev-usr-inst-sample_1", id_separator="")
+
+
 def test_add_item_file_fs(sample_record):
     with Patcher() as patcher:
         fake_file = "/path/to/fake_file.tif"
