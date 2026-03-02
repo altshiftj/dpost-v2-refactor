@@ -37,7 +37,12 @@ def test_processing_moves_measurement_and_forces_cc_aggregate(
 
     record_dir = tmp_path / "records"
     file_id = "ERM-sample"
-    expected_measurement = get_unique_filename(str(record_dir), file_id, ".csv")
+    expected_measurement = get_unique_filename(
+        str(record_dir),
+        file_id,
+        ".csv",
+        id_separator="-",
+    )
 
     output = processor.device_specific_processing(
         str(measurement),
@@ -73,7 +78,9 @@ def test_should_queue_modified_only_for_cc_and_aggregate(config_service) -> None
 
     assert processor.should_queue_modified("CC_usr-ipat-sample.csv") is True
     assert processor.should_queue_modified("usr-ipat-sample.csv") is True
-    assert processor.should_queue_modified("usr-ipat-sample_20251222132219.csv") is False
+    assert (
+        processor.should_queue_modified("usr-ipat-sample_20251222132219.csv") is False
+    )
     assert processor.should_queue_modified("usr-ipat-sample.xlsx") is False
     assert processor.should_queue_modified("random.csv") is False
     assert processor.should_queue_modified("CC_random.csv") is False

@@ -311,6 +311,32 @@
 
 ---
 
+## 12. Remove `get_unique_filename(...)` Separator Fallback
+- Why this matters: unique-name generation is naming-policy behavior and should
+  require explicit separator context instead of silently defaulting to `"-"`.
+
+### Checklist
+- [x] Make `filesystem_utils.get_unique_filename(...)` fail fast when
+      `id_separator` is omitted.
+- [x] Update direct call sites (plugins/tests/helpers) to pass explicit
+      separator context.
+- [x] Add focused storage/unit coverage for the explicit-separator contract.
+
+### Completion Notes
+- How it was done:
+  - added fail-fast validation in `get_unique_filename(...)` for missing
+    `id_separator`;
+  - propagated explicit separators to all direct helper call sites where this
+    utility is used;
+  - updated affected plugin tests/mocks for explicit `id_separator` args.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py -k get_unique_filename_requires_explicit_separator` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> `111 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.

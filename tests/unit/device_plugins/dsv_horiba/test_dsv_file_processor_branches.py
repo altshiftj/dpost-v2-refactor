@@ -96,7 +96,7 @@ def test_processing_falls_back_to_single_file_move_when_batch_missing(
     moved: list[tuple[str, str]] = []
     monkeypatch.setattr(
         "dpost.device_plugins.dsv_horiba.file_processor.get_unique_filename",
-        lambda _record_path, _file_id, _extension: str(destination),
+        lambda _record_path, _file_id, _extension, **_kwargs: str(destination),
     )
     monkeypatch.setattr(
         "dpost.device_plugins.dsv_horiba.file_processor.move_item",
@@ -135,7 +135,9 @@ def test_processing_tolerates_raw_unlink_failures(
     }
     monkeypatch.setattr(
         "dpost.device_plugins.dsv_horiba.file_processor.get_unique_filename",
-        lambda _record_path, _file_id, _extension: str(record_dir / "prefix-01.txt"),
+        lambda _record_path, _file_id, _extension, **_kwargs: str(
+            record_dir / "prefix-01.txt"
+        ),
     )
     monkeypatch.setattr(
         "dpost.device_plugins.dsv_horiba.file_processor.move_item",

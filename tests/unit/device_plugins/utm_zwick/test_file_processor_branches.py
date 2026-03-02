@@ -153,7 +153,9 @@ def test_move_staged_artifact_logs_warning_on_move_failure(
     record_dir.mkdir()
     monkeypatch.setattr(
         "dpost.device_plugins.utm_zwick.file_processor.get_unique_filename",
-        lambda _record_dir, _prefix, _suffix: str(record_dir / "prefix-01.zs2"),
+        lambda _record_dir, _prefix, _suffix, **_kwargs: str(
+            record_dir / "prefix-01.zs2"
+        ),
     )
     monkeypatch.setattr(
         "dpost.device_plugins.utm_zwick.file_processor.move_item",

@@ -294,7 +294,10 @@ class FileProcessorRHEKinexus(FileProcessorABS):
                 raise RuntimeError(f"Expected native missing: {pair.raw_path}")
             unique_export_path = Path(
                 get_unique_filename(
-                    str(record_dir), base_prefix, pair.export_path.suffix.lower()
+                    str(record_dir),
+                    base_prefix,
+                    pair.export_path.suffix.lower(),
+                    id_separator="-",
                 )
             )
             basename = unique_export_path.stem

@@ -81,11 +81,13 @@ def get_unique_filename(
     id_separator: str | None = None,
 ) -> str:
     """Generate a unique filename in the specified directory."""
+    if not id_separator:
+        raise ValueError("id_separator must be provided explicitly")
 
     dir_path = Path(directory)
     dir_path.mkdir(parents=True, exist_ok=True)
 
-    sep = id_separator if id_separator else "-"
+    sep = id_separator
     counter = 1
     for existing in dir_path.iterdir():
         if existing.is_file() and existing.suffix == extension:

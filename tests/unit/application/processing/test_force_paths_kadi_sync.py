@@ -18,7 +18,9 @@ from tests.helpers.fake_sync import DummySyncManager
 from tests.helpers.fake_ui import HeadlessUI
 
 
-def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, monkeypatch):
+def test_force_paths_use_force_flag_in_kadi_sync(
+    config_service, tmp_settings, monkeypatch
+):
     class DummyKadiManager:
         def __init__(self):
             pass
@@ -42,7 +44,12 @@ def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, m
         ) -> ProcessingOutput:
             record_dir = Path(record_path)
             record_dir.mkdir(parents=True, exist_ok=True)
-            measurement = get_unique_filename(str(record_dir), file_id, extension)
+            measurement = get_unique_filename(
+                str(record_dir),
+                file_id,
+                extension,
+                id_separator="-",
+            )
             Path(measurement).write_text("measurement")
 
             cc_dest = record_dir / f"{file_id}-cc.csv"
@@ -123,7 +130,12 @@ def test_force_paths_relative_to_record_dir_are_forced(config_service, tmp_setti
         ) -> ProcessingOutput:
             record_dir = Path(record_path)
             record_dir.mkdir(parents=True, exist_ok=True)
-            measurement = get_unique_filename(str(record_dir), file_id, extension)
+            measurement = get_unique_filename(
+                str(record_dir),
+                file_id,
+                extension,
+                id_separator="-",
+            )
             Path(measurement).write_text("measurement")
 
             cc_name = f"{file_id}-cc.csv"

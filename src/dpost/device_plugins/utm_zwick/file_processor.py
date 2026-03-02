@@ -241,7 +241,12 @@ class FileProcessorUTMZwick(FileProcessorABS):
         if source is None or not source.exists():
             return
         unique_path = Path(
-            get_unique_filename(str(record_dir), filename_prefix, source.suffix)
+            get_unique_filename(
+                str(record_dir),
+                filename_prefix,
+                source.suffix,
+                id_separator="-",
+            )
         )
         try:
             move_item(str(source), str(unique_path))

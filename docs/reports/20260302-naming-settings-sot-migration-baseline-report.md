@@ -255,6 +255,21 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `737 passed, 1 skipped, 1 warning`, `TOTAL 5383 stmts, 0 miss, 100%`
     - `python -m ruff check src/dpost/application/processing/error_handling.py tests/unit/application/processing/test_error_handling.py` -> `All checks passed!`
 
+## Progress Update: Section 12 `get_unique_filename(...)` Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove implicit `"-"` separator fallback from storage unique-name helper.
+- Observed outcome:
+  - `filesystem_utils.get_unique_filename(...)` now requires explicit
+    `id_separator` context;
+  - updated direct utility call sites in plugins/tests to pass explicit
+    separator arguments;
+  - expanded storage test coverage for missing-separator fail-fast behavior.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py -k get_unique_filename_requires_explicit_separator` -> failed (did not raise `ValueError`)
+  - green-state:
+    - `python -m pytest -q tests/unit/infrastructure/storage/test_filesystem_utils.py tests/unit/application/processing/test_force_paths_kadi_sync.py tests/unit/device_plugins/erm_hioki/test_file_processor.py tests/unit/device_plugins/erm_hioki/test_live_run_sequence.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor.py tests/unit/device_plugins/sem_phenomxl2/test_file_processor_branches.py tests/unit/device_plugins/test_device/test_test_device_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py tests/unit/device_plugins/rhe_kinexus/test_file_processor.py tests/unit/device_plugins/rhe_kinexus/test_file_processor_branches.py tests/unit/device_plugins/utm_zwick/test_file_processor.py tests/unit/device_plugins/utm_zwick/test_file_processor_branches.py` -> `111 passed`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Section 6 low-risk naming-overload renames are now complete; only the
@@ -264,6 +279,8 @@
 - Section 8 record/persistence separator-inference cleanup is complete.
 - Naming policy ownership remains centralized in `NamingSettings`, and the
   runtime orchestration hot paths now require explicit naming context.
-- Remaining low-priority compatibility defaults (deferred follow-up):
-  - `infrastructure/storage/filesystem_utils.py`:
-    `get_unique_filename(...)` default separator fallback.
+- Section 12 storage unique-name separator fallback cleanup is complete.
+- Only deferred follow-up now:
+  - optional higher-churn rename:
+    `src/dpost/infrastructure/runtime/` ->
+    `src/dpost/infrastructure/runtime_adapters/`.

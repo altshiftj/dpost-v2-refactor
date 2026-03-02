@@ -157,6 +157,19 @@ def test_get_unique_filename_accepts_explicit_separator(tmp_path: Path) -> None:
     assert Path(resolved).name == "prefix__03.txt"
 
 
+def test_get_unique_filename_requires_explicit_separator(tmp_path: Path) -> None:
+    """Reject unique-name generation without explicit separator context."""
+    directory = tmp_path / "records"
+    directory.mkdir()
+
+    with pytest.raises(ValueError, match="id_separator must be provided explicitly"):
+        filesystem_utils.get_unique_filename(
+            str(directory),
+            "prefix",
+            ".txt",
+        )
+
+
 @pytest.mark.parametrize("func_name", ["get_rename_path", "get_exception_path"])
 def test_unique_path_helpers_accept_explicit_separator(
     tmp_path: Path,

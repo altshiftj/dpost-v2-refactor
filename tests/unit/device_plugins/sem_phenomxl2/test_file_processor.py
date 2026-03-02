@@ -13,6 +13,7 @@ pytestmark = pytest.mark.usefixtures("config_service")
 # Fixtures & boilerplate
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def processor():
     config = build_config()
@@ -33,6 +34,7 @@ def dummy_record():
 # Pre-processing
 # ---------------------------------------------------------------------------
 
+
 def test_device_specific_preprocessing_no_digit(processor):
     path = "/path/to/image.tif"
     with patch("pathlib.Path.rename") as mock_rename:
@@ -48,9 +50,11 @@ def test_device_specific_preprocessing_with_digit(processor):
     assert result.effective_path == path
     assert result.prefix_override == "image"
 
+
 # ---------------------------------------------------------------------------
 # Appendable logic
 # ---------------------------------------------------------------------------
+
 
 def test_is_appendable_false_for_elid(dummy_record, processor):
     dummy_record.files_uploaded = {"/some/file.elid": False}
@@ -66,6 +70,7 @@ def test_is_appendable_true(dummy_record, processor):
 # Processing logic
 # ---------------------------------------------------------------------------
 
+
 def test_device_specific_processing_tif_branch(tmp_path, processor):
     src_file = tmp_path / "image.tif"
     src_file.write_text("image data")
@@ -76,12 +81,13 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
     unique_file = record_dir / "prefix-01.tif"
 
     module_path = FileProcessorSEMPhenomXL2.__module__
-    with patch(
-        f"{module_path}.get_unique_filename",
-        return_value=str(unique_file),
-    ) as mock_unique, patch(
-        f"{module_path}.move_item"
-    ) as mock_move:
+    with (
+        patch(
+            f"{module_path}.get_unique_filename",
+            return_value=str(unique_file),
+        ) as mock_unique,
+        patch(f"{module_path}.move_item") as mock_move,
+    ):
 
         output = processor.device_specific_processing(
             str(src_file), str(record_dir), "prefix", ".tif"
@@ -89,7 +95,12 @@ def test_device_specific_processing_tif_branch(tmp_path, processor):
 
         assert output.final_path == str(unique_file)
         assert output.datatype == "img"
-        mock_unique.assert_called_once_with(str(record_dir), "prefix", ".tif")
+        mock_unique.assert_called_once_with(
+            str(record_dir),
+            "prefix",
+            ".tif",
+            id_separator="-",
+        )
         mock_move.assert_called_once_with(src_file, str(unique_file))
 
 
@@ -114,13 +125,13 @@ def test_device_specific_processing_elid_branch(tmp_path, processor):
     record_dir = tmp_path / "record"
     record_dir.mkdir()
 
-    with patch(
-        f"{FileProcessorSEMPhenomXL2.__module__}.shutil.make_archive"
-    ) as mock_archive, patch(
-        f"{FileProcessorSEMPhenomXL2.__module__}.move_item"
-    ) as mock_move, patch(
-        f"{FileProcessorSEMPhenomXL2.__module__}.shutil.rmtree"
-    ) as mock_rmtree:
+    with (
+        patch(
+            f"{FileProcessorSEMPhenomXL2.__module__}.shutil.make_archive"
+        ) as mock_archive,
+        patch(f"{FileProcessorSEMPhenomXL2.__module__}.move_item") as mock_move,
+        patch(f"{FileProcessorSEMPhenomXL2.__module__}.shutil.rmtree") as mock_rmtree,
+    ):
 
         mock_archive.return_value = str(record_dir / "prefix.zip")
 

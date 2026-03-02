@@ -85,7 +85,9 @@ def test_handle_export_skips_finalizing_and_tracked_exports(tmp_path: Path) -> N
 
     processor._finalizing["batch"] = _FlushBatch(
         prefix="tracked",
-        pairs=[_Pair(export_path=export_path, raw_path=folder / "raw.rdf", created=1.0)],
+        pairs=[
+            _Pair(export_path=export_path, raw_path=folder / "raw.rdf", created=1.0)
+        ],
     )
     state = _FolderState()
     assert processor._handle_export(str(folder.resolve()), state, export_path) is None
@@ -137,18 +139,26 @@ def test_handle_native_branches_for_staged_tracked_and_pending(tmp_path: Path) -
     staged_dir = tmp_path / "stage"
     staged_dir.mkdir()
     processor._raw_to_stage[str(native)] = str(staged_dir)
-    passthrough = processor._handle_native(str(folder.resolve()), _FolderState(), native)
+    passthrough = processor._handle_native(
+        str(folder.resolve()), _FolderState(), native
+    )
     assert passthrough is not None
     assert passthrough.effective_path == str(staged_dir)
     processor._raw_to_stage.clear()
 
-    tracked_state = _FolderState(pending_raw=deque([_PendingRaw(path=native, created=1.0)]))
-    assert processor._handle_native(str(folder.resolve()), tracked_state, native) is None
+    tracked_state = _FolderState(
+        pending_raw=deque([_PendingRaw(path=native, created=1.0)])
+    )
+    assert (
+        processor._handle_native(str(folder.resolve()), tracked_state, native) is None
+    )
     assert len(tracked_state.pending_raw) == 1
 
     pending_state = _FolderState()
     processor._raw_to_stage.clear()
-    assert processor._handle_native(str(folder.resolve()), pending_state, native) is None
+    assert (
+        processor._handle_native(str(folder.resolve()), pending_state, native) is None
+    )
     assert len(pending_state.pending_raw) == 1
 
 
@@ -292,7 +302,9 @@ def test_processing_requires_pending_batch_for_file_source(tmp_path: Path) -> No
     record_dir = tmp_path / "record"
 
     with pytest.raises(RuntimeError, match="No pending batch"):
-        processor.device_specific_processing(str(src), str(record_dir), "prefix", ".rdf")
+        processor.device_specific_processing(
+            str(src), str(record_dir), "prefix", ".rdf"
+        )
 
 
 @pytest.mark.parametrize(
@@ -357,7 +369,9 @@ def test_processing_directory_cleanup_ignores_rmdir_and_map_pop_failures(
     )
     monkeypatch.setattr(
         "dpost.device_plugins.rhe_kinexus.file_processor.get_unique_filename",
-        lambda _record_path, _base_prefix, _extension: str(record_dir / "prefix-01.csv"),
+        lambda _record_path, _base_prefix, _extension, **_kwargs: str(
+            record_dir / "prefix-01.csv"
+        ),
     )
     monkeypatch.setattr(
         Path,

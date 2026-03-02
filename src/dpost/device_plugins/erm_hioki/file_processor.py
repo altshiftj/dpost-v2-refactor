@@ -143,7 +143,12 @@ class FileProcessorHioki(FileProcessorABS):
         file_id: str,
         extension: str,
     ) -> ProcessingOutput:
-        destination = get_unique_filename(record_path, file_id, extension)
+        destination = get_unique_filename(
+            record_path,
+            file_id,
+            extension,
+            id_separator="-",
+        )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
 
@@ -154,7 +159,12 @@ class FileProcessorHioki(FileProcessorABS):
         file_id: str,
         extension: str,
     ) -> ProcessingOutput:
-        destination = get_unique_filename(record_path, file_id, extension)
+        destination = get_unique_filename(
+            record_path,
+            file_id,
+            extension,
+            id_separator="-",
+        )
         move_item(src_path, destination)
         return ProcessingOutput(final_path=destination, datatype="hioki")
 
@@ -165,7 +175,12 @@ class FileProcessorHioki(FileProcessorABS):
         file_id: str,
         extension: str,
     ) -> ProcessingOutput:
-        destination = get_unique_filename(str(record_dir), file_id, extension)
+        destination = get_unique_filename(
+            str(record_dir),
+            file_id,
+            extension,
+            id_separator="-",
+        )
         move_item(src, destination)
 
         base = self._normalize_stem(src.stem)

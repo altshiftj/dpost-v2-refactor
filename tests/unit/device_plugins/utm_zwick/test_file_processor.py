@@ -19,6 +19,7 @@ def processor():
 # Pre-processing behavior (zs2 staged, sentinel xlsx triggers finalize)
 # ---------------------------------------------------------------------------
 
+
 def test_preprocessing_stages_until_sentinel_xlsx(tmp_path, processor):
     zs2 = tmp_path / "usr-inst-sample_a.zs2"
     xlsx = tmp_path / "usr-inst-sample_a.xlsx"
@@ -67,9 +68,11 @@ def test_preprocessing_requires_exact_stem_match(tmp_path, processor):
     assert first is None
     assert second is None
 
+
 # ---------------------------------------------------------------------------
 # Processing flow (zs2 + sentinel xlsx)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     ("zs2_name", "xlsx_name"),
@@ -103,12 +106,13 @@ def test_device_specific_processing_moves_staged_series(
         str(record_dir / "prefix-01.xlsx"),
     ]
 
-    with patch(
-        f"{FileProcessorUTMZwick.__module__}.get_unique_filename",
-        side_effect=unique_paths,
-    ) as mock_unique, patch(
-        f"{FileProcessorUTMZwick.__module__}.move_item"
-    ) as mock_move:
+    with (
+        patch(
+            f"{FileProcessorUTMZwick.__module__}.get_unique_filename",
+            side_effect=unique_paths,
+        ) as mock_unique,
+        patch(f"{FileProcessorUTMZwick.__module__}.move_item") as mock_move,
+    ):
         output = processor.device_specific_processing(
             str(xlsx), str(record_dir), "prefix", ".xlsx"
         )
@@ -116,8 +120,8 @@ def test_device_specific_processing_moves_staged_series(
     assert Path(output.final_path) == record_dir
     assert output.datatype == "xlsx"
     assert mock_unique.call_args_list == [
-        call(str(record_dir), "prefix", ".zs2"),
-        call(str(record_dir), "prefix", ".xlsx"),
+        call(str(record_dir), "prefix", ".zs2", id_separator="-"),
+        call(str(record_dir), "prefix", ".xlsx", id_separator="-"),
     ]
     assert mock_move.call_args_list == [
         call(str(zs2), unique_paths[0]),

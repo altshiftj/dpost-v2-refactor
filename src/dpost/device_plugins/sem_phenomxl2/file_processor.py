@@ -67,7 +67,12 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
         if extension.lower() in {
             ext.lower() for ext in self.device_config.files.native_extensions
         }:
-            destination = get_unique_filename(record_path, file_id, extension)
+            destination = get_unique_filename(
+                record_path,
+                file_id,
+                extension,
+                id_separator="-",
+            )
             move_item(src, destination)
             return ProcessingOutput(final_path=destination, datatype="img")
 
@@ -103,7 +108,14 @@ class FileProcessorSEMPhenomXL2(FileProcessorABS):
                 continue
             destination = record_dir / f"{base}{suffix}"
             if destination.exists():
-                destination = Path(get_unique_filename(str(record_dir), base, suffix))
+                destination = Path(
+                    get_unique_filename(
+                        str(record_dir),
+                        base,
+                        suffix,
+                        id_separator="-",
+                    )
+                )
             try:
                 move_item(str(descriptor), str(destination))
                 logger.debug("Moved descriptor '%s' to '%s'", descriptor, destination)

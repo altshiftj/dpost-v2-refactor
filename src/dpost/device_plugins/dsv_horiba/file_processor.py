@@ -140,7 +140,12 @@ class FileProcessorDSVHoriba(FileProcessorABS):
 
         bucket = self._batches.pop(key, None)
         if not bucket:
-            destination = get_unique_filename(record_path, file_id, src.suffix.lower())
+            destination = get_unique_filename(
+                record_path,
+                file_id,
+                src.suffix.lower(),
+                id_separator="-",
+            )
             move_item(str(src), destination)
             return ProcessingOutput(final_path=destination, datatype="txt")
 
@@ -162,7 +167,12 @@ class FileProcessorDSVHoriba(FileProcessorABS):
                     logger.warning("Could not delete raw file '%s': %s", raw_file, exc)
 
         for txt_file in txt_files:
-            destination = get_unique_filename(record_path, file_id, ".txt")
+            destination = get_unique_filename(
+                record_path,
+                file_id,
+                ".txt",
+                id_separator="-",
+            )
             move_item(str(txt_file), destination)
             logger.debug("Moved txt file '%s' to '%s'", txt_file, destination)
 

@@ -72,7 +72,9 @@ def hioki_manager(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         file_processor=FileProcessorHioki(device_config),
     )
 
-    yield manager, device_config, SimpleNamespace(WATCH_DIR=watch_dir, DEST_DIR=dest_dir)
+    yield manager, device_config, SimpleNamespace(
+        WATCH_DIR=watch_dir, DEST_DIR=dest_dir
+    )
     reset_service()
 
 
@@ -97,7 +99,12 @@ def test_measurement_processed_even_when_aggregate_exists(hioki_manager):
         current_device=manager.config_service.current_device(),
     )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
-    expected_measurement = get_unique_filename(record_path, file_id, ".csv")
+    expected_measurement = get_unique_filename(
+        record_path,
+        file_id,
+        ".csv",
+        id_separator="-",
+    )
 
     manager.process_item(str(measurement))
 
@@ -126,14 +133,24 @@ def test_measurement_creates_second_file_when_aggregate_exists(hioki_manager):
         current_device=manager.config_service.current_device(),
     )
     file_id = generate_file_id(prefix, device_abbr, id_separator="-")
-    expected_first = get_unique_filename(record_path, file_id, ".csv")
+    expected_first = get_unique_filename(
+        record_path,
+        file_id,
+        ".csv",
+        id_separator="-",
+    )
 
     manager.process_item(str(measurement_one))
     assert Path(expected_first).exists()
 
     measurement_two = paths.WATCH_DIR / f"{prefix}_20260114183941.csv"
     measurement_two.write_text("measurement-2")
-    expected_second = get_unique_filename(record_path, file_id, ".csv")
+    expected_second = get_unique_filename(
+        record_path,
+        file_id,
+        ".csv",
+        id_separator="-",
+    )
 
     manager.process_item(str(measurement_two))
 
@@ -243,7 +260,14 @@ def test_full_lab_sequence_marks_measurements_and_force_updates(hioki_manager):
     # 2) Measurement #1 before aggregate
     meas1 = paths.WATCH_DIR / f"{prefix}_20260114183851.csv"
     meas1.write_text("m1")
-    expected_meas1 = Path(get_unique_filename(str(record_path), file_id, ".csv"))
+    expected_meas1 = Path(
+        get_unique_filename(
+            str(record_path),
+            file_id,
+            ".csv",
+            id_separator="-",
+        )
+    )
     manager.process_item(str(meas1))
     assert expected_meas1.exists()
     assert expected_meas1.read_text() == "m1"
@@ -265,7 +289,14 @@ def test_full_lab_sequence_marks_measurements_and_force_updates(hioki_manager):
     # 4) Measurement #2 should create -02
     meas2 = paths.WATCH_DIR / f"{prefix}_20260114183941.csv"
     meas2.write_text("m2")
-    expected_meas2 = Path(get_unique_filename(str(record_path), file_id, ".csv"))
+    expected_meas2 = Path(
+        get_unique_filename(
+            str(record_path),
+            file_id,
+            ".csv",
+            id_separator="-",
+        )
+    )
     manager.process_item(str(meas2))
     assert expected_meas2.exists()
     assert expected_meas2.read_text() == "m2"

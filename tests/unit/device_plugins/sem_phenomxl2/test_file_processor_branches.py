@@ -59,7 +59,7 @@ def test_move_descriptors_handles_skip_unique_and_move_error(
 
     monkeypatch.setattr(
         "dpost.device_plugins.sem_phenomxl2.file_processor.get_unique_filename",
-        lambda _record_dir, _base, _extension: str(unique_dest),
+        lambda _record_dir, _base, _extension, **_kwargs: str(unique_dest),
     )
     monkeypatch.setattr(
         "dpost.device_plugins.sem_phenomxl2.file_processor.move_item",
