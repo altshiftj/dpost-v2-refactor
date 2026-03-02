@@ -282,6 +282,35 @@
 
 ---
 
+## 11. Remove Error-Handling Exception-Move Fallbacks
+- Why this matters: exception routing helpers should receive explicit exception
+  directory + separator context and avoid hidden defaults.
+
+### Checklist
+- [x] Require explicit `exception_dir` and `id_separator` in
+      `safe_move_to_exception(...)`.
+- [x] Thread explicit exception context through
+      `move_to_exception_and_inform(...)` and `handle_invalid_datatype(...)`.
+- [x] Update focused tests in:
+      `tests/unit/application/processing/test_error_handling.py` and affected
+      processing/plugin tests.
+
+### Completion Notes
+- How it was done:
+  - removed `safe_move_to_exception(...)` defaults for exception path and
+    separator;
+  - added fail-fast validation for explicit exception context;
+  - updated error-handling wrapper functions to pass explicit context through
+    staged/preprocessed exception-move paths.
+  Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_error_handling.py` -> failed (missing explicit-context contract and signature mismatch)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_error_handling.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `69 passed`
+
+---
+
 ## Manual Check
 - Why this matters: final validation confirms fallback-retirement changes did
   not regress behavior and keeps architecture guardrails enforceable.
@@ -317,4 +346,8 @@
   - checkpoint rerun after section 10:
     - `python -m pytest -q tests/unit` -> `736 passed, 1 skipped, 1 warning`
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `736 passed, 1 skipped, 1 warning`, `TOTAL 5381 stmts, 0 miss, 100%`
+    - `python -m ruff check .` -> `All checks passed!`
+  - checkpoint rerun after section 11:
+    - `python -m pytest -q tests/unit` -> `737 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `737 passed, 1 skipped, 1 warning`, `TOTAL 5383 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`

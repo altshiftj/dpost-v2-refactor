@@ -234,6 +234,27 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `736 passed, 1 skipped, 1 warning`, `TOTAL 5381 stmts, 0 miss, 100%`
     - `python -m ruff check src/dpost/device_plugins/dsv_horiba/file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor.py tests/unit/device_plugins/dsv_horiba/test_dsv_file_processor_branches.py` -> `All checks passed!`
 
+## Progress Update: Section 11 Error-Handling Exception-Move Fallback Removal (2026-03-02)
+- Intended actions:
+  - remove implicit exception path/separator defaults from error-handling
+    helpers.
+- Observed outcome:
+  - `safe_move_to_exception(...)` now requires explicit `exception_dir` and
+    `id_separator` context;
+  - `move_to_exception_and_inform(...)` and `handle_invalid_datatype(...)`
+    now forward explicit exception context through all exception-move paths;
+  - updated error-handling tests and affected processing/plugin coverage for
+    explicit-context behavior.
+- Validation:
+  - red-state:
+    - `python -m pytest -q tests/unit/application/processing/test_error_handling.py` -> failed (missing explicit-context contract and signature mismatch)
+  - green-state:
+    - `python -m pytest -q tests/unit/application/processing/test_error_handling.py` -> `6 passed`
+    - `python -m pytest -q tests/unit/device_plugins/psa_horiba/test_file_processor.py tests/unit/device_plugins/psa_horiba/test_file_processor_branches.py tests/unit/application/processing/test_file_process_manager.py tests/unit/application/processing/test_file_process_manager_branches.py` -> `69 passed`
+    - `python -m pytest -q tests/unit` -> `737 passed, 1 skipped, 1 warning`
+    - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `737 passed, 1 skipped, 1 warning`, `TOTAL 5383 stmts, 0 miss, 100%`
+    - `python -m ruff check src/dpost/application/processing/error_handling.py tests/unit/application/processing/test_error_handling.py` -> `All checks passed!`
+
 ## Final Status for This Wave
 - Sections 1-5 of the migration checklist are complete.
 - Section 6 low-risk naming-overload renames are now complete; only the
@@ -244,7 +265,5 @@
 - Naming policy ownership remains centralized in `NamingSettings`, and the
   runtime orchestration hot paths now require explicit naming context.
 - Remaining low-priority compatibility defaults (deferred follow-up):
-  - `application/processing/error_handling.py`:
-    `resolved_id_separator = id_separator or "-"`.
   - `infrastructure/storage/filesystem_utils.py`:
     `get_unique_filename(...)` default separator fallback.
