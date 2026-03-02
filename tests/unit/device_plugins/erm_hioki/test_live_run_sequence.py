@@ -89,7 +89,7 @@ def test_measurement_processed_even_when_aggregate_exists(hioki_manager):
 
     device_abbr = device_config.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     expected_measurement = get_unique_filename(record_path, file_id, ".csv")
 
     manager.process_item(str(measurement))
@@ -111,7 +111,7 @@ def test_measurement_creates_second_file_when_aggregate_exists(hioki_manager):
 
     device_abbr = device_config.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     expected_first = get_unique_filename(record_path, file_id, ".csv")
 
     manager.process_item(str(measurement_one))
@@ -138,9 +138,13 @@ def test_aggregate_update_marks_force_after_upload(hioki_manager):
 
     device_abbr = device_config.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     results_path = Path(record_path) / f"{file_id}-results.csv"
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device_config.metadata.record_kadi_id)
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device_config.metadata.record_kadi_id,
+        id_separator="-",
+    )
     record = manager.records.get_record_by_id(record_id)
     assert record is not None
 
@@ -162,9 +166,13 @@ def test_cc_update_marks_force_after_upload(hioki_manager):
 
     device_abbr = device_config.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = Path(record_path) / f"{file_id}-cc.csv"
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device_config.metadata.record_kadi_id)
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device_config.metadata.record_kadi_id,
+        id_separator="-",
+    )
     record = manager.records.get_record_by_id(record_id)
     assert record is not None
 
@@ -180,8 +188,12 @@ def test_full_lab_sequence_marks_measurements_and_force_updates(hioki_manager):
     prefix = "jfi-ipat-hioki_test"
     device_abbr = device_config.metadata.device_abbr
     record_path = Path(get_record_path(prefix, device_abbr))
-    file_id = generate_file_id(prefix, device_abbr)
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device_config.metadata.record_kadi_id)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device_config.metadata.record_kadi_id,
+        id_separator="-",
+    )
 
     # 1) Initial CC
     cc_file = paths.WATCH_DIR / f"CC_{prefix}.csv"

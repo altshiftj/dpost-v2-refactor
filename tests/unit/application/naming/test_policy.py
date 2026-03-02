@@ -1,4 +1,4 @@
-"""Unit coverage for application naming facade delegation and context use."""
+"""Unit coverage for explicit-context naming facade behavior."""
 
 from __future__ import annotations
 
@@ -27,189 +27,114 @@ class _Device:
     metadata: _Metadata
 
 
-@dataclass(frozen=True)
-class _Config:
-    """Synthetic active naming config used for policy facade tests."""
-
-    id_separator: str
-    filename_pattern: re.Pattern[str]
-    device: _Device | None
-
-
-def _install_current(monkeypatch: pytest.MonkeyPatch, config: _Config) -> None:
-    """Patch active config accessor to return the supplied config object."""
-    monkeypatch.setattr(policy, "current", lambda: config)
-
-
-def test_generate_record_id_uses_explicit_record_id_without_device_context(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Generate record ID directly from explicit record ID argument."""
-    _install_current(
-        monkeypatch,
-        _Config(id_separator="-", filename_pattern=FILENAME_PATTERN, device=None),
-    )
-
+def test_generate_record_id_uses_explicit_record_id_and_separator() -> None:
+    """Generate record IDs without any ambient naming config dependency."""
     record_id = policy.generate_record_id(
         "mus-ipat-sample_1",
         dev_kadi_record_id="REC01",
+        id_separator="-",
     )
 
     assert record_id == "rec01-mus-ipat-sample_1"
 
 
-def test_generate_record_id_uses_active_device_context(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Generate record ID from active device metadata when explicit ID is absent."""
-    _install_current(
-        monkeypatch,
-        _Config(
-            id_separator="-",
-            filename_pattern=FILENAME_PATTERN,
-            device=_Device(_Metadata(device_abbr="SEM", record_kadi_id="RID99")),
-        ),
+def test_generate_record_id_uses_explicit_device_context() -> None:
+    """Generate record ID from provided device metadata when record id is omitted."""
+    device = _Device(_Metadata(device_abbr="SEM", record_kadi_id="RID99"))
+    record_id = policy.generate_record_id(
+        "mus-ipat-sample_1",
+        id_separator="-",
+        current_device=device,
     )
-
-    record_id = policy.generate_record_id("mus-ipat-sample_1")
 
     assert record_id == "rid99-mus-ipat-sample_1"
 
 
-def test_generate_record_id_raises_without_active_record_context(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Raise when neither explicit ID nor active device record ID is available."""
-    _install_current(
-        monkeypatch,
-        _Config(id_separator="-", filename_pattern=FILENAME_PATTERN, device=None),
-    )
+def test_generate_record_id_requires_separator() -> None:
+    """Reject record ID generation when separator context is not supplied."""
+    with pytest.raises(ValueError, match="id_separator must be provided"):
+        policy.generate_record_id(
+            "mus-ipat-sample_1",
+            dev_kadi_record_id="REC01",
+        )
 
+
+def test_generate_record_id_requires_device_or_explicit_record_id() -> None:
+    """Reject record ID generation when record context is missing."""
     with pytest.raises(ValueError, match="Device context is not set"):
-        policy.generate_record_id("mus-ipat-sample_1")
+        policy.generate_record_id("mus-ipat-sample_1", id_separator="-")
 
 
-def test_generate_file_id_uses_active_device_abbreviation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Generate file ID from active device metadata when abbreviation is omitted."""
-    _install_current(
-        monkeypatch,
-        _Config(
-            id_separator="-",
-            filename_pattern=FILENAME_PATTERN,
-            device=_Device(_Metadata(device_abbr="RHE", record_kadi_id="RID1")),
-        ),
+def test_generate_file_id_uses_explicit_context() -> None:
+    """Generate file ID from provided device context and explicit separator."""
+    device = _Device(_Metadata(device_abbr="RHE", record_kadi_id="RID1"))
+    file_id = policy.generate_file_id(
+        "mus-ipat-sample_1",
+        id_separator="-",
+        current_device=device,
     )
-
-    file_id = policy.generate_file_id("mus-ipat-sample_1")
 
     assert file_id == "RHE-sample_1"
 
 
-def test_generate_file_id_raises_without_active_device_abbreviation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Raise when neither explicit abbreviation nor active device context exists."""
-    _install_current(
-        monkeypatch,
-        _Config(id_separator="-", filename_pattern=FILENAME_PATTERN, device=None),
-    )
+def test_generate_file_id_requires_separator() -> None:
+    """Reject file ID generation when separator context is missing."""
+    with pytest.raises(ValueError, match="id_separator must be provided"):
+        policy.generate_file_id("mus-ipat-sample_1", device_abbr="RHE")
 
+
+def test_generate_file_id_requires_device_or_explicit_abbr() -> None:
+    """Reject file ID generation when device context is missing."""
     with pytest.raises(ValueError, match="Device context is not set"):
-        policy.generate_file_id("mus-ipat-sample_1")
+        policy.generate_file_id("mus-ipat-sample_1", id_separator="-")
 
 
-def test_parse_and_prefix_wrapper_helpers_use_active_policy_settings(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Delegate parse/validate/sanitize helpers through active naming settings."""
-    _install_current(
-        monkeypatch,
-        _Config(id_separator="-", filename_pattern=FILENAME_PATTERN, device=None),
-    )
-
+def test_parse_and_prefix_helpers_require_explicit_context() -> None:
+    """Parse should stay context-free while prefix helpers demand explicit policy."""
     stem, suffix = policy.parse_filename("C:/tmp/demo.txt")
     assert (stem, suffix) == ("demo", ".txt")
 
-    assert policy.is_valid_prefix("mus-ipat-sample_1") is True
-    assert policy.sanitize_prefix(" MuS - IPAT - Sample Name ") == "mus-ipat-Sample_Name"
-    sanitized, valid = policy.sanitize_and_validate("MuS-IPAT-Sample Name")
+    with pytest.raises(ValueError, match="filename_pattern must be provided"):
+        policy.is_valid_prefix("mus-ipat-sample_1", id_separator="-")
+    with pytest.raises(ValueError, match="id_separator must be provided"):
+        policy.sanitize_prefix(" MuS - IPAT - Sample Name ")
+
+    assert (
+        policy.sanitize_prefix(" MuS - IPAT - Sample Name ", id_separator="-")
+        == "mus-ipat-Sample_Name"
+    )
+    sanitized, valid = policy.sanitize_and_validate(
+        "MuS-IPAT-Sample Name",
+        filename_pattern=FILENAME_PATTERN,
+        id_separator="-",
+    )
     assert sanitized == "mus-ipat-Sample_Name"
     assert valid is True
 
 
-def test_violation_and_user_input_analysis_wrappers_delegate_to_domain_policy(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """Return domain-analysis outputs using active filename pattern and separator."""
-    _install_current(
-        monkeypatch,
-        _Config(id_separator="-", filename_pattern=FILENAME_PATTERN, device=None),
-    )
+def test_analysis_helpers_require_explicit_context() -> None:
+    """Violation and rename-input analysis should reject missing naming policy."""
+    with pytest.raises(ValueError, match="filename_pattern must be provided"):
+        policy.explain_filename_violation("u1-ipat-sample!", id_separator="-")
+    with pytest.raises(ValueError, match="id_separator must be provided"):
+        policy.analyze_user_input(
+            {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"},
+            filename_pattern=FILENAME_PATTERN,
+        )
 
-    violation = policy.explain_filename_violation("u1-ipat-sample!")
+    violation = policy.explain_filename_violation(
+        "u1-ipat-sample!",
+        filename_pattern=FILENAME_PATTERN,
+        id_separator="-",
+    )
     assert violation["valid"] is False
     assert violation["reasons"]
 
     analysis = policy.analyze_user_input(
-        {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"}
+        {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"},
+        filename_pattern=FILENAME_PATTERN,
+        id_separator="-",
     )
     assert analysis["valid"] is True
     assert analysis["sanitized"] == "mus-ipat-Sample_Name"
 
-
-def test_generate_id_wrappers_accept_explicit_context_without_active_config() -> None:
-    """Generate IDs using explicit separator/device context with no current() patching."""
-    device = _Device(_Metadata(device_abbr="SEM", record_kadi_id="RID42"))
-
-    record_id = policy.generate_record_id(
-        "mus__ipat__sample_1",
-        id_separator="__",
-        current_device=device,
-    )
-    file_id = policy.generate_file_id(
-        "mus__ipat__sample_1",
-        id_separator="__",
-        current_device=device,
-    )
-
-    assert record_id == "rid42__mus__ipat__sample_1"
-    assert file_id == "SEM__sample_1"
-
-
-def test_prefix_wrappers_accept_explicit_pattern_and_separator() -> None:
-    """Validate/sanitize/analyze wrappers should work with explicit naming context."""
-    pattern = re.compile(r"^[A-Za-z]+__[A-Za-z]+__[A-Za-z0-9_ ]{1,30}$")
-
-    assert policy.is_valid_prefix(
-        "mus__ipat__sample_1",
-        filename_pattern=pattern,
-        id_separator="__",
-    ) is True
-    assert (
-        policy.sanitize_prefix(" MuS __ IPAT __ Sample Name ", id_separator="__")
-        == "mus__ipat__Sample_Name"
-    )
-    sanitized, valid = policy.sanitize_and_validate(
-        "MuS__IPAT__Sample Name",
-        filename_pattern=pattern,
-        id_separator="__",
-    )
-    assert sanitized == "mus__ipat__Sample_Name"
-    assert valid is True
-
-    violation = policy.explain_filename_violation(
-        "u1__ipat__sample!",
-        filename_pattern=pattern,
-        id_separator="__",
-    )
-    assert violation["valid"] is False
-
-    analysis = policy.analyze_user_input(
-        {"name": "MuS", "institute": "IPAT", "sample_ID": "Sample Name"},
-        filename_pattern=pattern,
-        id_separator="__",
-    )
-    assert analysis["valid"] is True
-    assert analysis["sanitized"] == "mus__ipat__Sample_Name"

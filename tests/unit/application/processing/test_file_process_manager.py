@@ -175,13 +175,17 @@ def test_add_item_to_record_force_paths_marked(manager_components, config_servic
             file_processor=manager.file_processor,
         )
 
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device.metadata.record_kadi_id)
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device.metadata.record_kadi_id,
+        id_separator="-",
+    )
     record = manager.records.get_record_by_id(record_id)
     assert record is not None
 
     device_abbr = device.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     force_path = Path(record_path) / f"{file_id}_cc.csv"
     meas_path = Path(record_path) / f"{file_id}_meas.txt"
 

@@ -885,10 +885,15 @@ def test_resolve_processor_injects_runtime_context_into_processor(
     class _ProcessorWithContext(DummyProcessor):
         def __init__(self) -> None:
             super().__init__()
-            self.context_calls: list[str | None] = []
+            self.context_calls: list[tuple[str | None, object | None]] = []
 
-        def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
-            self.context_calls.append(id_separator)
+        def configure_runtime_context(
+            self,
+            *,
+            id_separator: str | None = None,
+            filename_pattern=None,
+        ) -> None:
+            self.context_calls.append((id_separator, filename_pattern))
 
     processor = _ProcessorWithContext()
     manager.file_processor = processor
@@ -896,7 +901,12 @@ def test_resolve_processor_injects_runtime_context_into_processor(
     resolved = manager._resolve_processor(config_service.devices[0])
 
     assert resolved is processor
-    assert processor.context_calls == [config_service.current.id_separator]
+    assert processor.context_calls == [
+        (
+            config_service.current.id_separator,
+            config_service.current.filename_pattern,
+        )
+    ]
 
 
 def test_strip_internal_stage_suffix_removes_countered_suffix() -> None:

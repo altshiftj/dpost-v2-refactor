@@ -9,36 +9,19 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 from dpost.application.config import ConfigService, DeviceConfig, get_service
-from dpost.application.naming.policy import generate_file_id, parse_filename
 from dpost.application.metrics import FILES_FAILED, FILES_PROCESSED
-from dpost.application.ports import SyncAdapterPort
-from dpost.application.ports import UserInteractionPort
-from dpost.domain.processing.models import (
-    ProcessingCandidate,
-    ProcessingRequest,
-    ProcessingResult,
-    ProcessingStatus,
-    RouteContext,
-    RoutingDecision,
+from dpost.application.naming.policy import generate_file_id, parse_filename
+from dpost.application.ports import SyncAdapterPort, UserInteractionPort
+from dpost.application.processing.candidate_metadata import derive_candidate_metadata
+from dpost.application.processing.device_resolver import (
+    DeviceResolutionKind,
+    DeviceResolver,
 )
-from dpost.infrastructure.logging import setup_logger
-from dpost.infrastructure.storage.filesystem_utils import (
-    get_record_path,
-    move_to_exception_folder,
-)
-from dpost.application.session import SessionManager
-from dpost.application.processing.device_resolver import DeviceResolver
-from dpost.application.processing.device_resolver import DeviceResolutionKind
+from dpost.application.processing.error_handling import safe_move_to_exception
 from dpost.application.processing.failure_emitter import (
     ProcessingFailureEmissionSink,
     emit_processing_failure_outcome,
 )
-from dpost.application.processing.immediate_sync_error_emitter import (
-    ImmediateSyncErrorEmissionSink,
-    emit_immediate_sync_error,
-)
-from dpost.application.processing.error_handling import safe_move_to_exception
-from dpost.application.processing.candidate_metadata import derive_candidate_metadata
 from dpost.application.processing.failure_outcome_policy import (
     ProcessingFailureOutcome,
     build_processing_failure_outcome,
@@ -52,6 +35,10 @@ from dpost.application.processing.force_path_policy import (
     iter_force_unsynced_targets,
     resolve_force_paths,
 )
+from dpost.application.processing.immediate_sync_error_emitter import (
+    ImmediateSyncErrorEmissionSink,
+    emit_immediate_sync_error,
+)
 from dpost.application.processing.modified_event_gate import ModifiedEventGate
 from dpost.application.processing.post_persist_bookkeeping import (
     PostPersistBookkeepingEmissionSink,
@@ -61,18 +48,32 @@ from dpost.application.processing.post_persist_bookkeeping import (
 )
 from dpost.application.processing.processor_factory import FileProcessorFactory
 from dpost.application.processing.record_flow import handle_unappendable_record
-from dpost.application.processing.route_context_policy import build_route_context
-from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
 from dpost.application.processing.record_utils import (
     apply_device_defaults,
     get_or_create_record,
     update_record,
 )
 from dpost.application.processing.rename_flow import RenameService
+from dpost.application.processing.rename_retry_policy import build_rename_retry_prompt
+from dpost.application.processing.route_context_policy import build_route_context
 from dpost.application.processing.routing import fetch_record_for_prefix
 from dpost.application.processing.stability_tracker import FileStabilityTracker
 from dpost.application.records.record_manager import RecordManager
+from dpost.application.session import SessionManager
+from dpost.domain.processing.models import (
+    ProcessingCandidate,
+    ProcessingRequest,
+    ProcessingResult,
+    ProcessingStatus,
+    RouteContext,
+    RoutingDecision,
+)
 from dpost.domain.records.local_record import LocalRecord
+from dpost.infrastructure.logging import setup_logger
+from dpost.infrastructure.storage.filesystem_utils import (
+    get_record_path,
+    move_to_exception_folder,
+)
 
 logger = setup_logger(__name__)
 
@@ -146,9 +147,7 @@ class _ProcessingPipeline:
             FILES_FAILED.inc()
             return ProcessingResult(ProcessingStatus.REJECTED, reason)
         if not request.source.exists():
-            reason = (
-                f"Path '{request.source.name}' disappeared before stability confirmation"
-            )
+            reason = f"Path '{request.source.name}' disappeared before stability confirmation"
             logger.debug("Processing deferred for %s: %s", request.source, reason)
             return ProcessingResult(ProcessingStatus.DEFERRED, reason)
         return request
@@ -599,8 +598,10 @@ class FileProcessManager:
             processor = self._processor_factory.get_for_device(device.identifier)
         # Fall back to loading a processor via the factory based on the resolved device.
         # Apply runtime context after construction to reduce processor-global config lookups.
+        active_config = self.config_service.current
         processor.configure_runtime_context(
-            id_separator=self.config_service.current.id_separator,
+            id_separator=active_config.id_separator,
+            filename_pattern=active_config.filename_pattern,
         )
         return processor
 

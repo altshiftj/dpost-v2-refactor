@@ -66,6 +66,10 @@ def test_processing_moves_measurement_and_forces_cc_aggregate(
 def test_should_queue_modified_only_for_cc_and_aggregate(config_service) -> None:
     config = build_config()
     processor = FileProcessorHioki(config)
+    processor.configure_runtime_context(
+        id_separator=config_service.current.id_separator,
+        filename_pattern=config_service.current.filename_pattern,
+    )
 
     assert processor.should_queue_modified("CC_usr-ipat-sample.csv") is True
     assert processor.should_queue_modified("usr-ipat-sample.csv") is True
@@ -73,3 +77,11 @@ def test_should_queue_modified_only_for_cc_and_aggregate(config_service) -> None
     assert processor.should_queue_modified("usr-ipat-sample.xlsx") is False
     assert processor.should_queue_modified("random.csv") is False
     assert processor.should_queue_modified("CC_random.csv") is False
+
+
+def test_should_queue_modified_requires_explicit_runtime_naming_context() -> None:
+    """Avoid ambient naming policy fallback when runtime context is not injected."""
+    processor = FileProcessorHioki(build_config())
+
+    assert processor.should_queue_modified("CC_usr-ipat-sample.csv") is False
+    assert processor.should_queue_modified("usr-ipat-sample.csv") is False

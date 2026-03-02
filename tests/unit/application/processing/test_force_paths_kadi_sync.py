@@ -80,11 +80,15 @@ def test_force_paths_use_force_flag_in_kadi_sync(config_service, tmp_settings, m
 
     device_abbr = device.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = str(Path(record_path) / f"{file_id}-cc.csv")
     agg_path = str(Path(record_path) / f"{file_id}-results.csv")
 
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device.metadata.record_kadi_id)
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device.metadata.record_kadi_id,
+        id_separator="-",
+    )
     record = manager.records.get_record_by_id(record_id)
     assert record is not None
 
@@ -150,11 +154,15 @@ def test_force_paths_relative_to_record_dir_are_forced(config_service, tmp_setti
 
     device_abbr = device.metadata.device_abbr
     record_path = get_record_path(prefix, device_abbr)
-    file_id = generate_file_id(prefix, device_abbr)
+    file_id = generate_file_id(prefix, device_abbr, id_separator="-")
     cc_path = str(Path(record_path) / f"{file_id}-cc.csv")
     agg_path = str(Path(record_path) / f"{file_id}-results.csv")
 
-    record_id = generate_record_id(prefix, dev_kadi_record_id=device.metadata.record_kadi_id)
+    record_id = generate_record_id(
+        prefix,
+        dev_kadi_record_id=device.metadata.record_kadi_id,
+        id_separator="-",
+    )
     record = manager.records.get_record_by_id(record_id)
     assert record is not None
 

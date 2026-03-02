@@ -16,11 +16,9 @@ from dpost.application.processing.file_processor_abstract import (
     PreprocessingResult,
     ProcessingOutput,
 )
-from dpost.domain.processing.batch_models import (
-    ExportRawPair as _Pair,
-    FlushBatch as _FlushBatch,
-    PendingPath as _PendingRaw,
-)
+from dpost.domain.processing.batch_models import ExportRawPair as _Pair
+from dpost.domain.processing.batch_models import FlushBatch as _FlushBatch
+from dpost.domain.processing.batch_models import PendingPath as _PendingRaw
 from dpost.domain.processing.staging import (
     find_stale_stage_dirs,
     reconstruct_pairs_from_stage,
@@ -36,6 +34,8 @@ from dpost.infrastructure.storage.filesystem_utils import (
 from dpost.infrastructure.storage.staging_dirs import create_unique_stage_dir
 
 logger = setup_logger(__name__)
+
+
 def _runtime_id_separator() -> str:
     from dpost.application.config import current
 
@@ -74,7 +74,12 @@ class FileProcessorRHEKinexus(FileProcessorABS):
         self._finalizing: Dict[str, _FlushBatch] = {}
         self._raw_to_stage: Dict[str, str] = {}
 
-    def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern=None,
+    ) -> None:
         """Capture runtime separator when constructed without explicit override."""
         if self._id_separator is None and id_separator is not None:
             self._id_separator = id_separator

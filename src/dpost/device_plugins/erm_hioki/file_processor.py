@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import shutil
 from pathlib import Path
+from typing import Pattern
 
 from dpost.application.config import DeviceConfig
 from dpost.application.naming.policy import is_valid_prefix
@@ -16,10 +17,7 @@ from dpost.application.processing.file_processor_abstract import (
 )
 from dpost.domain.records.local_record import LocalRecord
 from dpost.infrastructure.logging import setup_logger
-from dpost.infrastructure.storage.filesystem_utils import (
-    get_unique_filename,
-    move_item,
-)
+from dpost.infrastructure.storage.filesystem_utils import get_unique_filename, move_item
 
 logger = setup_logger(__name__)
 
@@ -30,9 +28,29 @@ _CC_PREFIX_RE = re.compile(r"^cc_", re.IGNORECASE)
 class FileProcessorHioki(FileProcessorABS):
     """Handle Hioki CSV outputs plus optional Excel exports."""
 
-    def __init__(self, device_config: DeviceConfig) -> None:
+    def __init__(
+        self,
+        device_config: DeviceConfig,
+        *,
+        id_separator: str | None = None,
+        filename_pattern: Pattern[str] | None = None,
+    ) -> None:
         super().__init__(device_config)
         self.device_config = device_config
+        self._id_separator = id_separator
+        self._filename_pattern = filename_pattern
+
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern: Pattern[str] | None = None,
+    ) -> None:
+        """Capture runtime naming context when constructed without explicit values."""
+        if self._id_separator is None and id_separator is not None:
+            self._id_separator = id_separator
+        if self._filename_pattern is None and filename_pattern is not None:
+            self._filename_pattern = filename_pattern
 
     def device_specific_preprocessing(self, path: str) -> PreprocessingResult | None:
         """Normalize measurement prefixes before routing."""
@@ -63,12 +81,22 @@ class FileProcessorHioki(FileProcessorABS):
         target = Path(path)
         if target.suffix.lower() != ".csv":
             return False
+        if self._id_separator is None or self._filename_pattern is None:
+            return False
         stem = target.stem
         if self._is_measurement(stem):
             return False
         if self._is_cc(stem):
-            return is_valid_prefix(self._normalize_stem(stem))
-        return is_valid_prefix(stem)
+            return is_valid_prefix(
+                self._normalize_stem(stem),
+                filename_pattern=self._filename_pattern,
+                id_separator=self._id_separator,
+            )
+        return is_valid_prefix(
+            stem,
+            filename_pattern=self._filename_pattern,
+            id_separator=self._id_separator,
+        )
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str

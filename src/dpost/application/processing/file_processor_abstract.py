@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Pattern
 
 from dpost.application.config import DeviceConfig
 from dpost.domain.records.local_record import LocalRecord
@@ -149,7 +150,12 @@ class FileProcessorABS(ABC):
 
         return False
 
-    def configure_runtime_context(self, *, id_separator: str | None = None) -> None:
+    def configure_runtime_context(
+        self,
+        *,
+        id_separator: str | None = None,
+        filename_pattern: Pattern[str] | None = None,
+    ) -> None:
         """Optionally apply runtime wiring context after processor construction.
 
         The default implementation is a no-op so existing processors remain
