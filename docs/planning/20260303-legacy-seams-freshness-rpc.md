@@ -110,6 +110,7 @@
 - `docs/architecture/responsibility-catalog.md`
 - `docs/planning/20260303-processing-sprawl-posture-rpc.md`
 - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md` (hypothetical contingency posture)
 
 ## Slice Artifacts
 1. Config lifecycle containment
