@@ -25,5 +25,10 @@
 ## Test Plan
 - <tests to add/run>
 
+## Pseudocode Linkage
+- Canonical design spec root: `docs/pseudocode/`
+- <list the specific pseudocode modules this plan depends on>
+- <confirm no references to `docs/pseudocode/v2`>
+
 ## Rollout / Validation
 - <how to verify in practice>

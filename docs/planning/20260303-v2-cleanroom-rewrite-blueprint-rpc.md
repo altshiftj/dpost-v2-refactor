@@ -14,6 +14,18 @@
 ## Goal
 - Rebuild the runtime around explicit contracts and deterministic behavior while preserving functional intent of the current system.
 
+## Canonical Design Specs
+- The executable design contract for V2 lives under `docs/pseudocode/`.
+- Planning decisions in this RPC must map to pseudocode modules in:
+  - `docs/pseudocode/README.md`
+  - `docs/pseudocode/__main__.md`
+  - `docs/pseudocode/application/`
+  - `docs/pseudocode/domain/`
+  - `docs/pseudocode/infrastructure/`
+  - `docs/pseudocode/plugins/`
+  - `docs/pseudocode/runtime/`
+- `docs/pseudocode/v2` is retired and must not be used.
+
 ## Why This Exists
 - This is a preparedness artifact: if incremental cleanup stops being cost-effective, we already have an execution-ready rewrite posture.
 - It prevents "panic architecture" by defining target boundaries and a safe migration shape ahead of time.

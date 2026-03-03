@@ -15,6 +15,12 @@
 - Total scripts mapped: 157
 - This is a planning map; no behavior-changing implementation is included in this artifact.
 
+## Pseudocode Linkage (Required)
+- This file map is bound to the canonical pseudocode tree at `docs/pseudocode/`.
+- For each planned V2 content file in this map, there should be a corresponding pseudocode spec under `docs/pseudocode/**`.
+- If a V2 target path changes here, update the corresponding pseudocode path in the same slice before implementation starts.
+- `docs/pseudocode/v2` is retired and must not be referenced.
+
 ## Target V2 Topology (Planned)
 ```text
 src/dpost_v2/
