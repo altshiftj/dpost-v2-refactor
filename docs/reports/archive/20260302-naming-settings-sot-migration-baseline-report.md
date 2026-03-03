@@ -11,7 +11,7 @@
 - The project already aligned on `NamingSettings` as the canonical naming
   policy owner in `src/dpost/application/config/schema.py`.
 - The migration intent and historical rationale were documented in:
-  `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`.
+  `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`.
 - Architecture docs now cross-link that RPC, but residual compatibility seams
   remain in naming/storage/sync/plugin paths.
 
@@ -55,7 +55,7 @@
 
 ## Evidence
 - Decision and migration plan:
-  - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+  - `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
 - Architecture cross-links:
   - `docs/architecture/architecture-contract.md`
   - `docs/architecture/architecture-baseline.md`
@@ -648,7 +648,7 @@
     and reducing remaining low-value facade/adapter boilerplate.
 - Observed outcome:
   - finalized sprawl posture RPC status and stop-line criteria in
-    `docs/planning/20260303-processing-sprawl-posture-rpc.md`;
+    `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`;
   - simplified application naming facade implementation shape in
     `application/naming/policy.py` by reducing alias-heavy imports and
     consolidating repeated explicit naming-context validation;
@@ -692,3 +692,4 @@
 - Section 29 processing orchestration wrapper-sprawl consolidation is complete.
 - Section 30 sprawl stop-line and boundary clarification follow-through is complete.
 - No deferred compatibility fallback seams remain in active migration scope.
+

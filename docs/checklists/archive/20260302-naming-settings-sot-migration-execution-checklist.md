@@ -6,7 +6,7 @@
 
 ### Checklist
 - [x] Confirm RPC exists and is the canonical migration reference:
-      `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`.
+      `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`.
 - [x] Confirm architecture cross-links are present in baseline/contract/catalog
       docs and architecture README.
 - [x] Confirm this checklist tracks only naming-source and fallback-retirement
@@ -899,7 +899,7 @@
 ### Completion Notes
 - How it was done:
   - updated
-    `docs/planning/20260303-processing-sprawl-posture-rpc.md` from `Proposed`
+    `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md` from `Proposed`
     to `Accepted` and added explicit "Stop-Line" criteria and current posture
     checkpoint;
   - simplified domain-facade wiring in
@@ -1041,3 +1041,4 @@
     - `python -m pytest --cov=src/dpost --cov-report=term-missing -q tests/unit` -> `769 passed, 1 skipped, 1 warning`, `TOTAL 5526 stmts, 0 miss, 100%`
     - `python -m ruff check .` -> `All checks passed!`
     - `rg -n "ipat_watchdog\\." src/dpost` -> no matches
+

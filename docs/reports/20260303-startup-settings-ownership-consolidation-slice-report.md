@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Context
-- This slice targets strategic item 3 from `docs/planning/20260303-legacy-seams-freshness-rpc.md`.
+- This slice targets strategic item 3 from `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`.
 - Goal: establish one obvious owner for startup settings parsing/validation policy.
 
 ## Current State
@@ -46,7 +46,8 @@
 - `python -m pytest -q tests/unit/runtime/test_composition.py`
 
 ## References
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `src/dpost/runtime/composition.py`
 - `src/dpost/runtime/bootstrap.py`
 - `src/dpost/runtime/startup_config.py`
+

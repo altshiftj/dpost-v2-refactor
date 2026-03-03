@@ -284,4 +284,5 @@
   the `kadi` optional dependency group.
 - Major structural updates should be tracked via ADRs in `docs/architecture/adr/`.
 - Naming-settings single-source consolidation direction is tracked in:
-  `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`.
+  `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`.
+

@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Context
-- This slice targets strategic item 1 from `docs/planning/20260303-legacy-seams-freshness-rpc.md`.
+- This slice targets strategic item 1 from `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`.
 - Goal: keep production runtime on explicit `ConfigService` injection and contain ambient context helpers to compatibility/testing surfaces.
 
 ## Current State
@@ -46,6 +46,7 @@
 - `python -m pytest -q tests/integration`
 
 ## References
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `src/dpost/application/config/context.py`
 - `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py`
+

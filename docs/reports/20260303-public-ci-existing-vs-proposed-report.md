@@ -47,7 +47,7 @@
 - Checklist artifact exists at [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md).
 
 ## Cross-file Links
-- Planning: [`docs/planning/20260303-public-ci-rpc.md`](20260303-public-ci-rpc.md)
+- Planning: [`docs/planning/archive/20260303-public-ci-rpc.md`](20260303-public-ci-rpc.md)
 - Checklist: [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md)
 
 ## Risk and Validation Plan
@@ -56,3 +56,4 @@
   - run workflow in branch mode,
   - confirm required jobs complete before merge,
   - confirm `.github/workflows/public-ci.yml` is visible and reviewable.
+

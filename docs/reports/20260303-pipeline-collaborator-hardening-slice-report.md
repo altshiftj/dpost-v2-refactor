@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Context
-- This slice targets strategic item 2 from `docs/planning/20260303-legacy-seams-freshness-rpc.md`.
+- This slice targets strategic item 2 from `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`.
 - Goal: reduce migration-style coupling where `ProcessingPipelineRuntime` proxies manager-private methods.
 
 ## Current State
@@ -46,7 +46,8 @@
 - `python -m pytest -q tests/integration/test_integration.py`
 
 ## References
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `src/dpost/application/processing/processing_pipeline.py`
 - `src/dpost/application/processing/processing_pipeline_runtime.py`
 - `src/dpost/application/processing/file_process_manager.py`
+

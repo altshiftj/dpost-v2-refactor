@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Context
-- This slice targets strategic item 4 from `docs/planning/20260303-legacy-seams-freshness-rpc.md`.
+- This slice targets strategic item 4 from `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`.
 - Goal: remove transitional optionality from high-traffic storage/naming helpers where explicit runtime context is already the dominant path.
 
 ## Current State
@@ -44,7 +44,8 @@
 - `python -m pytest -q tests/integration/test_integration.py`
 
 ## References
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `src/dpost/infrastructure/storage/filesystem_utils.py`
 - `src/dpost/application/naming/policy.py`
 - `src/dpost/application/processing/record_persistence_context.py`
+

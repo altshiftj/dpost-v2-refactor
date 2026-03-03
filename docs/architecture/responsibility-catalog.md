@@ -62,4 +62,5 @@
 3. Infrastructure adapters can depend on external SDKs/APIs, but domain models cannot.
 4. New component ownership changes must update this catalog in the same change set.
 5. Naming configuration source-of-truth and facade retirement direction is tracked in:
-	`docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`.
+	`docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`.
+

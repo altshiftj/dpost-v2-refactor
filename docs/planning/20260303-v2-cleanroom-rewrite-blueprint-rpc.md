@@ -10,7 +10,7 @@
 - This document defines what a full "start from square one" rewrite would look like if we optimized for long-term clarity and explicit boundaries.
 - It is a planning artifact, not an active migration plan.
 - Existing guidance still applies:
-  - `docs/planning/20260303-legacy-seams-freshness-rpc.md` says full rewrite is not currently warranted.
+  - `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md` says full rewrite is not currently warranted.
 
 ## Goal
 - Rebuild the runtime around explicit contracts and deterministic behavior while preserving functional intent of the current system.
@@ -187,9 +187,10 @@ src/dpost_v2/
 - No destructive cutover without a tested rollback path and 1 full release cycle of shadow confidence.
 
 ## References
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
-- `docs/planning/20260303-processing-sprawl-posture-rpc.md`
-- `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
-- `docs/planning/20260303-v2-cloud-agent-week1-roadmap.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
+- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
+- `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
 - `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
 - `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+

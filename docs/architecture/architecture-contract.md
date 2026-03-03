@@ -108,7 +108,7 @@
   state that intent directly.
 - Naming settings consolidation direction (single source of truth in schema)
   is tracked in:
-  - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+  - `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
 
 ## Documentation Rules
 - Architecture-impacting changes require:
@@ -128,3 +128,4 @@
 - A delivery phase cannot close until impacted contract rules are either:
 - satisfied, or
 - explicitly amended in this contract with rationale and ADR reference.
+

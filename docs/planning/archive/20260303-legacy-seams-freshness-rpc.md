@@ -108,8 +108,8 @@
 - `docs/architecture/architecture-baseline.md`
 - `docs/architecture/architecture-contract.md`
 - `docs/architecture/responsibility-catalog.md`
-- `docs/planning/20260303-processing-sprawl-posture-rpc.md`
-- `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+- `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
+- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
 - `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md` (hypothetical contingency posture)
 
 ## Slice Artifacts
@@ -128,3 +128,4 @@
 4. Helper signature narrowing (storage/naming)
 - Report: `docs/reports/20260303-helper-signature-narrowing-storage-naming-slice-report.md`
 - Checklist: `docs/checklists/20260303-helper-signature-narrowing-storage-naming-slice-checklist.md`
+

@@ -11,7 +11,7 @@
 - V2 intent and boundaries are documented:
   - `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
 - Legacy-seam posture is documented and controlled:
-  - `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+  - `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - Public CI baseline exists with branch-protection payload and apply script:
   - `.github/workflows/public-ci.yml`
   - `.github/branch-protection/main.required-checks.json`
@@ -79,5 +79,6 @@
 ## Recommendation
 - Proceed with a one-week cloud-agent sprint only if success criteria are explicitly set to a controlled V2 candidate, not full replacement.
 - Execute using the roadmap and checklist below:
-  - `docs/planning/20260303-v2-cloud-agent-week1-roadmap.md`
+  - `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
   - `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+

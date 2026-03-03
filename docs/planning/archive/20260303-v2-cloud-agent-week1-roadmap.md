@@ -140,6 +140,7 @@
 
 ## References
 - `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
-- `docs/planning/20260303-legacy-seams-freshness-rpc.md`
+- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
 - `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+
