@@ -1,5 +1,8 @@
 ---
 id: application/ingestion/stages/stabilize.py
+origin_v1_files:
+  - src/dpost/application/processing/stability_timing_policy.py
+  - src/dpost/application/processing/stability_tracker.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

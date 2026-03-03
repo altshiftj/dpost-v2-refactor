@@ -1,5 +1,7 @@
 ---
 id: application/session/session_manager.py
+origin_v1_files:
+  - src/dpost/application/session/session_manager.py
 lane: Runtime-Core
 status: draft
 depends_on: []

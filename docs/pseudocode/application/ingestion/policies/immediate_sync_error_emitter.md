@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/policies/immediate_sync_error_emitter.py
+origin_v1_files:
+  - src/dpost/application/processing/immediate_sync_error_emitter.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

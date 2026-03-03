@@ -1,5 +1,7 @@
 ---
 id: application/startup/settings.py
+origin_v1_files:
+  - src/dpost/runtime/startup_config.py
 lane: Startup-Core
 status: draft
 depends_on: []

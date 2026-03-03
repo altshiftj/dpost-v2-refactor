@@ -1,5 +1,8 @@
 ---
 id: application/contracts/plugin_contracts.py
+origin_v1_files:
+  - src/dpost/application/processing/file_processor_abstract.py
+  - src/dpost/plugins/contracts.py
 lane: Contracts-Core
 status: draft
 depends_on: []

@@ -1,5 +1,7 @@
 ---
 id: infrastructure/runtime/ui/adapters.py
+origin_v1_files:
+  - src/dpost/infrastructure/runtime_adapters/ui_adapters.py
 lane: Infra-UI
 status: draft
 depends_on: []

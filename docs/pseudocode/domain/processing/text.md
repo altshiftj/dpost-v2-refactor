@@ -1,5 +1,7 @@
 ---
 id: domain/processing/text.py
+origin_v1_files:
+  - src/dpost/domain/processing/text.py
 lane: Domain-Core
 status: draft
 depends_on: []

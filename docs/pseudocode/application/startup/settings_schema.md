@@ -1,5 +1,7 @@
 ---
 id: application/startup/settings_schema.py
+origin_v1_files:
+  - src/dpost/application/config/schema.py
 lane: Startup-Core
 status: draft
 depends_on: []

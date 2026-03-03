@@ -1,5 +1,7 @@
 ---
 id: domain/naming/identifiers.py
+origin_v1_files:
+  - src/dpost/domain/naming/identifiers.py
 lane: Domain-Core
 status: draft
 depends_on: []

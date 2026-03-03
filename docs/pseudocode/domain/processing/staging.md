@@ -1,5 +1,7 @@
 ---
 id: domain/processing/staging.py
+origin_v1_files:
+  - src/dpost/domain/processing/staging.py
 lane: Domain-Core
 status: draft
 depends_on: []

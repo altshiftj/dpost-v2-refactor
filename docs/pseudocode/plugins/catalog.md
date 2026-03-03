@@ -1,5 +1,7 @@
 ---
 id: plugins/catalog.py
+origin_v1_files:
+  - src/dpost/plugins/reference.py
 lane: Plugin-Host
 status: draft
 depends_on: []

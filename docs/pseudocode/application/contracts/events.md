@@ -1,5 +1,7 @@
 ---
 id: application/contracts/events.py
+origin_v1_files:
+  - src/dpost/application/interactions/messages.py
 lane: Contracts-Core
 status: draft
 depends_on: []

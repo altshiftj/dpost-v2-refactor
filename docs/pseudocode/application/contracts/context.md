@@ -1,5 +1,7 @@
 ---
 id: application/contracts/context.py
+origin_v1_files:
+  - src/dpost/application/processing/processor_runtime_context.py
 lane: Contracts-Core
 status: draft
 depends_on: []

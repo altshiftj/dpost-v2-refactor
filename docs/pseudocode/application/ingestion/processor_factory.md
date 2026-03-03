@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/processor_factory.py
+origin_v1_files:
+  - src/dpost/application/processing/processor_factory.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

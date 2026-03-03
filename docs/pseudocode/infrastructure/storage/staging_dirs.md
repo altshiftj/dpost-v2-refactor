@@ -1,5 +1,7 @@
 ---
 id: infrastructure/storage/staging_dirs.py
+origin_v1_files:
+  - src/dpost/infrastructure/storage/staging_dirs.py
 lane: Infra-Storage
 status: draft
 depends_on: []

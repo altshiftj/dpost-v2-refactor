@@ -1,5 +1,7 @@
 ---
 id: domain/routing/rules.py
+origin_v1_files:
+  - src/dpost/domain/processing/routing.py
 lane: Domain-Core
 status: draft
 depends_on: []

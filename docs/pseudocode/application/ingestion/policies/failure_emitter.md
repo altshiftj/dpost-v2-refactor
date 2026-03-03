@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/policies/failure_emitter.py
+origin_v1_files:
+  - src/dpost/application/processing/failure_emitter.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

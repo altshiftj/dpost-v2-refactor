@@ -1,5 +1,7 @@
 ---
 id: plugins/host.py
+origin_v1_files:
+  - src/dpost/plugins/system.py
 lane: Plugin-Host
 status: draft
 depends_on: []

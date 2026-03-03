@@ -1,5 +1,7 @@
 ---
 id: __main__.py
+origin_v1_files:
+  - src/dpost/__main__.py
 lane: Startup-Core
 status: draft
 depends_on: []

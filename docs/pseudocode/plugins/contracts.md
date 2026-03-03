@@ -1,5 +1,7 @@
 ---
 id: plugins/contracts.py
+origin_v1_files:
+  - src/dpost/plugins/contracts.py
 lane: Plugin-Host
 status: draft
 depends_on: []

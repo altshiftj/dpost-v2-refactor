@@ -1,5 +1,7 @@
 ---
 id: plugins/profile_selection.py
+origin_v1_files:
+  - src/dpost/plugins/profile_selection.py
 lane: Plugin-Host
 status: draft
 depends_on: []

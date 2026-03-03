@@ -1,5 +1,7 @@
 ---
 id: application/records/service.py
+origin_v1_files:
+  - src/dpost/application/records/record_manager.py
 lane: Records-Core
 status: draft
 depends_on: []

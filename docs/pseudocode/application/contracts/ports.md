@@ -1,5 +1,9 @@
 ---
 id: application/contracts/ports.py
+origin_v1_files:
+  - src/dpost/application/ports/interactions.py
+  - src/dpost/application/ports/sync.py
+  - src/dpost/application/ports/ui.py
 lane: Contracts-Core
 status: draft
 depends_on: []

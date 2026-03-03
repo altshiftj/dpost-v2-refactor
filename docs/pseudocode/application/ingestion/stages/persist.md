@@ -1,5 +1,10 @@
 ---
 id: application/ingestion/stages/persist.py
+origin_v1_files:
+  - src/dpost/application/processing/record_flow.py
+  - src/dpost/application/processing/record_persistence_context.py
+  - src/dpost/application/processing/record_utils.py
+  - src/dpost/application/processing/rename_flow.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

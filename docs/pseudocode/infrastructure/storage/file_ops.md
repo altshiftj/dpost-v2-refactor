@@ -1,5 +1,7 @@
 ---
 id: infrastructure/storage/file_ops.py
+origin_v1_files:
+  - src/dpost/infrastructure/storage/filesystem_utils.py
 lane: Infra-Storage
 status: draft
 depends_on: []

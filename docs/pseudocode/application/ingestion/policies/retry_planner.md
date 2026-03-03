@@ -1,5 +1,9 @@
 ---
 id: application/ingestion/policies/retry_planner.py
+origin_v1_files:
+  - src/dpost/application/processing/rename_retry_policy.py
+  - src/dpost/application/retry_delay_policy.py
+  - src/dpost/application/runtime/retry_planner.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

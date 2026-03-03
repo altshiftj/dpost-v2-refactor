@@ -1,5 +1,7 @@
 ---
 id: infrastructure/runtime/ui/tkinter.py
+origin_v1_files:
+  - src/dpost/infrastructure/runtime_adapters/tkinter_ui.py
 lane: Infra-UI
 status: draft
 depends_on: []

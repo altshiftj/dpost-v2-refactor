@@ -1,5 +1,7 @@
 ---
 id: domain/naming/prefix_policy.py
+origin_v1_files:
+  - src/dpost/domain/naming/prefix_policy.py
 lane: Domain-Core
 status: draft
 depends_on: []

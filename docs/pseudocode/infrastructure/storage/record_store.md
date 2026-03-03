@@ -1,5 +1,7 @@
 ---
 id: infrastructure/storage/record_store.py
+origin_v1_files: []
+origin_note: new_in_v2_or_no_direct_v1_source
 lane: Infra-Storage
 status: draft
 depends_on: []

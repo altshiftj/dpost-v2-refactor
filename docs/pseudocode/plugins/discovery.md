@@ -1,5 +1,7 @@
 ---
 id: plugins/discovery.py
+origin_v1_files:
+  - src/dpost/plugins/loading.py
 lane: Plugin-Host
 status: draft
 depends_on: []

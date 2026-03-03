@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/stages/resolve.py
+origin_v1_files:
+  - src/dpost/application/processing/device_resolver.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

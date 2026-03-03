@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/stages/pipeline.py
+origin_v1_files:
+  - src/dpost/application/processing/processing_pipeline.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

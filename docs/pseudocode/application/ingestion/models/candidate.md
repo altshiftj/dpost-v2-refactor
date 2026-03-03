@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/models/candidate.py
+origin_v1_files:
+  - src/dpost/application/processing/candidate_metadata.py
 lane: Processing-Kernel
 status: draft
 depends_on: []

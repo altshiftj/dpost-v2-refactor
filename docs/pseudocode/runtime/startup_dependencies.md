@@ -1,5 +1,9 @@
 ---
 id: runtime/startup_dependencies.py
+origin_v1_files:
+  - src/dpost/runtime/startup_config.py
+  - src/dpost/runtime/bootstrap.py
+  - src/dpost/infrastructure/runtime_adapters/startup_dependencies.py
 lane: Startup-Core
 status: draft
 depends_on: []

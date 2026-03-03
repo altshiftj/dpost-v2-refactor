@@ -1,5 +1,7 @@
 ---
 id: infrastructure/observability/logging.py
+origin_v1_files:
+  - src/dpost/infrastructure/logging.py
 lane: Infra-Observability
 status: draft
 depends_on: []

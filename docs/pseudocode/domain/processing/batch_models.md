@@ -1,5 +1,7 @@
 ---
 id: domain/processing/batch_models.py
+origin_v1_files:
+  - src/dpost/domain/processing/batch_models.py
 lane: Domain-Core
 status: draft
 depends_on: []

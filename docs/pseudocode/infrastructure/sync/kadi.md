@@ -1,5 +1,8 @@
 ---
 id: infrastructure/sync/kadi.py
+origin_v1_files:
+  - src/dpost/infrastructure/sync/kadi.py
+  - src/dpost/infrastructure/sync/kadi_manager.py
 lane: Infra-Sync
 status: draft
 depends_on: []

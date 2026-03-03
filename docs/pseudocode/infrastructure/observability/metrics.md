@@ -1,5 +1,7 @@
 ---
 id: infrastructure/observability/metrics.py
+origin_v1_files:
+  - src/dpost/application/metrics.py
 lane: Infra-Observability
 status: draft
 depends_on: []

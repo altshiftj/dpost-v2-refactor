@@ -1,5 +1,7 @@
 ---
 id: infrastructure/runtime/ui/dialogs.py
+origin_v1_files:
+  - src/dpost/infrastructure/runtime_adapters/dialogs.py
 lane: Infra-UI
 status: draft
 depends_on: []

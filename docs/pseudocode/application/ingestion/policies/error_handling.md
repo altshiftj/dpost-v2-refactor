@@ -1,5 +1,7 @@
 ---
 id: application/ingestion/policies/error_handling.py
+origin_v1_files:
+  - src/dpost/application/processing/error_handling.py
 lane: Processing-Kernel
 status: draft
 depends_on: []
