@@ -3,6 +3,7 @@ name = "dpost"
 version = "0.1.0"
 description = "Scientific watchdog app for automated data ingestion"
 readme = "README.md"
+license = {file = "LICENSE"}
 requires-python = ">=3.10"
 
 dependencies = [

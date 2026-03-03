@@ -52,6 +52,14 @@ More detail:
 - `docs/architecture/architecture-baseline.md`
 - `docs/architecture/extension-contracts.md`
 
+## Governance
+
+- License: `MIT` ([LICENSE](LICENSE))
+- Contributing guide: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Code of Conduct: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Security policy: [SECURITY.md](SECURITY.md)
+- Changelog: [CHANGELOG.md](CHANGELOG.md)
+
 ## What dpost Does At Runtime
 
 At startup, `dpost` composes a runtime context, loads a PC plugin and device
