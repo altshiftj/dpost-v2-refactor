@@ -190,3 +190,6 @@ src/dpost_v2/
 - `docs/planning/20260303-legacy-seams-freshness-rpc.md`
 - `docs/planning/20260303-processing-sprawl-posture-rpc.md`
 - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+- `docs/planning/20260303-v2-cloud-agent-week1-roadmap.md`
+- `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
+- `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
