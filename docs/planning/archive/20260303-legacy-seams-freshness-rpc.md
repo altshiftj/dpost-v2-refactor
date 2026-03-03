@@ -9,9 +9,9 @@
 ## Context
 - The codebase has completed major migration and boundary hardening work into canonical `src/dpost/**` ownership.
 - Architecture is now explicitly layered and governed by:
-  - `docs/architecture/architecture-baseline.md`
-  - `docs/architecture/architecture-contract.md`
-  - `docs/architecture/responsibility-catalog.md`
+  - [Architecture baseline](../architecture/architecture-baseline.md)
+  - [Architecture contract](../architecture/architecture-contract.md)
+  - [Responsibility catalog](../architecture/responsibility-catalog.md)
 - Remaining concern: parts of the implementation still feel like migration-era patchwork, especially around orchestration seams and compatibility affordances.
 
 ## Why This Matters
@@ -105,27 +105,27 @@
 - `python -m pytest -q -m manual tests/manual`
 
 ## References
-- `docs/architecture/architecture-baseline.md`
-- `docs/architecture/architecture-contract.md`
-- `docs/architecture/responsibility-catalog.md`
-- `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
-- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
-- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md` (hypothetical contingency posture)
+- [Architecture baseline](../architecture/architecture-baseline.md)
+- [Architecture contract](../architecture/architecture-contract.md)
+- [Responsibility catalog](../architecture/responsibility-catalog.md)
+- [Processing sprawl posture RPC](archive/20260303-processing-sprawl-posture-rpc.md)
+- [Naming settings RFC](archive/20260224-naming-settings-single-source-of-truth-rpc.md)
+- [V2 cleanroom blueprint (hypothetical contingency posture)](../20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
 
 ## Slice Artifacts
 1. Config lifecycle containment
-- Report: `docs/reports/20260303-config-lifecycle-containment-slice-report.md`
-- Checklist: `docs/checklists/20260303-config-lifecycle-containment-slice-checklist.md`
+- Report: [20260303-config-lifecycle-containment-slice-report](../reports/20260303-config-lifecycle-containment-slice-report.md)
+- Checklist: [20260303-config-lifecycle-containment-slice-checklist](../checklists/20260303-config-lifecycle-containment-slice-checklist.md)
 
 2. Pipeline collaborator hardening
-- Report: `docs/reports/20260303-pipeline-collaborator-hardening-slice-report.md`
-- Checklist: `docs/checklists/20260303-pipeline-collaborator-hardening-slice-checklist.md`
+- Report: [20260303-pipeline-collaborator-hardening-slice-report](../reports/20260303-pipeline-collaborator-hardening-slice-report.md)
+- Checklist: [20260303-pipeline-collaborator-hardening-slice-checklist](../checklists/20260303-pipeline-collaborator-hardening-slice-checklist.md)
 
 3. Startup settings ownership consolidation
-- Report: `docs/reports/20260303-startup-settings-ownership-consolidation-slice-report.md`
-- Checklist: `docs/checklists/20260303-startup-settings-ownership-consolidation-slice-checklist.md`
+- Report: [20260303-startup-settings-ownership-consolidation-slice-report](../reports/20260303-startup-settings-ownership-consolidation-slice-report.md)
+- Checklist: [20260303-startup-settings-ownership-consolidation-slice-checklist](../checklists/20260303-startup-settings-ownership-consolidation-slice-checklist.md)
 
 4. Helper signature narrowing (storage/naming)
-- Report: `docs/reports/20260303-helper-signature-narrowing-storage-naming-slice-report.md`
-- Checklist: `docs/checklists/20260303-helper-signature-narrowing-storage-naming-slice-checklist.md`
+- Report: [20260303-helper-signature-narrowing-storage-naming-slice-report](../reports/20260303-helper-signature-narrowing-storage-naming-slice-report.md)
+- Checklist: [20260303-helper-signature-narrowing-storage-naming-slice-checklist](../checklists/20260303-helper-signature-narrowing-storage-naming-slice-checklist.md)
 

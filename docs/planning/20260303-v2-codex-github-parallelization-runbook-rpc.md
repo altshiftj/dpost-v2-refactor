@@ -16,12 +16,12 @@
 - This runbook makes setup, lane instructions, and merge gates explicit and repeatable.
 
 ## Canonical Inputs
-- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
-- `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
-- `docs/pseudocode/README.md`
-- `docs/pseudocode/**` (module-level specs)
-- `.github/workflows/public-ci.yml`
-- `.github/branch-protection/main.required-checks.json`
+- [V2 cleanroom blueprint](./20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
+- [V1 to V2 exhaustive mapping](./20260303-v1-to-v2-exhaustive-file-mapping-rpc.md)
+- [Pseudocode README](../pseudocode/README.md)
+- [Pseudocode module specs](../pseudocode/)
+- [Public CI workflow](../../.github/workflows/public-ci.yml)
+- [Required checks config](../../.github/branch-protection/main.required-checks.json)
 
 ## Part 1: Operator Setup (Codex + GitHub)
 
@@ -116,8 +116,8 @@ Canonical specs:
 - <docs/pseudocode/path-2>
 
 Planning references:
-- docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
-- docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
+- [V2 cleanroom blueprint](./20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
+- [V1 to V2 exhaustive mapping](./20260303-v1-to-v2-exhaustive-file-mapping-rpc.md)
 
 Implementation task:
 - <single concrete task>
@@ -210,9 +210,9 @@ Output requirements:
 - Confirm `rewrite/v2` branch remains green after merges.
 
 ## References
-- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
-- `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
-- `docs/pseudocode/README.md`
-- `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
-- `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
-- `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+- [V2 cleanroom blueprint](./20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
+- [V1 to V2 exhaustive mapping](./20260303-v1-to-v2-exhaustive-file-mapping-rpc.md)
+- [Pseudocode README](../pseudocode/README.md)
+- [Cloud agent roadmap](archive/20260303-v2-cloud-agent-week1-roadmap.md)
+- [Cloud agent feasibility report](../reports/20260303-v2-cloud-agent-week1-feasibility-report.md)
+- [Cloud agent execution checklist](../checklists/20260303-v2-cloud-agent-week1-execution-checklist.md)

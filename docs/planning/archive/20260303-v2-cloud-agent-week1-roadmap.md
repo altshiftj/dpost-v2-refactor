@@ -139,8 +139,8 @@
 - No release cutover from `rewrite/v2` without explicit follow-up approval.
 
 ## References
-- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
-- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
-- `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
-- `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+- [V2 cleanroom blueprint](../20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
+- [Legacy seams freshness RPC](archive/20260303-legacy-seams-freshness-rpc.md)
+- [Cloud-agent feasibility report](../reports/20260303-v2-cloud-agent-week1-feasibility-report.md)
+- [Cloud-agent execution checklist](../checklists/20260303-v2-cloud-agent-week1-execution-checklist.md)
 

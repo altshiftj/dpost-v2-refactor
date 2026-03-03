@@ -15,15 +15,15 @@
 - Rebuild the runtime around explicit contracts and deterministic behavior while preserving functional intent of the current system.
 
 ## Canonical Design Specs
-- The executable design contract for V2 lives under `docs/pseudocode/`.
+- The executable design contract for V2 lives under [docs/pseudocode](../pseudocode/).
 - Planning decisions in this RPC must map to pseudocode modules in:
-  - `docs/pseudocode/README.md`
-  - `docs/pseudocode/__main__.md`
-  - `docs/pseudocode/application/`
-  - `docs/pseudocode/domain/`
-  - `docs/pseudocode/infrastructure/`
-  - `docs/pseudocode/plugins/`
-  - `docs/pseudocode/runtime/`
+  - [README](../pseudocode/README.md)
+  - [Main entry point](../pseudocode/__main__.md)
+  - [Application contracts](../pseudocode/application/)
+  - [Domain modules](../pseudocode/domain/)
+  - [Infrastructure modules](../pseudocode/infrastructure/)
+  - [Plugins modules](../pseudocode/plugins/)
+  - [Runtime modules](../pseudocode/runtime/)
 - `docs/pseudocode/v2` is retired and must not be used.
 
 ## Why This Exists
@@ -233,15 +233,15 @@ src/dpost_v2/
 - No destructive cutover without a tested rollback path and 1 full release cycle of shadow confidence.
 
 ## References
-- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
-- `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
-- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
-- `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
-- `docs/planning/20260303-v2-codex-github-parallelization-runbook-rpc.md`
-- `docs/pseudocode/README.md`
-- `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
-- `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
-- `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+- [Legacy seams freshness RFC](archive/20260303-legacy-seams-freshness-rpc.md)
+- [Processing sprawl posture RPC](archive/20260303-processing-sprawl-posture-rpc.md)
+- [Naming settings RFC](archive/20260224-naming-settings-single-source-of-truth-rpc.md)
+- [V1-to-V2 exhaustive mapping](./20260303-v1-to-v2-exhaustive-file-mapping-rpc.md)
+- [Parallelization runbook](./20260303-v2-codex-github-parallelization-runbook-rpc.md)
+- [Pseudocode README](../pseudocode/README.md)
+- [Cloud agent roadmap](archive/20260303-v2-cloud-agent-week1-roadmap.md)
+- [Cloud agent feasibility report](../reports/20260303-v2-cloud-agent-week1-feasibility-report.md)
+- [Cloud agent execution checklist](../checklists/20260303-v2-cloud-agent-week1-execution-checklist.md)
 
 
 

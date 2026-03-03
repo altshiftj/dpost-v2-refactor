@@ -367,9 +367,9 @@ src/dpost_v2/
 | `src/dpost/runtime/startup_config.py` | `src/dpost_v2/application/startup/settings.py` | Split | Startup-Core | Centralizes startup settings parsing and validation. |
 
 ## References
-- `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
-- `docs/pseudocode/README.md`
-- `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
-- `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
-- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
+- [V2 cleanroom blueprint](./20260303-v2-cleanroom-rewrite-blueprint-rpc.md)
+- [Pseudocode README](../pseudocode/README.md)
+- [Legacy seams posture RPC](../planning/archive/20260303-legacy-seams-freshness-rpc.md)
+- [Processing sprawl posture RPC](../planning/archive/20260303-processing-sprawl-posture-rpc.md)
+- [Naming settings RFC](../planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md)
 
