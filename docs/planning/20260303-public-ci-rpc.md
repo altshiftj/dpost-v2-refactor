@@ -99,5 +99,5 @@
 - CI documentation in planning/checklist artifacts links to this RPC.
 
 ## References
-- [Environment hygiene baseline](/d:/Repos/ipat_data_watchdog/.env.example)
-- [Current CI posture](/d:/Repos/ipat_data_watchdog/docs/planning/20260303-processing-sprawl-posture-rpc.md)
+- [Environment hygiene baseline](../../.env.example)
+- [Current CI posture](20260303-processing-sprawl-posture-rpc.md)

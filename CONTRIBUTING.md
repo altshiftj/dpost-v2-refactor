@@ -20,7 +20,8 @@ python -m pip install -e ".[dev,ci]"
 
 ```powershell
 python -m ruff check .
-python -m black --check .
+python -m black --check src tests
+python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
 python -m pytest -q
 ```
 

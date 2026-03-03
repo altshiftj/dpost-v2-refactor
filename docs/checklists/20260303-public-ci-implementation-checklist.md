@@ -32,11 +32,11 @@
 - What was done: Added `.github/workflows/public-ci.yml`, updated `.gitignore` to explicitly unignore `.github` workflow config, and documented checklist/report artifacts for implementation visibility. Follow-up hardening added `workflow-lint`, `workflow_dispatch`, job timeouts, and pip cache in Python setup steps.
 - How it was done: Workflow job names were made deterministic for matrix contexts; required-check payload and GitHub API apply script were added in-repo so branch protection can be applied reproducibly when the repository is hosted on GitHub.
 - Evidence:
-  - [`.github/workflows/public-ci.yml`](/d:/Repos/ipat_data_watchdog/.github/workflows/public-ci.yml)
-  - [`.github/branch-protection/main.required-checks.json`](/d:/Repos/ipat_data_watchdog/.github/branch-protection/main.required-checks.json)
-  - [`scripts/github/set-main-branch-protection.ps1`](/d:/Repos/ipat_data_watchdog/scripts/github/set-main-branch-protection.ps1)
-  - [`docs/checklists/20260303-public-ci-implementation-checklist.md`](/d:/Repos/ipat_data_watchdog/docs/checklists/20260303-public-ci-implementation-checklist.md)
-  - [`docs/reports/20260303-public-ci-existing-vs-proposed-report.md`](/d:/Repos/ipat_data_watchdog/docs/reports/20260303-public-ci-existing-vs-proposed-report.md)
+  - [`.github/workflows/public-ci.yml`](../../.github/workflows/public-ci.yml)
+  - [`.github/branch-protection/main.required-checks.json`](../../.github/branch-protection/main.required-checks.json)
+  - [`scripts/github/set-main-branch-protection.ps1`](../../scripts/github/set-main-branch-protection.ps1)
+  - [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md)
+  - [`docs/reports/20260303-public-ci-existing-vs-proposed-report.md`](../reports/20260303-public-ci-existing-vs-proposed-report.md)
 
 ### Manual Check
 - Run `pwsh -File scripts/github/set-main-branch-protection.ps1 -Repository owner/repo` with `GITHUB_TOKEN` set.
