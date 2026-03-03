@@ -110,3 +110,20 @@
 - `docs/architecture/responsibility-catalog.md`
 - `docs/planning/20260303-processing-sprawl-posture-rpc.md`
 - `docs/planning/20260224-naming-settings-single-source-of-truth-rpc.md`
+
+## Slice Artifacts
+1. Config lifecycle containment
+- Report: `docs/reports/20260303-config-lifecycle-containment-slice-report.md`
+- Checklist: `docs/checklists/20260303-config-lifecycle-containment-slice-checklist.md`
+
+2. Pipeline collaborator hardening
+- Report: `docs/reports/20260303-pipeline-collaborator-hardening-slice-report.md`
+- Checklist: `docs/checklists/20260303-pipeline-collaborator-hardening-slice-checklist.md`
+
+3. Startup settings ownership consolidation
+- Report: `docs/reports/20260303-startup-settings-ownership-consolidation-slice-report.md`
+- Checklist: `docs/checklists/20260303-startup-settings-ownership-consolidation-slice-checklist.md`
+
+4. Helper signature narrowing (storage/naming)
+- Report: `docs/reports/20260303-helper-signature-narrowing-storage-naming-slice-report.md`
+- Checklist: `docs/checklists/20260303-helper-signature-narrowing-storage-naming-slice-checklist.md`
