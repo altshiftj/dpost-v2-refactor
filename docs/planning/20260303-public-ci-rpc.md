@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Status
-- Implemented (Baseline + Hardening Pass 2)
+- Implemented (Baseline + Hardening Pass 3)
 
 ## Context
 - The repository is moving to OSS posture with tracked secrets/config artifacts removed and `.env.example` added.
@@ -36,10 +36,9 @@
 - `python -m mypy` (optional in phase 1 if dependency profile is stable; otherwise defer)
 
 2. Test gates
-- `python -m pytest -q` (full suite in baseline mode)
-- Optional follow-up split if runtime flake risk grows:
-  - `python -m pytest -q tests/unit`
-  - `python -m pytest -q tests/integration`
+- `python -m pytest -q tests/unit` (required)
+- `python -m pytest -q tests/integration` (required)
+- `python -m pytest -q -m manual tests/manual` (optional, manual lane only)
 
 3. Bootstrap/sanity gate
 - `python -m pytest -q tests/unit/runtime/test_bootstrap.py`
@@ -59,7 +58,8 @@
 - Keep one explicit "required" job per commit:
   - `workflow-lint`
   - `quality`
-  - `tests`
+  - `unit-tests`
+  - `integration-tests`
   - `bootstrap-smoke`
   - `hygiene`
 
@@ -68,8 +68,9 @@
   - `workflow-lint`
   - `quality (py3.12)`
   - `quality (py3.13)`
-  - `tests (py3.12)`
-  - `tests (py3.13)`
+  - `unit-tests (py3.12)`
+  - `unit-tests (py3.13)`
+  - `integration-tests (py3.12)`
   - `bootstrap-smoke`
   - `artifact-hygiene`
 - Canonical payload: `.github/branch-protection/main.required-checks.json`
@@ -94,7 +95,7 @@
 ## Acceptance Criteria (post-implementation)
 - Public CI exists and runs on PR and main branch.
 - PR merge is blocked unless all required jobs pass.
-- `tests` and `hygiene` jobs have zero-tolerance policy for missing env hygiene.
+- `unit-tests`, `integration-tests`, and `hygiene` jobs have zero-tolerance policy for missing env hygiene.
 - Runtime bootstrap tests pass in clean env (no `.env` assumptions).
 - CI documentation in planning/checklist artifacts links to this RPC.
 

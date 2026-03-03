@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Scientific watchdog app for automated data ingestion"
 readme = "README.md"
 license = {file = "LICENSE"}
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 
 dependencies = [
     "watchdog",
@@ -56,9 +56,10 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--strict-markers"
+addopts = "--strict-markers -m \"not manual\""
 markers = [
     "legacy: Archived compatibility characterization tests.",
+    "manual: Manually-invoked smoke tests excluded from default CI/test runs.",
 ]
 
 [tool.black]

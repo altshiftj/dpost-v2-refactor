@@ -62,7 +62,7 @@ def test_init_runtime_dirs_delegates_to_storage_initializer() -> None:
 
 
 def test_build_config_service_loads_plugins_and_initialises_service() -> None:
-    """Load selected PC/device plugin configs and pass them to init_config."""
+    """Load selected PC/device plugin configs and construct ConfigService."""
     pc_config = object()
     device_a = object()
     device_b = object()
@@ -71,12 +71,12 @@ def test_build_config_service_loads_plugins_and_initialises_service() -> None:
 
     original_load_pc = deps.load_pc_plugin
     original_load_device = deps.load_device_plugin
-    original_init_config = deps.init_config
+    original_config_service = deps.ConfigService
     deps.load_pc_plugin = lambda _pc: _PluginStub(pc_config)
     deps.load_device_plugin = lambda name: _PluginStub(
         device_a if name == "dev-a" else device_b
     )
-    deps.init_config = (
+    deps.ConfigService = (
         lambda pc, devices: captured.update({"pc": pc, "devices": list(devices)})
         or result_service
     )
@@ -85,7 +85,7 @@ def test_build_config_service_loads_plugins_and_initialises_service() -> None:
     finally:
         deps.load_pc_plugin = original_load_pc
         deps.load_device_plugin = original_load_device
-        deps.init_config = original_init_config
+        deps.ConfigService = original_config_service
 
     assert service is result_service
     assert captured["pc"] is pc_config

@@ -1,34 +1,30 @@
-#!/usr/bin/env python3
+"""Manual smoke checks for SEM plugin construction and file presence."""
 
-import os
-import traceback
+from __future__ import annotations
 
-print("Step 1: Testing config + processor instantiation...")
+from pathlib import Path
 
-try:
-    from dpost.device_plugins.sem_phenomxl2.file_processor import \
-        FileProcessorSEMPhenomXL2
-    from dpost.device_plugins.sem_phenomxl2.settings import \
-        build_config
+import pytest
 
+from dpost.application.config import DeviceConfig
+from dpost.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
+from dpost.device_plugins.sem_phenomxl2.settings import build_config
+from dpost.plugins.contracts import DevicePlugin
+
+pytestmark = pytest.mark.manual
+
+
+def test_sem_plugin_config_and_processor_instantiation() -> None:
+    """Manual smoke test for SEM config + processor instantiation."""
     device_config = build_config()
-    print("[OK] build_config() returned DeviceConfig with id:", device_config.identifier)
+    assert device_config.identifier
 
     processor = FileProcessorSEMPhenomXL2(device_config)
-    print("[OK] FileProcessorSEMPhenomXL2 instantiated with DeviceConfig")
-except Exception as e:
-    print("[FAIL] Config/Processor instantiation failed:", e)
-    traceback.print_exc()
+    assert isinstance(processor, FileProcessorSEMPhenomXL2)
 
-print("\nStep 2: Creating plugin class manually (mirrors runtime plugin)...")
 
-try:
-    from dpost.application.config import DeviceConfig
-    from dpost.device_plugins.sem_phenomxl2.file_processor import \
-        FileProcessorSEMPhenomXL2
-    from dpost.device_plugins.sem_phenomxl2.settings import \
-        build_config
-    from dpost.plugins.contracts import DevicePlugin
+def test_sem_plugin_contract_shape() -> None:
+    """Manual smoke test for DevicePlugin contract compatibility."""
 
     class SEMPhenomXL2Plugin(DevicePlugin):
         def __init__(self) -> None:
@@ -38,25 +34,15 @@ try:
         def get_config(self) -> DeviceConfig:
             return self._config
 
-        def get_file_processor(self):
+        def get_file_processor(self) -> FileProcessorSEMPhenomXL2:
             return self._processor
 
     plugin = SEMPhenomXL2Plugin()
-    print("[OK] SEMPhenomXL2Plugin instantiated and methods available:")
-    print("  get_config.identifier:", plugin.get_config().identifier)
-    print("  get_file_processor:", type(plugin.get_file_processor()).__name__)
-except Exception as e:
-    print("[FAIL] SEMPhenomXL2Plugin instantiation failed:", e)
-    traceback.print_exc()
+    assert plugin.get_config().identifier
+    assert isinstance(plugin.get_file_processor(), FileProcessorSEMPhenomXL2)
 
-print("\nStep 3: Checking plugin file content...")
 
-plugin_path = "src/dpost/device_plugins/sem_phenomxl2/plugin.py"
-if os.path.exists(plugin_path):
-    print(f"[OK] Plugin file exists: {plugin_path}")
-    with open(plugin_path, "r", encoding="utf-8") as f:
-        content = f.read()
-        print("--- Plugin file content (first 10 lines) ---")
-        print("\n".join(content.splitlines()[:10]))
-else:
-    print(f"[FAIL] Plugin file does not exist: {plugin_path}")
+def test_sem_plugin_file_exists() -> None:
+    """Manual smoke test to ensure the plugin module file is present."""
+    plugin_path = Path("src/dpost/device_plugins/sem_phenomxl2/plugin.py")
+    assert plugin_path.exists()

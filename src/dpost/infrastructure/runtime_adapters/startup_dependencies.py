@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Iterable
 
 from dpost.application.config import ConfigService, DeviceConfig
-from dpost.application.config.context import init_config
 from dpost.application.runtime import DeviceWatchdogApp
 from dpost.infrastructure.runtime_adapters.desktop_ui import get_desktop_ui_class
 from dpost.infrastructure.runtime_adapters.ui_adapters import (
@@ -41,7 +40,7 @@ def build_config_service(pc_name: str, device_names: Iterable[str]) -> ConfigSer
         plugin = load_device_plugin(device_name)
         device_configs.append(plugin.get_config())
 
-    return init_config(pc_config, device_configs)
+    return ConfigService(pc_config, device_configs)
 
 
 def build_interaction_adapter(ui: object) -> UiInteractionAdapter:

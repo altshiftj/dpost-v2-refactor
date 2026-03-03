@@ -391,7 +391,10 @@ python -m dpost
 python -m ruff check .
 python -m black --check src tests
 python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
-python -m pytest -q
+python -m pytest -q tests/unit
+python -m pytest -q tests/integration
+# Optional manual smoke lane:
+python -m pytest -q -m manual tests/manual
 ```
 
 ### Public CI
@@ -401,7 +404,8 @@ python -m pytest -q
 - Required job set:
   - `workflow-lint` (actionlint)
   - `quality (py3.12/py3.13)` (Ubuntu lint/format checks)
-  - `tests (py3.12/py3.13)` (Windows full pytest matrix)
+  - `unit-tests (py3.12/py3.13)` (Windows unit suite)
+  - `integration-tests (py3.12)` (Windows integration suite)
   - `bootstrap-smoke` (deterministic bootstrap tests)
   - `artifact-hygiene` (tracked env/workflow guardrails)
 - Branch protection payload: `.github/branch-protection/main.required-checks.json`

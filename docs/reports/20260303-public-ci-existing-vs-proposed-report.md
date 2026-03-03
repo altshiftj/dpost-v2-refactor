@@ -14,7 +14,8 @@
 - Add `.github/workflows/public-ci.yml` with:
   - `workflow-lint` job: `actionlint` to validate workflow syntax before downstream jobs.
   - `quality` job: `ruff` + `black --check` (Linux-hosted, direct tool installs).
-  - `unit-tests` job: `pytest -q` with deterministic OSS-safe startup env.
+  - `unit-tests` job: `pytest -q tests/unit` with deterministic OSS-safe startup env.
+  - `integration-tests` job: `pytest -q tests/integration` with deterministic OSS-safe startup env.
   - `bootstrap-smoke` job: targeted bootstrap tests using `DPOST_*` environment overrides.
   - `package-build` job: `python -m build` to catch manifest/import regressions.
   - `artifact-hygiene` job:
@@ -25,7 +26,7 @@
 - Trigger on `workflow_dispatch`, `push`, and `pull_request` to `main` / `master`.
 - Optional follow-up split into smaller jobs after first pass stabilizes.
 - Implementation updates:
-  - `.github/workflows/public-ci.yml` has been added with jobs for quality, tests, bootstrap-smoke, package-build, and artifact-hygiene.
+  - `.github/workflows/public-ci.yml` has been added with jobs for quality, unit-tests, integration-tests, bootstrap-smoke, package-build, and artifact-hygiene.
   - `.gitignore` now explicitly unignores `.github` workflow config.
 
 ## Current Implementation State
@@ -33,7 +34,8 @@
 - `/.github/workflows/public-ci.yml` includes:
   - `workflow-lint` (actionlint gate),
   - `quality (py3.12/py3.13)` (ruff + black checks, Linux-hosted),
-  - `tests (py3.12/py3.13)` (pytest full suite with explicit `DPOST_*` defaults, Windows-hosted),
+  - `unit-tests (py3.12/py3.13)` (pytest unit suite with explicit `DPOST_*` defaults, Windows-hosted),
+  - `integration-tests (py3.12)` (pytest integration suite with explicit `DPOST_*` defaults, Windows-hosted),
   - `bootstrap-smoke` (targeted bootstrap tests),
   - `package-build` (`python -m build`),
   - `hygiene` (tracked-env and ignore/path checks),
@@ -49,7 +51,7 @@
 - Checklist: [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md)
 
 ## Risk and Validation Plan
-- Short-term risk: bootstrap/tests remain Windows-hosted due device/runtime dependency profile.
+- Short-term risk: integration and bootstrap lanes remain Windows-hosted due device/runtime dependency profile.
 - Validation plan:
   - run workflow in branch mode,
   - confirm required jobs complete before merge,

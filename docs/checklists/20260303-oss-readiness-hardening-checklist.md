@@ -7,12 +7,13 @@
 - Why this matters: These items directly affect whether governance and CI enforcement are real, not just documented.
 - [ ] Decide canonical forge for enforcement (`GitHub` vs `GitLab`) and make branch protection mandatory on that host.
 - [ ] If canonical host remains GitLab, add host-native protected-branch automation and required pipeline checks.
-- [ ] Mark `tests/manual/**` as explicit manual tests and exclude them from default CI execution.
-- [ ] Split CI test execution into explicit lanes (`unit`, optional `integration`, optional `manual`) with clear required/optional status.
+- [x] Mark `tests/manual/**` as explicit manual tests and exclude them from default CI execution.
+- [x] Split CI test execution into explicit lanes (`unit`, required `integration`, optional `manual`) with clear required/optional status.
 
 ## Section 2: Early OSS Hygiene
 - Why this matters: These changes reduce maintainer toil and make contribution flow self-serve.
 - [x] Make Windows-only runtime dependencies platform-conditional in `pyproject.toml`.
+- [x] Align `requires-python` with validated CI/runtime baseline (`>=3.12`).
 - [x] Replace machine-local absolute links in active docs with repository-relative links.
 - [ ] Add issue templates under `.github/ISSUE_TEMPLATE/`.
 - [ ] Add `.github/pull_request_template.md` with test/doc checklist.
@@ -28,7 +29,7 @@
 ## Completion Notes
 - How it was done:
   - Audited repository against OSS baseline expectations after CI/environment hygiene passes.
-  - Applied low-risk/high-impact fixes immediately (platform markers and portable links).
+  - Applied low-risk/high-impact fixes immediately (platform markers, portable links, manual-lane isolation, startup context decoupling, explicit config device protocol typing).
   - Captured unresolved items as actionable host/test/governance backlog.
 
 ## Manual Check
@@ -38,3 +39,5 @@
   - `rg -n "pywin32|pywin32-ctypes" pyproject.toml`
 - Verify bootstrap smoke remains green:
   - `python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py`
+- Verify manual lane runs only when explicitly requested:
+  - `python -m pytest -q -m manual tests/manual`

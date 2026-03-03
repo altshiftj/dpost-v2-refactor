@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""
-Manual smoke test demonstrating config service wiring with the sync manager.
-"""
+"""Manual smoke test demonstrating config service wiring with the sync manager."""
+
+from __future__ import annotations
+
 import pytest
 
-pytest.importorskip("kadi_apy")
 from pathlib import Path
 
 from dpost.application.config import (
@@ -14,14 +14,17 @@ from dpost.application.config import (
     PathSettings,
     PCConfig,
     SessionSettings,
-    init_config,
-    reset_service,
 )
-from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
+from dpost.application.config.context import init_config, reset_service
 from tests.helpers.fake_ui import HeadlessUI
+
+pytestmark = pytest.mark.manual
+pytest.importorskip("kadi_apy")
 
 
 def test_sync_settings_integration(tmp_path):
+    from dpost.infrastructure.sync.kadi_manager import KadiSyncManager
+
     base = tmp_path / "sandbox"
     paths = PathSettings(
         app_dir=base / "App",
@@ -42,7 +45,9 @@ def test_sync_settings_integration(tmp_path):
 
     device = DeviceConfig(
         identifier="manual_device",
-        metadata=DeviceMetadata(device_abbr="MANUAL", default_record_description="Manual test device"),
+        metadata=DeviceMetadata(
+            device_abbr="MANUAL", default_record_description="Manual test device"
+        ),
         files=DeviceFileSelectors(allowed_extensions=frozenset({".tif"})),
         session=SessionSettings(timeout_seconds=120),
     )

@@ -13,9 +13,8 @@ from dpost.application.config import (
     DeviceConfig,
     PCConfig,
     PathSettings,
-    init_config,
-    reset_service,
 )
+from dpost.application.config.context import init_config, reset_service
 from dpost.application.processing.file_process_manager import FileProcessManager
 from dpost.application.processing.stability_tracker import (
     FileStabilityTracker,
@@ -89,7 +88,9 @@ def _build_device_configs() -> list[DeviceConfig]:
     ]
 
 
-def _build_uber_config(tmp_path: Path) -> tuple[PCConfig, list[DeviceConfig], PathSettings]:
+def _build_uber_config(
+    tmp_path: Path,
+) -> tuple[PCConfig, list[DeviceConfig], PathSettings]:
     root = tmp_path / "sandbox"
     paths = PathSettings(
         app_dir=root / "App",
@@ -110,7 +111,9 @@ def _build_uber_config(tmp_path: Path) -> tuple[PCConfig, list[DeviceConfig], Pa
     return pc_config, device_configs, paths
 
 
-def _setup_app(tmp_path: Path, monkeypatch) -> tuple[DeviceWatchdogApp, HeadlessUI, DummySyncManager, PathSettings]:
+def _setup_app(
+    tmp_path: Path, monkeypatch
+) -> tuple[DeviceWatchdogApp, HeadlessUI, DummySyncManager, PathSettings]:
     _silence_file_logging(monkeypatch)
     monkeypatch.setattr(FileStabilityTracker, "wait", _stable_immediately)
     observer_stub = FakeObserver()
@@ -157,18 +160,24 @@ def _silence_file_logging(monkeypatch) -> None:
                 handler.close()
 
 
-def _record_dir(dest_dir: Path, institute: str, user: str, device_abbr: str, sample: str) -> Path:
+def _record_dir(
+    dest_dir: Path, institute: str, user: str, device_abbr: str, sample: str
+) -> Path:
     return dest_dir / institute.upper() / user.upper() / f"{device_abbr}-{sample}"
 
 
 def _assert_single_suffix(record_dir: Path, suffix: str) -> None:
     matches = list(record_dir.glob(f"*{suffix}"))
-    assert len(matches) == 1, f"Expected 1 '{suffix}' file in {record_dir}, found {matches}"
+    assert (
+        len(matches) == 1
+    ), f"Expected 1 '{suffix}' file in {record_dir}, found {matches}"
 
 
 def _assert_min_suffix(record_dir: Path, suffix: str, minimum: int) -> None:
     matches = list(record_dir.glob(f"*{suffix}"))
-    assert len(matches) >= minimum, f"Expected >= {minimum} '{suffix}' files in {record_dir}, found {matches}"
+    assert (
+        len(matches) >= minimum
+    ), f"Expected >= {minimum} '{suffix}' files in {record_dir}, found {matches}"
 
 
 def _seed_extr_haake(watch_dir: Path) -> SeededInputs:

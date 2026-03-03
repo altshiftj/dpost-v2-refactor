@@ -6,7 +6,7 @@ from contextlib import AbstractContextManager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, Optional, Pattern
+from typing import Iterable, Optional, Pattern, Protocol, runtime_checkable
 
 from .schema import (
     DeviceConfig,
@@ -21,6 +21,7 @@ __all__ = [
     "ActiveConfig",
     "ConfigService",
     "DeviceLookupError",
+    "ConfigDeviceProtocol",
 ]
 
 
@@ -28,12 +29,28 @@ class DeviceLookupError(KeyError):
     """Raised when a device identifier is not registered with the service."""
 
 
+@runtime_checkable
+class ConfigDeviceProtocol(Protocol):
+    """Minimal device contract consumed by ConfigService matching/activation."""
+
+    identifier: str
+
+    def should_defer_dir(self, path_like: str | Path) -> bool:
+        """Return whether processing for this path should be deferred."""
+
+    def matches_file(self, path_like: str | Path) -> bool:
+        """Return whether this device can process the given path."""
+
+
+ConfigDevice = DeviceConfig | ConfigDeviceProtocol
+
+
 @dataclass(slots=True)
 class ActiveConfig:
     """Resolved configuration for the current execution context."""
 
     pc: PCConfig
-    device: Optional[object]
+    device: Optional[ConfigDevice]
 
     @property
     def paths(self) -> PathSettings:
@@ -88,11 +105,11 @@ class ConfigService:
     """Central registry for PC/device configuration with scoped device activation."""
 
     def __init__(
-        self, pc: PCConfig, devices: Iterable[DeviceConfig] | None = None
+        self, pc: PCConfig, devices: Iterable[ConfigDevice] | None = None
     ) -> None:
         self._pc = pc
-        self._devices: dict[str, object] = {}
-        self._active_device: ContextVar[Optional[object]] = ContextVar(
+        self._devices: dict[str, ConfigDevice] = {}
+        self._active_device: ContextVar[Optional[ConfigDevice]] = ContextVar(
             "active_device", default=None
         )
         if devices:
@@ -104,24 +121,24 @@ class ConfigService:
         return self._pc
 
     @property
-    def devices(self) -> tuple[object, ...]:
+    def devices(self) -> tuple[ConfigDevice, ...]:
         return tuple(self._devices.values())
 
-    def register_device(self, device: object) -> None:
+    def register_device(self, device: ConfigDevice) -> None:
         identifier = getattr(device, "identifier", None)
         if not isinstance(identifier, str) or not identifier.strip():
             raise TypeError("Device must define a non-empty 'identifier' string")
         self._devices[identifier] = device
 
-    def get_device(self, identifier: str) -> object:
+    def get_device(self, identifier: str) -> ConfigDevice:
         try:
             return self._devices[identifier]
         except KeyError as exc:
             raise DeviceLookupError(identifier) from exc
 
-    def matching_devices(self, path_like: str | Path) -> list[object]:
+    def matching_devices(self, path_like: str | Path) -> list[ConfigDevice]:
         target = Path(path_like)
-        matches: list[object] = []
+        matches: list[ConfigDevice] = []
         for device in self._devices.values():
             if self._device_should_defer(device, target):
                 continue
@@ -129,7 +146,7 @@ class ConfigService:
                 matches.append(device)
         return matches
 
-    def deferred_devices(self, path_like: str | Path) -> list[object]:
+    def deferred_devices(self, path_like: str | Path) -> list[ConfigDevice]:
         target = Path(path_like)
         return [
             device
@@ -137,7 +154,7 @@ class ConfigService:
             if self._device_should_defer(device, target)
         ]
 
-    def first_matching_device(self, path_like: str | Path) -> Optional[object]:
+    def first_matching_device(self, path_like: str | Path) -> Optional[ConfigDevice]:
         for device in self._devices.values():
             if self._device_matches_file(device, path_like):
                 return device
@@ -147,13 +164,13 @@ class ConfigService:
     def current(self) -> ActiveConfig:
         return ActiveConfig(pc=self._pc, device=self._active_device.get())
 
-    def current_device(self) -> Optional[object]:
+    def current_device(self) -> Optional[ConfigDevice]:
         return self._active_device.get()
 
-    def activate_device(self, device: object | str | None) -> "_DeviceActivation":
+    def activate_device(self, device: ConfigDevice | str | None) -> "_DeviceActivation":
         return _DeviceActivation(self, device)
 
-    def set_active_device(self, device: Optional[object]) -> None:
+    def set_active_device(self, device: Optional[ConfigDevice]) -> None:
         self._active_device.set(device)
 
     def clear_active_device(self) -> None:
@@ -180,15 +197,17 @@ class ConfigService:
         return False
 
 
-class _DeviceActivation(AbstractContextManager[Optional[object]]):
+class _DeviceActivation(AbstractContextManager[Optional[ConfigDevice]]):
     """Context manager that manages ConfigService active device state."""
 
-    def __init__(self, service: ConfigService, device: object | str | None) -> None:
+    def __init__(
+        self, service: ConfigService, device: ConfigDevice | str | None
+    ) -> None:
         self._service = service
         self._device = device
         self._token: Optional[Token] = None
 
-    def __enter__(self) -> Optional[object]:
+    def __enter__(self) -> Optional[ConfigDevice]:
         resolved = self._resolve_device(self._device)
         self._token = self._service._active_device.set(resolved)
         return resolved
@@ -198,7 +217,9 @@ class _DeviceActivation(AbstractContextManager[Optional[object]]):
             self._service._active_device.reset(self._token)
         return False
 
-    def _resolve_device(self, device: object | str | None) -> Optional[object]:
+    def _resolve_device(
+        self, device: ConfigDevice | str | None
+    ) -> Optional[ConfigDevice]:
         if device is None:
             return None
         if isinstance(device, str):

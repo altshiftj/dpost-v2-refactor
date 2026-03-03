@@ -22,7 +22,10 @@ python -m pip install -e ".[dev,ci]"
 python -m ruff check .
 python -m black --check src tests
 python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
-python -m pytest -q
+python -m pytest -q tests/unit
+python -m pytest -q tests/integration
+# Optional manual smoke lane:
+python -m pytest -q -m manual tests/manual
 ```
 
 ## Pull Request Expectations
