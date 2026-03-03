@@ -389,10 +389,21 @@ python -m dpost
 
 ```powershell
 python -m ruff check .
-python -m black --check .
-python -m pytest -m legacy
-python -m pytest
+python -m black --check src tests
+python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
+python -m pytest -q
 ```
+
+### Public CI
+
+- GitHub Actions workflow: `.github/workflows/public-ci.yml`
+- Triggered on `push` and `pull_request` for `main`/`master`, plus `workflow_dispatch`.
+- Required job set:
+  - `workflow-lint` (actionlint)
+  - `quality` (Ubuntu lint/format checks)
+  - `tests` (Windows full pytest matrix)
+  - `bootstrap-smoke` (deterministic bootstrap tests)
+  - `artifact-hygiene` (tracked env/workflow guardrails)
 
 ## Documentation
 
@@ -415,6 +426,4 @@ review:
 
 ## License
 
-This repository currently does not include a top-level `LICENSE` file. Add one
-before publishing or accepting external open-source contributions under a
-specific license.
+This project is licensed under the MIT License. See `LICENSE` for details.

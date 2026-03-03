@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Status
-- Draft for Review
+- Implemented (Baseline + Hardening Pass 2)
 
 ## Context
 - The repository is moving to OSS posture with tracked secrets/config artifacts removed and `.env.example` added.
@@ -19,9 +19,12 @@
 ## Design Decision (proposed)
 - Use GitHub Actions as the public CI provider.
 - Create a single, deterministic baseline workflow set now:
+  - `workflow-lint`: validate workflow syntax before quality/test/build execution.
   - `ci`: quality + unit tests.
   - `smoke`: lightweight runtime/bootstrap validation with explicit env examples.
   - `artifact-hygiene`: enforce no tracked runtime artifacts and no banned references.
+- Add `workflow_dispatch` support for controlled manual reruns and release-candidate gating.
+- Add explicit `timeout-minutes` and pip caching to reduce hanging jobs and cold-start overhead.
 - Keep matrix small and stable to avoid flaky infrastructure noise:
   - `python-version: ["3.12", "3.13"]`
   - `quality` runs on `ubuntu-latest` for dependency-safe linting; Windows remains for runtime/bootstrap tests and packaging.
@@ -54,6 +57,7 @@
 - Use `paths` filter where practical to keep speed:
   - run full matrix on all `src/`, `tests/`, `docs/`, `pyproject.toml`, and workflow files.
 - Keep one explicit "required" job per commit:
+  - `workflow-lint`
   - `quality`
   - `tests`
   - `bootstrap-smoke`
