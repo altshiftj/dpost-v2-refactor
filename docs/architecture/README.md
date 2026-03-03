@@ -13,6 +13,8 @@
 - `docs/architecture/extension-contracts.md`
 - Object and module responsibilities:
 - `docs/architecture/responsibility-catalog.md`
+- Narrative architecture walkthrough:
+- `docs/architecture/20260303-architecture-overview-and-code-story.md`
 - Architecture decisions:
 - `docs/architecture/adr/`
 - Change-level findings and plans:
