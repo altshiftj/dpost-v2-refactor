@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Transactional record repository adapter (SQLite) implementing RecordStorePort.
 
+## Origin Gist
+- Source mapping: no direct V1 module (origin_v1_files: []).
+- Legacy gist: behavior came from distributed legacy responsibilities and is now made explicit in this spec.
+
+## V2 Improvement Intent
+- Transform posture: New in V2.
+- Target responsibility: Transactional record repository adapter (SQLite) implementing RecordStorePort.
+- Improvement goal: Introduce a cleanly owned V2 contract/module with explicit boundaries.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

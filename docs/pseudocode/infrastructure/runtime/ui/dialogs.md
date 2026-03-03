@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Dialog helpers and user-prompt composition.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/runtime_adapters/dialogs.py`.
+- Legacy gist: Moves UI runtime adapter dialogs.py to dedicated UI infrastructure lane.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Dialog helpers and user-prompt composition.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

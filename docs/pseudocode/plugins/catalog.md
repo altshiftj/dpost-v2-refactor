@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Plugin metadata catalog and lookup APIs.
 
+## Origin Gist
+- Source mapping: `src/dpost/plugins/reference.py`.
+- Legacy gist: Renames reference to catalog metadata module.
+
+## V2 Improvement Intent
+- Transform posture: Rename.
+- Target responsibility: Plugin metadata catalog and lookup APIs.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

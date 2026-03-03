@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Record lifecycle API (`create`, `update`, `mark_unsynced`, `save`) via record port.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/records/record_manager.py`.
+- Legacy gist: Defines records service over explicit store contract.
+
+## V2 Improvement Intent
+- Transform posture: Rename.
+- Target responsibility: Record lifecycle API (`create`, `update`, `mark_unsynced`, `save`) via record port.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

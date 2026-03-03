@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Post-persist bookkeeping, immediate sync trigger, emission hooks.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/post_persist_bookkeeping.py`.
+- Legacy gist: Isolates post-persist side effects into dedicated stage.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Post-persist bookkeeping, immediate sync trigger, emission hooks.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - No-op sync backend for offline/testing mode.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/sync/noop.py`.
+- Legacy gist: Retains sync adapter module noop.py.
+
+## V2 Improvement Intent
+- Transform posture: Migrate.
+- Target responsibility: No-op sync backend for offline/testing mode.
+- Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

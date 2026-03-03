@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Stage runner coordinating resolve/stabilize/route/persist/post-persist stages.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/file_process_manager.py`.
+- Legacy gist: Replaces orchestration shell with explicit ingestion engine.
+
+## V2 Improvement Intent
+- Transform posture: Split.
+- Target responsibility: Stage runner coordinating resolve/stabilize/route/persist/post-persist stages.
+- Improvement goal: Decompose orchestration into focused modules/stages with tighter ownership.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

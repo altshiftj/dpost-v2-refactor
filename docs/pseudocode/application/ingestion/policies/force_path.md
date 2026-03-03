@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Force-path override policy and guard checks.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/force_path_policy.py`.
+- Legacy gist: Defines force-path override policy.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Force-path override policy and guard checks.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

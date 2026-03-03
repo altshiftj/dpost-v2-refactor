@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Parse/format artifact identifiers and separator-aware tokenization.
 
+## Origin Gist
+- Source mapping: `src/dpost/domain/naming/identifiers.py`.
+- Legacy gist: Retains pure naming rule module identifiers.py.
+
+## V2 Improvement Intent
+- Transform posture: Migrate.
+- Target responsibility: Parse/format artifact identifiers and separator-aware tokenization.
+- Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

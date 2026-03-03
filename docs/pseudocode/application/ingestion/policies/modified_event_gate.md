@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Debounce policy to suppress duplicate modified events.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/modified_event_gate.py`.
+- Legacy gist: Debounces duplicate modified events.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Debounce policy to suppress duplicate modified events.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

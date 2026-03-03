@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Tkinter UI implementation for desktop mode.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/runtime_adapters/tkinter_ui.py`.
+- Legacy gist: Moves UI runtime adapter tkinter_ui.py to dedicated UI infrastructure lane.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Tkinter UI implementation for desktop mode.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Emit immediate-sync failure outcomes consistently.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/immediate_sync_error_emitter.py`.
+- Legacy gist: Isolates immediate sync error emission behavior.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Emit immediate-sync failure outcomes consistently.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

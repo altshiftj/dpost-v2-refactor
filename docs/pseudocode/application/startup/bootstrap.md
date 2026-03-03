@@ -14,6 +14,14 @@ writes: []
 ## Intent
 - Startup orchestration sequence: load settings, build composition, launch runtime.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/services/runtime_startup.py`, `src/dpost/runtime/bootstrap.py`.
+- Legacy gist: Unifies runtime startup orchestration into bootstrap module. Moves startup flow into explicit application startup boundary.
+
+## V2 Improvement Intent
+- Transform posture: Merge, Split.
+- Target responsibility: Startup orchestration sequence: load settings, build composition, launch runtime.
+- Improvement goal: Decompose orchestration into focused modules/stages with tighter ownership. Consolidate duplicated logic into a single canonical owner.
 ## Inputs
 - TBD
 
@@ -34,4 +42,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

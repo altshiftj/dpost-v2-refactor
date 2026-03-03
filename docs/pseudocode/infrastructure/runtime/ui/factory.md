@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Select UI adapter implementation for headless/desktop mode.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/runtime_adapters/ui_factory.py`.
+- Legacy gist: Moves UI runtime adapter ui_factory.py to dedicated UI infrastructure lane.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Select UI adapter implementation for headless/desktop mode.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

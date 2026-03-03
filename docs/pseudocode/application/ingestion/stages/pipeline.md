@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Pure stage sequencing logic and stage transition rules.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/processing_pipeline.py`.
+- Legacy gist: Stage machine remains explicit and independently testable.
+
+## V2 Improvement Intent
+- Transform posture: Split.
+- Target responsibility: Pure stage sequencing logic and stage transition rules.
+- Improvement goal: Decompose orchestration into focused modules/stages with tighter ownership.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

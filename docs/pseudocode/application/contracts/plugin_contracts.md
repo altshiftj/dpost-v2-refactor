@@ -14,6 +14,14 @@ writes: []
 ## Intent
 - Plugin capability protocols, processor abstract types, plugin metadata types.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/file_processor_abstract.py`, `src/dpost/plugins/contracts.py`.
+- Legacy gist: Moves processor abstraction into plugin contracts. Promotes plugin contract model to contract-first application boundary.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Plugin capability protocols, processor abstract types, plugin metadata types.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -34,4 +42,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

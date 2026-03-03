@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Candidate artifact metadata model and helper constructors.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/candidate_metadata.py`.
+- Legacy gist: Defines candidate metadata model for resolve/route.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Candidate artifact metadata model and helper constructors.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

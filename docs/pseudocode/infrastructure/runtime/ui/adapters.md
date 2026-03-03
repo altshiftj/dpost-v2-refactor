@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - UI adapter shims implementing application UI port.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/runtime_adapters/ui_adapters.py`.
+- Legacy gist: Moves UI runtime adapter ui_adapters.py to dedicated UI infrastructure lane.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: UI adapter shims implementing application UI port.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

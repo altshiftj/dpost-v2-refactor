@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Immutable `RuntimeContext`, `ProcessingContext`, context constructors/validators.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/processor_runtime_context.py`.
+- Legacy gist: Moves runtime context model into shared contract module.
+
+## V2 Improvement Intent
+- Transform posture: Merge.
+- Target responsibility: Immutable `RuntimeContext`, `ProcessingContext`, context constructors/validators.
+- Improvement goal: Consolidate duplicated logic into a single canonical owner.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -22,6 +22,14 @@ writes: []
 ## Intent
 - Device plugin adapter exposing capability and processor factory hooks.
 
+## Origin Gist
+- Source mapping: template derived from 10 device-plugin origin files.
+- Legacy gist: Keeps device plugin module plugin.py for rmx_eirich_el1. Keeps device plugin module plugin.py for utm_zwick. (plus similar related variants).
+
+## V2 Improvement Intent
+- Transform posture: Migrate.
+- Target responsibility: Device plugin adapter exposing capability and processor factory hooks.
+- Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
 - TBD
 
@@ -42,4 +50,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -22,6 +22,14 @@ writes: []
 ## Intent
 - Device-specific parsing, preprocessing, and candidate derivation logic.
 
+## Origin Gist
+- Source mapping: template derived from 10 device-plugin origin files.
+- Legacy gist: Keeps device processing logic for dsv_horiba with consistent processor naming. Keeps device processing logic for psa_horiba with consistent processor naming. (plus similar related variants).
+
+## V2 Improvement Intent
+- Transform posture: Rename.
+- Target responsibility: Device-specific parsing, preprocessing, and candidate derivation logic.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -42,4 +50,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Build dependency graph, wire ports to adapters, return app runtime object.
 
+## Origin Gist
+- Source mapping: `src/dpost/runtime/composition.py`.
+- Legacy gist: Composition root wires contracts to adapters for V2.
+
+## V2 Improvement Intent
+- Transform posture: Rewrite.
+- Target responsibility: Build dependency graph, wire ports to adapters, return app runtime object.
+- Improvement goal: Rebuild the module around cleanroom contracts while preserving intended outcomes.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

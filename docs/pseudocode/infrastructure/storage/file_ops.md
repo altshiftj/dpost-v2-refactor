@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Concrete file operations with explicit context input only.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/storage/filesystem_utils.py`.
+- Legacy gist: Narrows broad helper surface into explicit context-driven file ops.
+
+## V2 Improvement Intent
+- Transform posture: Split.
+- Target responsibility: Concrete file operations with explicit context input only.
+- Improvement goal: Decompose orchestration into focused modules/stages with tighter ownership.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

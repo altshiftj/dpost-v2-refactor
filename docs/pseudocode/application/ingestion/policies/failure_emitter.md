@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Failure event emission adapter hooks.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/processing/failure_emitter.py`.
+- Legacy gist: Emits standardized failure events and logs.
+
+## V2 Improvement Intent
+- Transform posture: Move.
+- Target responsibility: Failure event emission adapter hooks.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

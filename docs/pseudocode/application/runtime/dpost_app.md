@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Top-level orchestration loop for observer events -> ingestion engine -> outcomes.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/runtime/device_watchdog_app.py`.
+- Legacy gist: Keeps top-level dpost app orchestration with explicit collaborators.
+
+## V2 Improvement Intent
+- Transform posture: Rename.
+- Target responsibility: Top-level orchestration loop for observer events -> ingestion engine -> outcomes.
+- Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

@@ -14,6 +14,14 @@ writes: []
 ## Intent
 - Kadi sync adapter implementing SyncPort with structured outcomes.
 
+## Origin Gist
+- Source mapping: `src/dpost/infrastructure/sync/kadi.py`, `src/dpost/infrastructure/sync/kadi_manager.py`.
+- Legacy gist: Consolidates Kadi sync integration into one adapter module.
+
+## V2 Improvement Intent
+- Transform posture: Merge.
+- Target responsibility: Kadi sync adapter implementing SyncPort with structured outcomes.
+- Improvement goal: Consolidate duplicated logic into a single canonical owner.
 ## Inputs
 - TBD
 
@@ -34,4 +42,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

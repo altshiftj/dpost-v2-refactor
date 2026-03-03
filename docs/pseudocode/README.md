@@ -24,6 +24,13 @@
 - Source mapping authority:
   - `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
 
+## Required Narrative Sections
+- Every pseudocode spec file (non-README) must include:
+  - `## Origin Gist`
+  - `## V2 Improvement Intent`
+- `Origin Gist` explains what the legacy source responsibility looked like.
+- `V2 Improvement Intent` explains how the rewrite improves ownership, structure, or contracts while preserving functional intent.
+
 ## Justification for Delineation
 - Keeping a single root index prevents ambiguity about where model lanes start and which conventions are binding.
 

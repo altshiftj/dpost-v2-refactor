@@ -22,6 +22,14 @@ writes: []
 ## Intent
 - Device-specific typed settings and defaults.
 
+## Origin Gist
+- Source mapping: template derived from 10 device-plugin origin files.
+- Legacy gist: Keeps device plugin module settings.py for extr_haake. Keeps device plugin module settings.py for erm_hioki. (plus similar related variants).
+
+## V2 Improvement Intent
+- Transform posture: Migrate.
+- Target responsibility: Device-specific typed settings and defaults.
+- Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
 - TBD
 
@@ -42,4 +50,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

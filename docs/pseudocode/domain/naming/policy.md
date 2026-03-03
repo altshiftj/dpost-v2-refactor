@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Canonical naming composition (pattern + separator + explicit shape).
 
+## Origin Gist
+- Source mapping: `src/dpost/application/naming/policy.py`.
+- Legacy gist: Consolidates naming policy logic in pure domain naming package.
+
+## V2 Improvement Intent
+- Transform posture: Merge.
+- Target responsibility: Canonical naming composition (pattern + separator + explicit shape).
+- Improvement goal: Consolidate duplicated logic into a single canonical owner.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

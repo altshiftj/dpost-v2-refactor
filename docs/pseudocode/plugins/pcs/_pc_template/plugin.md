@@ -20,6 +20,14 @@ writes: []
 ## Intent
 - PC plugin adapter for PC-side integration behavior.
 
+## Origin Gist
+- Source mapping: template derived from 8 PC-plugin origin files.
+- Legacy gist: Keeps PC plugin module plugin.py for kinexus_blb. Keeps PC plugin module plugin.py for eirich_blb. (plus similar related variants).
+
+## V2 Improvement Intent
+- Transform posture: Migrate.
+- Target responsibility: PC plugin adapter for PC-side integration behavior.
+- Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
 - TBD
 
@@ -40,4 +48,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 

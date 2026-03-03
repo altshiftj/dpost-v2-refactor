@@ -13,6 +13,14 @@ writes: []
 ## Intent
 - Explicit context builder replacing ambient `current()/get_service()` access.
 
+## Origin Gist
+- Source mapping: `src/dpost/application/config/context.py`.
+- Legacy gist: Replaces ambient global config access with explicit context injection.
+
+## V2 Improvement Intent
+- Transform posture: Retire/Replace.
+- Target responsibility: Explicit context builder replacing ambient `current()/get_service()` access.
+- Improvement goal: Replace legacy seams with explicit contract-driven behavior.
 ## Inputs
 - TBD
 
@@ -33,4 +41,6 @@ writes: []
 ## Tests To Implement
 - unit: TBD
 - integration: TBD
+
+
 
