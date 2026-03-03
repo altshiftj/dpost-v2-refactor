@@ -237,6 +237,7 @@ src/dpost_v2/
 - `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
 - `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
 - `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
+- `docs/planning/20260303-v2-codex-github-parallelization-runbook-rpc.md`
 - `docs/pseudocode/README.md`
 - `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
 - `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
