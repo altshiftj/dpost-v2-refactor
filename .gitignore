@@ -19,6 +19,12 @@ __pycache__/
 # ─── Logs ─────────────────────────────────────
 watchdog.log
 
+# Environment files
+.env
+!.env.example
+!.github/
+!.github/workflows/
+
 # ─── Project-specific Data Folders ────────────
 Data/*
 !Data/.gitkeep
@@ -33,7 +39,6 @@ file_structure*.txt
 build/*
 # But do not ignore these:
 !build/specs/
-!build/.env
 !build/version.txt
 
 # ─── Markdown Setup Files ────────────────────
