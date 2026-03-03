@@ -30,7 +30,7 @@ jobs:
         uses: rhysd/actionlint@v1
 
   quality:
-    name: quality
+    name: quality (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     needs: workflow-lint
     timeout-minutes: 20
@@ -57,7 +57,7 @@ jobs:
           python -m black --check src tests
 
   tests:
-    name: tests
+    name: tests (py${{ matrix.python-version }})
     runs-on: windows-latest
     needs: quality
     timeout-minutes: 45

@@ -1,0 +1,21 @@
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "workflow-lint",
+      "quality (py3.12)",
+      "quality (py3.13)",
+      "tests (py3.12)",
+      "tests (py3.13)",
+      "bootstrap-smoke",
+      "artifact-hygiene"
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_code_owner_reviews": false,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null
+}

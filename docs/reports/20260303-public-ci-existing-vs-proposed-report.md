@@ -32,12 +32,16 @@
 - `/.github/workflows/public-ci.yml` is present and reviewable.
 - `/.github/workflows/public-ci.yml` includes:
   - `workflow-lint` (actionlint gate),
-  - `quality` (ruff + black checks, Linux-hosted),
-  - `tests` (pytest full suite with explicit `DPOST_*` defaults, Windows-hosted),
+  - `quality (py3.12/py3.13)` (ruff + black checks, Linux-hosted),
+  - `tests (py3.12/py3.13)` (pytest full suite with explicit `DPOST_*` defaults, Windows-hosted),
   - `bootstrap-smoke` (targeted bootstrap tests),
   - `package-build` (`python -m build`),
   - `hygiene` (tracked-env and ignore/path checks),
   - timeout bounds on all jobs and pip caching in Python setup steps.
+- Branch protection baseline is defined in-repo:
+  - `/.github/branch-protection/main.required-checks.json`
+  - `/scripts/github/set-main-branch-protection.ps1`
+- Direct API application was not executed from this workspace because current `origin` is non-GitHub and `gh` CLI is unavailable.
 - Checklist artifact exists at [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md).
 
 ## Cross-file Links

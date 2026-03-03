@@ -400,10 +400,13 @@ python -m pytest -q
 - Triggered on `push` and `pull_request` for `main`/`master`, plus `workflow_dispatch`.
 - Required job set:
   - `workflow-lint` (actionlint)
-  - `quality` (Ubuntu lint/format checks)
-  - `tests` (Windows full pytest matrix)
+  - `quality (py3.12/py3.13)` (Ubuntu lint/format checks)
+  - `tests (py3.12/py3.13)` (Windows full pytest matrix)
   - `bootstrap-smoke` (deterministic bootstrap tests)
   - `artifact-hygiene` (tracked env/workflow guardrails)
+- Branch protection payload: `.github/branch-protection/main.required-checks.json`
+- Branch protection apply command:
+  - `pwsh -File scripts/github/set-main-branch-protection.ps1 -Repository owner/repo`
 
 ## Documentation
 
