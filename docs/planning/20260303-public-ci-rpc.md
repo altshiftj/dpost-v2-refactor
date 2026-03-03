@@ -24,7 +24,7 @@
   - `artifact-hygiene`: enforce no tracked runtime artifacts and no banned references.
 - Keep matrix small and stable to avoid flaky infrastructure noise:
   - `python-version: ["3.12", "3.13"]`
-  - OS `ubuntu-latest` for baseline and `windows-latest` for a periodic smoke.
+  - `quality` runs on `ubuntu-latest` for dependency-safe linting; Windows remains for runtime/bootstrap tests and packaging.
 
 ## CI Surface (Initial Scope)
 1. Code health

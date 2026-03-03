@@ -12,7 +12,7 @@
 
 ## Proposed State
 - Add `.github/workflows/public-ci.yml` with:
-  - `quality` job: `ruff` + `black --check`.
+  - `quality` job: `ruff` + `black --check` (Linux-hosted, direct tool installs).
   - `unit-tests` job: `pytest -q` with deterministic OSS-safe startup env.
   - `bootstrap-smoke` job: targeted bootstrap tests using `DPOST_*` environment overrides.
   - `package-build` job: `python -m build` to catch manifest/import regressions.
@@ -30,8 +30,8 @@
 ## Current Implementation State
 - `/.github/workflows/public-ci.yml` is present and reviewable.
 - `/.github/workflows/public-ci.yml` includes:
-  - `quality` (ruff + black checks),
-  - `tests` (pytest full suite with explicit `DPOST_*` defaults),
+  - `quality` (ruff + black checks, Linux-hosted),
+  - `tests` (pytest full suite with explicit `DPOST_*` defaults, Windows-hosted),
   - `bootstrap-smoke` (targeted bootstrap tests),
   - `package-build` (`python -m build`),
   - `hygiene` (tracked-env and ignore/path checks).
@@ -42,7 +42,7 @@
 - Checklist: [`docs/checklists/20260303-public-ci-implementation-checklist.md`](20260303-public-ci-implementation-checklist.md)
 
 ## Risk and Validation Plan
-- Short-term risk: Windows-only lint/test constraints due packaging dependencies may require initial Linux smoke expansion later.
+- Short-term risk: bootstrap/tests remain Windows-hosted due device/runtime dependency profile.
 - Validation plan:
   - run workflow in branch mode,
   - confirm required jobs complete before merge,
