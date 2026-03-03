@@ -4,13 +4,12 @@
 - 2026-03-03
 
 ## Status
-- Hypothetical Blueprint (Not Approved for Execution)
+- Approved for Execution (Owner-Directed)
 
 ## Context
 - This document defines what a full "start from square one" rewrite would look like if we optimized for long-term clarity and explicit boundaries.
-- It is a planning artifact, not an active migration plan.
-- Existing guidance still applies:
-  - `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md` says full rewrite is not currently warranted.
+- It is an active planning artifact for V2 execution.
+- Previous posture stating rewrite was not warranted is superseded by explicit owner decision to execute V2.
 
 ## Goal
 - Rebuild the runtime around explicit contracts and deterministic behavior while preserving functional intent of the current system.
@@ -40,50 +39,84 @@
 ## V2 Module Shape (Proposed)
 ```text
 src/dpost_v2/
+  runtime/
+    composition.py
+    startup_dependencies.py
   domain/
     naming/
+      identifiers.py
+      prefix_policy.py
+      policy.py
     routing/
+      rules.py
     records/
+      local_record.py
     processing/
+      models.py
+      batch_models.py
+      text.py
+      staging.py
   application/
     contracts/
       context.py
       ports.py
       plugin_contracts.py
       events.py
+    startup/
+      settings.py
+      settings_schema.py
+      settings_service.py
+      context.py
+      bootstrap.py
+    runtime/
+      dpost_app.py
+    session/
+      session_manager.py
+    records/
+      service.py
     ingestion/
       engine.py
+      runtime_services.py
+      processor_factory.py
+      models/
+        candidate.py
       stages/
+        pipeline.py
         resolve.py
         stabilize.py
-        preprocess.py
         route.py
         persist.py
         post_persist.py
-    records/
-      service.py
-    startup/
-      settings.py
-      resolver.py
-      bootstrap.py
+      policies/
+        retry_planner.py
+        force_path.py
+        failure_outcome.py
+        failure_emitter.py
+        immediate_sync_error_emitter.py
+        modified_event_gate.py
+        error_handling.py
   infrastructure/
     runtime/
       ui/
-      observer/
     storage/
       record_store.py
       file_ops.py
+      staging_dirs.py
     sync/
       noop.py
       kadi.py
     observability/
+      logging.py
       metrics.py
       tracing.py
   plugins/
     host.py
     discovery.py
-    validators.py
+    catalog.py
+    profile_selection.py
     contracts.py
+    devices/
+    pcs/
 ```
 
 ## Core Contracts (Proposed)
@@ -145,7 +178,7 @@ src/dpost_v2/
 - Promote to active runtime when parity and reliability gates pass.
 - Retire V1 pathways with rollback guard window.
 
-## First 30 Days (If Activated)
+## First 30 Days (Activated)
 1. Week 1
 - Lock rewrite charter and freeze parity corpus scope.
 - Ship behavior-capture harness against current V1.
@@ -178,11 +211,12 @@ src/dpost_v2/
 - Operator-visible behavior and artifacts match agreed intent.
 - Performance envelope within acceptable variance from V1 baseline.
 
-## Decision Trigger for Activating This Plan
-- Only execute if maintainability metrics or architecture risks cross threshold where incremental freshness slices no longer provide acceptable ROI.
+## Activation Decision
+- Activated by explicit owner directive on 2026-03-03.
+- This plan is the current execution baseline for V2 rewrite work.
 
 ## Activation Guardrails
-- Require explicit ADR approval before Phase 1 execution.
+- Record an ADR at kickoff for traceability; approval to execute is already granted.
 - Keep V1 as source of operational truth until parity gates are satisfied.
 - No destructive cutover without a tested rollback path and 1 full release cycle of shadow confidence.
 
@@ -190,7 +224,11 @@ src/dpost_v2/
 - `docs/planning/archive/20260303-legacy-seams-freshness-rpc.md`
 - `docs/planning/archive/20260303-processing-sprawl-posture-rpc.md`
 - `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
+- `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
+- `docs/pseudocode/README.md`
 - `docs/planning/archive/20260303-v2-cloud-agent-week1-roadmap.md`
 - `docs/reports/20260303-v2-cloud-agent-week1-feasibility-report.md`
 - `docs/checklists/20260303-v2-cloud-agent-week1-execution-checklist.md`
+
+
 
