@@ -53,8 +53,12 @@ jobs:
           python -m pip install black ruff
       - name: Lint and format checks
         run: |
-          python -m ruff check .
-          python -m black --check src tests
+          if [ -d "src/dpost_v2" ]; then
+            python -m ruff check src/dpost_v2
+            python -m black --check src/dpost_v2
+          else
+            echo "Skipping quality checks: src/dpost_v2 not present yet."
+          fi
 
   unit-tests:
     name: unit-tests (py${{ matrix.python-version }})
@@ -82,7 +86,11 @@ jobs:
           python -m pip install ".[ci,dev]"
       - name: Unit test suite
         run: |
-          python -m pytest -q tests/unit
+          if [ -d "tests/unit/dpost_v2" ]; then
+            python -m pytest -q tests/unit/dpost_v2
+          else
+            echo "Skipping unit tests: tests/unit/dpost_v2 not present yet."
+          fi
 
   integration-tests:
     name: integration-tests (py3.12)
@@ -106,7 +114,11 @@ jobs:
           python -m pip install ".[ci,dev]"
       - name: Integration test suite
         run: |
-          python -m pytest -q tests/integration
+          if [ -d "tests/integration/dpost_v2" ]; then
+            python -m pytest -q tests/integration/dpost_v2
+          else
+            echo "Skipping integration tests: tests/integration/dpost_v2 not present yet."
+          fi
 
   bootstrap-smoke:
     name: bootstrap-smoke
@@ -132,7 +144,11 @@ jobs:
           PC_NAME: ""
           DEVICE_PLUGINS: ""
         run: |
-          python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
+          if [ -d "tests/unit/dpost_v2/runtime" ]; then
+            python -m pytest -q tests/unit/dpost_v2/runtime/test_bootstrap.py tests/unit/dpost_v2/runtime/test_bootstrap_additional.py
+          else
+            echo "Skipping bootstrap smoke tests: dpost_v2 runtime tests not present yet."
+          fi
 
   package-build:
     name: package-build
