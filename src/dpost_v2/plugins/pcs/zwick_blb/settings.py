@@ -19,6 +19,6 @@ def validate_zwick_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSett
             "workspace_id": "zwick_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('utm_zwick',),
+            "active_device_plugins": ("utm_zwick",),
         },
     )

@@ -47,7 +47,9 @@ class TextParseOptions:
     encoding_hints: tuple[str, ...] = ("utf-8",)
     strict_row_shape: bool = True
     required_headers: tuple[str, ...] = ()
-    normalization: TextNormalizationPolicy = field(default_factory=TextNormalizationPolicy)
+    normalization: TextNormalizationPolicy = field(
+        default_factory=TextNormalizationPolicy
+    )
 
 
 @dataclass(frozen=True)
@@ -126,7 +128,8 @@ def parse_text_records(
         data_rows: list[list[str]] = []
     else:
         header = tuple(
-            normalize_token(token, policy=options.normalization) for token in parsed_rows[0]
+            normalize_token(token, policy=options.normalization)
+            for token in parsed_rows[0]
         )
         data_rows = parsed_rows[1:]
 
@@ -147,11 +150,19 @@ def parse_text_records(
         normalized_row = tuple(
             normalize_token(token, policy=options.normalization) for token in row
         )
-        if options.strict_row_shape and expected_columns and len(normalized_row) != expected_columns:
+        if (
+            options.strict_row_shape
+            and expected_columns
+            and len(normalized_row) != expected_columns
+        ):
             raise TextRowShapeError(
                 f"Row {row_index} has {len(normalized_row)} column(s), expected {expected_columns}.",
             )
-        if not options.strict_row_shape and expected_columns and len(normalized_row) != expected_columns:
+        if (
+            not options.strict_row_shape
+            and expected_columns
+            and len(normalized_row) != expected_columns
+        ):
             warnings.append(
                 f"Row {row_index} column count {len(normalized_row)} differs from expected {expected_columns}.",
             )
@@ -162,4 +173,3 @@ def parse_text_records(
         rows=tuple(normalized_rows),
         warnings=tuple(warnings),
     )
-

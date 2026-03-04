@@ -19,6 +19,6 @@ def validate_horiba_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSet
             "workspace_id": "horiba_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('psa_horiba', 'dsv_horiba'),
+            "active_device_plugins": ("psa_horiba", "dsv_horiba"),
         },
     )

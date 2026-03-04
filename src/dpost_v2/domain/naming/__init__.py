@@ -61,4 +61,3 @@ __all__ = [
     "parse_identifier",
     "validate_identifier",
 ]
-

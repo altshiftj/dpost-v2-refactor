@@ -273,7 +273,9 @@ def test_runtime_app_hard_timeout_aborts_before_next_event() -> None:
         clock=clock,
     )
 
-    def on_process(_event: Mapping[str, Any], _context: ProcessingContext | None) -> None:
+    def on_process(
+        _event: Mapping[str, Any], _context: ProcessingContext | None
+    ) -> None:
         clock.current = clock.current + timedelta(seconds=2)
 
     engine = FakeEngine(

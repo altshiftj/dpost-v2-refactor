@@ -8,7 +8,9 @@ import dpost_v2.__main__ as entrypoint
 from dpost_v2.application.startup.bootstrap import BootstrapResult, StartupFailure
 
 
-def test_main_defaults_mode_to_v2_and_calls_bootstrap(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_defaults_mode_to_v2_and_calls_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     captured: dict[str, Any] = {}
 
     def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]

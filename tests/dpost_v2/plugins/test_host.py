@@ -262,7 +262,9 @@ def test_host_lifecycle_activation_processor_creation_and_shutdown() -> None:
         known_profiles={"prod"},
         deny_plugin_ids={"pc.gamma"},
     )
-    processor = host.create_device_processor("device.alpha", settings={"mode": "strict"})
+    processor = host.create_device_processor(
+        "device.alpha", settings={"mode": "strict"}
+    )
     outcome = processor.process(
         {"source_path": "D:/incoming/alpha.dat"},
         _processing_context(),

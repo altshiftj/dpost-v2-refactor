@@ -9,7 +9,11 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Mapping, Protocol
 
-from dpost_v2.application.startup.settings import StartupSettings, from_raw, to_redacted_dict
+from dpost_v2.application.startup.settings import (
+    StartupSettings,
+    from_raw,
+    to_redacted_dict,
+)
 from dpost_v2.application.startup.settings_schema import (
     SettingsSchemaError,
     validate_raw_settings,
@@ -62,9 +66,7 @@ class SettingsLoadResult:
 
     is_success: bool
     settings: StartupSettings | None = None
-    provenance: Mapping[str, str] = field(
-        default_factory=lambda: MappingProxyType({})
-    )
+    provenance: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
     diagnostics: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
     fingerprint: str | None = None
     failure: SettingsLoadFailure | None = None
@@ -230,7 +232,7 @@ def _default_sources_from_request(
 
 
 def _merge_sources(
-    source_payloads: Mapping[str, Mapping[str, Any]]
+    source_payloads: Mapping[str, Mapping[str, Any]],
 ) -> tuple[dict[str, Any], dict[str, str]]:
     merged: dict[str, Any] = {}
     provenance: dict[str, str] = {}
@@ -285,7 +287,9 @@ def _compute_fingerprint(source_payloads: Mapping[str, Mapping[str, Any]]) -> st
     return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
 
-def _detect_cache_desync(cache_entry: SettingsCacheEntry) -> SettingsCacheIntegrityError | None:
+def _detect_cache_desync(
+    cache_entry: SettingsCacheEntry,
+) -> SettingsCacheIntegrityError | None:
     if cache_entry.settings_fingerprint is None:
         return None
     if cache_entry.settings_fingerprint == cache_entry.fingerprint:

@@ -44,7 +44,9 @@ def test_tracing_requires_non_empty_correlation_ids() -> None:
     tracer = TracingAdapter()
 
     with pytest.raises(TracingContextError):
-        tracer.start_span(context=TraceContext(trace_id="", event_id="event-1"), name="x")
+        tracer.start_span(
+            context=TraceContext(trace_id="", event_id="event-1"), name="x"
+        )
 
 
 def test_tracing_rejects_unknown_parent_spans() -> None:
@@ -64,7 +66,9 @@ def test_tracing_rejects_non_serializable_metadata() -> None:
 
 
 def test_tracing_maps_backend_failures() -> None:
-    tracer = TracingAdapter(backend=lambda payload: (_ for _ in ()).throw(RuntimeError("down")))
+    tracer = TracingAdapter(
+        backend=lambda payload: (_ for _ in ()).throw(RuntimeError("down"))
+    )
     context = TraceContext(trace_id="trace-1", event_id="event-1")
 
     with pytest.raises(TracingBackendError):

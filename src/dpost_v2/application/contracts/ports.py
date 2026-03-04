@@ -62,7 +62,9 @@ class PortResult(Generic[TValue]):
     def __post_init__(self) -> None:
         if self.ok:
             if self.error is not None:
-                raise PortResponseContractError("successful result cannot contain error")
+                raise PortResponseContractError(
+                    "successful result cannot contain error"
+                )
             return
         if self.error is None:
             raise PortResponseContractError("failed result must contain error")
@@ -95,7 +97,9 @@ class SyncRequest:
         object.__setattr__(
             self,
             "operation",
-            _as_normalized_token(self.operation, field_name="operation", lowercase=True),
+            _as_normalized_token(
+                self.operation, field_name="operation", lowercase=True
+            ),
         )
         if not isinstance(self.payload, Mapping):
             raise PortResponseContractError("payload must be a mapping")

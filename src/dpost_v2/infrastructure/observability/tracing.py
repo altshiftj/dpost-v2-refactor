@@ -166,4 +166,3 @@ def _normalize_primitive(value: Any) -> Any:
     if isinstance(value, list | tuple):
         return [_normalize_primitive(item) for item in value]
     raise TracingSerializationError(f"unsupported metadata type: {type(value)!r}")
-

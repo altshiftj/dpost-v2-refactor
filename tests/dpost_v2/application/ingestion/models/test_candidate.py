@@ -12,7 +12,11 @@ from dpost_v2.application.ingestion.models.candidate import (
 
 
 def test_candidate_identity_is_deterministic_for_same_inputs() -> None:
-    event = {"path": "./incoming/file.txt", "event_kind": "created", "observed_at": 123.0}
+    event = {
+        "path": "./incoming/file.txt",
+        "event_kind": "created",
+        "observed_at": 123.0,
+    }
     fs_facts = {"size": 10, "modified_at": 120.0, "fingerprint": "abc"}
 
     left = Candidate.from_event(event, fs_facts)

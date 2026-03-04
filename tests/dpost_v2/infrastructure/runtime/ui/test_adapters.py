@@ -21,7 +21,9 @@ class _Backend:
         self.calls.append(("initialize", None))
 
     def notify(self, *, severity: str, title: str, message: str) -> None:
-        self.calls.append(("notify", {"severity": severity, "title": title, "message": message}))
+        self.calls.append(
+            ("notify", {"severity": severity, "title": title, "message": message})
+        )
 
     def prompt(self, *, prompt_type: str, payload: dict[str, Any]) -> dict[str, Any]:
         self.calls.append(("prompt", {"prompt_type": prompt_type, "payload": payload}))
@@ -55,7 +57,9 @@ def test_shim_reports_capabilities_and_blocks_unsupported_prompt_types() -> None
 
 def test_shim_maps_backend_failures_to_runtime_error() -> None:
     class _FailingBackend(_Backend):
-        def prompt(self, *, prompt_type: str, payload: dict[str, Any]) -> dict[str, Any]:
+        def prompt(
+            self, *, prompt_type: str, payload: dict[str, Any]
+        ) -> dict[str, Any]:
             raise RuntimeError("backend failed")
 
     shim = UiAdapterShim(_FailingBackend(calls=[]))

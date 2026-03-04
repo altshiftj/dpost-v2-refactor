@@ -52,7 +52,9 @@ class ModifiedEventGate:
         self._config = config
         self._last_seen: dict[str, float] = {}
 
-    def evaluate(self, event_key: str, event_timestamp: float) -> ModifiedEventGateResult:
+    def evaluate(
+        self, event_key: str, event_timestamp: float
+    ) -> ModifiedEventGateResult:
         """Evaluate one event key/timestamp pair against debounce window state."""
         if not event_key:
             raise ModifiedEventGateConfigError("event_key must be non-empty.")
@@ -63,7 +65,10 @@ class ModifiedEventGate:
                 f"Timestamp regression for '{event_key}': {event_timestamp} < {last_seen}"
             )
 
-        if last_seen is not None and (event_timestamp - last_seen) < self._config.window_seconds:
+        if (
+            last_seen is not None
+            and (event_timestamp - last_seen) < self._config.window_seconds
+        ):
             next_eligible = last_seen + self._config.window_seconds
             return ModifiedEventGateResult(
                 decision=ModifiedEventDecision.DROP_DUPLICATE,

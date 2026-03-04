@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 from dpost_v2.application.ingestion.engine import IngestionEngine, IngestionOutcomeKind
-from dpost_v2.application.ingestion.processor_factory import ProcessorSelection, SelectionDescriptor
+from dpost_v2.application.ingestion.processor_factory import (
+    ProcessorSelection,
+    SelectionDescriptor,
+)
 from dpost_v2.application.ingestion.stages.persist import run_persist_stage
-from dpost_v2.application.ingestion.stages.pipeline import DEFAULT_INGESTION_TRANSITION_TABLE, PipelineRunner
+from dpost_v2.application.ingestion.stages.pipeline import (
+    DEFAULT_INGESTION_TRANSITION_TABLE,
+    PipelineRunner,
+)
 from dpost_v2.application.ingestion.stages.post_persist import run_post_persist_stage
 from dpost_v2.application.ingestion.stages.resolve import run_resolve_stage
 from dpost_v2.application.ingestion.stages.route import run_route_stage
@@ -79,7 +85,11 @@ def test_full_ingestion_pipeline_happy_path() -> None:
     )
 
     outcome = engine.process(
-        event={"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0},
+        event={
+            "path": "incoming/file.txt",
+            "event_kind": "created",
+            "observed_at": 100.0,
+        },
         initial_state_factory=IngestionState.from_event,
     )
 

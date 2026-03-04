@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import pkgutil
 from dataclasses import dataclass
 from hashlib import sha256
-import pkgutil
 from importlib import import_module
 from types import MappingProxyType
 from typing import Callable, Iterable, Mapping
@@ -74,13 +74,18 @@ class PluginDescriptor:
             raise ValueError("family must be 'device' or 'pc'")
         if not isinstance(self.version, str) or not self.version.strip():
             raise ValueError("version must be a non-empty string")
-        if not isinstance(self.contract_version, str) or not self.contract_version.strip():
+        if (
+            not isinstance(self.contract_version, str)
+            or not self.contract_version.strip()
+        ):
             raise ValueError("contract_version must be a non-empty string")
         if not isinstance(self.module_name, str) or not self.module_name.strip():
             raise ValueError("module_name must be a non-empty string")
         if not isinstance(self.module_exports, Mapping):
             raise ValueError("module_exports must be a mapping")
-        object.__setattr__(self, "module_exports", MappingProxyType(dict(self.module_exports)))
+        object.__setattr__(
+            self, "module_exports", MappingProxyType(dict(self.module_exports))
+        )
 
         normalized_profiles = tuple(
             profile.strip().lower()
@@ -281,7 +286,8 @@ def discover_from_namespaces(
     if not namespace_import_issues:
         return discovered
     merged_diagnostics = PluginDiscoveryDiagnostics(
-        import_errors=tuple(namespace_import_issues) + discovered.diagnostics.import_errors,
+        import_errors=tuple(namespace_import_issues)
+        + discovered.diagnostics.import_errors,
         manifest_errors=discovered.diagnostics.manifest_errors,
         skipped_modules=discovered.diagnostics.skipped_modules,
         warnings=discovered.diagnostics.warnings,

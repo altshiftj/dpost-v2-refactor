@@ -3,11 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from dpost_v2.application.ingestion.models.candidate import Candidate
-from dpost_v2.application.ingestion.processor_factory import ProcessorSelection, SelectionDescriptor
+from dpost_v2.application.ingestion.processor_factory import (
+    ProcessorSelection,
+    SelectionDescriptor,
+)
+from dpost_v2.application.ingestion.stages.pipeline import PipelineTerminalOutcome
 from dpost_v2.application.ingestion.stages.resolve import run_resolve_stage
 from dpost_v2.application.ingestion.stages.route import run_route_stage
 from dpost_v2.application.ingestion.stages.stabilize import run_stabilize_stage
-from dpost_v2.application.ingestion.stages.pipeline import PipelineTerminalOutcome
 from dpost_v2.application.ingestion.state import IngestionState
 
 
@@ -23,7 +26,13 @@ class _GateResult:
 
 
 def _state() -> IngestionState:
-    return IngestionState(event={"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0})
+    return IngestionState(
+        event={
+            "path": "incoming/file.txt",
+            "event_kind": "created",
+            "observed_at": 100.0,
+        }
+    )
 
 
 def test_resolve_stage_continues_to_stabilize_on_success() -> None:
@@ -69,7 +78,9 @@ def test_route_stage_rejects_unsafe_force_path() -> None:
         {"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0},
         {"modified_at": 90.0},
     ).with_resolution("plug", "proc")
-    state = IngestionState(event={"force_path": "C:/other/out.txt"}, candidate=candidate)
+    state = IngestionState(
+        event={"force_path": "C:/other/out.txt"}, candidate=candidate
+    )
 
     directive = run_route_stage(
         state,

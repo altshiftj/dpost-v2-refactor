@@ -107,7 +107,9 @@ def build_batch_outcome(
     expected_count: int | None = None,
 ) -> BatchOutcome:
     """Build immutable batch outcome with validated aggregate consistency."""
-    _validate_metadata(batch_id=batch_id, started_at=started_at, completed_at=completed_at)
+    _validate_metadata(
+        batch_id=batch_id, started_at=started_at, completed_at=completed_at
+    )
 
     seen_ids: set[str] = set()
     counts = _empty_counts()

@@ -21,4 +21,3 @@ def validate_test_pc_settings(raw_settings: Mapping[str, Any]) -> PcPluginSettin
             "strict_unknown_keys": False,
         },
     )
-

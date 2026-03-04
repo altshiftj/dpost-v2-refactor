@@ -78,7 +78,9 @@ def test_engine_maps_completed_pipeline_result_to_succeeded_outcome() -> None:
         stage_handlers=handlers,
     )
 
-    outcome = engine.process(event={"path": "input.csv"}, initial_state_factory=DemoState)
+    outcome = engine.process(
+        event={"path": "input.csv"}, initial_state_factory=DemoState
+    )
 
     assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
     assert outcome.final_stage_id == "post_persist"

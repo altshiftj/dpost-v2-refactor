@@ -19,6 +19,6 @@ def validate_eirich_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSet
             "workspace_id": "eirich_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('rmx_eirich_el1', 'rmx_eirich_r01'),
+            "active_device_plugins": ("rmx_eirich_el1", "rmx_eirich_r01"),
         },
     )

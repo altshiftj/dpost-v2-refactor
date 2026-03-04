@@ -136,7 +136,11 @@ def decide_route(
         _validate_destinations(rule.destinations, compiled_destination_pattern)
 
     ordered_rules = sorted(rules, key=route_rule_sort_key)
-    matches = [rule for rule in ordered_rules if _rule_matches(route_facts=route_facts, rule=rule)]
+    matches = [
+        rule
+        for rule in ordered_rules
+        if _rule_matches(route_facts=route_facts, rule=rule)
+    ]
 
     if matches:
         top_priority = matches[0].priority
@@ -168,4 +172,3 @@ def decide_route(
         matched_rule_id=None,
         diagnostics=("default",),
     )
-

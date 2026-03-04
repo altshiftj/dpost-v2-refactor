@@ -6,8 +6,8 @@ import pytest
 
 from dpost_v2.infrastructure.observability.metrics import (
     MetricsAdapter,
-    MetricsValueError,
     MetricsValidationError,
+    MetricsValueError,
 )
 
 
@@ -52,7 +52,9 @@ def test_metrics_drops_high_cardinality_tags() -> None:
         max_tags=1,
     )
 
-    result = metrics.emit_counter("ingestion.success", value=1, tags={"a": "1", "b": "2"})
+    result = metrics.emit_counter(
+        "ingestion.success", value=1, tags={"a": "1", "b": "2"}
+    )
 
     assert result["status"] == "dropped"
     assert result["reason"] == "cardinality"
@@ -72,7 +74,9 @@ def test_metrics_contains_backend_errors_without_throwing() -> None:
 
 
 def test_metrics_snapshot_tracks_outcomes() -> None:
-    metrics = MetricsAdapter(namespace="dpost", backend=lambda **kwargs: None, max_tags=1)
+    metrics = MetricsAdapter(
+        namespace="dpost", backend=lambda **kwargs: None, max_tags=1
+    )
 
     metrics.emit_counter("ingestion.success", value=1, tags={})
     metrics.emit_counter("ingestion.success", value=1, tags={"a": "1", "b": "2"})

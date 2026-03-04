@@ -45,4 +45,3 @@ class TestDeviceProcessor:
             final_path=source_path,
             datatype="test_device/csv",
         )
-

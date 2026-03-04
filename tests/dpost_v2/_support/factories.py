@@ -8,9 +8,8 @@ from typing import Any, Mapping
 
 from dpost_v2.application.contracts.context import RuntimeContext
 from dpost_v2.application.startup.bootstrap import BootstrapRequest
+from dpost_v2.application.startup.context import LaunchMetadata, StartupContext
 from dpost_v2.application.startup.context import (
-    LaunchMetadata,
-    StartupContext,
     build_startup_context as build_startup_context_contract,
 )
 from dpost_v2.application.startup.settings import StartupSettings, from_raw

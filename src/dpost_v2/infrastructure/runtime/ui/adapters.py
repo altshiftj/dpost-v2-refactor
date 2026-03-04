@@ -105,4 +105,3 @@ class UiAdapterShim:
             raise
         except Exception as exc:  # noqa: BLE001
             raise UiAdapterRuntimeError(str(exc)) from exc
-

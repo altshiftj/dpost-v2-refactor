@@ -29,4 +29,3 @@ __all__ = [
     "mark_unsynced",
     "same_identity",
 ]
-

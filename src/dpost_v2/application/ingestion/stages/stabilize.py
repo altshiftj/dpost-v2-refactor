@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from dpost_v2.application.ingestion.policies.modified_event_gate import ModifiedEventDecision
+from dpost_v2.application.ingestion.policies.modified_event_gate import (
+    ModifiedEventDecision,
+)
 from dpost_v2.application.ingestion.stages.pipeline import (
     PipelineTerminalOutcome,
     StageDirective,
@@ -38,7 +40,9 @@ def run_stabilize_stage(
 
     now_value = float(now_provider())
     gate_result = modified_event_gate(candidate.identity_token, now_value)
-    decision = _decision_token(getattr(gate_result, "decision", ModifiedEventDecision.ALLOW))
+    decision = _decision_token(
+        getattr(gate_result, "decision", ModifiedEventDecision.ALLOW)
+    )
 
     if decision == ModifiedEventDecision.DROP_DUPLICATE.value:
         rejected = state.with_updates(

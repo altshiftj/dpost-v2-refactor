@@ -73,7 +73,9 @@ def run_persist_stage(
 
     saved_value = getattr(save_result, "value", {}) or {}
     record_id = str(saved_value.get("record_id", "")).strip() or "unknown-record"
-    persisted_candidate = candidate.with_persist_result(record_id, candidate.target_path)
+    persisted_candidate = candidate.with_persist_result(
+        record_id, candidate.target_path
+    )
     next_state = state.with_updates(
         candidate=persisted_candidate,
         record_id=record_id,

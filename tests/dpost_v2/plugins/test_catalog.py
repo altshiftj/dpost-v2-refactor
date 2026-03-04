@@ -77,9 +77,9 @@ def test_catalog_builds_deterministic_indexes_and_queries() -> None:
         "device.alpha",
         "device.beta",
     )
-    assert tuple(item.plugin_id for item in query_by_capability(catalog, "supports_sync")) == (
-        "pc.gamma",
-    )
+    assert tuple(
+        item.plugin_id for item in query_by_capability(catalog, "supports_sync")
+    ) == ("pc.gamma",)
     assert tuple(item.plugin_id for item in catalog.by_profile["prod"]) == (
         "device.alpha",
         "device.beta",

@@ -81,4 +81,3 @@ __all__ = [
     "success_outcome",
     "transition_state",
 ]
-

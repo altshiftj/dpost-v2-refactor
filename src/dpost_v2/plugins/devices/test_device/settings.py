@@ -10,7 +10,9 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_test_device_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_test_device_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for the concrete test-device plugin."""
     return validate_device_plugin_settings(
         raw_settings,
@@ -20,4 +22,3 @@ def validate_test_device_settings(raw_settings: Mapping[str, Any]) -> DevicePlug
             "strict_unknown_keys": False,
         },
     )
-

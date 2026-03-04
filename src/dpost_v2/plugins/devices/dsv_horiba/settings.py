@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_dsv_horiba_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_dsv_horiba_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete dsv_horiba plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "dsv_horiba",
-            "source_extensions": ('.txt', '.wdb', '.wdk', '.wdp'),
+            "source_extensions": (".txt", ".wdb", ".wdk", ".wdp"),
             "strict_unknown_keys": False,
         },
     )

@@ -97,9 +97,7 @@ def test_schema_version_mismatch_raises_typed_error(tmp_path: Path) -> None:
     db_path = tmp_path / "records.sqlite3"
     conn = sqlite3.connect(db_path)
     conn.execute("CREATE TABLE metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
-    conn.execute(
-        "INSERT INTO metadata (key, value) VALUES ('schema_version', '9')"
-    )
+    conn.execute("INSERT INTO metadata (key, value) VALUES ('schema_version', '9')")
     conn.commit()
     conn.close()
 

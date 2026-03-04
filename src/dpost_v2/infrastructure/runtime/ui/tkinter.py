@@ -112,4 +112,3 @@ class TkinterUiAdapter:
             raise
         except Exception as exc:  # noqa: BLE001
             raise TkinterUiRenderError(str(exc)) from exc
-

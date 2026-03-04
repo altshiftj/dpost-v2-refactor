@@ -8,4 +8,3 @@ __all__ = [
     "UiSelection",
     "build_ui_adapter",
 ]
-

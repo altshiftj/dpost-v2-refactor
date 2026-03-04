@@ -10,7 +10,9 @@ from dpost_v2.infrastructure.observability.metrics import MetricsAdapter
 from dpost_v2.infrastructure.observability.tracing import TraceContext, TracingAdapter
 
 
-def test_observability_adapters_share_correlation_and_contain_metric_backend_failure() -> None:
+def test_observability_adapters_share_correlation_and_contain_metric_backend_failure() -> (
+    None
+):
     trace_events: list[dict[str, Any]] = []
     log_entries: list[dict[str, Any]] = []
 

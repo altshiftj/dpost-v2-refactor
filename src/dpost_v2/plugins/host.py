@@ -145,7 +145,9 @@ class PluginHost:
         if not active_only:
             return plugin_ids
         return tuple(
-            plugin_id for plugin_id in plugin_ids if plugin_id in self._active_plugin_ids
+            plugin_id
+            for plugin_id in plugin_ids
+            if plugin_id in self._active_plugin_ids
         )
 
     def create_device_processor(
@@ -157,7 +159,9 @@ class PluginHost:
         """Build a processor from one active device plugin."""
         descriptor = get_plugin(self._catalog, plugin_id)
         if descriptor.family != "device":
-            raise PluginHostActivationError(f"plugin {plugin_id!r} is not a device plugin")
+            raise PluginHostActivationError(
+                f"plugin {plugin_id!r} is not a device plugin"
+            )
         if plugin_id not in self._active_plugin_ids:
             raise PluginHostActivationError(
                 f"plugin {plugin_id!r} is not active for the current profile"

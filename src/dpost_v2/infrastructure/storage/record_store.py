@@ -100,7 +100,9 @@ class SqliteRecordStoreAdapter:
             return self.create(normalized)
 
         if int(normalized["revision"]) <= int(existing["revision"]):
-            raise RecordStoreConflictError("incoming revision must be greater than stored revision")
+            raise RecordStoreConflictError(
+                "incoming revision must be greater than stored revision"
+            )
 
         updated_at = datetime.now(tz=UTC).isoformat()
         try:

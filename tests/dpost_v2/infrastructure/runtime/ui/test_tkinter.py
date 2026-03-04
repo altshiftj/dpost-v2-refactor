@@ -24,7 +24,9 @@ class _Backend:
     def notify(self, *, severity: str, title: str, message: str) -> None:
         return None
 
-    def prompt(self, *, prompt_type: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+    def prompt(
+        self, *, prompt_type: str, payload: dict[str, Any]
+    ) -> dict[str, Any] | None:
         return {"accepted": True}
 
     def show_status(self, *, message: str) -> None:
@@ -43,7 +45,9 @@ def test_tkinter_adapter_requires_backend_when_gui_is_requested() -> None:
 
 def test_tkinter_adapter_normalizes_cancelled_prompt_result() -> None:
     class _CancelBackend(_Backend):
-        def prompt(self, *, prompt_type: str, payload: dict[str, Any]) -> dict[str, Any] | None:
+        def prompt(
+            self, *, prompt_type: str, payload: dict[str, Any]
+        ) -> dict[str, Any] | None:
             return None
 
     backend = _CancelBackend()
@@ -56,7 +60,9 @@ def test_tkinter_adapter_normalizes_cancelled_prompt_result() -> None:
     assert response["action"] == "cancelled"
 
 
-def test_tkinter_adapter_enforces_ui_thread_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_tkinter_adapter_enforces_ui_thread_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     backend = _Backend()
     adapter = TkinterUiAdapter(backend=backend, ui_thread_id=999)
     adapter.initialize()

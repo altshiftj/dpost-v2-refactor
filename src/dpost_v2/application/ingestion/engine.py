@@ -10,7 +10,6 @@ from dpost_v2.application.ingestion.stages.pipeline import (
     PipelineTransitionRecord,
 )
 
-
 StateT = TypeVar("StateT")
 
 
@@ -108,7 +107,9 @@ class IngestionEngine(Generic[StateT]):
 
     def __post_init__(self) -> None:
         """Validate startup-time stage bindings and pipeline prerequisites."""
-        missing = [stage for stage in REQUIRED_STAGE_ORDER if stage not in self.stage_handlers]
+        missing = [
+            stage for stage in REQUIRED_STAGE_ORDER if stage not in self.stage_handlers
+        ]
         if missing:
             joined = ", ".join(missing)
             raise IngestionEngineConfigurationError(
@@ -137,7 +138,9 @@ class IngestionEngine(Generic[StateT]):
             return self._normalize_exception(exc, event)
 
     @staticmethod
-    def _map_pipeline_terminal(outcome: PipelineTerminalOutcome) -> IngestionOutcomeKind:
+    def _map_pipeline_terminal(
+        outcome: PipelineTerminalOutcome,
+    ) -> IngestionOutcomeKind:
         if outcome is PipelineTerminalOutcome.COMPLETED:
             return IngestionOutcomeKind.SUCCEEDED
         if outcome is PipelineTerminalOutcome.RETRY:
@@ -147,14 +150,18 @@ class IngestionEngine(Generic[StateT]):
         return IngestionOutcomeKind.FAILED_TERMINAL
 
     @staticmethod
-    def _map_failure_terminal(terminal_type: FailureTerminalType) -> IngestionOutcomeKind:
+    def _map_failure_terminal(
+        terminal_type: FailureTerminalType,
+    ) -> IngestionOutcomeKind:
         if terminal_type is FailureTerminalType.RETRY:
             return IngestionOutcomeKind.DEFERRED_RETRY
         if terminal_type is FailureTerminalType.REJECTED:
             return IngestionOutcomeKind.REJECTED
         return IngestionOutcomeKind.FAILED_TERMINAL
 
-    def _map_pipeline_result(self, result: PipelineRunResult[StateT]) -> IngestionOutcome[StateT]:
+    def _map_pipeline_result(
+        self, result: PipelineRunResult[StateT]
+    ) -> IngestionOutcome[StateT]:
         return IngestionOutcome(
             kind=self._map_pipeline_terminal(result.outcome),
             final_stage_id=result.final_stage_id,

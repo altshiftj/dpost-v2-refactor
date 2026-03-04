@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
 import hashlib
 import json
+from dataclasses import dataclass, replace
 from pathlib import PurePath
 from typing import Any, Mapping
-
 
 _ALLOWED_EVENT_KINDS = frozenset({"created", "modified", "moved", "manual"})
 
@@ -128,7 +127,9 @@ class Candidate:
             )
         if not record_id:
             raise CandidateTransitionError("Persist enrichment requires record_id.")
-        normalized_persisted_path = str(PurePath(str(persisted_path))).replace("\\", "/")
+        normalized_persisted_path = str(PurePath(str(persisted_path))).replace(
+            "\\", "/"
+        )
         return replace(
             self,
             record_id=record_id,

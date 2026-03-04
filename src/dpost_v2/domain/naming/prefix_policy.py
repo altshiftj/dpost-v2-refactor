@@ -155,4 +155,3 @@ def derive_prefix(
         matched_rule_id=None,
         diagnostics=("fallback",),
     )
-

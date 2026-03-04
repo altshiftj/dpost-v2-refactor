@@ -7,7 +7,9 @@ from dpost_v2.infrastructure.storage.file_ops import LocalFileOpsAdapter
 from dpost_v2.infrastructure.storage.staging_dirs import derive_staging_layout
 
 
-def test_file_ops_moves_artifact_between_derived_staging_buckets(tmp_path: Path) -> None:
+def test_file_ops_moves_artifact_between_derived_staging_buckets(
+    tmp_path: Path,
+) -> None:
     layout = derive_staging_layout(
         root=tmp_path / "root",
         profile="qa",

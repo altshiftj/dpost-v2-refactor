@@ -44,4 +44,3 @@ def make_lifecycle_adapter(
 
     setattr(adapter, hook_name, _hook)
     return adapter
-

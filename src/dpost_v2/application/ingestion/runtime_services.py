@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Callable, Mapping, TypeVar
 
-
 ValueT = TypeVar("ValueT")
 
 
@@ -64,7 +63,9 @@ class RuntimeServices:
         self._event_port = dict(event_port or {}) if event_port is not None else None
         self._clock_port = clock_port
 
-    def read_source(self, *, path: str, correlation: Mapping[str, Any]) -> RuntimeCallResult:
+    def read_source(
+        self, *, path: str, correlation: Mapping[str, Any]
+    ) -> RuntimeCallResult:
         """Read source facts via bound file adapter."""
         func = self._get_required(self._file_ops, "read_source")
         value = self._invoke_adapter(func, path, dict(correlation))

@@ -121,7 +121,9 @@ def v2_startup_context_factory(
 
 
 @pytest.fixture
-def v2_runtime_context_factory(v2_trace_id_factory: Callable[[], str]) -> Callable[..., Any]:
+def v2_runtime_context_factory(
+    v2_trace_id_factory: Callable[[], str],
+) -> Callable[..., Any]:
     """Build runtime context fixtures with deterministic trace ids."""
 
     def _factory(**overrides: object):

@@ -13,7 +13,6 @@ from dpost_v2.application.ingestion.policies.failure_outcome import (
     build_failure_outcome,
 )
 
-
 _EMITTED_EVENT_IDS: set[str] = set()
 
 

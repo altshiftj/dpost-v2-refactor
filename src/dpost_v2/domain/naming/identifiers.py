@@ -137,7 +137,9 @@ def _validate_tokens(tokens: Sequence[str], rules: IdentifierRules) -> tuple[str
     return tuple(normalized)
 
 
-def parse_identifier(raw_identifier: str, *, rules: IdentifierRules) -> ParsedIdentifier:
+def parse_identifier(
+    raw_identifier: str, *, rules: IdentifierRules
+) -> ParsedIdentifier:
     """Parse raw identifier string into canonical ordered token representation."""
     _validate_separator_rules(rules)
     normalized = _normalized_text(raw_identifier, rules)
@@ -162,7 +164,9 @@ def compose_identifier(tokens: Sequence[str], *, rules: IdentifierRules) -> str:
     return rules.primary_separator.join(valid_tokens)
 
 
-def validate_identifier(raw_identifier: str, *, rules: IdentifierRules) -> IdentifierValidation:
+def validate_identifier(
+    raw_identifier: str, *, rules: IdentifierRules
+) -> IdentifierValidation:
     """Validate identifier input without raising typed domain errors to callers."""
     try:
         parse_identifier(raw_identifier, rules=rules)
@@ -173,4 +177,3 @@ def validate_identifier(raw_identifier: str, *, rules: IdentifierRules) -> Ident
             error_type=type(exc).__name__,
         )
     return IdentifierValidation(valid=True, reason=None, error_type=None)
-

@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_sem_phenomxl2_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_sem_phenomxl2_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete sem_phenomxl2 plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "sem_phenomxl2",
-            "source_extensions": ('.tiff', '.tif', '.jpeg', '.jpg'),
+            "source_extensions": (".tiff", ".tif", ".jpeg", ".jpg"),
             "strict_unknown_keys": False,
         },
     )

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from enum import StrEnum
 import hashlib
 import math
 import random
+from dataclasses import dataclass
+from enum import StrEnum
 
 
 class RetryPlannerError(ValueError):
@@ -90,7 +90,9 @@ def plan_retry(
             reason_code="attempt_cap_reached",
         )
 
-    base_delay = config.base_delay_seconds * math.pow(config.backoff_factor, attempt_index)
+    base_delay = config.base_delay_seconds * math.pow(
+        config.backoff_factor, attempt_index
+    )
     if math.isinf(base_delay) or math.isnan(base_delay):
         raise RetryPlannerConfigError("Invalid computed backoff delay.")
 

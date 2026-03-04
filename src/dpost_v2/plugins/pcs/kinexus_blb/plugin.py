@@ -65,7 +65,9 @@ def prepare_sync_payload(
     record_id = record.get("record_id")
     if not isinstance(record_id, str) or not record_id.strip():
         raise ValueError("record_id is required")
-    return MappingProxyType({"record_id": record_id.strip(), "plugin_id": "kinexus_blb"})
+    return MappingProxyType(
+        {"record_id": record_id.strip(), "plugin_id": "kinexus_blb"}
+    )
 
 
 def on_shutdown() -> None:

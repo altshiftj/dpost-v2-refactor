@@ -134,4 +134,3 @@ def _probe_tkinter_available() -> bool:
         return True
     except Exception:  # noqa: BLE001
         return False
-

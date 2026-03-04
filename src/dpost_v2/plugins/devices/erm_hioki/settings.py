@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_erm_hioki_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_erm_hioki_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete erm_hioki plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "erm_hioki",
-            "source_extensions": ('.xlsx', '.xls', '.csv'),
+            "source_extensions": (".xlsx", ".xls", ".csv"),
             "strict_unknown_keys": False,
         },
     )

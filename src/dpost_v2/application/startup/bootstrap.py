@@ -127,7 +127,9 @@ def run_bootstrap(
     try:
         loaded_settings = load_settings(request)
         settings = _unwrap_settings(loaded_settings)
-    except Exception as exc:  # pragma: no cover - exercised by tests through result path
+    except (
+        Exception
+    ) as exc:  # pragma: no cover - exercised by tests through result path
         return _build_failure_result(
             stage="settings",
             exc=exc,

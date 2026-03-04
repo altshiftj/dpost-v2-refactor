@@ -114,4 +114,3 @@ def _ensure_unique_case_ids(cases: tuple[GoldenCaseSpec, ...]) -> None:
         if case.case_id in seen:
             raise GoldenCaseSchemaError(f"duplicate case_id: {case.case_id}")
         seen.add(case.case_id)
-

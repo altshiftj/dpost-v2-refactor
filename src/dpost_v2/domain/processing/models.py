@@ -130,7 +130,9 @@ def _coerce_status(status_token: str) -> ProcessingStatus:
     try:
         return ProcessingStatus(status_token)
     except ValueError as exc:
-        raise ProcessingStatusError(f"Unknown processing status '{status_token}'.") from exc
+        raise ProcessingStatusError(
+            f"Unknown processing status '{status_token}'."
+        ) from exc
 
 
 def success_outcome(
@@ -245,4 +247,3 @@ def outcome_from_classification(
         retry_attempt=retry_attempt,
         metadata=dict(metadata or {}),
     )
-

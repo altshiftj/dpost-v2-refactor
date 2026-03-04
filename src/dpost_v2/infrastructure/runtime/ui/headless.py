@@ -112,4 +112,3 @@ class HeadlessUiAdapter:
             self._sink(str(dict(payload)))
         except Exception as exc:  # noqa: BLE001
             raise HeadlessUiSinkError(str(exc)) from exc
-

@@ -7,7 +7,6 @@ from typing import Any, Mapping, Protocol, runtime_checkable
 
 from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
 
-
 PLUGIN_CONTRACT_VERSION = "2.0.0"
 _PLUGIN_CONTRACT_MAJOR = PLUGIN_CONTRACT_VERSION.split(".", maxsplit=1)[0]
 
@@ -61,7 +60,10 @@ class PluginMetadata:
             raise PluginContractError("family must be 'device' or 'pc'")
         if not isinstance(self.version, str) or not self.version.strip():
             raise PluginContractError("version must be a non-empty string")
-        if not isinstance(self.contract_version, str) or not self.contract_version.strip():
+        if (
+            not isinstance(self.contract_version, str)
+            or not self.contract_version.strip()
+        ):
             raise PluginContractError("contract_version must be a non-empty string")
 
         normalized_profiles: list[str] = []
@@ -82,7 +84,9 @@ class ProcessorDescriptor:
 
     def __post_init__(self) -> None:
         if not isinstance(self.plugin_id, str) or not self.plugin_id.strip():
-            raise PluginContractError("processor descriptor plugin_id must be non-empty")
+            raise PluginContractError(
+                "processor descriptor plugin_id must be non-empty"
+            )
         if not isinstance(self.processor_kind, str) or not self.processor_kind.strip():
             raise PluginContractError(
                 "processor descriptor processor_kind must be non-empty"
@@ -263,7 +267,9 @@ def validate_plugin_contract(
         _require_callable(module_exports, "validate_settings")
         create_processor = module_exports.get("create_processor")
         if not callable(create_processor):
-            raise PluginContractError("missing required plugin export: create_processor")
+            raise PluginContractError(
+                "missing required plugin export: create_processor"
+            )
         try:
             processor_instance = create_processor({})
         except Exception as exc:  # pragma: no cover - defensive mapping

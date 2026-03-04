@@ -60,11 +60,16 @@ class ProcessorFactory:
         """Select and build one processor for a candidate/profile combination."""
         matches = list(self._catalog_lookup(candidate, profile))
         if not matches:
-            raise ProcessorNotFoundError("No compatible processor candidates were found.")
+            raise ProcessorNotFoundError(
+                "No compatible processor candidates were found."
+            )
 
         ranked = sorted(
             matches,
-            key=lambda item: (-int(getattr(item, "score", 0)), str(getattr(item, "plugin_id", ""))),
+            key=lambda item: (
+                -int(getattr(item, "score", 0)),
+                str(getattr(item, "plugin_id", "")),
+            ),
         )
         top = ranked[0]
         top_score = int(getattr(top, "score", 0))
@@ -98,7 +103,9 @@ class ProcessorFactory:
         except Exception as exc:  # noqa: BLE001
             raise ProcessorInitializationError(str(exc)) from exc
 
-        if not hasattr(processor, "process") or not callable(getattr(processor, "process")):
+        if not hasattr(processor, "process") or not callable(
+            getattr(processor, "process")
+        ):
             raise InvalidProcessorError(
                 "Constructed processor must define a callable 'process' method."
             )

@@ -45,7 +45,9 @@ class StartupDependencies:
         )
         object.__setattr__(self, "lazy_factories", frozenset(self.lazy_factories))
         object.__setattr__(self, "warnings", tuple(self.warnings))
-        object.__setattr__(self, "diagnostics", MappingProxyType(dict(self.diagnostics)))
+        object.__setattr__(
+            self, "diagnostics", MappingProxyType(dict(self.diagnostics))
+        )
 
 
 def resolve_startup_dependencies(
@@ -228,7 +230,9 @@ def _sync_factory_builder(backend: str) -> DependencyFactory:
         return lambda: {"kind": "sync", "backend": "kadi"}
     if backend == "noop":
         return lambda: {"kind": "sync", "backend": "noop"}
-    raise DependencyImportError(f"Unsupported sync backend import path for {backend!r}.")
+    raise DependencyImportError(
+        f"Unsupported sync backend import path for {backend!r}."
+    )
 
 
 def _plugins_factory_builder(backend: str) -> DependencyFactory:

@@ -16,7 +16,9 @@ from dpost_v2.infrastructure.sync.kadi import (
 def test_kadi_sync_propagates_idempotency_header_and_normalizes_response() -> None:
     captured: dict[str, Any] = {}
 
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         captured["payload"] = payload
         captured["headers"] = headers
         captured["timeout"] = timeout
@@ -46,7 +48,9 @@ def test_kadi_sync_propagates_idempotency_header_and_normalizes_response() -> No
 
 
 def test_kadi_sync_maps_auth_failures() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         return {"status_code": 401, "error": "bad token"}
 
     adapter = KadiSyncAdapter(
@@ -62,7 +66,9 @@ def test_kadi_sync_maps_auth_failures() -> None:
 
 
 def test_kadi_sync_maps_timeout_to_network_error() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         raise TimeoutError("timed out")
 
     adapter = KadiSyncAdapter(
@@ -78,7 +84,9 @@ def test_kadi_sync_maps_timeout_to_network_error() -> None:
 
 
 def test_kadi_sync_maps_conflict_status_to_contract_response() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         return {
             "status_code": 409,
             "reason_code": "record_conflict",
@@ -100,7 +108,9 @@ def test_kadi_sync_maps_conflict_status_to_contract_response() -> None:
 
 
 def test_kadi_sync_rejects_unexpected_response_shape() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         return {"not_status_code": 1}
 
     adapter = KadiSyncAdapter(
@@ -118,7 +128,9 @@ def test_kadi_sync_rejects_unexpected_response_shape() -> None:
 def test_kadi_sync_rejects_request_without_record_id_before_transport_call() -> None:
     transport_called = False
 
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         nonlocal transport_called
         transport_called = True
         return {"status_code": 201, "remote_id": "kadi-1"}

@@ -4,8 +4,8 @@ import pytest
 
 from dpost_v2.application.ingestion.runtime_services import (
     RuntimeCallStatus,
-    RuntimeServiceTimeoutError,
     RuntimeServices,
+    RuntimeServiceTimeoutError,
 )
 
 

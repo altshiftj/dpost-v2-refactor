@@ -16,4 +16,3 @@ __all__ = [
     "TracingAdapter",
     "build_structured_logger",
 ]
-

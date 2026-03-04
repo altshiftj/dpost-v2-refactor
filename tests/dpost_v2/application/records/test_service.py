@@ -8,8 +8,8 @@ import pytest
 from dpost_v2.application.records.service import (
     RecordConflictError,
     RecordNotFoundError,
-    RecordValidationError,
     RecordsService,
+    RecordValidationError,
 )
 from dpost_v2.domain.records.local_record import (
     LocalRecord,

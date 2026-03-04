@@ -81,22 +81,23 @@ def build_catalog(descriptors: Iterable[PluginDescriptor]) -> PluginCatalogSnaps
         "supports_preprocess": tuple(
             item for item in ordered if item.capabilities.supports_preprocess
         ),
-        "supports_batch": tuple(item for item in ordered if item.capabilities.supports_batch),
-        "supports_sync": tuple(item for item in ordered if item.capabilities.supports_sync),
+        "supports_batch": tuple(
+            item for item in ordered if item.capabilities.supports_batch
+        ),
+        "supports_sync": tuple(
+            item for item in ordered if item.capabilities.supports_sync
+        ),
     }
     by_profile: dict[str, tuple[PluginDescriptor, ...]] = {}
     discovered_profiles = sorted(
-        {
-            profile
-            for descriptor in ordered
-            for profile in descriptor.supported_profiles
-        }
+        {profile for descriptor in ordered for profile in descriptor.supported_profiles}
     )
     for profile in discovered_profiles:
         by_profile[profile] = tuple(
             descriptor
             for descriptor in ordered
-            if not descriptor.supported_profiles or profile in descriptor.supported_profiles
+            if not descriptor.supported_profiles
+            or profile in descriptor.supported_profiles
         )
 
     return PluginCatalogSnapshot(
@@ -139,7 +140,9 @@ def get_plugin(snapshot: PluginCatalogSnapshot, plugin_id: str) -> PluginDescrip
         raise PluginCatalogNotFoundError(f"unknown plugin_id: {plugin_id}") from exc
 
 
-def query_by_family(snapshot: PluginCatalogSnapshot, family: str) -> tuple[PluginDescriptor, ...]:
+def query_by_family(
+    snapshot: PluginCatalogSnapshot, family: str
+) -> tuple[PluginDescriptor, ...]:
     """Return descriptors for one plugin family in deterministic order."""
     normalized = family.strip().lower()
     if normalized not in {"device", "pc"}:

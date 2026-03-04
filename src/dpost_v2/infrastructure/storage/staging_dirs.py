@@ -87,10 +87,18 @@ def derive_staging_layout(
 
     if create_on_demand:
         try:
-            for path in (layout.intake, layout.staging, layout.processed, layout.rejected, layout.archive):
+            for path in (
+                layout.intake,
+                layout.staging,
+                layout.processed,
+                layout.rejected,
+                layout.archive,
+            ):
                 path.mkdir(parents=True, exist_ok=True)
         except OSError as exc:
-            raise StagingDirsProvisionError(f"failed to provision directories: {exc}") from exc
+            raise StagingDirsProvisionError(
+                f"failed to provision directories: {exc}"
+            ) from exc
 
     return layout
 
@@ -105,7 +113,9 @@ def cleanup_candidates(
         candidate = Path(raw_path).expanduser().resolve(strict=False)
         if not _is_within(candidate, layout.root):
             continue
-        if _is_within(candidate, layout.intake) or _is_within(candidate, layout.staging):
+        if _is_within(candidate, layout.intake) or _is_within(
+            candidate, layout.staging
+        ):
             continue
         filtered.append(candidate)
     return tuple(filtered)
@@ -116,7 +126,9 @@ def _validate_token(field_name: str, value: str) -> str:
         raise StagingDirsTokenError(f"{field_name} must be non-empty")
     normalized = value.strip()
     if not _TOKEN_PATTERN.fullmatch(normalized):
-        raise StagingDirsTokenError(f"unsupported token value for {field_name}: {value!r}")
+        raise StagingDirsTokenError(
+            f"unsupported token value for {field_name}: {value!r}"
+        )
     return normalized
 
 
@@ -125,7 +137,9 @@ def _guard_root_scope(root: Path, path: Path) -> Path:
     try:
         resolved.relative_to(root)
     except ValueError as exc:
-        raise StagingDirsSafetyError(f"path escapes configured root: {resolved}") from exc
+        raise StagingDirsSafetyError(
+            f"path escapes configured root: {resolved}"
+        ) from exc
     return resolved
 
 

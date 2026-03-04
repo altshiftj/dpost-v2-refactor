@@ -19,6 +19,6 @@ def validate_tischrem_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginS
             "workspace_id": "tischrem_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('sem_phenomxl2',),
+            "active_device_plugins": ("sem_phenomxl2",),
         },
     )

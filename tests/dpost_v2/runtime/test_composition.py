@@ -6,8 +6,8 @@ from typing import Mapping
 
 import pytest
 
-from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
 from dpost_v2.application.runtime.dpost_app import DPostApp
+from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
 from dpost_v2.runtime.composition import (
     CompositionBindingError,
     CompositionDuplicateBindingError,
@@ -249,7 +249,9 @@ def test_composition_default_app_consumes_ui_event_source() -> None:
         def notify(self, *, severity: str, title: str, message: str) -> None:
             return None
 
-        def prompt(self, *, prompt_type: str, payload: dict[str, object]) -> dict[str, object]:
+        def prompt(
+            self, *, prompt_type: str, payload: dict[str, object]
+        ) -> dict[str, object]:
             return {"accepted": True}
 
         def show_status(self, *, message: str) -> None:

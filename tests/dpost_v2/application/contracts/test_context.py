@@ -70,7 +70,9 @@ def test_runtime_context_from_settings_rejects_unsupported_mode() -> None:
         )
 
 
-def test_runtime_context_from_settings_rejects_invalid_mode_profile_combination() -> None:
+def test_runtime_context_from_settings_rejects_invalid_mode_profile_combination() -> (
+    None
+):
     with pytest.raises(UnsupportedRuntimeModeError, match="profile"):
         RuntimeContext.from_settings(
             settings=_settings(

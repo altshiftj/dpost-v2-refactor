@@ -160,4 +160,3 @@ def same_identity(left: LocalRecord, right: LocalRecord) -> bool:
 def differs_by_revision(left: LocalRecord, right: LocalRecord) -> bool:
     """Return True when identities match but revision values differ."""
     return same_identity(left, right) and left.revision != right.revision
-

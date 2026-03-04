@@ -66,7 +66,9 @@ def test_settings_service_reuses_cache_for_unchanged_fingerprint(
         "cli": {},
     }
 
-    first = load_startup_settings(request, root_hint=tmp_path, sources=sources, cache=cache)
+    first = load_startup_settings(
+        request, root_hint=tmp_path, sources=sources, cache=cache
+    )
     second = load_startup_settings(
         request,
         root_hint=tmp_path,
@@ -113,4 +115,7 @@ def test_settings_service_detects_cache_desync_and_recovers(tmp_path: Path) -> N
 
     assert result.is_success is True
     assert "cache_integrity_error" in result.diagnostics
-    assert SettingsCacheIntegrityError.__name__ in result.diagnostics["cache_integrity_error"]
+    assert (
+        SettingsCacheIntegrityError.__name__
+        in result.diagnostics["cache_integrity_error"]
+    )

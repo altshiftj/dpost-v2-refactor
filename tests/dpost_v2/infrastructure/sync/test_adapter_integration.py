@@ -10,7 +10,9 @@ from dpost_v2.infrastructure.sync.noop import NoopSyncAdapter, NoopSyncLifecycle
 
 
 def test_sync_adapters_produce_contract_responses_for_same_request() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         return {"status_code": 201, "remote_id": "remote-1"}
 
     request = SyncRequest(record_id="rec-1", operation="sync", payload={"sample": "A"})
@@ -34,7 +36,9 @@ def test_sync_adapters_produce_contract_responses_for_same_request() -> None:
 
 
 def test_sync_adapters_enforce_lifecycle_after_shutdown() -> None:
-    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+    def _client(
+        *, payload: dict[str, Any], headers: dict[str, str], timeout: float
+    ) -> dict[str, Any]:
         return {"status_code": 201, "remote_id": "remote-1"}
 
     request = SyncRequest(record_id="rec-1", operation="sync", payload={"sample": "A"})

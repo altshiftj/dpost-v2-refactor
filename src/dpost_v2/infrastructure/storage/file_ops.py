@@ -123,4 +123,3 @@ class LocalFileOpsAdapter:
         if isinstance(exc, BlockingIOError):
             return FileOpsLockedError(f"{operation} failed: {exc}")
         return FileOpsError(f"{operation} failed: {exc}")
-

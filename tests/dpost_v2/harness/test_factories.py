@@ -52,7 +52,9 @@ def test_build_startup_dependencies_exposes_default_ports() -> None:
     assert dependencies.selected_backends["sync"] == "noop"
 
 
-def test_build_startup_context_uses_deterministic_launch_metadata(tmp_path: Path) -> None:
+def test_build_startup_context_uses_deterministic_launch_metadata(
+    tmp_path: Path,
+) -> None:
     context = build_startup_context(root_hint=tmp_path)
 
     assert context.launch.requested_mode == "headless"

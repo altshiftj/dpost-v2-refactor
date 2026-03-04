@@ -61,8 +61,12 @@ class CompositionBundle:
     shutdown_all: Callable[[], None]
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "port_bindings", MappingProxyType(dict(self.port_bindings)))
-        object.__setattr__(self, "diagnostics", MappingProxyType(dict(self.diagnostics)))
+        object.__setattr__(
+            self, "port_bindings", MappingProxyType(dict(self.port_bindings))
+        )
+        object.__setattr__(
+            self, "diagnostics", MappingProxyType(dict(self.diagnostics))
+        )
 
 
 def compose_runtime(
@@ -95,9 +99,7 @@ def compose_runtime(
         raise CompositionInitializationError("Failed to build runtime app.") from exc
 
     app_port_names = (
-        tuple(sorted(application_ports))
-        if application_ports is not None
-        else ()
+        tuple(sorted(application_ports)) if application_ports is not None else ()
     )
     return CompositionBundle(
         app=app,
@@ -194,7 +196,9 @@ def _default_app_factory(
     application_ports: Mapping[str, object] | None,
 ) -> DPostApp:
     if application_ports is None:
-        raise CompositionBindingError("Application ports are unavailable for runtime app.")
+        raise CompositionBindingError(
+            "Application ports are unavailable for runtime app."
+        )
 
     event_port = application_ports["event"]
     event_emitter = getattr(event_port, "emit")

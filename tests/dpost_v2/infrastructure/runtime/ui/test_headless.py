@@ -33,7 +33,9 @@ def test_headless_adapter_emits_notifications_and_status_to_sink() -> None:
 
 
 def test_headless_prompt_uses_configured_default_response() -> None:
-    adapter = HeadlessUiAdapter(default_prompt_responses={"confirm": {"accepted": True}})
+    adapter = HeadlessUiAdapter(
+        default_prompt_responses={"confirm": {"accepted": True}}
+    )
     adapter.initialize()
 
     response = adapter.prompt(prompt_type="confirm", payload={"question": "ok?"})

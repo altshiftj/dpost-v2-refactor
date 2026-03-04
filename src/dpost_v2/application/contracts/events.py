@@ -162,7 +162,9 @@ class StartupFailed(BaseEvent):
     payload: Mapping[str, Any] = MappingProxyType({})
 
 
-def _extract_correlation_context(context: RuntimeContext | ProcessingContext) -> tuple[str, str]:
+def _extract_correlation_context(
+    context: RuntimeContext | ProcessingContext,
+) -> tuple[str, str]:
     if isinstance(context, RuntimeContext | ProcessingContext):
         return context.event_id, context.trace_id
     raise EventValidationError("context must be RuntimeContext or ProcessingContext")

@@ -54,7 +54,9 @@ def test_factory_maps_initialization_failures() -> None:
         def notify(self, *, severity: str, title: str, message: str) -> None:
             return None
 
-        def prompt(self, *, prompt_type: str, payload: dict[str, object]) -> dict[str, object]:
+        def prompt(
+            self, *, prompt_type: str, payload: dict[str, object]
+        ) -> dict[str, object]:
             return {}
 
         def show_status(self, *, message: str) -> None:

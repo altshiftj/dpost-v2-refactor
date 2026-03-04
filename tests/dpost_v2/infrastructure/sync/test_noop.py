@@ -44,9 +44,7 @@ def test_noop_sync_can_simulate_cancellation() -> None:
     adapter.initialize()
 
     with pytest.raises(NoopSyncCancelledError):
-        adapter.sync_record(
-            SyncRequest(record_id="rec-1", payload={"cancelled": True})
-        )
+        adapter.sync_record(SyncRequest(record_id="rec-1", payload={"cancelled": True}))
 
 
 def test_noop_sync_rejects_request_without_record_id() -> None:

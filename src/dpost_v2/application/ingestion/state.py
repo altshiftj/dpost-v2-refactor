@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
 import hashlib
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 from dpost_v2.application.ingestion.models.candidate import Candidate

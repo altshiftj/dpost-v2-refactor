@@ -14,7 +14,9 @@ from dpost_v2.infrastructure.storage.staging_dirs import (
 )
 
 
-def test_layout_derivation_is_deterministic_for_identical_inputs(tmp_path: Path) -> None:
+def test_layout_derivation_is_deterministic_for_identical_inputs(
+    tmp_path: Path,
+) -> None:
     root = tmp_path / "storage"
     when = date(2026, 3, 4)
 

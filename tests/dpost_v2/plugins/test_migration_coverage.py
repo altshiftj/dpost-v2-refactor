@@ -6,7 +6,6 @@ from dpost_v2.application.contracts.context import ProcessingContext, RuntimeCon
 from dpost_v2.plugins.discovery import discover_from_namespaces
 from dpost_v2.plugins.host import PluginHost
 
-
 EXPECTED_DEVICE_PLUGIN_IDS = (
     "dsv_horiba",
     "erm_hioki",
@@ -72,14 +71,18 @@ def test_namespace_discovery_includes_all_mapped_plugin_packages() -> None:
     assert pcs == EXPECTED_PC_PLUGIN_IDS
 
 
-def test_host_can_activate_and_create_processors_for_all_mapped_device_plugins() -> None:
+def test_host_can_activate_and_create_processors_for_all_mapped_device_plugins() -> (
+    None
+):
     discovered = discover_from_namespaces()
     host = PluginHost(discovered.descriptors)
     host.activate_profile(profile="prod", known_profiles={"prod"})
 
     assert host.get_device_plugins() == EXPECTED_DEVICE_PLUGIN_IDS
 
-    descriptors = {descriptor.plugin_id: descriptor for descriptor in discovered.descriptors}
+    descriptors = {
+        descriptor.plugin_id: descriptor for descriptor in discovered.descriptors
+    }
     context = _processing_context()
     for plugin_id in EXPECTED_DEVICE_PLUGIN_IDS:
         validate_settings = descriptors[plugin_id].module_exports["validate_settings"]

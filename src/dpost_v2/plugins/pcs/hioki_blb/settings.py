@@ -19,6 +19,6 @@ def validate_hioki_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSett
             "workspace_id": "hioki_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('erm_hioki',),
+            "active_device_plugins": ("erm_hioki",),
         },
     )

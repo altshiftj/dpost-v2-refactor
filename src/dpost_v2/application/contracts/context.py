@@ -7,7 +7,6 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Any, Mapping
 
-
 SUPPORTED_RUNTIME_MODES = frozenset({"headless", "desktop", "shadow", "v1", "v2"})
 REQUIRED_DEPENDENCY_IDS = frozenset({"clock", "ui", "sync"})
 
@@ -158,8 +157,12 @@ class RuntimeContext:
             session_id=_as_non_empty_string(
                 settings.get("session_id"), field_name="session_id"
             ),
-            event_id=_as_non_empty_string(settings.get("event_id"), field_name="event_id"),
-            trace_id=_as_non_empty_string(settings.get("trace_id"), field_name="trace_id"),
+            event_id=_as_non_empty_string(
+                settings.get("event_id"), field_name="event_id"
+            ),
+            trace_id=_as_non_empty_string(
+                settings.get("trace_id"), field_name="trace_id"
+            ),
             dependency_ids=_freeze_mapping(dependency_ids),
             settings_snapshot=_freeze_mapping(settings),
         )
@@ -235,7 +238,9 @@ class ProcessingContext:
         )
         return validate_processing_context(processing)
 
-    def with_retry(self, *, attempt_index: int, delay_seconds: float) -> ProcessingContext:
+    def with_retry(
+        self, *, attempt_index: int, delay_seconds: float
+    ) -> ProcessingContext:
         """Clone with updated retry state after validating monotonic constraints."""
         if attempt_index < 0 or attempt_index < self.retry_attempt:
             raise RetryStateError("retry attempt must be monotonic and non-negative")

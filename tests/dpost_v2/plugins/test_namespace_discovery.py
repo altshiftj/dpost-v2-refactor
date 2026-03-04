@@ -5,8 +5,10 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from dpost_v2.application.contracts.plugin_contracts import PLUGIN_CONTRACT_VERSION
-from dpost_v2.plugins.discovery import discover_from_namespaces
-from dpost_v2.plugins.discovery import PluginDiscoveryFamilyError
+from dpost_v2.plugins.discovery import (
+    PluginDiscoveryFamilyError,
+    discover_from_namespaces,
+)
 
 
 def test_namespace_discovery_finds_v2_test_device_and_pc_plugins() -> None:

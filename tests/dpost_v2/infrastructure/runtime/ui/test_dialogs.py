@@ -39,7 +39,7 @@ def test_dispatch_dialog_rejects_non_mapping_payload() -> None:
     with pytest.raises(DialogSpecValidationError):
         dispatch_dialog(
             prompt_type="confirm",
-            payload=[] , # type: ignore[arg-type]
+            payload=[],  # type: ignore[arg-type]
             backend_prompt=lambda request: {},
         )
 

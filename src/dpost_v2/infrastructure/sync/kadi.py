@@ -174,7 +174,8 @@ class KadiSyncAdapter:
             )
         if status_code >= 500:
             raise KadiSyncNetworkError(
-                _as_optional_string(response.get("error")) or "remote backend unavailable"
+                _as_optional_string(response.get("error"))
+                or "remote backend unavailable"
             )
         raise KadiSyncResponseError(f"unsupported kadi response status: {status_code}")
 

@@ -23,4 +23,3 @@ __all__ = [
     "decide_route",
     "route_rule_sort_key",
 ]
-

@@ -19,6 +19,6 @@ def validate_haake_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSett
             "workspace_id": "haake_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('extr_haake',),
+            "active_device_plugins": ("extr_haake",),
         },
     )

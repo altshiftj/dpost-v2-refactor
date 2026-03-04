@@ -104,4 +104,3 @@ def _normalize_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(payload, Mapping):
         raise DialogSpecValidationError("payload must be a mapping")
     return dict(payload)
-

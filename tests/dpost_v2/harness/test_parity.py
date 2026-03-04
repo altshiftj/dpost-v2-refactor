@@ -42,7 +42,9 @@ def test_run_parity_report_detects_deltas(v2_golden_corpus_path: Path) -> None:
     assert report.results[1].deltas[0].path == "route"
 
 
-def test_assert_parity_threshold_raises_with_summary(v2_golden_corpus_path: Path) -> None:
+def test_assert_parity_threshold_raises_with_summary(
+    v2_golden_corpus_path: Path,
+) -> None:
     cases = load_golden_cases(v2_golden_corpus_path)
 
     def v1_runner(case: GoldenCaseSpec) -> dict[str, object]:

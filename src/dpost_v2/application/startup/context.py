@@ -76,7 +76,9 @@ def validate_startup_context(context: StartupContext) -> None:
         )
 
     if "event_sink" not in context.dependencies.factories:
-        raise StartupContextBindingError("Missing required dependency binding: 'event_sink'.")
+        raise StartupContextBindingError(
+            "Missing required dependency binding: 'event_sink'."
+        )
 
     if mode == "desktop" and "ui" not in context.dependencies.factories:
         raise StartupContextBindingError(
@@ -84,9 +86,9 @@ def validate_startup_context(context: StartupContext) -> None:
         )
 
     if mode == "desktop":
-        selected_ui = str(
-            context.dependencies.selected_backends.get("ui", "")
-        ).strip().lower()
+        selected_ui = (
+            str(context.dependencies.selected_backends.get("ui", "")).strip().lower()
+        )
         if selected_ui and selected_ui != "desktop":
             raise StartupContextValidationError(
                 "Desktop startup context requires desktop UI backend."

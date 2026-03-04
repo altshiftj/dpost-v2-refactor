@@ -91,7 +91,9 @@ def test_desktop_adapter_maps_callback_failures() -> None:
     adapter = DesktopUiAdapter(
         backend=backend,
         dialog_dispatch=lambda **kwargs: {"action": "accepted", "cancelled": False},
-        on_user_action=lambda result: (_ for _ in ()).throw(RuntimeError("callback boom")),
+        on_user_action=lambda result: (_ for _ in ()).throw(
+            RuntimeError("callback boom")
+        ),
     )
     adapter.initialize()
 

@@ -133,7 +133,10 @@ def transition_state(
             f"Illegal staging transition ({state.value}, {resolved_event.value}).",
         )
 
-    if resolved_event in {StagingEvent.FAILED, StagingEvent.REJECTED} and not reason_code:
+    if (
+        resolved_event in {StagingEvent.FAILED, StagingEvent.REJECTED}
+        and not reason_code
+    ):
         raise StagingReasonRequiredError(
             "Failure/reject transitions require reason_code.",
         )
@@ -153,4 +156,3 @@ def transition_state(
         attempt_index=attempt_index,
     )
     return StagingTransitionResult(next_state=next_state, trace=trace)
-

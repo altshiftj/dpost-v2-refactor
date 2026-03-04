@@ -11,10 +11,11 @@ from dpost_v2.application.startup.settings_service import (
     SettingsLoadResult,
     load_startup_settings,
 )
-from dpost_v2.runtime.composition import CompositionBundle
-from dpost_v2.runtime.composition import compose_runtime
-from dpost_v2.runtime.startup_dependencies import StartupDependencies
-from dpost_v2.runtime.startup_dependencies import resolve_startup_dependencies
+from dpost_v2.runtime.composition import CompositionBundle, compose_runtime
+from dpost_v2.runtime.startup_dependencies import (
+    StartupDependencies,
+    resolve_startup_dependencies,
+)
 
 
 @dataclass(frozen=True)
@@ -250,7 +251,9 @@ def test_bootstrap_short_circuits_on_typed_settings_result_failure() -> None:
     assert [event.name for event in events] == ["startup_started", "startup_failed"]
 
 
-def test_bootstrap_integration_with_settings_service_and_runtime_modules(tmp_path) -> None:
+def test_bootstrap_integration_with_settings_service_and_runtime_modules(
+    tmp_path,
+) -> None:
     request = BootstrapRequest(mode="headless", profile="ci", trace_id="trace-006")
     events = []
     seen_context = []

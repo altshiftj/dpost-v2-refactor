@@ -85,7 +85,9 @@ class StructuredLogger:
 
     def _redact_mapping(self, payload: Mapping[str, Any]) -> dict[str, Any]:
         normalized = self._normalize_mapping(payload)
-        redacted_fields = {name.strip().lower() for name in self._config.redacted_fields}
+        redacted_fields = {
+            name.strip().lower() for name in self._config.redacted_fields
+        }
         redacted: dict[str, Any] = {}
         for key, value in normalized.items():
             if key.lower() in redacted_fields:

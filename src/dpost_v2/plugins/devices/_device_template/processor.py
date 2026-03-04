@@ -7,7 +7,6 @@ from typing import Any, Mapping
 
 from dpost_v2.application.contracts.context import ProcessingContext
 from dpost_v2.application.contracts.plugin_contracts import ProcessorResult
-
 from dpost_v2.plugins.devices._device_template.settings import DevicePluginSettings
 
 
@@ -32,9 +31,16 @@ class TemplateDeviceProcessor:
         source_path = raw_input.get("source_path")
         if not isinstance(source_path, str) or not source_path.strip():
             raise DeviceProcessorValidationError("source_path is required")
-        extension = source_path.rsplit(".", maxsplit=1)[-1].lower() if "." in source_path else ""
+        extension = (
+            source_path.rsplit(".", maxsplit=1)[-1].lower()
+            if "." in source_path
+            else ""
+        )
         normalized_extension = f".{extension}" if extension else ""
-        if normalized_extension and normalized_extension not in self.settings.source_extensions:
+        if (
+            normalized_extension
+            and normalized_extension not in self.settings.source_extensions
+        ):
             raise DeviceProcessorFormatError(
                 f"unsupported extension {normalized_extension!r} for "
                 f"{self.settings.plugin_id}"
@@ -67,4 +73,3 @@ class TemplateDeviceProcessor:
             final_path=source_path.strip(),
             datatype=f"{self.settings.plugin_id}/template",
         )
-

@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_rhe_kinexus_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_rhe_kinexus_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete rhe_kinexus plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "rhe_kinexus",
-            "source_extensions": ('.csv', '.rdf'),
+            "source_extensions": (".csv", ".rdf"),
             "strict_unknown_keys": False,
         },
     )

@@ -6,7 +6,6 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-
 _ALIAS_TO_CANONICAL: dict[str, str] = {
     "runtime_mode": "mode",
     "runtime_profile": "profile",
@@ -60,7 +59,9 @@ class SettingsSchemaIssue:
 class SettingsSchemaError(ValueError):
     """Base class for startup schema validation failures."""
 
-    def __init__(self, message: str, *, issues: tuple[SettingsSchemaIssue, ...]) -> None:
+    def __init__(
+        self, message: str, *, issues: tuple[SettingsSchemaIssue, ...]
+    ) -> None:
         super().__init__(message)
         self.issues = issues
 
@@ -90,7 +91,9 @@ def validate_raw_settings(raw: Mapping[str, Any]) -> dict[str, Any]:
             message="Settings payload must be a mapping.",
             hint="Provide startup settings as a dictionary-like object.",
         )
-        raise SettingsSchemaValueError("Invalid startup settings payload.", issues=(issue,))
+        raise SettingsSchemaValueError(
+            "Invalid startup settings payload.", issues=(issue,)
+        )
 
     canonical = _normalize_aliases(raw)
     merged = _merge_with_template(canonical)
@@ -147,7 +150,9 @@ def _merge_with_template(raw: dict[str, Any]) -> dict[str, Any]:
                 message=f"Unknown startup settings field: {key!r}.",
                 hint="Remove unknown keys or update schema owner.",
             )
-            raise SettingsSchemaValueError("Unknown startup settings field.", issues=(issue,))
+            raise SettingsSchemaValueError(
+                "Unknown startup settings field.", issues=(issue,)
+            )
 
         if key in merged and isinstance(merged[key], dict):
             if not isinstance(value, Mapping):
@@ -157,7 +162,9 @@ def _merge_with_template(raw: dict[str, Any]) -> dict[str, Any]:
                     message=f"Expected mapping at {key!r}.",
                     hint="Provide nested fields as a dictionary.",
                 )
-                raise SettingsSchemaValueError("Invalid nested settings type.", issues=(issue,))
+                raise SettingsSchemaValueError(
+                    "Invalid nested settings type.", issues=(issue,)
+                )
             merged[key] = _merge_nested_dict(
                 block_name=key,
                 base=merged[key],
@@ -184,7 +191,9 @@ def _merge_nested_dict(
                 message=f"Unknown nested field {key!r} under {block_name!r}.",
                 hint="Remove unknown keys or update schema owner.",
             )
-            raise SettingsSchemaValueError("Unknown nested startup settings field.", issues=(issue,))
+            raise SettingsSchemaValueError(
+                "Unknown nested startup settings field.", issues=(issue,)
+            )
         merged[key] = value
     return merged
 
@@ -197,18 +206,23 @@ def _validate_required_fields(payload: Mapping[str, Any]) -> None:
             message="Required startup field 'mode' is missing.",
             hint="Set mode to 'headless' or 'desktop'.",
         )
-        raise SettingsSchemaMissingFieldError("Missing required startup field.", issues=(issue,))
+        raise SettingsSchemaMissingFieldError(
+            "Missing required startup field.", issues=(issue,)
+        )
 
-    if not _path_exists(payload, "paths.root") or not str(
-        _get_path(payload, "paths.root") or ""
-    ).strip():
+    if (
+        not _path_exists(payload, "paths.root")
+        or not str(_get_path(payload, "paths.root") or "").strip()
+    ):
         issue = SettingsSchemaIssue(
             code="missing_field",
             path="paths.root",
             message="Required startup field 'paths.root' is missing.",
             hint="Provide a root directory in paths.root.",
         )
-        raise SettingsSchemaMissingFieldError("Missing required startup field.", issues=(issue,))
+        raise SettingsSchemaMissingFieldError(
+            "Missing required startup field.", issues=(issue,)
+        )
 
 
 def _normalize_tokens(payload: dict[str, Any]) -> None:
@@ -235,7 +249,9 @@ def _validate_enums(payload: Mapping[str, Any]) -> None:
                 ),
                 hint="Use one of the allowed enum values.",
             )
-            raise SettingsSchemaValueError("Invalid startup enum value.", issues=(issue,))
+            raise SettingsSchemaValueError(
+                "Invalid startup enum value.", issues=(issue,)
+            )
 
 
 def _validate_constraints(payload: Mapping[str, Any]) -> None:

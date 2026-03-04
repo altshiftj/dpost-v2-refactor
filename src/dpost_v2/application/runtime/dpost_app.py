@@ -2,17 +2,16 @@
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass
 from datetime import datetime
-import inspect
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping
 
 from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
 from dpost_v2.application.contracts.events import event_from_outcome, to_payload
 from dpost_v2.application.ingestion.engine import IngestionOutcomeKind
-from dpost_v2.application.session.session_manager import SessionManager
-from dpost_v2.application.session.session_manager import TimeoutOutcome
+from dpost_v2.application.session.session_manager import SessionManager, TimeoutOutcome
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,7 +105,9 @@ class DPostApp:
                     continue
                 self._seen_event_ids.add(event_id)
 
-                processing_context = self._build_processing_context(event, event_id=event_id)
+                processing_context = self._build_processing_context(
+                    event, event_id=event_id
+                )
                 self._session_manager.record_activity(session_id=self._session_id)
                 outcome = self._process_event(
                     event=event,
@@ -195,11 +196,15 @@ class DPostApp:
     ) -> ProcessingContext:
         source_path = event.get("path", event.get("source_path"))
         if not isinstance(source_path, str) or not source_path.strip():
-            raise ValueError("runtime event must include non-empty 'path' or 'source_path'")
+            raise ValueError(
+                "runtime event must include non-empty 'path' or 'source_path'"
+            )
 
         observed_at = event.get("observed_at", self._clock.now())
         if not isinstance(observed_at, datetime):
-            raise ValueError("runtime event 'observed_at' must be datetime when provided")
+            raise ValueError(
+                "runtime event 'observed_at' must be datetime when provided"
+            )
 
         event_type_value = event.get("event_type", event.get("event_kind", "created"))
         if not isinstance(event_type_value, str) or not event_type_value.strip():

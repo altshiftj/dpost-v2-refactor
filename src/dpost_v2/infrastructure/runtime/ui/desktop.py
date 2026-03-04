@@ -100,7 +100,9 @@ class DesktopUiAdapter:
 
         return dict(result)
 
-    def _dispatch_backend_prompt(self, request: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    def _dispatch_backend_prompt(
+        self, request: Mapping[str, Any]
+    ) -> Mapping[str, Any] | None:
         if not isinstance(request, Mapping):
             raise DesktopUiPayloadError("dialog request must be a mapping")
         backend_prompt_type = request.get("prompt_type")

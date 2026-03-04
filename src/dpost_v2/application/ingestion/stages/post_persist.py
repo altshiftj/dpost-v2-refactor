@@ -50,7 +50,9 @@ def run_post_persist_stage(
                 sync_warning=reason_code,
                 diagnostics={"post_persist": {"reason_code": "sync_warning"}},
             )
-            return StageDirective.terminal(PipelineTerminalOutcome.COMPLETED, warning_state)
+            return StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED, warning_state
+            )
 
     completed = state.with_updates(
         diagnostics={"post_persist": {"reason_code": "completed"}}

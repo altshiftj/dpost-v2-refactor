@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from dpost_v2.application.ingestion.models.candidate import Candidate
-from dpost_v2.application.ingestion.runtime_services import RuntimeCallResult, RuntimeCallStatus
+from dpost_v2.application.ingestion.runtime_services import (
+    RuntimeCallResult,
+    RuntimeCallStatus,
+)
 from dpost_v2.application.ingestion.stages.persist import run_persist_stage
 from dpost_v2.application.ingestion.stages.pipeline import PipelineTerminalOutcome
 from dpost_v2.application.ingestion.stages.post_persist import run_post_persist_stage
@@ -11,7 +14,11 @@ from dpost_v2.application.ingestion.state import IngestionState
 def _candidate() -> Candidate:
     return (
         Candidate.from_event(
-            {"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0},
+            {
+                "path": "incoming/file.txt",
+                "event_kind": "created",
+                "observed_at": 100.0,
+            },
             {"modified_at": 90.0},
         )
         .with_resolution("plug", "proc")
@@ -69,7 +76,9 @@ def test_persist_stage_returns_retry_when_move_fails_with_retry_plan() -> None:
 
 
 def test_post_persist_stage_completes_with_sync_warning_on_sync_failure() -> None:
-    state = IngestionState(event={"event_id": "e1"}, candidate=_candidate(), record_id="r1")
+    state = IngestionState(
+        event={"event_id": "e1"}, candidate=_candidate(), record_id="r1"
+    )
 
     directive = run_post_persist_stage(
         state,

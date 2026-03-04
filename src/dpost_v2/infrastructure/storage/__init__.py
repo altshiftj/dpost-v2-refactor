@@ -19,4 +19,3 @@ __all__ = [
     "cleanup_candidates",
     "derive_staging_layout",
 ]
-

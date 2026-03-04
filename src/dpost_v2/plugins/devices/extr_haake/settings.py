@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_extr_haake_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_extr_haake_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete extr_haake plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "extr_haake",
-            "source_extensions": ('.xlsx', '.xls', '.xlsm'),
+            "source_extensions": (".xlsx", ".xls", ".xlsm"),
             "strict_unknown_keys": False,
         },
     )

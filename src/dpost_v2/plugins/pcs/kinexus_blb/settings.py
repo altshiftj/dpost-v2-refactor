@@ -19,6 +19,6 @@ def validate_kinexus_blb_settings(raw_settings: Mapping[str, Any]) -> PcPluginSe
             "workspace_id": "kinexus_blb",
             "upload_mode": "immediate",
             "strict_unknown_keys": False,
-            "active_device_plugins": ('rhe_kinexus',),
+            "active_device_plugins": ("rhe_kinexus",),
         },
     )

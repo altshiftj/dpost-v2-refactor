@@ -113,4 +113,3 @@ def validate_pc_plugin_settings(
         strict_unknown_keys=strict_unknown_keys,
         extra=extras,
     )
-

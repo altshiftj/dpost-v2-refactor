@@ -43,7 +43,10 @@ class PluginSelectionResult:
             self,
             "selected_by_family",
             MappingProxyType(
-                {family: tuple(plugin_ids) for family, plugin_ids in self.selected_by_family.items()}
+                {
+                    family: tuple(plugin_ids)
+                    for family, plugin_ids in self.selected_by_family.items()
+                }
             ),
         )
         object.__setattr__(
@@ -150,7 +153,9 @@ def _normalize_known_profiles(
 ) -> set[str]:
     if known_profiles is None:
         from_catalog = {
-            profile for descriptor in fallback_from_catalog.descriptors for profile in descriptor.supported_profiles
+            profile
+            for descriptor in fallback_from_catalog.descriptors
+            for profile in descriptor.supported_profiles
         }
         if from_catalog:
             return from_catalog

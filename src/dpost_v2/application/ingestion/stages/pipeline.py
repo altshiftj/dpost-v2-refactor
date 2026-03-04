@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Callable, Generic, Mapping, TypeVar
 
-
 StateT = TypeVar("StateT")
 
 

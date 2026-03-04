@@ -102,8 +102,12 @@ def test_compose_name_is_deterministic_for_identical_inputs() -> None:
     constraints = NamingConstraints(max_length=128)
     values = {"prefix": "RHE", "identifier": "abc_123", "route": "dest01"}
 
-    result_a = compose_name(template=template, segment_values=values, constraints=constraints)
-    result_b = compose_name(template=template, segment_values=values, constraints=constraints)
+    result_a = compose_name(
+        template=template, segment_values=values, constraints=constraints
+    )
+    result_b = compose_name(
+        template=template, segment_values=values, constraints=constraints
+    )
 
     assert result_a.canonical_name == result_b.canonical_name
     assert result_a.identity_hash == result_b.identity_hash

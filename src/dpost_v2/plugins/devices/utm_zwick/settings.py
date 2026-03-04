@@ -10,13 +10,15 @@ from dpost_v2.plugins.devices._device_template.settings import (
 )
 
 
-def validate_utm_zwick_settings(raw_settings: Mapping[str, Any]) -> DevicePluginSettings:
+def validate_utm_zwick_settings(
+    raw_settings: Mapping[str, Any],
+) -> DevicePluginSettings:
     """Validate settings for concrete utm_zwick plugin."""
     return validate_device_plugin_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "utm_zwick",
-            "source_extensions": ('.xlsx', '.zs2'),
+            "source_extensions": (".xlsx", ".zs2"),
             "strict_unknown_keys": False,
         },
     )

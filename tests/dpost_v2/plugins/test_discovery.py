@@ -174,7 +174,9 @@ def _build_invalid_device_module(module_name: str) -> ModuleType:
     return module
 
 
-def test_discover_plugins_orders_descriptors_and_fingerprints_deterministically() -> None:
+def test_discover_plugins_orders_descriptors_and_fingerprints_deterministically() -> (
+    None
+):
     modules = {
         "plugins.pc.alpha": _build_pc_module(
             module_name="plugins.pc.alpha",
@@ -204,13 +206,17 @@ def test_discover_plugins_orders_descriptors_and_fingerprints_deterministically(
     assert first.fingerprint == second.fingerprint
 
 
-def test_discover_plugins_collects_manifest_and_import_errors_without_aborting() -> None:
+def test_discover_plugins_collects_manifest_and_import_errors_without_aborting() -> (
+    None
+):
     modules = {
         "plugins.device.good": _build_device_module(
             module_name="plugins.device.good",
             plugin_id="device.good",
         ),
-        "plugins.device.invalid": _build_invalid_device_module("plugins.device.invalid"),
+        "plugins.device.invalid": _build_invalid_device_module(
+            "plugins.device.invalid"
+        ),
     }
     importer = _mapping_importer(modules)
 
