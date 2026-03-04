@@ -1,13 +1,11 @@
-"""
-Record and session helpers to keep the manager focused on orchestration.
-"""
+"""Record and session helpers to keep the manager focused on orchestration."""
 
 from __future__ import annotations
 
 from dpost.application.config import DeviceConfig
 from dpost.application.records.record_manager import RecordManager
-from dpost.domain.records.local_record import LocalRecord
 from dpost.application.session import SessionManager
+from dpost.domain.records.local_record import LocalRecord
 
 
 def get_or_create_record(

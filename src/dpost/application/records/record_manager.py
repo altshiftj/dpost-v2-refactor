@@ -22,8 +22,7 @@ logger = setup_logger(__name__)
 
 
 class RecordManager:
-    """
-    Central manager for LocalRecord lifecycle and database synchronization.
+    """Central manager for LocalRecord lifecycle and database synchronization.
 
     Responsibilities:
     - Create and store LocalRecord instances for processed files
@@ -42,12 +41,12 @@ class RecordManager:
         persisted_records_path: str | Path | None = None,
         id_separator: str,
     ):
-        """
-        Initialize RecordManager with synchronization capabilities.
+        """Initialize RecordManager with synchronization capabilities.
 
         Args:
             sync_manager: Interface for syncing records to external database
             id_separator: Explicit runtime naming separator
+
         """
         self.sync = sync_manager
         # Lazy-loaded dictionary of all persisted records
@@ -59,14 +58,14 @@ class RecordManager:
 
     @property
     def persist_records_dict(self) -> Dict[str, LocalRecord]:
-        """
-        Lazily loads persisted records from disk the first time accessed.
+        """Lazily loads persisted records from disk the first time accessed.
 
         This lazy loading pattern improves startup performance by only reading
         records when actually needed. Subsequent accesses use the cached version.
 
         Returns:
             Dict mapping record IDs to LocalRecord instances
+
         """
         if self._persist_records_dict is None:
             logger.debug("Lazy loading persisted records from disk...")
@@ -77,8 +76,7 @@ class RecordManager:
         return self._persist_records_dict
 
     def reload_records(self):
-        """
-        Forces a reload of the persisted records from disk.
+        """Forces a reload of the persisted records from disk.
 
         Used when external changes to record storage are detected
         or when manual refresh is needed.
@@ -92,8 +90,7 @@ class RecordManager:
     def create_record(
         self, filename_prefix: str, device: Optional[DeviceConfig] = None
     ) -> LocalRecord:
-        """
-        Creates and stores a new LocalRecord using the filename prefix.
+        """Creates and stores a new LocalRecord using the filename prefix.
 
         Extracts sample name from prefix and generates unique record ID.
         The new record is immediately stored and persisted.
@@ -104,6 +101,7 @@ class RecordManager:
 
         Returns:
             LocalRecord: Newly created record instance
+
         """
         # Generate unique identifier and extract sample name
         record_id = generate_record_id(
@@ -127,8 +125,7 @@ class RecordManager:
         return record
 
     def add_item_to_record(self, path: str, record: LocalRecord) -> int:
-        """
-        Adds a file path to a record, updates metrics, and persists state.
+        """Adds a file path to a record, updates metrics, and persists state.
 
         This is called when a file is successfully processed and needs to be
         tracked as part of a record. Updates Prometheus metrics and saves state,
@@ -140,6 +137,7 @@ class RecordManager:
 
         Returns:
             int: Number of newly tracked files for the record
+
         """
         logger.debug(f"Adding item '{path}' to record '{record.identifier}'.")
 
@@ -186,9 +184,7 @@ class RecordManager:
         return removed
 
     def save_records(self):
-        """
-        Persists all processed records to a dictionary ledger for crash recovery and state preservation.
-        """
+        """Persists all processed records to a dictionary ledger for crash recovery and state preservation."""
         logger.debug(f"Persisting {len(self.persist_records_dict)} records.")
         save_persisted_records(
             self.persist_records_dict,
@@ -196,28 +192,27 @@ class RecordManager:
         )
 
     def get_all_records(self) -> Dict[str, LocalRecord]:
-        """
-        Get all currently loaded records.
+        """Get all currently loaded records.
 
         Returns:
             Dict mapping record IDs to LocalRecord instances
+
         """
         return self.persist_records_dict
 
     def get_num_records(self) -> int:
-        """
-        Get the total count of currently loaded records.
+        """Get the total count of currently loaded records.
 
         Returns:
             int: Number of records in memory
+
         """
         count = len(self.persist_records_dict)
         logger.debug(f"Total number of records: {count}")
         return count
 
     def get_record_by_id(self, record_id: str) -> Optional[LocalRecord]:
-        """
-        Retrieve a specific record by its identifier.
+        """Retrieve a specific record by its identifier.
 
         Performs case-insensitive lookup for robustness.
 
@@ -226,6 +221,7 @@ class RecordManager:
 
         Returns:
             LocalRecord if found, None otherwise
+
         """
         record_id = record_id.lower()  # Normalize for case-insensitive lookup
         record = self.persist_records_dict.get(record_id)
@@ -237,13 +233,13 @@ class RecordManager:
         return record
 
     def all_records_uploaded(self) -> bool:
-        """
-        Check if all records have been fully uploaded to the database.
+        """Check if all records have been fully uploaded to the database.
 
         Used to determine if local cleanup can proceed or if sync is needed.
 
         Returns:
             bool: True if all records are fully uploaded, False otherwise
+
         """
         all_uploaded = all(
             record.all_files_uploaded() for record in self.persist_records_dict.values()
@@ -252,8 +248,7 @@ class RecordManager:
         return all_uploaded
 
     def sync_records_to_database(self):
-        """
-        Synchronize all eligible records to the external database.
+        """Synchronize all eligible records to the external database.
 
         Processing logic:
         1. Skip non-IPAT records (institute filter)
@@ -293,13 +288,13 @@ class RecordManager:
         self.persist_records_dict[record.identifier] = record
 
     def _sync_record(self, record: LocalRecord):
-        """
-        Synchronize a single record to the database and handle cleanup.
+        """Synchronize a single record to the database and handle cleanup.
 
         Uses the sync manager to upload record data.
 
         Args:
             record: LocalRecord to synchronize
+
         """
         # Delegate actual sync logic to the sync manager
         self.sync.sync_record_to_database(record)

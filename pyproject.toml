@@ -62,6 +62,21 @@ markers = [
     "manual: Manually-invoked smoke tests excluded from default CI/test runs.",
 ]
 
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+extend-select = ["D"]
+ignore = [
+    "D100",
+    "D104",
+    "D105",
+    "D107",
+]
+per-file-ignores = { "tests/**" = ["D"], "tests/migration/**" = ["D"] }
+
 [tool.black]
 line-length = 88
 # Keep Black enforcement focused on active runtime surfaces.

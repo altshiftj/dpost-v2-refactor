@@ -6,9 +6,7 @@ from typing import TYPE_CHECKING
 
 from dpost.application.config import DeviceConfig
 from dpost.application.processing.file_processor_abstract import FileProcessorABS
-from dpost.device_plugins.sem_phenomxl2.file_processor import (
-    FileProcessorSEMPhenomXL2,
-)
+from dpost.device_plugins.sem_phenomxl2.file_processor import FileProcessorSEMPhenomXL2
 from dpost.device_plugins.sem_phenomxl2.settings import build_config
 from dpost.plugins.system import hookimpl
 

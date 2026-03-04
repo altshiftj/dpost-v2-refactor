@@ -51,7 +51,8 @@ def build_post_persist_bookkeeping_plan(
             skipped_missing.append(resolved.raw_path)
             continue
         unsynced_paths = tuple(
-            str(child) for child in iter_force_unsynced_targets_fn(resolved.resolved_path)
+            str(child)
+            for child in iter_force_unsynced_targets_fn(resolved.resolved_path)
         )
         update_targets.append(
             PostPersistRecordUpdateTarget(
@@ -79,4 +80,3 @@ def emit_post_persist_bookkeeping(
     if new_files > 0:
         sink.increment_processed_metric(new_files)
     return new_files
-

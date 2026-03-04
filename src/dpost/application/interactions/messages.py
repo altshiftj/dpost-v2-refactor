@@ -1,5 +1,4 @@
-"""
-Centralized message catalog for user-facing strings used within interaction flows.
+"""Centralized message catalog for user-facing strings used within interaction flows.
 Grouping them here keeps messaging consistent and simplifies future localization.
 """
 

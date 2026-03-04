@@ -91,9 +91,7 @@ class PathSettings:
 
 @dataclass(slots=True)
 class NamingSettings:
-    """
-    Defines canonical file and record identifier structure across runtime flows.
-    """
+    """Defines canonical file and record identifier structure across runtime flows."""
 
     id_separator: str = "-"
     file_separator: str = "_"
@@ -290,8 +288,7 @@ class DeviceConfig:
 
 @dataclass(slots=True)
 class PCConfig:
-    """
-    Top-level configuration describing a workstation and its active device plugins.
+    """Top-level configuration describing a workstation and its active device plugins.
     Currently defines the PC identity and which device plugins are active.
     But may find other uses in future.
     """

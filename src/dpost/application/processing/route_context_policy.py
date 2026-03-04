@@ -19,7 +19,9 @@ def build_route_context(
     existing_record: LocalRecord | None,
     is_valid_format: bool,
     *,
-    determine_routing_decision_fn: Callable[..., RoutingDecision] = determine_routing_decision,
+    determine_routing_decision_fn: Callable[
+        ..., RoutingDecision
+    ] = determine_routing_decision,
 ) -> RouteContext:
     """Build a route context from lookup results and a candidate artefact."""
     decision = determine_routing_decision_fn(

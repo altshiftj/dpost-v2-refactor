@@ -95,7 +95,6 @@ def select_ui_factory(mode_name: str | None = None) -> Callable[[], object]:
 
 def compose_bootstrap() -> BootstrapContext:
     """Build and return the runtime context for dpost."""
-
     sync_adapter = select_sync_adapter()
     plugin_profile = resolve_plugin_profile_selection(
         startup_error_factory=startup_error,

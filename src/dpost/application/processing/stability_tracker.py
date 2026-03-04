@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
+import datetime as dt
+import time
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-import datetime as dt
-import time
 from typing import Iterable, Optional
 
 from dpost.application.config import DeviceConfig, StabilityOverride
-from dpost.infrastructure.logging import setup_logger
 from dpost.application.processing.stability_timing_policy import (
     StabilityTimingPolicy,
     resolve_stability_timing_policy,
 )
+from dpost.infrastructure.logging import setup_logger
 
 logger = setup_logger(__name__)
 
@@ -50,9 +50,13 @@ class StabilityOutcome:
         if self.stable and inferred is not StabilityOutcomeKind.STABLE:
             raise ValueError("Stable outcomes must use StabilityOutcomeKind.STABLE")
         if not self.stable and inferred is StabilityOutcomeKind.STABLE:
-            raise ValueError("Non-stable outcomes cannot use StabilityOutcomeKind.STABLE")
+            raise ValueError(
+                "Non-stable outcomes cannot use StabilityOutcomeKind.STABLE"
+            )
         if inferred is not StabilityOutcomeKind.DEFER and self.retry_delay is not None:
-            raise ValueError("retry_delay is only valid for deferred stability outcomes")
+            raise ValueError(
+                "retry_delay is only valid for deferred stability outcomes"
+            )
 
     @classmethod
     def stable_result(cls, path: Path) -> "StabilityOutcome":

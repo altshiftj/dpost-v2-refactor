@@ -13,9 +13,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class LocalRecord:
-    """
-    Domain record entity that tracks metadata, upload flags, and force-upload state.
-    """
+    """Domain record entity that tracks metadata, upload flags, and force-upload state."""
 
     identifier: str = "null"
     device_type: str = "null"

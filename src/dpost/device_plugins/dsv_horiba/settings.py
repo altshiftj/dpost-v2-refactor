@@ -33,7 +33,7 @@ processed results and dissolution curves.
 **File types:**
 - `.wdb` - Raw database file
 - `.wdk` - Raw data configuration
-- `.wdp` - Raw data parameters  
+- `.wdp` - Raw data parameters
 - `.txt` - Exported dissolution results and curves
 
 **Analysis parameters:** Sample size, dissolution medium, temperature, stirring rate.

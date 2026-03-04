@@ -354,7 +354,6 @@ class KadiSyncManager:
 
     def _id_separator_for_record(self, local_record: LocalRecord) -> str:
         """Resolve identifier separator through an explicit, injectable policy seam."""
-
         try:
             separator = self._id_separator_resolver(local_record)
         except Exception as exc:

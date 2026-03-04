@@ -83,7 +83,6 @@ def bootstrap(
     ),
 ) -> BootstrapContext:
     """Initialise config, services, and app runtime stack for dpost startup."""
-
     resolved = settings or collect_startup_settings()
     logger.info(
         "Starting dpost with PC=%s, devices=%s",
@@ -143,7 +142,6 @@ def collect_startup_settings(
     load_env: bool = True,
 ) -> StartupSettings:
     """Resolve startup settings from env vars and plugin metadata."""
-
     env_source = load_bundled_env() if load_env else None
 
     resolved_pc_name = (pc_name or os.getenv("PC_NAME", "")).strip()
@@ -191,7 +189,6 @@ def startup_error(message: str) -> StartupError:
 
 def load_bundled_env(bundle_dir: Path | None = None) -> Path | None:
     """Load a bundled `.env` file when present."""
-
     env_dir = bundle_dir or _resolve_bundle_dir()
     env_path = env_dir / ".env"
     if not env_path.exists():

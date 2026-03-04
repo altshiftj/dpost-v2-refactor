@@ -63,34 +63,28 @@ class FileProbeResult:
         cls, confidence: float = 1.0, reason: str | None = None
     ) -> "FileProbeResult":
         """Return a result indicating the processor positively identified the file."""
-
         return cls(ProbeDecision.MATCH, confidence, reason)
 
     @classmethod
     def mismatch(cls, reason: str | None = None) -> "FileProbeResult":
         """Return a result indicating the processor determined the file does not belong."""
-
         return cls(ProbeDecision.MISMATCH, 0.0, reason)
 
     @classmethod
     def unknown(cls, reason: str | None = None) -> "FileProbeResult":
         """Return an inconclusive result, allowing other processors to decide."""
-
         return cls(ProbeDecision.UNKNOWN, 0.0, reason)
 
     def is_match(self) -> bool:
         """True when the probe produced a positive match."""
-
         return self.decision is ProbeDecision.MATCH
 
     def is_mismatch(self) -> bool:
         """True when the probe explicitly rejected the file."""
-
         return self.decision is ProbeDecision.MISMATCH
 
     def is_definitive(self) -> bool:
         """True when the probe has an explicit stance (match or mismatch)."""
-
         return self.decision is not ProbeDecision.UNKNOWN
 
 
@@ -109,19 +103,16 @@ class FileProcessorABS(ABC):
         a paired file). Returning a PreprocessingResult continues the pipeline
         using the declared effective path and optional prefix/extension overrides.
         """
-
         return PreprocessingResult.passthrough(src_path)
 
     def matches_file(self, filepath: str) -> bool:
         """Optional hint to quickly filter compatible files."""
-
         return True
 
     def is_appendable(
         self, record: LocalRecord, filename_prefix: str, extension: str
     ) -> bool:
         """Whether an item may be appended to an existing record."""
-
         return True
 
     def probe_file(self, filepath: str) -> FileProbeResult:
@@ -142,12 +133,10 @@ class FileProcessorABS(ABC):
                 - Return UNKNOWN for binary formats or when content is inconclusive to
                     allow other processors to decide.
         """
-
         return FileProbeResult.unknown()
 
     def should_queue_modified(self, path: str) -> bool:
         """Return True when modified events should be queued for this path."""
-
         return False
 
     def configure_runtime_context(
@@ -166,7 +155,6 @@ class FileProcessorABS(ABC):
         compatible. Processors may override this to capture runtime naming or
         storage settings that are only known after plugin instantiation.
         """
-
         return None
 
     @abstractmethod

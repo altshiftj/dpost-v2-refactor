@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dpost.application.config import PCConfig, PathSettings
+from dpost.application.config import PathSettings, PCConfig
 
 
 def build_config(override_paths: dict[str, Path] | None = None) -> PCConfig:

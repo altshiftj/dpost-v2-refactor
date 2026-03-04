@@ -28,7 +28,6 @@ def derive_candidate_metadata(
     parse_filename_fn: Callable[[str], tuple[str, str]] = parse_filename,
 ) -> CandidateMetadata:
     """Resolve prefix/extension and effective paths for candidate routing."""
-
     effective_path = Path(preprocessed.effective_path)
 
     parse_target = strip_internal_stage_suffix(effective_path)

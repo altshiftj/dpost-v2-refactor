@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from dpost.application.retry_delay_policy import RetryDelayPolicy
 from dpost.application.processing import ProcessingResult, ProcessingStatus
+from dpost.application.retry_delay_policy import RetryDelayPolicy
 
 
 @dataclass(frozen=True)
@@ -24,7 +24,6 @@ def build_retry_plan(
     minimum_delay_seconds: float = 0.1,
 ) -> RetryPlan | None:
     """Return a normalized retry plan when a processing result is deferred."""
-
     if result is None:
         return None
     if result.status is not ProcessingStatus.DEFERRED:

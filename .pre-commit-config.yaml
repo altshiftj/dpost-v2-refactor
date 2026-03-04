@@ -3,30 +3,30 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        files: ^(src/dpost/|tests/migration/)
+        files: ^(src/dpost-v2/|tests/dpost-v2/)
       - id: end-of-file-fixer
-        files: ^(src/dpost/|tests/migration/)
+        files: ^(src/dpost-v2/|tests/dpost-v2/)
       - id: check-ast
-        files: ^(src/dpost/|tests/migration/).*\.py$
+        files: ^(src/dpost-v2/|tests/dpost-v2/).*\.py$
       - id: debug-statements
-        files: ^(src/dpost/|tests/migration/).*\.py$
+        files: ^(src/dpost-v2/|tests/dpost-v2/).*\.py$
 
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
       - id: isort
         args: [--profile, black]
-        files: ^(src/dpost/|tests/migration/).*\.py$
+        files: ^(src/dpost-v2/|tests/dpost-v2/).*\.py$
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.13.1
     hooks:
       - id: ruff
         args: [--fix]
-        files: ^(src/dpost/|tests/migration/).*\.py$
+        files: ^(src/dpost-v2/|tests/dpost-v2/).*\.py$
 
   - repo: https://github.com/psf/black
     rev: 25.1.0
     hooks:
       - id: black
-        files: ^(src/dpost/|tests/migration/).*\.py$
+        files: ^(src/dpost-v2/|tests/dpost-v2/).*\.py$

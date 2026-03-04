@@ -1,5 +1,4 @@
-"""
-Filesystem and storage utilities used by the processing pipeline.
+"""Filesystem and storage utilities used by the processing pipeline.
 
 This module centralizes path computation for records/exceptions/rename
 destinations, file moves with fallbacks, and persisted record state JSON
@@ -316,7 +315,6 @@ def load_persisted_records(
     id_separator: str | None = None,
 ) -> dict[str, LocalRecord]:
     """Load persisted daily records from JSON into LocalRecord instances."""
-
     from dpost.domain.records.local_record import LocalRecord
 
     if json_path is None:

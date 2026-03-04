@@ -31,4 +31,3 @@ def emit_immediate_sync_error(
             error=exc,
         ),
     )
-

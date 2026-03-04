@@ -202,7 +202,9 @@ class PluginLoader:
             try:
                 self._pm.register(plugin, name=name)
             except pluggy.PluginValidationError as exc:
-                raise RuntimeError(f"Plugin {plugin!r} failed validation: {exc}") from exc
+                raise RuntimeError(
+                    f"Plugin {plugin!r} failed validation: {exc}"
+                ) from exc
             self.refresh()
 
     def _invoke_registration_hooks(self, *, devices: bool, pcs: bool) -> None:
@@ -316,7 +318,9 @@ class PluginLoader:
             try:
                 module = self._module_importer(module_name)
             except Exception as exc:  # noqa: BLE001
-                logger.error("Failed to import %s (%s): %s", module_name, log_context, exc)
+                logger.error(
+                    "Failed to import %s (%s): %s", module_name, log_context, exc
+                )
                 return
             if module in self._pm.get_plugins():
                 self._registered_modules.add(module_name)
