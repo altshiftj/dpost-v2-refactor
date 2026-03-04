@@ -27,7 +27,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Lint GitHub Actions workflows
-        uses: devops-actions/actionlint@v0.1.11
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args: .github/workflows
 
   quality:
     name: quality (py${{ matrix.python-version }})
@@ -85,12 +87,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[ci,dev]"
       - name: Unit test suite
+        shell: pwsh
         run: |
-          if [ -d "tests/unit/dpost_v2" ]; then
+          if (Test-Path "tests/unit/dpost_v2") {
             python -m pytest -q tests/unit/dpost_v2
-          else
-            echo "Skipping unit tests: tests/unit/dpost_v2 not present yet."
-          fi
+          } else {
+            Write-Host "Skipping unit tests: tests/unit/dpost_v2 not present."
+          }
 
   integration-tests:
     name: integration-tests (py3.12)
@@ -113,12 +116,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[ci,dev]"
       - name: Integration test suite
+        shell: pwsh
         run: |
-          if [ -d "tests/integration/dpost_v2" ]; then
+          if (Test-Path "tests/integration/dpost_v2") {
             python -m pytest -q tests/integration/dpost_v2
-          else
-            echo "Skipping integration tests: tests/integration/dpost_v2 not present yet."
-          fi
+          } else {
+            Write-Host "Skipping integration tests: tests/integration/dpost_v2 not present."
+          }
 
   bootstrap-smoke:
     name: bootstrap-smoke
@@ -143,12 +147,13 @@ jobs:
           DPOST_DEVICE_PLUGINS: sem_phenomxl2
           PC_NAME: ""
           DEVICE_PLUGINS: ""
+        shell: pwsh
         run: |
-          if [ -d "tests/unit/dpost_v2/runtime" ]; then
+          if (Test-Path "tests/unit/dpost_v2/runtime/test_bootstrap.py") {
             python -m pytest -q tests/unit/dpost_v2/runtime/test_bootstrap.py tests/unit/dpost_v2/runtime/test_bootstrap_additional.py
-          else
-            echo "Skipping bootstrap smoke tests: dpost_v2 runtime tests not present yet."
-          fi
+          } else {
+            Write-Host "Skipping bootstrap smoke tests: dpost_v2 runtime tests not present."
+          }
 
   package-build:
     name: package-build
