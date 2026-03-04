@@ -28,18 +28,18 @@
 - Why this matters: Contracts are the dependency boundary. They must be accurate before any lane writes code or pseudocode that depends on them.
 
 ### Checklist
-- [ ] `docs/pseudocode/application/contracts/context.md`: replace placeholders with `RuntimeContext`, `ProcessingContext`, constructors, and invariants.
-- [ ] `docs/pseudocode/application/contracts/events.md`: replace placeholders with event taxonomy and event payload contract.
-- [ ] `docs/pseudocode/application/contracts/plugin_contracts.md`: replace placeholders with plugin contract shape and capability semantics.
-- [ ] `docs/pseudocode/application/contracts/ports.md`: replace placeholders with port matrix and failure behavior.
+- [x] `docs/pseudocode/application/contracts/context.md`: replace placeholders with `RuntimeContext`, `ProcessingContext`, constructors, and invariants.
+- [x] `docs/pseudocode/application/contracts/events.md`: replace placeholders with event taxonomy and event payload contract.
+- [x] `docs/pseudocode/application/contracts/plugin_contracts.md`: replace placeholders with plugin contract shape and capability semantics.
+- [x] `docs/pseudocode/application/contracts/ports.md`: replace placeholders with port matrix and failure behavior.
 
 ### Manual Check
-- [ ] One-liner sanity check: every contract file has no `TBD` text.
-- [ ] Verify each contract doc includes explicit import/return types and at least one failure mode.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/application/contracts`.
+- [x] One-liner sanity check: every contract file has no `TBD` text.
+- [x] Verify each contract doc includes explicit import/return types and at least one failure mode.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/application/contracts`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated all four contract specs with concrete models/protocols, deterministic validation rules, and explicit failure/error taxonomies; verified `rg "TBD" docs/pseudocode/application/contracts` returns no matches.
 
 ---
 
