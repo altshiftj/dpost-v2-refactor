@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: Transactional record repository adapter (SQLite) implementing RecordStorePort.
 - Improvement goal: Introduce a cleanly owned V2 contract/module with explicit boundaries.
 ## Inputs
-- TBD
+- Record CRUD and query requests defined by `RecordStorePort`.
+- SQLite connection settings (path, timeout, pragma config, migration mode).
+- Transaction context (correlation id, optimistic concurrency expectations).
+- Record payloads already validated by domain/application layers.
 
 ## Outputs
-- TBD
+- Persist/query result envelopes containing record snapshots and revision metadata.
+- Transactional commit/rollback outcomes.
+- Typed storage errors normalized for application policies.
+- Migration/healthcheck status used at startup/composition.
 
 ## Invariants
-- TBD
+- Mutating operations run in explicit transactions.
+- Schema version is validated before first runtime write.
+- Optimistic concurrency checks enforce monotonic record revisions.
+- Adapter returns contract models only, never raw sqlite row tuples.
 
 ## Failure Modes
-- TBD
+- Database open/connect failure raises `RecordStoreConnectionError`.
+- Schema mismatch/migration failure raises `RecordStoreSchemaError`.
+- Concurrency conflict raises `RecordStoreConflictError`.
+- SQL integrity/timeout errors raise `RecordStoreIntegrityError` or `RecordStoreTimeoutError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Initialize SQLite connection with configured pragmas and validate schema version.
+2. Implement CRUD/query methods mapping contract requests to parameterized SQL statements.
+3. Wrap mutating operations in transaction context with commit/rollback handling.
+4. Map SQLite exceptions to typed `RecordStore*` errors.
+5. Convert row results into contract/domain record models.
+6. Expose healthcheck and migration status methods for startup composition checks.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: transaction boundaries, row-to-model conversion, concurrency conflict mapping, and schema-version validation.
+- integration: application records service persists and queries records via SQLite adapter with deterministic rollback behavior on failures.
 
 
 

@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: No-op sync backend for offline/testing mode.
 - Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
-- TBD
+- Sync requests (record id, payload metadata, operation type) from application runtime services.
+- Correlation context for observability.
+- No-op policy configuration (reason message, optional simulate-latency flag).
+- Healthcheck/startup hooks.
 
 ## Outputs
-- TBD
+- Structured sync response with terminal type `skipped_noop`.
+- Deterministic reason code indicating offline/noop mode.
+- Optional observability event payloads for skipped sync calls.
+- Healthcheck response indicating adapter availability.
 
 ## Invariants
-- TBD
+- Adapter performs no network or remote side effects.
+- Same input request always produces same `skipped_noop` outcome.
+- Adapter response shape matches `SyncPort` contract exactly.
+- No-op adapter remains safe for tests and offline runtime mode.
 
 ## Failure Modes
-- TBD
+- Malformed sync request payload raises `NoopSyncInputError`.
+- Contract mismatch in request type raises `NoopSyncContractError`.
+- Optional simulated latency cancellation yields `NoopSyncCancelledError`.
+- Healthcheck misuse before initialization yields `NoopSyncLifecycleError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Validate incoming sync request against `SyncPort` request contract.
+2. Build deterministic skipped outcome with configured reason code/message.
+3. Optionally emit observability trace/metric for skipped sync.
+4. Respect simulated latency/cancellation flags if configured for tests.
+5. Return `skipped_noop` response without external side effects.
+6. Implement simple healthcheck/initialize/shutdown lifecycle hooks.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: deterministic skipped outcomes, malformed input handling, and lifecycle hook behavior.
+- integration: post-persist immediate sync paths in offline mode receive `skipped_noop` outcomes and continue without failures.
 
 
 

@@ -144,28 +144,28 @@
 - Why this matters: infra files define integration behavior and must explicitly separate adapter behavior from domain logic.
 
 ### Checklist
-- [ ] `docs/pseudocode/infrastructure/storage/file_ops.md`: replace placeholders with explicit file operation contract and error taxonomy.
-- [ ] `docs/pseudocode/infrastructure/storage/record_store.md`: replace placeholders with persistence model, transaction behavior, and migration notes.
-- [ ] `docs/pseudocode/infrastructure/storage/staging_dirs.md`: replace placeholders with directory derivation and cleanup policy.
-- [ ] `docs/pseudocode/infrastructure/sync/noop.md`: replace placeholders with no-op mode semantics and traceability behavior.
-- [ ] `docs/pseudocode/infrastructure/sync/kadi.md`: replace placeholders with sync contract mapping and conflict handling.
-- [ ] `docs/pseudocode/infrastructure/observability/logging.md`: replace placeholders with structured logging boundaries.
-- [ ] `docs/pseudocode/infrastructure/observability/metrics.md`: replace placeholders with metric dimensions and cardinality controls.
-- [ ] `docs/pseudocode/infrastructure/observability/tracing.md`: replace placeholders with correlation ID and stage span behavior.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/factory.md`: replace placeholders with adapter selection strategy.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/adapters.md`: replace placeholders with adapter contracts and capability matrix.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/headless.md`: replace placeholders with headless lifecycle and deterministic outputs.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/tkinter.md`: replace placeholders with desktop-only behavior and fallback conditions.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/desktop.md`: replace placeholders with desktop orchestration details.
-- [ ] `docs/pseudocode/infrastructure/runtime/ui/dialogs.md`: replace placeholders with prompt patterns and non-blocking concerns.
+- [x] `docs/pseudocode/infrastructure/storage/file_ops.md`: replace placeholders with explicit file operation contract and error taxonomy.
+- [x] `docs/pseudocode/infrastructure/storage/record_store.md`: replace placeholders with persistence model, transaction behavior, and migration notes.
+- [x] `docs/pseudocode/infrastructure/storage/staging_dirs.md`: replace placeholders with directory derivation and cleanup policy.
+- [x] `docs/pseudocode/infrastructure/sync/noop.md`: replace placeholders with no-op mode semantics and traceability behavior.
+- [x] `docs/pseudocode/infrastructure/sync/kadi.md`: replace placeholders with sync contract mapping and conflict handling.
+- [x] `docs/pseudocode/infrastructure/observability/logging.md`: replace placeholders with structured logging boundaries.
+- [x] `docs/pseudocode/infrastructure/observability/metrics.md`: replace placeholders with metric dimensions and cardinality controls.
+- [x] `docs/pseudocode/infrastructure/observability/tracing.md`: replace placeholders with correlation ID and stage span behavior.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/factory.md`: replace placeholders with adapter selection strategy.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/adapters.md`: replace placeholders with adapter contracts and capability matrix.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/headless.md`: replace placeholders with headless lifecycle and deterministic outputs.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/tkinter.md`: replace placeholders with desktop-only behavior and fallback conditions.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/desktop.md`: replace placeholders with desktop orchestration details.
+- [x] `docs/pseudocode/infrastructure/runtime/ui/dialogs.md`: replace placeholders with prompt patterns and non-blocking concerns.
 
 ### Manual Check
-- [ ] Confirm all infrastructure pseudocode files include `Inputs`, `Outputs`, and `Failure Modes`.
-- [ ] Confirm no cross-layer imports are implied except through application contracts.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/infrastructure`.
+- [x] Confirm all infrastructure pseudocode files include `Inputs`, `Outputs`, and `Failure Modes`.
+- [x] Confirm no cross-layer imports are implied except through application contracts.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/infrastructure`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated storage/sync/observability/UI adapter specs with explicit side-effect ownership, typed adapter error taxonomy, and contract-bound inputs/outputs; verified `rg "TBD" docs/pseudocode/infrastructure` returns no matches.
 
 ---
 

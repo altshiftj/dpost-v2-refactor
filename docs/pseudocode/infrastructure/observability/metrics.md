@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: Metrics emitters/counters/timers aligned with stage outcomes.
 - Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
-- TBD
+- Metric emission requests from runtime/ingestion/stage outcomes.
+- Metric configuration (namespace, enabled flags, backend settings, flush intervals).
+- Dimension/tag maps (mode, profile, stage, outcome category).
+- Timing samples and counter increments.
 
 ## Outputs
-- TBD
+- Counter/timer/gauge emission calls to configured metrics backend.
+- Normalized emission result (`emitted`, `dropped`, `backend_error`).
+- Cardinality guard diagnostics for dropped high-cardinality tags.
+- Runtime metric snapshot for health/diagnostic reporting.
 
 ## Invariants
-- TBD
+- Metric names are namespaced and stable.
+- Tag dimensions are bounded by cardinality policy.
+- Emission path is non-blocking for critical runtime loops.
+- Backend failures are captured as typed results, not raised as uncontrolled exceptions.
 
 ## Failure Modes
-- TBD
+- Invalid metric name or type yields `MetricsValidationError`.
+- Cardinality guard violation yields `MetricsCardinalityError`/drop result.
+- Backend unavailable or timeout yields `MetricsBackendError`.
+- Serialization/type mismatch in metric value yields `MetricsValueError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Validate metric request name/type/value against configured schema and namespace rules.
+2. Enforce tag cardinality limits and normalize tag ordering.
+3. Dispatch counter/timer/gauge operation to backend adapter.
+4. Capture backend response status/latency and map failures to typed metric errors.
+5. Return emission result indicating emitted/dropped/error behavior.
+6. Provide lightweight no-op backend for disabled metrics mode.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: metric name/value validation, cardinality guard behavior, and backend error mapping.
+- integration: ingestion stage outcomes publish metrics with bounded tags and do not block runtime when backend fails.
 
 
 
