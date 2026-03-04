@@ -246,16 +246,14 @@ class SqliteRecordStoreAdapter:
                     (str(expected),),
                 )
 
-        cursor.execute(
-            """
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS records (
                 record_id TEXT PRIMARY KEY,
                 revision INTEGER NOT NULL,
                 payload_json TEXT NOT NULL,
                 updated_at TEXT NOT NULL
             )
-            """
-        )
+            """)
 
     @staticmethod
     def _normalize_record_input(record: object) -> dict[str, Any]:
