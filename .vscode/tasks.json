@@ -222,6 +222,125 @@
         "focus": false
       },
       "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-core-4",
+      "dependsOn": [
+        "codex:lanes:start-core-4",
+        "lane:prompt:core-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:core-4-pack:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/core-4-launch-pack.md' -Raw | Set-Clipboard; Write-Host 'Copied: core-4 launch pack'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:contracts-interfaces:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/contracts-interfaces.md' -Raw | Set-Clipboard; Write-Host 'Copied: contracts-interfaces prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:startup-bootstrap:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/startup-bootstrap.md' -Raw | Set-Clipboard; Write-Host 'Copied: startup-bootstrap prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:domain-core-models:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/domain-core-models.md' -Raw | Set-Clipboard; Write-Host 'Copied: domain-core-models prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:ingestion-pipeline:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/ingestion-pipeline.md' -Raw | Set-Clipboard; Write-Host 'Copied: ingestion-pipeline prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:infrastructure-adapters:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/infrastructure-adapters.md' -Raw | Set-Clipboard; Write-Host 'Copied: infrastructure-adapters prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:plugins-device-system:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/plugins-device-system.md' -Raw | Set-Clipboard; Write-Host 'Copied: plugins-device-system prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:runtime-composition:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/runtime-composition.md' -Raw | Set-Clipboard; Write-Host 'Copied: runtime-composition prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:docs-pseudocode-traceability:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/docs-pseudocode-traceability.md' -Raw | Set-Clipboard; Write-Host 'Copied: docs-pseudocode-traceability prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:tests-v2-harness:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/tests-v2-harness.md' -Raw | Set-Clipboard; Write-Host 'Copied: tests-v2-harness prompt'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:ci-v2-gates:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/ci-v2-gates.md' -Raw | Set-Clipboard; Write-Host 'Copied: ci-v2-gates prompt'"
+      ],
+      "problemMatcher": []
     }
   ]
 }
