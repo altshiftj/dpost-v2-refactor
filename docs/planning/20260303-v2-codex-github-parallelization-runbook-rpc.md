@@ -68,6 +68,49 @@ powershell -File scripts/github/set-main-branch-protection.ps1 -Repository "<own
 - `rewrite/v2`: integration trunk for V2.
 - `rewrite/v2-lane-<lane-name>-<short-topic>`: model execution branches.
 
+### 6. Branch Bootstrap (Terminal-Ready)
+Use this once to create trunk + lane branches for parallel execution.
+
+```powershell
+git checkout main
+git pull --ff-only origin main
+git checkout -B rewrite/v2
+git push -u origin rewrite/v2
+
+$lanes = @(
+  "rewrite/v2-lane-contracts-interfaces",
+  "rewrite/v2-lane-startup-bootstrap",
+  "rewrite/v2-lane-domain-core-models",
+  "rewrite/v2-lane-ingestion-pipeline",
+  "rewrite/v2-lane-infrastructure-adapters",
+  "rewrite/v2-lane-plugins-device-system",
+  "rewrite/v2-lane-runtime-composition",
+  "rewrite/v2-lane-docs-pseudocode-traceability",
+  "rewrite/v2-lane-tests-v2-harness",
+  "rewrite/v2-lane-ci-v2-gates"
+)
+
+foreach ($lane in $lanes) {
+  git checkout rewrite/v2
+  git checkout -B $lane
+  git push -u origin $lane
+}
+
+git checkout rewrite/v2
+```
+
+### 7. Lane Catalog (Autonomous Parallel Agents)
+- `rewrite/v2-lane-contracts-interfaces`: contracts and cross-lane interface surfaces.
+- `rewrite/v2-lane-startup-bootstrap`: startup sequence and bootstrap orchestration.
+- `rewrite/v2-lane-domain-core-models`: domain models and pure business semantics.
+- `rewrite/v2-lane-ingestion-pipeline`: ingestion and processing orchestration stages.
+- `rewrite/v2-lane-infrastructure-adapters`: infrastructure adapters and side-effect boundaries.
+- `rewrite/v2-lane-plugins-device-system`: plugin host/discovery plus device plugin integration points.
+- `rewrite/v2-lane-runtime-composition`: runtime composition and dependency wiring.
+- `rewrite/v2-lane-docs-pseudocode-traceability`: pseudocode/spec traceability and docs consistency.
+- `rewrite/v2-lane-tests-v2-harness`: V2-specific test harnesses and deterministic fixtures.
+- `rewrite/v2-lane-ci-v2-gates`: CI workflows/check gates scoped to V2 execution paths.
+
 ## Part 2: Model-Orchestration Contract
 
 ### 1. Lane Ownership (No Overlap Rule)
