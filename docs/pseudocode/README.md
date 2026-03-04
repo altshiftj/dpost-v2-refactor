@@ -34,6 +34,18 @@
 ## Active Execution Baseline (2026-03-04)
 - Active checklist:
   - `docs/checklists/20260304-v2-pseudocode-population-checklist.md`
+- Active traceability checklist:
+  - `docs/checklists/20260304-v2-pseudocode-traceability-lane-completion-checklist.md`
+- Active traceability refresh checklist:
+  - `docs/checklists/20260304-v2-pseudocode-traceability-refresh-checklist.md`
+- Active traceability gap-closure checklist:
+  - `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`
+- Active traceability work-summary checklist:
+  - `docs/checklists/20260304-v2-pseudocode-traceability-work-summary-checklist.md`
+- Active traceability report:
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`
+- Active traceability matrix:
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`
 - Frozen execution order:
   - `contracts -> domain -> startup -> runtime -> ingestion -> records/session -> infrastructure -> plugins -> review`
 - Completion snapshot:

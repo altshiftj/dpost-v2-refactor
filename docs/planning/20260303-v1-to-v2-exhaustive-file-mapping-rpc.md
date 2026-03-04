@@ -21,6 +21,21 @@
 - If a V2 target path changes here, update the corresponding pseudocode path in the same slice before implementation starts.
 - `docs/pseudocode/v2` is retired and must not be referenced.
 
+## Implementation Traceability Snapshot (2026-03-04)
+- Snapshot source artifacts:
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`
+  - `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`
+- Pseudocode specs audited: `65`
+- `src/dpost_v2` modules present for pseudocode `id` targets: `63`
+- Pseudocode `id` targets still missing implementation: `2`
+  - `src/dpost_v2/__main__.py`
+  - `src/dpost_v2/application/records/service.py`
+- Implemented pseudocode targets with direct `tests/dpost_v2/**/test_*.py` imports: `61`
+- Implemented pseudocode targets without direct module test import: `2`
+  - `src/dpost_v2/plugins/contracts.py`
+  - `src/dpost_v2/plugins/devices/_device_template/processor.py`
+
 ## Target V2 Topology (Planned)
 ```text
 src/dpost_v2/
