@@ -1,0 +1,55 @@
+{
+  "cases": [
+    {
+      "case_id": "case-001",
+      "filename": "incoming/a01.txt",
+      "candidate": {
+        "source_path": "incoming/a01.txt",
+        "event_type": "created"
+      },
+      "expected": {
+        "route": "processed",
+        "record_transition": "created->persisted",
+        "sync_outcome": "queued"
+      },
+      "tags": [
+        "filename",
+        "routing"
+      ]
+    },
+    {
+      "case_id": "case-002",
+      "filename": "incoming/b01.txt",
+      "candidate": {
+        "source_path": "incoming/b01.txt",
+        "event_type": "modified"
+      },
+      "expected": {
+        "route": "processed",
+        "record_transition": "persisted->updated",
+        "sync_outcome": "queued"
+      },
+      "tags": [
+        "records",
+        "sync"
+      ]
+    },
+    {
+      "case_id": "case-003",
+      "filename": "incoming/c01.txt",
+      "candidate": {
+        "source_path": "incoming/c01.txt",
+        "event_type": "created"
+      },
+      "expected": {
+        "route": "exceptions",
+        "record_transition": "created->rejected",
+        "sync_outcome": "skipped"
+      },
+      "tags": [
+        "routing",
+        "exceptions"
+      ]
+    }
+  ]
+}

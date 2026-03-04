@@ -21,6 +21,23 @@
 - If a V2 target path changes here, update the corresponding pseudocode path in the same slice before implementation starts.
 - `docs/pseudocode/v2` is retired and must not be referenced.
 
+## Implementation Traceability Snapshot (2026-03-04)
+- Snapshot source artifacts:
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`
+  - `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`
+  - `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`
+- Pseudocode specs audited: `65`
+- `src/dpost_v2` modules present for pseudocode `id` targets: `65`
+- Pseudocode `id` targets still missing implementation: `0`
+- Implemented pseudocode targets with direct `tests/dpost_v2/**/test_*.py` imports: `65`
+- Implemented pseudocode targets without direct module test import: `0`
+
+## Mapping Drift Reconciliation (Docs-First)
+- Canonical startup dependency target for V2 remains:
+  - `src/dpost_v2/runtime/startup_dependencies.py`
+- Selected package-level `__init__.py` rows are tracked as non-blocking in the current namespace-package strategy unless explicit export/import boundaries require concrete files.
+- Gap status for active execution is driven by pseudocode `id` targets and direct test imports in the traceability matrix.
+
 ## Target V2 Topology (Planned)
 ```text
 src/dpost_v2/
@@ -319,7 +336,7 @@ src/dpost_v2/
 | `src/dpost/infrastructure/runtime_adapters/desktop_ui.py` | `src/dpost_v2/infrastructure/runtime/ui/desktop.py` | Move | Infra-UI | Moves UI runtime adapter desktop_ui.py to dedicated UI infrastructure lane. |
 | `src/dpost/infrastructure/runtime_adapters/dialogs.py` | `src/dpost_v2/infrastructure/runtime/ui/dialogs.py` | Move | Infra-UI | Moves UI runtime adapter dialogs.py to dedicated UI infrastructure lane. |
 | `src/dpost/infrastructure/runtime_adapters/headless_ui.py` | `src/dpost_v2/infrastructure/runtime/ui/headless.py` | Move | Infra-UI | Moves UI runtime adapter headless_ui.py to dedicated UI infrastructure lane. |
-| `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py` | `src/dpost_v2/infrastructure/runtime/ui/startup_dependencies.py` | Move | Infra-UI | Moves UI runtime adapter startup_dependencies.py to dedicated UI infrastructure lane. |
+| `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py` | `src/dpost_v2/runtime/startup_dependencies.py` | Move | Startup-Core | Consolidates startup dependency resolution in the canonical runtime startup module. |
 | `src/dpost/infrastructure/runtime_adapters/tkinter_ui.py` | `src/dpost_v2/infrastructure/runtime/ui/tkinter.py` | Move | Infra-UI | Moves UI runtime adapter tkinter_ui.py to dedicated UI infrastructure lane. |
 | `src/dpost/infrastructure/runtime_adapters/ui_adapters.py` | `src/dpost_v2/infrastructure/runtime/ui/adapters.py` | Move | Infra-UI | Moves UI runtime adapter ui_adapters.py to dedicated UI infrastructure lane. |
 | `src/dpost/infrastructure/runtime_adapters/ui_factory.py` | `src/dpost_v2/infrastructure/runtime/ui/factory.py` | Move | Infra-UI | Moves UI runtime adapter ui_factory.py to dedicated UI infrastructure lane. |

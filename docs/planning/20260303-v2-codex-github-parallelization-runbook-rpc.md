@@ -21,6 +21,7 @@
 - [Pseudocode README](../pseudocode/README.md)
 - [Pseudocode module specs](../pseudocode/)
 - [Public CI workflow](../../.github/workflows/public-ci.yml)
+- [Rewrite CI workflow](../../.github/workflows/rewrite-ci.yml)
 - [Required checks config](../../.github/branch-protection/main.required-checks.json)
 
 ## Part 1: Operator Setup (Codex + GitHub)
@@ -43,10 +44,19 @@
 5. Run a smoke test: ask Codex to create a docs-only branch and PR changing one markdown line, then confirm the PR appears in GitHub with CI checks attached.
 
 ### 3. Enable and Verify CI
-1. Confirm workflow exists:
-- `.github/workflows/public-ci.yml`
-2. Trigger one manual run (`workflow_dispatch`) from GitHub Actions.
-3. Ensure required checks from `.github/branch-protection/main.required-checks.json` are green at least once.
+1. Confirm workflows exist:
+- `.github/workflows/public-ci.yml` (main/master release gate)
+- `.github/workflows/rewrite-ci.yml` (rewrite trunk + lane fast gate)
+2. Trigger one manual run (`workflow_dispatch`) for each workflow from GitHub Actions.
+3. Ensure required checks from `.github/branch-protection/main.required-checks.json` are green at least once on `main`.
+4. For `rewrite/v2` and `rewrite/v2-lane-*`, verify lightweight checks run on push/PR:
+- `rewrite-workflow-lint`
+- `rewrite-artifact-hygiene`
+- `rewrite-v2-quality`
+- `rewrite-v2-tests`
+5. For `rewrite/v2` push events, verify trunk integration check also runs:
+- `rewrite-v2-integration`
+6. Keep branch protection required contexts tied to `main` only. Rewrite checks are integration governance and should stay lightweight.
 
 ### 4. Apply Branch Protection (Terminal-Ready)
 1. Set token:
@@ -67,6 +77,49 @@ powershell -File scripts/github/set-main-branch-protection.ps1 -Repository "<own
 - `main`: protected, release quality.
 - `rewrite/v2`: integration trunk for V2.
 - `rewrite/v2-lane-<lane-name>-<short-topic>`: model execution branches.
+
+### 6. Branch Bootstrap (Terminal-Ready)
+Use this once to create trunk + lane branches for parallel execution.
+
+```powershell
+git checkout main
+git pull --ff-only origin main
+git checkout -B rewrite/v2
+git push -u origin rewrite/v2
+
+$lanes = @(
+  "rewrite/v2-lane-contracts-interfaces",
+  "rewrite/v2-lane-startup-bootstrap",
+  "rewrite/v2-lane-domain-core-models",
+  "rewrite/v2-lane-ingestion-pipeline",
+  "rewrite/v2-lane-infrastructure-adapters",
+  "rewrite/v2-lane-plugins-device-system",
+  "rewrite/v2-lane-runtime-composition",
+  "rewrite/v2-lane-docs-pseudocode-traceability",
+  "rewrite/v2-lane-tests-v2-harness",
+  "rewrite/v2-lane-ci-v2-gates"
+)
+
+foreach ($lane in $lanes) {
+  git checkout rewrite/v2
+  git checkout -B $lane
+  git push -u origin $lane
+}
+
+git checkout rewrite/v2
+```
+
+### 7. Lane Catalog (Autonomous Parallel Agents)
+- `rewrite/v2-lane-contracts-interfaces`: contracts and cross-lane interface surfaces.
+- `rewrite/v2-lane-startup-bootstrap`: startup sequence and bootstrap orchestration.
+- `rewrite/v2-lane-domain-core-models`: domain models and pure business semantics.
+- `rewrite/v2-lane-ingestion-pipeline`: ingestion and processing orchestration stages.
+- `rewrite/v2-lane-infrastructure-adapters`: infrastructure adapters and side-effect boundaries.
+- `rewrite/v2-lane-plugins-device-system`: plugin host/discovery plus device plugin integration points.
+- `rewrite/v2-lane-runtime-composition`: runtime composition and dependency wiring.
+- `rewrite/v2-lane-docs-pseudocode-traceability`: pseudocode/spec traceability and docs consistency.
+- `rewrite/v2-lane-tests-v2-harness`: V2-specific test harnesses and deterministic fixtures.
+- `rewrite/v2-lane-ci-v2-gates`: CI workflows/check gates scoped to V2 execution paths.
 
 ## Part 2: Model-Orchestration Contract
 
@@ -205,7 +258,8 @@ Output requirements:
 
 ## Part 7: Manual Check
 - Open one lane PR and verify it edited only allowed files.
-- Confirm required checks execute and block failing PRs.
+- Confirm lane PRs to `rewrite/v2` run `Rewrite CI` lightweight checks.
+- Confirm PRs to `main` run `Public CI` required checks and fail-closed on violations.
 - Confirm pseudocode-linked implementation notes are present in PR description.
 - Confirm `rewrite/v2` branch remains green after merges.
 

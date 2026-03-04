@@ -5,5 +5,11 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "github-enterprise.uri": "https://git.rz.tu-bs.de/",
-    "chatgpt.openOnStartup": true
+    "chatgpt.openOnStartup": true,
+    "terminal.integrated.automationProfile.windows": {
+        "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+        "args": [
+            "-NoLogo"
+        ]
+    }
 }

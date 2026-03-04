@@ -1,0 +1,41 @@
+You are working in D:\Repos\d-post\.worktrees\tests-v2-harness.
+
+Lane: tests-v2-harness
+Worktree mode (mandatory):
+- Run all commands, edits, and commits from this lane worktree path only.
+- Do not run lane implementation work from D:\Repos\d-post root checkout.
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
+Goal:
+Build V2 test harness/fixtures/utilities in TDD-friendly form.
+
+Allowed edits:
+- tests/dpost_v2/conftest.py
+- tests/dpost_v2/_support/**
+- tests/dpost_v2/harness/**
+- tests/dpost_v2/smoke/**
+- src/dpost_v2/testing/** (only shared test-support code when unavoidable)
+
+Canonical references:
+- docs/pseudocode/** (testing-related)
+- docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
+
+TDD protocol (mandatory):
+1. Add failing tests for harness behavior itself.
+2. Implement minimal harness utilities/fixtures.
+3. Refactor while keeping test ergonomics and determinism.
+
+Constraints:
+- Prefer test-side utilities under `tests/dpost_v2`.
+- Keep fixtures deterministic.
+- Do not modify lane-owned behavior tests under `tests/dpost_v2/application/**`, `tests/dpost_v2/domain/**`, `tests/dpost_v2/infrastructure/**`, or `tests/dpost_v2/plugins/**`.
+- If an unavoidable harness API touch-up is needed in an existing test, keep it minimal and document it in output.
+
+Output:
+- Files changed
+- Tests added/updated
+- Commands run and results
+- Risks/assumptions
+

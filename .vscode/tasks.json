@@ -1,0 +1,646 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "codex:lanes:setup-worktrees",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/setup-worktrees.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:coordination",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-coordination.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-core-4",
+      "dependsOn": [
+        "lane:contracts-interfaces",
+        "lane:startup-bootstrap",
+        "lane:domain-core-models",
+        "lane:ingestion-pipeline",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-next-4",
+      "dependsOn": [
+        "lane:docs-pseudocode-traceability",
+        "lane:ci-v2-gates",
+        "lane:plugins-device-system",
+        "lane:infrastructure-adapters",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-gap-closure-4",
+      "dependsOn": [
+        "lane:startup-bootstrap",
+        "lane:records-core",
+        "lane:plugins-device-system",
+        "lane:docs-pseudocode-traceability",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-all",
+      "dependsOn": [
+        "lane:contracts-interfaces",
+        "lane:startup-bootstrap",
+        "lane:domain-core-models",
+        "lane:ingestion-pipeline",
+        "lane:infrastructure-adapters",
+        "lane:plugins-device-system",
+        "lane:runtime-composition",
+        "lane:docs-pseudocode-traceability",
+        "lane:tests-v2-harness",
+        "lane:ci-v2-gates",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:contracts-interfaces",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "contracts-interfaces"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:startup-bootstrap",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "startup-bootstrap"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:records-core",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "records-core"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:domain-core-models",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "domain-core-models"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:ingestion-pipeline",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "ingestion-pipeline"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:infrastructure-adapters",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "infrastructure-adapters"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:plugins-device-system",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "plugins-device-system"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:runtime-composition",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "runtime-composition"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:docs-pseudocode-traceability",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "docs-pseudocode-traceability"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:tests-v2-harness",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "tests-v2-harness"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:ci-v2-gates",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "ci-v2-gates"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-core-4",
+      "dependsOn": [
+        "codex:lanes:start-core-4",
+        "lane:prompt:core-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-next-4",
+      "dependsOn": [
+        "codex:lanes:start-next-4",
+        "lane:prompt:next-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-gap-closure-4",
+      "dependsOn": [
+        "codex:lanes:start-gap-closure-4",
+        "lane:prompt:gap-closure-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:core-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/core-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:next-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/next-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:gap-closure-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/gap-closure-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:contracts-interfaces:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/contracts-interfaces.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:startup-bootstrap:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/startup-bootstrap.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:records-core:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/records-core.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:domain-core-models:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/domain-core-models.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:ingestion-pipeline:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/ingestion-pipeline.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:infrastructure-adapters:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/infrastructure-adapters.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:plugins-device-system:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/plugins-device-system.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:runtime-composition:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/runtime-composition.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:docs-pseudocode-traceability:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/docs-pseudocode-traceability.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:tests-v2-harness:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/tests-v2-harness.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:ci-v2-gates:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/ci-v2-gates.md"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}
