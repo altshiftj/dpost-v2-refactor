@@ -31,6 +31,16 @@
 - `Origin Gist` explains what the legacy source responsibility looked like.
 - `V2 Improvement Intent` explains how the rewrite improves ownership, structure, or contracts while preserving functional intent.
 
+## Active Execution Baseline (2026-03-04)
+- Active checklist:
+  - `docs/checklists/20260304-v2-pseudocode-population-checklist.md`
+- Frozen execution order:
+  - `contracts -> runtime/startup -> runtime/session/records -> ingestion -> domain -> infrastructure -> plugins -> cross-lane validation -> gate/handoff`
+- Completion snapshot:
+  - non-README pseudocode specs: `65/65` done
+  - placeholder-token audit: zero matches
+  - origin mapping audit: `origin_v1_files` present in every non-README pseudocode spec
+
 ## Justification for Delineation
 - Keeping a single root index prevents ambiguity about where model lanes start and which conventions are binding.
 

@@ -13,14 +13,14 @@
 - Why this matters: Without a frozen reference set and execution order, file-level population drifts and becomes inconsistent across lanes.
 
 ### Checklist
-- [ ] Create a one-pass inventory of `docs/pseudocode` markdown files and tag each as `pending`, `in-progress`, or `done`.
-- [ ] Add `origin` mappings for each pending file from `20260303-v1-to-v2-exhaustive-file-mapping-rpc.md` (if no direct V1 match, mark as design-target only).
-- [ ] Add a short `v2-improvement-intent` note to each file describing why this file exists in the clean-room rewrite.
-- [ ] Agree a single pass order: `contracts -> domain -> startup -> runtime -> ingestion -> records/session -> infrastructure -> plugins -> review`.
-- [ ] Freeze that order in `docs/checklists/20260304-v2-pseudocode-population-checklist.md`.
+- [x] Create a one-pass inventory of `docs/pseudocode` markdown files and tag each as `pending`, `in-progress`, or `done`.
+- [x] Add `origin` mappings for each pending file from `20260303-v1-to-v2-exhaustive-file-mapping-rpc.md` (if no direct V1 match, mark as design-target only).
+- [x] Add a short `v2-improvement-intent` note to each file describing why this file exists in the clean-room rewrite.
+- [x] Agree a single pass order: `contracts -> domain -> startup -> runtime -> ingestion -> records/session -> infrastructure -> plugins -> review`.
+- [x] Freeze that order in `docs/checklists/20260304-v2-pseudocode-population-checklist.md`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: inventoried 65 non-README specs, preserved/validated origin mappings and V2 improvement intent sections, and executed a frozen lane order with section checkpoint commits.
 
 ---
 
@@ -198,19 +198,19 @@
 - Why this matters: even if each doc is individually populated, cross-lane coherence is the main failure mode before V2 coding starts.
 
 ### Checklist
-- [ ] For every `docs/pseudocode` file with `id` frontmatter, ensure `id` path matches the documented target V2 path.
-- [ ] For every populated file, add/update `origin`/`source` references to mapped V1 files.
-- [ ] For every populated file, add at least one "Tests To Implement" entry with explicit unit/integration intent.
-- [ ] Add/refresh top-level `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md` pointers to this checklist as the active population baseline.
-- [ ] Add/refresh `docs/pseudocode/README.md` if needed with checklist execution order and completion status.
+- [x] For every `docs/pseudocode` file with `id` frontmatter, ensure `id` path matches the documented target V2 path.
+- [x] For every populated file, add/update `origin`/`source` references to mapped V1 files.
+- [x] For every populated file, add at least one "Tests To Implement" entry with explicit unit/integration intent.
+- [x] Add/refresh top-level `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md` pointers to this checklist as the active population baseline.
+- [x] Add/refresh `docs/pseudocode/README.md` if needed with checklist execution order and completion status.
 
 ### Manual Check
-- [ ] `rg "TBD" docs/pseudocode` returns zero matches after completion.
-- [ ] `rg "origin|source|v1" docs/pseudocode -n` should show at least one origin reference in each previously-placeholder file.
-- [ ] Confirm the mapping artifact still reflects the same target files (quick diff spot-check for `__main__`, `runtime`, `contracts`, and three plugin files).
+- [x] `rg "TBD" docs/pseudocode` returns zero matches after completion.
+- [x] `rg "origin|source|v1" docs/pseudocode -n` should show at least one origin reference in each previously-placeholder file.
+- [x] Confirm the mapping artifact still reflects the same target files (quick diff spot-check for `__main__`, `runtime`, `contracts`, and three plugin files).
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: ran global placeholder/origin audits, validated `id` path alignment for all 65 specs, refreshed blueprint + pseudocode README pointers, and spot-checked mapping entries for startup/runtime/contracts/plugins targets.
 
 ---
 
@@ -218,15 +218,15 @@
 - Why this matters: this keeps the overnight run actionable and resumable by the next model.
 
 ### Checklist
-- [ ] Generate final status matrix: `pending | done` per file.
-- [ ] Add completion summary in `docs/reports/` (or equivalent) with parity-risk assessment for pseudocode completeness.
-- [ ] Save and stage all changes with a commit titled `docs: populate v2 pseudocode coverage map`.
-- [ ] Include a short handoff message in the final run notes with remaining gaps only.
+- [x] Generate final status matrix: `pending | done` per file.
+- [x] Add completion summary in `docs/reports/` (or equivalent) with parity-risk assessment for pseudocode completeness.
+- [x] Save and stage all changes with a commit titled `docs: populate v2 pseudocode coverage map`.
+- [x] Include a short handoff message in the final run notes with remaining gaps only.
 
 ### Manual Check
-- [ ] Verify all modified files are in the intended scope (`docs/pseudocode` and checklist/report documents only).
-- [ ] Confirm no code under `src/` was edited in this pass unless explicitly requested.
+- [x] Verify all modified files are in the intended scope (`docs/pseudocode`, checklist/report documents, and required planning baseline pointer update).
+- [x] Confirm no code under `src/` was edited in this pass unless explicitly requested.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: generated per-file completion matrix + parity-risk report in `docs/reports/20260304-v2-pseudocode-population-report.md`; final checkpoint committed with required title.
 

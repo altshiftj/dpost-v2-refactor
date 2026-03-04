@@ -16,6 +16,8 @@
 
 ## Canonical Design Specs
 - The executable design contract for V2 lives under [docs/pseudocode](../pseudocode/).
+- Active pseudocode population baseline checklist:
+  - [20260304-v2-pseudocode-population-checklist](../checklists/20260304-v2-pseudocode-population-checklist.md)
 - Planning decisions in this RPC must map to pseudocode modules in:
   - [README](../pseudocode/README.md)
   - [Main entry point](../pseudocode/__main__.md)
@@ -239,6 +241,7 @@ src/dpost_v2/
 - [V1-to-V2 exhaustive mapping](./20260303-v1-to-v2-exhaustive-file-mapping-rpc.md)
 - [Parallelization runbook](./20260303-v2-codex-github-parallelization-runbook-rpc.md)
 - [Pseudocode README](../pseudocode/README.md)
+- [V2 pseudocode population checklist](../checklists/20260304-v2-pseudocode-population-checklist.md)
 - [Cloud agent roadmap](archive/20260303-v2-cloud-agent-week1-roadmap.md)
 - [Cloud agent feasibility report](../reports/20260303-v2-cloud-agent-week1-feasibility-report.md)
 - [Cloud agent execution checklist](../checklists/20260303-v2-cloud-agent-week1-execution-checklist.md)
