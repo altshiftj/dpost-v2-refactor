@@ -22,25 +22,41 @@ writes: []
 - Target responsibility: Staging-domain invariants and transitions.
 - Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
-- TBD
+- Current staging state token.
+- Staging event trigger (`observed`, `stabilized`, `routed`, `persisted`, `failed`, `rejected`).
+- Optional transition metadata (reason code, attempt index).
+- Transition policy table.
 
 ## Outputs
-- TBD
+- Next staging state token and transition reason.
+- Transition validation result for illegal state/event pairs.
+- Helper predicates for terminal/non-terminal staging states.
+- Canonical state transition trace entry model.
 
 ## Invariants
-- TBD
+- State machine permits transitions only from defined source states.
+- Terminal states (`persisted`, `failed`, `rejected`) have no outgoing transitions.
+- Transition metadata includes reason code for non-happy paths.
+- Example: `stabilized` + `routed` event transitions to `routed` state.
+- Counterexample: `persisted` transitioning back to `resolving` is invalid.
 
 ## Failure Modes
-- TBD
+- Undefined source state raises `StagingStateUnknownError`.
+- Illegal transition pair raises `StagingTransitionError`.
+- Missing required reason for failure/reject transition raises `StagingReasonRequiredError`.
+- Attempt index regression in transition metadata raises `StagingAttemptOrderError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Define finite state set and transition table mapping `(state, event)` to next state.
+2. Validate incoming current state and event trigger against transition table.
+3. If transition exists, build next-state result with normalized reason metadata.
+4. Enforce terminal-state rules (no outbound transitions from terminal states).
+5. Emit canonical transition trace entry for consumers.
+6. Return typed error for invalid state/event combinations.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: valid transition paths, terminal-state lock behavior, and invalid transition rejection.
+- integration: ingestion pipeline state transitions map cleanly to staging domain states across success, retry, reject, and failure paths.
 
 
 

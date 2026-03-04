@@ -120,23 +120,23 @@
 - Why this matters: domain files should encode pure business rules that can be ported with high-confidence tests.
 
 ### Checklist
-- [ ] `docs/pseudocode/domain/naming/identifiers.md`: replace placeholders with parse/compose rules and edge-case handling.
-- [ ] `docs/pseudocode/domain/naming/prefix_policy.md`: replace placeholders with prefix derivation and fallback behavior.
-- [ ] `docs/pseudocode/domain/naming/policy.md`: replace placeholders with canonical naming policy + separator integration.
-- [ ] `docs/pseudocode/domain/routing/rules.md`: replace placeholders with deterministic route rules and precedence handling.
-- [ ] `docs/pseudocode/domain/processing/models.md`: replace placeholders with processing outcome models and invariants.
-- [ ] `docs/pseudocode/domain/processing/batch_models.md`: replace placeholders with batch semantics and partitioning behavior.
-- [ ] `docs/pseudocode/domain/processing/staging.md`: replace placeholders with staging-state transitions and invariants.
-- [ ] `docs/pseudocode/domain/processing/text.md`: replace placeholders with text extraction and normalization rules.
-- [ ] `docs/pseudocode/domain/records/local_record.md`: replace placeholders with record entity integrity and lifecycle boundaries.
+- [x] `docs/pseudocode/domain/naming/identifiers.md`: replace placeholders with parse/compose rules and edge-case handling.
+- [x] `docs/pseudocode/domain/naming/prefix_policy.md`: replace placeholders with prefix derivation and fallback behavior.
+- [x] `docs/pseudocode/domain/naming/policy.md`: replace placeholders with canonical naming policy + separator integration.
+- [x] `docs/pseudocode/domain/routing/rules.md`: replace placeholders with deterministic route rules and precedence handling.
+- [x] `docs/pseudocode/domain/processing/models.md`: replace placeholders with processing outcome models and invariants.
+- [x] `docs/pseudocode/domain/processing/batch_models.md`: replace placeholders with batch semantics and partitioning behavior.
+- [x] `docs/pseudocode/domain/processing/staging.md`: replace placeholders with staging-state transitions and invariants.
+- [x] `docs/pseudocode/domain/processing/text.md`: replace placeholders with text extraction and normalization rules.
+- [x] `docs/pseudocode/domain/records/local_record.md`: replace placeholders with record entity integrity and lifecycle boundaries.
 
 ### Manual Check
-- [ ] Verify domain docs do not mention concrete I/O APIs or adapters.
-- [ ] Verify all domain docs include at least one example of invariant enforcement and one counterexample.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/domain`.
+- [x] Verify domain docs do not mention concrete I/O APIs or adapters.
+- [x] Verify all domain docs include at least one example of invariant enforcement and one counterexample.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/domain`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated all domain naming/routing/processing/record docs with pure-rule behavior, explicit invariant examples and counterexamples, and typed domain failures; verified `rg "TBD" docs/pseudocode/domain` returns no matches.
 
 ---
 
