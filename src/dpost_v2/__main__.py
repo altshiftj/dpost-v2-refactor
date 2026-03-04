@@ -12,7 +12,7 @@ from typing import Mapping, Sequence
 from dpost_v2.application.startup import bootstrap as startup_bootstrap
 from dpost_v2.application.startup.bootstrap import BootstrapRequest
 
-_SUPPORTED_MODES = frozenset({"v1", "v2", "shadow"})
+_SUPPORTED_MODES = frozenset({"v2"})
 
 
 class UnsupportedRuntimeModeError(ValueError):
@@ -53,18 +53,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if result.is_success:
         print(
-            f"dpost_v2 startup succeeded (mode={request.mode}, profile={request.profile or 'default'})."
+            f"dpost startup succeeded (mode={request.mode}, profile={request.profile or 'default'})."
         )
         return 0
 
     failure = result.failure
     if failure is None:
-        print("dpost_v2 startup failed with unknown error.", file=sys.stderr)
+        print("dpost startup failed with unknown error.", file=sys.stderr)
         return 1
 
     print(
         (
-            "dpost_v2 startup failed "
+            "dpost startup failed "
             f"(stage={failure.stage}, error={failure.error_type}): {failure.message}"
         ),
         file=sys.stderr,
@@ -93,12 +93,12 @@ def _parse_cli(argv: Sequence[str] | None) -> CliOptions:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="dpost_v2")
+    parser = argparse.ArgumentParser(prog="dpost")
     parser.add_argument(
         "--mode",
         choices=tuple(sorted(_SUPPORTED_MODES)),
         default=None,
-        help="Runtime architecture mode (v1, v2, shadow).",
+        help="Runtime architecture mode (v2 only).",
     )
     parser.add_argument("--profile", default=None, help="Startup settings profile.")
     parser.add_argument(
