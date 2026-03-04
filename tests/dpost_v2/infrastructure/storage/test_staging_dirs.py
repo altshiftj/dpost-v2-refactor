@@ -102,3 +102,22 @@ def test_cleanup_candidate_filter_excludes_active_intake_and_staging(
     assert layout.staging not in filtered
     assert layout.processed / "2026-03-03" in filtered
     assert layout.archive / "2026-03-01" in filtered
+
+
+def test_cleanup_candidate_filter_excludes_paths_outside_root_scope(
+    tmp_path: Path,
+) -> None:
+    layout = derive_staging_layout(
+        root=tmp_path,
+        profile="qa",
+        mode="headless",
+        processing_date=date(2026, 3, 4),
+        device_token="xrd",
+    )
+    outside = tmp_path.parent / "outside-retention-target"
+    inside = layout.processed / "2026-03-03"
+
+    filtered = cleanup_candidates(layout, (outside, inside))
+
+    assert outside not in filtered
+    assert inside in filtered

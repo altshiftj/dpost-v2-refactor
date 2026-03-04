@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import re
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
@@ -134,9 +135,12 @@ class MetricsAdapter:
     @staticmethod
     def _normalize_value(value: int | float) -> float:
         try:
-            return float(value)
+            normalized = float(value)
         except Exception as exc:  # noqa: BLE001
             raise MetricsValueError(f"invalid metric value: {value!r}") from exc
+        if not math.isfinite(normalized):
+            raise MetricsValueError(f"metric value must be finite: {value!r}")
+        return normalized
 
     @staticmethod
     def _normalize_tags(tags: Mapping[str, str]) -> dict[str, str]:
@@ -144,4 +148,3 @@ class MetricsAdapter:
             raise MetricsValidationError("tags must be a mapping")
         normalized = {str(key): str(value) for key, value in tags.items()}
         return {key: normalized[key] for key in sorted(normalized)}
-

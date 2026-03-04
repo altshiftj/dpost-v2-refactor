@@ -6,6 +6,7 @@ import pytest
 
 from dpost_v2.infrastructure.observability.metrics import (
     MetricsAdapter,
+    MetricsValueError,
     MetricsValidationError,
 )
 
@@ -80,3 +81,11 @@ def test_metrics_snapshot_tracks_outcomes() -> None:
 
     assert snapshot["emitted"] == 1
     assert snapshot["dropped"] == 1
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), float("-inf")])
+def test_metrics_rejects_non_finite_values(value: float) -> None:
+    metrics = MetricsAdapter(namespace="dpost")
+
+    with pytest.raises(MetricsValueError):
+        metrics.emit_counter("ingestion.success", value=value, tags={})

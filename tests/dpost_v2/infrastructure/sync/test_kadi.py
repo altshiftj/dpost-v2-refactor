@@ -113,3 +113,25 @@ def test_kadi_sync_rejects_unexpected_response_shape() -> None:
 
     with pytest.raises(KadiSyncResponseError):
         adapter.sync_record(SyncRequest(record_id="rec-1", payload={}))
+
+
+def test_kadi_sync_rejects_request_without_record_id_before_transport_call() -> None:
+    transport_called = False
+
+    def _client(*, payload: dict[str, Any], headers: dict[str, str], timeout: float) -> dict[str, Any]:
+        nonlocal transport_called
+        transport_called = True
+        return {"status_code": 201, "remote_id": "kadi-1"}
+
+    adapter = KadiSyncAdapter(
+        endpoint="https://kadi.local",
+        api_token="token",
+        workspace_id="workspace-1",
+        client=_client,
+    )
+    adapter.initialize()
+
+    with pytest.raises(KadiSyncResponseError):
+        adapter.sync_record(SyncRequest(payload={}))
+
+    assert transport_called is False
