@@ -1,6 +1,9 @@
-You are working in D:\Repos\d-post.
+You are working in D:\Repos\d-post\.worktrees\docs-pseudocode-traceability.
 
 Lane: docs-pseudocode-traceability
+Worktree mode (mandatory):
+- Run all commands, edits, and commits from this lane worktree path only.
+- Do not run lane implementation work from D:\Repos\d-post root checkout.
 Autonomy mode (mandatory):
 - Execute fully autonomously until the lane task is complete.
 - Do not ask for human input during normal implementation flow.

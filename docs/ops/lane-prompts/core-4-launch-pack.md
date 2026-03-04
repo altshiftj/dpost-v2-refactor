@@ -17,5 +17,6 @@ Prompt file paths:
 - Only intervene on hard blockers (credentials, unavailable required systems, contradictory instructions).
 - This wave targets implementation in `src/dpost_v2` and `tests/dpost_v2`.
 - TDD order is mandatory (failing tests -> code -> refactor).
+- Run each lane from its dedicated `.worktrees/<lane>` checkout, never from the `D:\Repos\d-post` root checkout.
 - Keep one lane per branch and avoid cross-lane edits.
 
