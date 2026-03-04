@@ -39,6 +39,7 @@
 - [x] Publish summary report in `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`.
 - [x] Update `docs/pseudocode/README.md` active baseline to include traceability report + matrix pointers.
 - [x] Publish recurring refresh runbook in `docs/checklists/20260304-v2-pseudocode-traceability-refresh-checklist.md`.
+- [x] Publish lane-owned gap closure tracker in `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`.
 - [x] Keep lane scope docs-only (no `src/` or `tests/` edits).
 
 ### Completion Notes

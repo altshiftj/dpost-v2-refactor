@@ -25,6 +25,7 @@
 - Snapshot source artifacts:
   - `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`
   - `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`
+  - `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`
 - Pseudocode specs audited: `65`
 - `src/dpost_v2` modules present for pseudocode `id` targets: `63`
 - Pseudocode `id` targets still missing implementation: `2`

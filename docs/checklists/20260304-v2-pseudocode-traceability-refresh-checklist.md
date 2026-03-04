@@ -10,6 +10,7 @@
 - [ ] Recompute matrix rows for all non-README pseudocode specs with frontmatter `id`.
 - [ ] Recompute implementation status by checking existence of `src/dpost_v2/<id>`.
 - [ ] Recompute test traceability status by scanning direct imports in `tests/dpost_v2/**/test_*.py`.
+- [ ] Recompute lane ownership and severity fields (`lane`, `gap_severity`, `direct_test_count`).
 - [ ] Overwrite `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`.
 
 ### Manual Check
