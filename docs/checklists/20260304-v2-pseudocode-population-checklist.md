@@ -224,9 +224,9 @@
 - [x] Include a short handoff message in the final run notes with remaining gaps only.
 
 ### Manual Check
-- [x] Verify all modified files are in the intended scope (`docs/pseudocode`, checklist/report documents, and required planning baseline pointer update).
+- [x] Verify all modified files are in the intended scope (`docs/pseudocode`, checklist/report documents, required planning baseline pointer update, and glossary synchronization in `GLOSSARY.csv`).
 - [x] Confirm no code under `src/` was edited in this pass unless explicitly requested.
 
 ### Completion Notes
-- How it was done: generated per-file completion matrix + parity-risk report in `docs/reports/20260304-v2-pseudocode-population-report.md`; final checkpoint committed with required title.
+- How it was done: generated per-file completion matrix + parity-risk report in `docs/reports/20260304-v2-pseudocode-population-report.md`, synchronized new cross-cutting terms in `GLOSSARY.csv`, and committed final coverage-map checkpoint with required title.
 

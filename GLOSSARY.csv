@@ -60,3 +60,13 @@ naming identifier policy,domain policy,Defines pure filename parsing and record/
 staging directory helper,infrastructure adapter,Defines unique filesystem staging-directory creation behavior for batch preprocessors,Owned by src/dpost/infrastructure/storage/staging_dirs.py and consumed by PSA and Kinexus processors
 config device protocol,application contract,Defines the minimal structural device contract used by ConfigService for matching and activation,Implemented as ConfigDeviceProtocol in src/dpost/application/config/service.py to keep config typing explicit while preserving duck-typed compatibility
 manual test lane,quality gate,Defines explicitly-invoked smoke tests excluded from default pytest and CI required lanes,Invoked with python -m pytest -q -m manual tests/manual and marked via pytest mark manual
+startup context,application startup contract,Defines immutable startup scope carrying settings dependencies and launch metadata,Used by bootstrap and composition to remove ambient globals
+startup dependencies,runtime infrastructure contract,Defines resolved factories and primitives required during runtime composition,Built before composition and validated per runtime mode
+bootstrap request,application startup model,Defines normalized entrypoint request fields mode profile and config path,Produced by __main__ and consumed by startup bootstrap
+bootstrap result,application startup model,Defines startup success or failure outcome with exit metadata,Returned by startup bootstrap and consumed by __main__
+port bindings,runtime composition model,Defines concrete adapter assignments for every required application port,Produced by runtime composition and used for diagnostics and lifecycle checks
+ingestion outcome,application ingestion model,Defines terminal result of one ingestion pipeline execution including retry and failure forms,Returned by ingestion engine and consumed by runtime app and event policies
+failure outcome,application ingestion policy model,Defines normalized failure classification with severity reason and terminal type,Produced by error and failure policies and used by failure emitters
+retry plan,application ingestion policy model,Defines retry decision delay and next attempt index for retryable outcomes,Produced by retry planner and attached to ingestion failure outcomes
+force path decision,application ingestion policy model,Defines apply ignore or reject decision for operator force path overrides,Produced by force path policy and consumed by route stage
+emission result,application ingestion policy model,Defines emitted suppressed or failed status when publishing failure events,Returned by failure emitter and consumed by ingestion engine diagnostics
