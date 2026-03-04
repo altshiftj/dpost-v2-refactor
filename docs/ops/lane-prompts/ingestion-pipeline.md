@@ -3,32 +3,29 @@ You are working in D:\Repos\d-post.
 Lane: ingestion-pipeline
 Branch: rewrite/v2-lane-ingestion-pipeline
 
-Current phase is locked to pseudocode/docs completion only.
-Do not edit src/ or tests/.
+Goal:
+Implement ingestion/pipeline orchestration in TDD order.
 
 Allowed edits:
-- docs/pseudocode/**
-- docs/checklists/**
-- docs/planning/**
-- docs/reports/**
-- GLOSSARY.csv
+- src/dpost_v2/application/ingestion/**
+- tests/dpost_v2/application/ingestion/**
 
-Required references:
+Canonical references:
+- docs/pseudocode/application/ingestion/**
 - docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
 - docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
-- docs/checklists/20260304-v2-pseudocode-population-checklist.md
 
-Task:
-Populate ingestion/pipeline pseudocode docs with concrete stage behavior, orchestration boundaries, and failure handling.
-Every edited pseudocode file must include the mandatory sections and explicit V1 origin/source mapping where applicable.
+TDD protocol (mandatory):
+1. Write failing tests for stage behavior and orchestration.
+2. Implement minimal pipeline logic.
+3. Refactor while preserving stage contracts.
 
-Rules:
-- Remove TBD and placeholder-only language.
-- Preserve V2 layer boundaries.
-- Update checklist completion notes.
-- Add glossary terms in GLOSSARY.csv when introducing new internal terms.
+Constraints:
+- Keep stage boundaries explicit.
+- Do not edit outside allowed scope.
 
 Output:
 - Files changed
-- Checks run (`rg "TBD" docs/pseudocode`, `rg "origin|source|v1" docs/pseudocode -n`)
-- Remaining risks/blockers
+- Tests added/updated
+- Commands run and results
+- Risks/assumptions

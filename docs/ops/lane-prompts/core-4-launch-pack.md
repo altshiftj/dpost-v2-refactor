@@ -1,4 +1,4 @@
-Core-4 Launch Pack
+Core-4 Launch Pack (Implementation + TDD)
 
 Use `codex:lanes:prep-core-4` to open terminals and copy this pack.
 Then copy the lane-specific prompt for each terminal:
@@ -14,6 +14,6 @@ Prompt file paths:
 - docs/ops/lane-prompts/ingestion-pipeline.md
 
 Execution notes:
-- Keep one lane per branch.
-- Do not edit outside allowed scope.
-- Commit only lane-coherent changes.
+- This wave targets implementation in `src/dpost_v2` and `tests/dpost_v2`.
+- TDD order is mandatory (failing tests -> code -> refactor).
+- Keep one lane per branch and avoid cross-lane edits.

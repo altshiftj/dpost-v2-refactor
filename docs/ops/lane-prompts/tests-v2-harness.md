@@ -3,32 +3,28 @@ You are working in D:\Repos\d-post.
 Lane: tests-v2-harness
 Branch: rewrite/v2-lane-tests-v2-harness
 
-Current phase is locked to pseudocode/docs completion only.
-Do not edit src/ or tests/.
+Goal:
+Build V2 test harness/fixtures/utilities in TDD-friendly form.
 
 Allowed edits:
-- docs/pseudocode/**
-- docs/checklists/**
-- docs/planning/**
-- docs/reports/**
-- GLOSSARY.csv
+- tests/dpost_v2/**
+- src/dpost_v2/** (only shared test-support code when unavoidable)
 
-Required references:
+Canonical references:
+- docs/pseudocode/** (testing-related)
 - docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
-- docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
-- docs/checklists/20260304-v2-pseudocode-population-checklist.md
 
-Task:
-Populate pseudocode and planning docs for V2 test harness strategy, deterministic fixtures, and acceptance coverage expectations.
-Every edited pseudocode file must include the mandatory sections and explicit V1 origin/source mapping where applicable.
+TDD protocol (mandatory):
+1. Add failing tests for harness behavior itself.
+2. Implement minimal harness utilities/fixtures.
+3. Refactor while keeping test ergonomics and determinism.
 
-Rules:
-- Remove TBD and placeholder-only language.
-- Preserve V2 layer boundaries.
-- Update checklist completion notes.
-- Add glossary terms in GLOSSARY.csv when introducing new internal terms.
+Constraints:
+- Prefer test-side utilities under `tests/dpost_v2`.
+- Keep fixtures deterministic.
 
 Output:
 - Files changed
-- Checks run (`rg "TBD" docs/pseudocode`, `rg "origin|source|v1" docs/pseudocode -n`)
-- Remaining risks/blockers
+- Tests added/updated
+- Commands run and results
+- Risks/assumptions

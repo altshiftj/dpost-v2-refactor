@@ -3,40 +3,32 @@ You are working in D:\Repos\d-post.
 Lane: contracts-interfaces
 Branch: rewrite/v2-lane-contracts-interfaces
 
-Current phase is locked to pseudocode/docs completion only.
-Do not edit src/ or tests/.
+Goal:
+Implement V2 contracts/interfaces in TDD order (tests first, then code).
 
 Allowed edits:
-- docs/pseudocode/**
-- docs/checklists/**
-- docs/planning/**
-- docs/reports/**
-- GLOSSARY.csv
+- src/dpost_v2/application/contracts/**
+- tests/dpost_v2/application/contracts/**
+- tests/dpost_v2/contracts/**
 
-Required references:
+Canonical references:
+- docs/pseudocode/** (contract-related)
 - docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
 - docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
-- docs/checklists/20260304-v2-pseudocode-population-checklist.md
 
-Task:
-Populate and normalize contract/interface pseudocode docs with concrete behavior intent and strict V1 traceability.
-Every edited pseudocode file must include:
-- Intent
-- Inputs
-- Outputs
-- Invariants
-- Failure Modes
-- Pseudocode
-- Tests To Implement
-- explicit origin/source mapping to V1 where applicable
+TDD protocol (mandatory):
+1. Add or update failing tests for one contract slice.
+2. Implement minimal code to pass.
+3. Refactor while tests stay green.
+4. Repeat in small slices.
 
-Rules:
-- Remove TBD and placeholder-only language.
+Constraints:
+- Do not edit outside allowed scope.
+- Keep interfaces stable and explicit.
 - Preserve V2 layer boundaries.
-- Update checklist completion notes.
-- Add glossary terms in GLOSSARY.csv when introducing new internal terms.
 
 Output:
 - Files changed
-- Checks run (`rg "TBD" docs/pseudocode`, `rg "origin|source|v1" docs/pseudocode -n`)
-- Remaining risks/blockers
+- Tests added/updated
+- Commands run and results
+- Risks/assumptions

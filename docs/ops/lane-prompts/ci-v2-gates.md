@@ -3,33 +3,23 @@ You are working in D:\Repos\d-post.
 Lane: ci-v2-gates
 Branch: rewrite/v2-lane-ci-v2-gates
 
-Current phase is locked to pseudocode/docs completion only.
-Do not edit src/ or tests/.
+Goal:
+Maintain CI gates for parallel V2 implementation.
 
 Allowed edits:
-- docs/pseudocode/**
-- docs/checklists/**
+- .github/workflows/**
 - docs/planning/**
 - docs/reports/**
-- GLOSSARY.csv
-- .github/workflows/**
-
-Required references:
-- docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
-- docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
-- docs/checklists/20260304-v2-pseudocode-population-checklist.md
 
 Task:
-Maintain CI gate documentation and workflow governance for V2 rewrite lanes while preserving strict required checks on main.
-When editing pseudocode docs, enforce mandatory sections and explicit V1 origin/source mapping where applicable.
+Keep rewrite branch CI lightweight and reliable, while preserving strict required checks on main.
+Adjust CI as implementation coverage grows in `src/dpost_v2` and `tests/dpost_v2`.
 
-Rules:
-- Remove TBD and placeholder-only language.
-- Preserve V2 layer boundaries.
-- Update checklist completion notes.
-- Add glossary terms in GLOSSARY.csv when introducing new internal terms.
+Constraints:
+- Avoid brittle expression logic.
+- Keep job names stable for required checks.
 
 Output:
 - Files changed
-- Checks run (`rg "TBD" docs/pseudocode`, `rg "origin|source|v1" docs/pseudocode -n`)
-- Remaining risks/blockers
+- CI behavior changes
+- Risks/assumptions
