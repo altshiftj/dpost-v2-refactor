@@ -4,7 +4,7 @@
 - 2026-03-03
 
 ## Status
-- Draft for Review
+- Draft for Review (smoke-test note)
 
 ## Goal
 - Provide one operator runbook for:

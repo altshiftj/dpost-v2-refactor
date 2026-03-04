@@ -4,5 +4,6 @@
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
-    "github-enterprise.uri": "https://git.rz.tu-bs.de/"
+    "github-enterprise.uri": "https://git.rz.tu-bs.de/",
+    "chatgpt.openOnStartup": true
 }
