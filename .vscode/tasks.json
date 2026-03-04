@@ -60,10 +60,10 @@
     {
       "label": "codex:lanes:start-next-4",
       "dependsOn": [
-        "lane:infrastructure-adapters",
+        "lane:docs-pseudocode-traceability",
+        "lane:ci-v2-gates",
         "lane:plugins-device-system",
-        "lane:runtime-composition",
-        "lane:tests-v2-harness",
+        "lane:infrastructure-adapters",
         "codex:lanes:coordination"
       ],
       "dependsOrder": "parallel",
