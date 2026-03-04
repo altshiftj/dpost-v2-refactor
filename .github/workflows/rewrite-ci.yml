@@ -1,0 +1,76 @@
+name: Rewrite CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - rewrite/v2
+      - rewrite/v2-lane-*
+  pull_request:
+    branches:
+      - rewrite/v2
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rewrite-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflow-lint:
+    name: rewrite-workflow-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Lint GitHub Actions workflows
+        uses: docker://rhysd/actionlint:latest
+
+  hygiene:
+    name: rewrite-artifact-hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check workflow config and artifact hygiene
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d ".github/workflows" ]; then
+            echo "::error::.github/workflows directory is missing"
+            exit 1
+          fi
+
+          shopt -s nullglob
+          workflow_files=(.github/workflows/*.yml .github/workflows/*.yaml)
+          if (( ${#workflow_files[@]} == 0 )); then
+            echo "::error::No workflow files found under .github/workflows"
+            exit 1
+          fi
+
+          tracked_artifacts="$(git ls-files -- .env build/.env)"
+          if [ -n "$tracked_artifacts" ]; then
+            echo "::error::Tracked environment artifacts found in git index:"
+            echo "$tracked_artifacts"
+            exit 1
+          fi
+
+          if [ ! -f ".env.example" ]; then
+            echo "::error::Missing .env.example"
+            exit 1
+          fi
+
+          if git check-ignore -v .github/workflows >/dev/null 2>&1; then
+            echo "::error::.github/workflows is ignored by .gitignore"
+            exit 1
+          fi
+
+          tracked_workflows="$(git ls-files -- .github/workflows)"
+          if [ -z "$tracked_workflows" ]; then
+            echo "::error::.github/workflows is not tracked in git index"
+            exit 1
+          fi

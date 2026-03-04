@@ -21,6 +21,7 @@
 - [Pseudocode README](../pseudocode/README.md)
 - [Pseudocode module specs](../pseudocode/)
 - [Public CI workflow](../../.github/workflows/public-ci.yml)
+- [Rewrite CI workflow](../../.github/workflows/rewrite-ci.yml)
 - [Required checks config](../../.github/branch-protection/main.required-checks.json)
 
 ## Part 1: Operator Setup (Codex + GitHub)
@@ -43,10 +44,15 @@
 5. Run a smoke test: ask Codex to create a docs-only branch and PR changing one markdown line, then confirm the PR appears in GitHub with CI checks attached.
 
 ### 3. Enable and Verify CI
-1. Confirm workflow exists:
-- `.github/workflows/public-ci.yml`
-2. Trigger one manual run (`workflow_dispatch`) from GitHub Actions.
-3. Ensure required checks from `.github/branch-protection/main.required-checks.json` are green at least once.
+1. Confirm workflows exist:
+- `.github/workflows/public-ci.yml` (main/master release gate)
+- `.github/workflows/rewrite-ci.yml` (rewrite trunk + lane fast gate)
+2. Trigger one manual run (`workflow_dispatch`) for each workflow from GitHub Actions.
+3. Ensure required checks from `.github/branch-protection/main.required-checks.json` are green at least once on `main`.
+4. For `rewrite/v2` and `rewrite/v2-lane-*`, verify lightweight checks run on push/PR:
+- `rewrite-workflow-lint`
+- `rewrite-artifact-hygiene`
+5. Keep branch protection required contexts tied to `main` only. Rewrite checks are integration governance and should stay lightweight.
 
 ### 4. Apply Branch Protection (Terminal-Ready)
 1. Set token:
@@ -248,7 +254,8 @@ Output requirements:
 
 ## Part 7: Manual Check
 - Open one lane PR and verify it edited only allowed files.
-- Confirm required checks execute and block failing PRs.
+- Confirm lane PRs to `rewrite/v2` run `Rewrite CI` lightweight checks.
+- Confirm PRs to `main` run `Public CI` required checks and fail-closed on violations.
 - Confirm pseudocode-linked implementation notes are present in PR description.
 - Confirm `rewrite/v2` branch remains green after merges.
 

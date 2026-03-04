@@ -1,0 +1,227 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "codex:lanes:setup-worktrees",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "$repo='${workspaceFolder}'; $base=Join-Path $repo '.worktrees'; New-Item -ItemType Directory -Force -Path $base | Out-Null; Set-Location $repo; $map=@{ 'contracts-interfaces'='rewrite/v2-lane-contracts-interfaces'; 'startup-bootstrap'='rewrite/v2-lane-startup-bootstrap'; 'domain-core-models'='rewrite/v2-lane-domain-core-models'; 'ingestion-pipeline'='rewrite/v2-lane-ingestion-pipeline'; 'infrastructure-adapters'='rewrite/v2-lane-infrastructure-adapters'; 'plugins-device-system'='rewrite/v2-lane-plugins-device-system'; 'runtime-composition'='rewrite/v2-lane-runtime-composition'; 'docs-pseudocode-traceability'='rewrite/v2-lane-docs-pseudocode-traceability'; 'tests-v2-harness'='rewrite/v2-lane-tests-v2-harness'; 'ci-v2-gates'='rewrite/v2-lane-ci-v2-gates' }; foreach ($k in $map.Keys) { $path = Join-Path $base $k; if (Test-Path $path) { Write-Host \"exists: $path\"; continue }; git worktree add $path $map[$k] }; Write-Host 'worktree setup done'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:coordination",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}'; git switch rewrite/v2; Write-Host 'Ready: coordination terminal on rewrite/v2'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-core-4",
+      "dependsOn": [
+        "lane:contracts-interfaces",
+        "lane:startup-bootstrap",
+        "lane:domain-core-models",
+        "lane:ingestion-pipeline",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-all",
+      "dependsOn": [
+        "lane:contracts-interfaces",
+        "lane:startup-bootstrap",
+        "lane:domain-core-models",
+        "lane:ingestion-pipeline",
+        "lane:infrastructure-adapters",
+        "lane:plugins-device-system",
+        "lane:runtime-composition",
+        "lane:docs-pseudocode-traceability",
+        "lane:tests-v2-harness",
+        "lane:ci-v2-gates",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:contracts-interfaces",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/contracts-interfaces'; git switch rewrite/v2-lane-contracts-interfaces; Write-Host 'Ready: contracts-interfaces'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:startup-bootstrap",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/startup-bootstrap'; git switch rewrite/v2-lane-startup-bootstrap; Write-Host 'Ready: startup-bootstrap'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:domain-core-models",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/domain-core-models'; git switch rewrite/v2-lane-domain-core-models; Write-Host 'Ready: domain-core-models'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:ingestion-pipeline",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/ingestion-pipeline'; git switch rewrite/v2-lane-ingestion-pipeline; Write-Host 'Ready: ingestion-pipeline'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:infrastructure-adapters",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/infrastructure-adapters'; git switch rewrite/v2-lane-infrastructure-adapters; Write-Host 'Ready: infrastructure-adapters'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:plugins-device-system",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/plugins-device-system'; git switch rewrite/v2-lane-plugins-device-system; Write-Host 'Ready: plugins-device-system'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:runtime-composition",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/runtime-composition'; git switch rewrite/v2-lane-runtime-composition; Write-Host 'Ready: runtime-composition'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:docs-pseudocode-traceability",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/docs-pseudocode-traceability'; git switch rewrite/v2-lane-docs-pseudocode-traceability; Write-Host 'Ready: docs-pseudocode-traceability'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:tests-v2-harness",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/tests-v2-harness'; git switch rewrite/v2-lane-tests-v2-harness; Write-Host 'Ready: tests-v2-harness'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:ci-v2-gates",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-NoExit",
+        "-Command",
+        "Set-Location '${workspaceFolder}/.worktrees/ci-v2-gates'; git switch rewrite/v2-lane-ci-v2-gates; Write-Host 'Ready: ci-v2-gates'"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}
