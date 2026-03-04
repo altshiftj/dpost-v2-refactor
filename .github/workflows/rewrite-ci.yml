@@ -74,3 +74,116 @@ jobs:
             echo "::error::.github/workflows is not tracked in git index"
             exit 1
           fi
+
+  v2-quality:
+    name: rewrite-v2-quality
+    runs-on: ubuntu-latest
+    needs: workflow-lint
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install lint tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install black ruff
+      - name: Lint V2 sources and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "src/dpost_v2" ]; then
+            echo "::error::Missing src/dpost_v2"
+            exit 1
+          fi
+
+          targets=(src/dpost_v2)
+          if [ -d "tests/dpost_v2" ]; then
+            targets+=(tests/dpost_v2)
+          fi
+
+          python -m ruff check "${targets[@]}"
+          python -m black --check "${targets[@]}"
+
+  v2-tests:
+    name: rewrite-v2-tests
+    runs-on: ubuntu-latest
+    needs: v2-quality
+    timeout-minutes: 30
+    env:
+      DPOST_PC_NAME: tischrem_blb
+      DPOST_DEVICE_PLUGINS: sem_phenomxl2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[ci,dev]"
+      - name: Run lightweight V2 tests
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "tests/dpost_v2" ]; then
+            echo "::error::Missing tests/dpost_v2"
+            exit 1
+          fi
+
+          python -m pytest -q tests/dpost_v2 --ignore tests/dpost_v2/smoke
+
+  v2-integration:
+    name: rewrite-v2-integration
+    runs-on: ubuntu-latest
+    needs: v2-tests
+    if: github.ref == 'refs/heads/rewrite/v2' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    timeout-minutes: 30
+    env:
+      DPOST_PC_NAME: tischrem_blb
+      DPOST_DEVICE_PLUGINS: sem_phenomxl2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install project test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[ci,dev]"
+      - name: Run V2 integration/smoke subset
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          targets=(
+            tests/dpost_v2/application/ingestion/test_pipeline_integration.py
+            tests/dpost_v2/plugins/test_device_integration.py
+            tests/dpost_v2/smoke
+          )
+
+          existing_targets=()
+          for target in "${targets[@]}"; do
+            if [ -e "$target" ]; then
+              existing_targets+=("$target")
+            fi
+          done
+
+          if (( ${#existing_targets[@]} == 0 )); then
+            echo "::error::No V2 integration/smoke targets found under tests/dpost_v2"
+            exit 1
+          fi
+
+          python -m pytest -q "${existing_targets[@]}"
