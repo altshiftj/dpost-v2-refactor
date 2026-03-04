@@ -211,6 +211,7 @@ def discover_from_namespaces(
     iter_modules = iter_modules_fn or pkgutil.iter_modules
 
     module_names: list[str] = []
+    module_expected_families: dict[str, str] = {}
     namespace_import_issues: list[PluginDiscoveryIssue] = []
 
     for namespace_name in sorted(mapping):
@@ -239,13 +240,26 @@ def discover_from_namespaces(
             leaf_name = package_name.rsplit(".", maxsplit=1)[-1]
             if not include_hidden_packages and leaf_name.startswith("_"):
                 continue
-            module_names.append(f"{package_name}.plugin")
+            module_name = f"{package_name}.plugin"
+            module_names.append(module_name)
+            module_expected_families[module_name] = mapping[namespace_name]
 
     discovered = discover_plugins(
         module_names=tuple(sorted(set(module_names))),
         module_importer=importer,
         allowed_families=tuple(sorted(set(mapping.values()))),
     )
+
+    for descriptor in discovered.descriptors:
+        expected_family = module_expected_families.get(descriptor.module_name)
+        if expected_family is None:
+            continue
+        if descriptor.family != expected_family:
+            raise PluginDiscoveryFamilyError(
+                f"plugin {descriptor.plugin_id!r} declared family "
+                f"{descriptor.family!r} but namespace policy requires "
+                f"{expected_family!r}"
+            )
 
     if not namespace_import_issues:
         return discovered

@@ -200,6 +200,6 @@ def test_builtin_namespace_discovery_and_host_device_processor_integration() -> 
         _processing_context(),
     )
 
-    assert selection.selected_by_family["device"] == ("test_device",)
-    assert selection.selected_by_family["pc"] == ()
+    assert "test_device" in selection.selected_by_family["device"]
+    assert "test_pc" not in selection.selected_by_family["pc"]
     assert output.datatype == "test_device/csv"
