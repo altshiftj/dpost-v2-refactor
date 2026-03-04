@@ -48,25 +48,24 @@ class RecordsService:
 
     def update(self, record_id: str, mutation: Mapping[str, object]) -> LocalRecord:
         """Apply one record mutation and return the updated immutable snapshot."""
-        if not isinstance(record_id, str) or not record_id.strip():
-            raise RecordValidationError("record_id must be a non-empty string")
-        if not isinstance(mutation, Mapping):
-            raise RecordValidationError("mutation must be a mapping")
+        normalized_record_id = _normalize_record_id(record_id)
+        normalized_mutation = _normalize_mutation(mutation)
         snapshot = self._store_call(
             self._record_store.update,
-            record_id.strip(),
-            dict(mutation),
+            normalized_record_id,
+            normalized_mutation,
         )
         return _from_store_snapshot(snapshot)
 
     def mark_unsynced(self, record_id: str) -> LocalRecord:
         """Mark one record unsynced, returning the resulting record snapshot."""
-        current = self._get_snapshot(record_id)
+        normalized_record_id = _normalize_record_id(record_id)
+        current = self._get_snapshot(normalized_record_id)
         current_local = _from_store_snapshot(current)
         if current_local.sync_status is SyncStatus.UNSYNCED:
             return current_local
-        self._store_call(self._record_store.mark_unsynced, record_id)
-        refreshed = self._get_snapshot(record_id)
+        self._store_call(self._record_store.mark_unsynced, normalized_record_id)
+        refreshed = self._get_snapshot(normalized_record_id)
         return _from_store_snapshot(refreshed)
 
     def save(self, record: LocalRecord) -> LocalRecord:
@@ -76,22 +75,24 @@ class RecordsService:
         return _from_store_snapshot(snapshot)
 
     def _get_snapshot(self, record_id: str) -> Mapping[str, object]:
-        if not isinstance(record_id, str) or not record_id.strip():
-            raise RecordValidationError("record_id must be a non-empty string")
+        normalized_record_id = _normalize_record_id(record_id)
 
         getter = getattr(self._record_store, "get_or_raise", None)
         if callable(getter):
-            snapshot = self._store_call(cast(Callable[[str], object], getter), record_id)
+            snapshot = self._store_call(
+                cast(Callable[[str], object], getter),
+                normalized_record_id,
+            )
             return _ensure_snapshot_mapping(snapshot)
 
         maybe_getter = getattr(self._record_store, "get", None)
         if callable(maybe_getter):
             snapshot = self._store_call(
                 cast(Callable[[str], object], maybe_getter),
-                record_id,
+                normalized_record_id,
             )
             if snapshot is None:
-                raise RecordNotFoundError(f"record not found: {record_id!r}")
+                raise RecordNotFoundError(f"record not found: {normalized_record_id!r}")
             return _ensure_snapshot_mapping(snapshot)
 
         raise RecordStoreError(
@@ -110,22 +111,61 @@ class RecordsService:
 def _to_store_payload(record: LocalRecord) -> Mapping[str, object]:
     if not isinstance(record, LocalRecord):
         raise RecordValidationError("record must be LocalRecord")
+
+    record_id = _require_token(record.record_id, field_name="record_id")
+    source_identity = _require_token(
+        record.source_identity,
+        field_name="source_identity",
+    )
+    canonical_name = _require_token(record.canonical_name, field_name="canonical_name")
+    sync_status = _require_enum_member(
+        record.sync_status,
+        enum_cls=SyncStatus,
+        field_name="sync_status",
+    )
+    processing_status = _require_enum_member(
+        record.processing_status,
+        enum_cls=RecordProcessingStatus,
+        field_name="processing_status",
+    )
+    revision = _require_non_negative_int(record.revision, field_name="revision")
+    created_at = _require_datetime(record.created_at, field_name="created_at")
+    updated_at = _require_datetime(record.updated_at, field_name="updated_at")
+    if updated_at < created_at:
+        raise RecordValidationError("updated_at must not be older than created_at")
+
+    reason_raw = record.last_reason_code
+    reason = (
+        None
+        if reason_raw is None
+        else _require_token(reason_raw, field_name="last_reason_code")
+    )
+
+    metadata_source = _require_mapping(record.metadata or {}, field_name="metadata")
+    metadata = {
+        _require_token(key, field_name="metadata key"): _require_token(
+            value,
+            field_name=f"metadata[{key}]",
+        )
+        for key, value in metadata_source.items()
+    }
+
     payload: Mapping[str, object] = MappingProxyType(
         {
-            "source_identity": record.source_identity,
-            "canonical_name": record.canonical_name,
-            "sync_status": record.sync_status.value,
-            "processing_status": record.processing_status.value,
-            "created_at": record.created_at.isoformat(),
-            "updated_at": record.updated_at.isoformat(),
-            "last_reason_code": record.last_reason_code,
-            "metadata": dict(record.metadata or {}),
+            "source_identity": source_identity,
+            "canonical_name": canonical_name,
+            "sync_status": sync_status.value,
+            "processing_status": processing_status.value,
+            "created_at": created_at.isoformat(),
+            "updated_at": updated_at.isoformat(),
+            "last_reason_code": reason,
+            "metadata": metadata,
         }
     )
     return MappingProxyType(
         {
-            "record_id": record.record_id,
-            "revision": record.revision,
+            "record_id": record_id,
+            "revision": revision,
             "payload": payload,
         }
     )
@@ -163,7 +203,11 @@ def _from_store_snapshot(snapshot: object) -> LocalRecord:
     }
 
     reason_raw = payload.get("last_reason_code")
-    reason = None if reason_raw is None else _require_token(reason_raw, field_name="last_reason_code")
+    reason = (
+        None
+        if reason_raw is None
+        else _require_token(reason_raw, field_name="last_reason_code")
+    )
 
     return LocalRecord(
         record_id=record_id,
@@ -203,6 +247,30 @@ def _map_store_exception(exc: Exception) -> RecordsServiceError:
     return RecordStoreError(message or type(exc).__name__)
 
 
+def _normalize_record_id(record_id: object) -> str:
+    return _require_token(record_id, field_name="record_id")
+
+
+def _normalize_mutation(mutation: object) -> Mapping[str, object]:
+    if not isinstance(mutation, Mapping):
+        raise RecordValidationError("mutation must be a mapping")
+
+    if "expected_revision" not in mutation:
+        raise RecordValidationError("mutation.expected_revision is required")
+    expected_revision = _require_non_negative_int(
+        mutation.get("expected_revision"),
+        field_name="mutation.expected_revision",
+    )
+
+    payload_raw = mutation.get("payload", {})
+    payload = _require_mapping(payload_raw, field_name="mutation.payload")
+
+    normalized = dict(mutation)
+    normalized["expected_revision"] = expected_revision
+    normalized["payload"] = dict(payload)
+    return MappingProxyType(normalized)
+
+
 def _ensure_snapshot_mapping(value: object) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         raise RecordValidationError("record store snapshot must be a mapping")
@@ -225,6 +293,13 @@ def _require_int(value: object, *, field_name: str) -> int:
     if not isinstance(value, int):
         raise RecordValidationError(f"{field_name} must be an int")
     return value
+
+
+def _require_non_negative_int(value: object, *, field_name: str) -> int:
+    number = _require_int(value, field_name=field_name)
+    if number < 0:
+        raise RecordValidationError(f"{field_name} must be >= 0")
+    return number
 
 
 def _require_datetime(value: object, *, field_name: str) -> datetime:
@@ -255,3 +330,14 @@ def _require_enum(
         raise RecordValidationError(
             f"{field_name} value {token!r} is not supported",
         ) from exc
+
+
+def _require_enum_member(
+    value: object,
+    *,
+    enum_cls: type[SyncStatus] | type[RecordProcessingStatus],
+    field_name: str,
+) -> SyncStatus | RecordProcessingStatus:
+    if not isinstance(value, enum_cls):
+        raise RecordValidationError(f"{field_name} must be {enum_cls.__name__}")
+    return value
