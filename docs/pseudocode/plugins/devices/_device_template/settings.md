@@ -24,7 +24,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: template derived from 10 device-plugin origin files.
-- Legacy gist: Keeps device plugin module settings.py for extr_haake. Keeps device plugin module settings.py for erm_hioki. (plus similar related variants).
+- Legacy gist: Keeps device plugin `settings.py` ownership across mapped device families. Template coverage extends to all mapped variants listed in `origin_v1_files`.
 
 ## V2 Improvement Intent
 - Transform posture: Migrate.

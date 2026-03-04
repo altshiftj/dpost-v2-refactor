@@ -18,7 +18,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: 4 origin files (see front matter origin_v1_files).
-- Legacy gist: Owns record persistence stage execution path. Co-locates persistence context model with persist stage. (plus similar related variants).
+- Legacy gist: Owns record persistence stage execution path. Co-locates persistence context model with persist stage, and consolidates the remaining mapped persistence helpers under the same stage boundary.
 
 ## V2 Improvement Intent
 - Transform posture: Merge, Move.

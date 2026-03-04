@@ -17,7 +17,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: `src/dpost/runtime/startup_config.py`, `src/dpost/runtime/bootstrap.py`, `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py`.
-- Legacy gist: Centralizes startup settings parsing and validation. Moves startup flow into explicit application startup boundary. (plus similar related variants).
+- Legacy gist: Centralizes startup settings parsing and validation. Moves startup flow into explicit application startup boundary. Template coverage extends to the remaining mapped startup dependency variants listed in `origin_v1_files`.
 
 ## V2 Improvement Intent
 - Transform posture: Move, Split.

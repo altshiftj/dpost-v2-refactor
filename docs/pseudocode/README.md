@@ -35,7 +35,7 @@
 - Active checklist:
   - `docs/checklists/20260304-v2-pseudocode-population-checklist.md`
 - Frozen execution order:
-  - `contracts -> runtime/startup -> runtime/session/records -> ingestion -> domain -> infrastructure -> plugins -> cross-lane validation -> gate/handoff`
+  - `contracts -> domain -> startup -> runtime -> ingestion -> records/session -> infrastructure -> plugins -> review`
 - Completion snapshot:
   - non-README pseudocode specs: `65/65` done
   - placeholder-token audit: zero matches

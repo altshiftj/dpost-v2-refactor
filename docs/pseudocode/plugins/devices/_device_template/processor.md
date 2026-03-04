@@ -24,7 +24,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: template derived from 10 device-plugin origin files.
-- Legacy gist: Keeps device processing logic for dsv_horiba with consistent processor naming. Keeps device processing logic for psa_horiba with consistent processor naming. (plus similar related variants).
+- Legacy gist: Keeps device processing logic under consistent `processor.py` naming across mapped device families. Template coverage extends to all mapped variants listed in `origin_v1_files`.
 
 ## V2 Improvement Intent
 - Transform posture: Rename.

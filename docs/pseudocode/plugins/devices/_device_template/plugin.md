@@ -24,7 +24,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: template derived from 10 device-plugin origin files.
-- Legacy gist: Keeps device plugin module plugin.py for rmx_eirich_el1. Keeps device plugin module plugin.py for utm_zwick. (plus similar related variants).
+- Legacy gist: Keeps device plugin module `plugin.py` ownership across mapped device families. Template coverage extends to all mapped variants listed in `origin_v1_files`.
 
 ## V2 Improvement Intent
 - Transform posture: Migrate.

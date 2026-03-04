@@ -17,7 +17,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: `src/dpost/application/ports/interactions.py`, `src/dpost/application/ports/sync.py`, `src/dpost/application/ports/ui.py`.
-- Legacy gist: Converges port contract interactions.py into unified ports surface. Converges port contract sync.py into unified ports surface. (plus similar related variants).
+- Legacy gist: Converges port contract interactions.py into unified ports surface. Converges port contract sync.py into unified ports surface, with remaining mapped port variants consolidated into the same contract owner.
 
 ## V2 Improvement Intent
 - Transform posture: Merge.

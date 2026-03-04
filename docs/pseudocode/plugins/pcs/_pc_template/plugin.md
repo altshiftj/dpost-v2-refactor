@@ -22,7 +22,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: template derived from 8 PC-plugin origin files.
-- Legacy gist: Keeps PC plugin module plugin.py for kinexus_blb. Keeps PC plugin module plugin.py for eirich_blb. (plus similar related variants).
+- Legacy gist: Keeps PC plugin module `plugin.py` ownership across mapped PC families. Template coverage extends to all mapped variants listed in `origin_v1_files`.
 
 ## V2 Improvement Intent
 - Transform posture: Migrate.

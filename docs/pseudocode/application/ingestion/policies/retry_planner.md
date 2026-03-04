@@ -17,7 +17,7 @@ writes: []
 
 ## Origin Gist
 - Source mapping: `src/dpost/application/processing/rename_retry_policy.py`, `src/dpost/application/retry_delay_policy.py`, `src/dpost/application/runtime/retry_planner.py`.
-- Legacy gist: Unifies retry policy in one planner module. Merges legacy retry delay policy into unified planner. (plus similar related variants).
+- Legacy gist: Unifies retry policy in one planner module. Merges legacy retry delay policy into unified planner and consolidates the remaining mapped retry variants into this single policy owner.
 
 ## V2 Improvement Intent
 - Transform posture: Merge, Move.
