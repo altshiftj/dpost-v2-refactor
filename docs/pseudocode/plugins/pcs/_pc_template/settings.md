@@ -29,25 +29,40 @@ writes: []
 - Target responsibility: PC plugin typed settings and upload/sync config defaults.
 - Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
-- TBD
+- Raw PC plugin configuration payload.
+- Template defaults for endpoint, workspace, upload behavior, and retry knobs.
+- Validation schema constraints for sync credentials/targets/options.
+- Optional profile-based overrides.
 
 ## Outputs
-- TBD
+- Typed `PcPluginSettings` model.
+- Normalized sync/upload configuration for PC plugin runtime hooks.
+- Redacted diagnostics view that excludes secret fields.
+- Field-level validation errors for host activation gating.
 
 ## Invariants
-- TBD
+- Required sync target fields are present before activation.
+- Secrets/credentials are never emitted in plain diagnostics payloads.
+- Defaults and overrides apply in deterministic precedence order.
+- Settings object is immutable after successful validation.
 
 ## Failure Modes
-- TBD
+- Missing required endpoint/target keys raises `PcPluginSettingsMissingKeyError`.
+- Invalid endpoint/credential format raises `PcPluginSettingsValidationError`.
+- Unsupported upload mode token raises `PcPluginSettingsModeError`.
+- Override conflict or strict unknown key raises `PcPluginSettingsOverrideError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Define typed schema for PC plugin sync/upload settings and defaults.
+2. Merge defaults, raw config, and profile overrides according to precedence.
+3. Validate endpoints, identifiers, credentials placeholders, and mode tokens.
+4. Normalize resulting values into canonical settings model for plugin hooks.
+5. Build redacted diagnostics representation that strips secret material.
+6. Return immutable `PcPluginSettings` or typed validation/override errors.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: default/override precedence, endpoint/mode validation, secret redaction, and strict unknown-key handling.
+- integration: PC plugin activation validates settings and supplies normalized sync configuration to immediate/deferred sync hooks.
 
 
 

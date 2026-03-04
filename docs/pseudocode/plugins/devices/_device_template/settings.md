@@ -31,25 +31,40 @@ writes: []
 - Target responsibility: Device-specific typed settings and defaults.
 - Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
-- TBD
+- Raw device plugin config payload from runtime settings tree.
+- Device template default values.
+- Validation schema constraints (types, ranges, required keys).
+- Optional profile-based overrides.
 
 ## Outputs
-- TBD
+- Typed `DevicePluginSettings` model.
+- Normalized settings dictionary for processor/plugin construction.
+- Validation result with field-level error codes.
+- Redacted settings view for diagnostics/logging.
 
 ## Invariants
-- TBD
+- Defaults are explicit and applied deterministically.
+- Required keys are enforced before plugin activation.
+- Unknown keys are either rejected or explicitly tracked by policy.
+- Settings model is immutable after validation.
 
 ## Failure Modes
-- TBD
+- Missing required key raises `DevicePluginSettingsMissingKeyError`.
+- Invalid type/range/value raises `DevicePluginSettingsValidationError`.
+- Unknown key under strict mode raises `DevicePluginSettingsUnknownKeyError`.
+- Profile override conflict raises `DevicePluginSettingsOverrideError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Define typed settings schema with defaults and required fields.
+2. Merge raw settings with defaults and profile overrides by precedence.
+3. Validate merged values against schema type/range constraints.
+4. Normalize canonical values (paths/tokens) needed by processor/plugin modules.
+5. Build immutable `DevicePluginSettings` and redacted diagnostics view.
+6. Return typed validation errors for invalid or conflicting settings.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: default application, required key validation, strict unknown-key handling, and override precedence.
+- integration: device plugin template validates settings before host activation and passes typed settings into processor factory.
 
 
 

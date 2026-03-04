@@ -31,25 +31,41 @@ writes: []
 - Target responsibility: Device-specific parsing, preprocessing, and candidate derivation logic.
 - Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
-- TBD
+- Raw source artifact content and metadata references.
+- Device plugin settings and processing context.
+- Candidate metadata seed from resolve stage.
+- Optional normalization helpers from domain processing modules.
 
 ## Outputs
-- TBD
+- Required processor entry points:
+  - `prepare(raw_input)` for format-specific preprocessing.
+  - `process(prepared_input, context)` for candidate derivation/result production.
+- Typed processor result model containing parsed payload, derived tokens, and warnings.
+- Typed processor errors for unsupported formats/parse failures/validation failures.
 
 ## Invariants
-- TBD
+- Processor behavior is deterministic for identical input + settings.
+- Processor does not perform infrastructure side effects directly.
+- `prepare` output type is valid input for `process`.
+- Required `prepare` and `process` entry points are always present.
 
 ## Failure Modes
-- TBD
+- Unsupported artifact format raises `DeviceProcessorFormatError`.
+- Parse/normalization failure raises `DeviceProcessorParseError`.
+- Missing required fields in parsed content raises `DeviceProcessorValidationError`.
+- Unexpected runtime exception is wrapped as `DeviceProcessorUnexpectedError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Implement `prepare(raw_input)` to decode/normalize input into intermediate structured data.
+2. Validate intermediate structure against device-specific schema expectations.
+3. Implement `process(prepared_input, context)` to derive candidate payload and processing metadata.
+4. Normalize derived values via domain processing/naming helpers.
+5. Build typed processor result with warnings and deterministic field ordering.
+6. Map parse/validation/runtime issues to typed processor errors.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: deterministic prepare/process outputs, unsupported format rejection, and required-field validation.
+- integration: ingestion resolve/persist flow runs a concrete device processor from this template and consumes its typed result in downstream stages.
 
 
 

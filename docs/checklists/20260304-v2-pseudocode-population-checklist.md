@@ -173,24 +173,24 @@
 - Why this matters: plugin contracts are a hot integration lane and need stable pseudocode to support parallel implementation.
 
 ### Checklist
-- [ ] `docs/pseudocode/plugins/host.md`: replace placeholders with plugin lifecycle, registration, and capability arbitration.
-- [ ] `docs/pseudocode/plugins/discovery.md`: replace placeholders with discovery mechanism and deterministic plugin loading.
-- [ ] `docs/pseudocode/plugins/catalog.md`: replace placeholders with catalog semantics and versioned metadata policy.
-- [ ] `docs/pseudocode/plugins/contracts.md`: replace placeholders with public plugin API contract and expectations.
-- [ ] `docs/pseudocode/plugins/profile_selection.md`: replace placeholders with profile-to-plugin selection strategy.
-- [ ] `docs/pseudocode/plugins/devices/_device_template/plugin.md`: replace placeholders with plugin implementation template and required exports.
-- [ ] `docs/pseudocode/plugins/devices/_device_template/processor.md`: replace placeholders with processor behavior contract and preprocessing model.
-- [ ] `docs/pseudocode/plugins/devices/_device_template/settings.md`: replace placeholders with settings schema and defaults.
-- [ ] `docs/pseudocode/plugins/pcs/_pc_template/plugin.md`: replace placeholders with PC plugin contract and sync lifecycle hooks.
-- [ ] `docs/pseudocode/plugins/pcs/_pc_template/settings.md`: replace placeholders with PC profile and sync settings schema.
+- [x] `docs/pseudocode/plugins/host.md`: replace placeholders with plugin lifecycle, registration, and capability arbitration.
+- [x] `docs/pseudocode/plugins/discovery.md`: replace placeholders with discovery mechanism and deterministic plugin loading.
+- [x] `docs/pseudocode/plugins/catalog.md`: replace placeholders with catalog semantics and versioned metadata policy.
+- [x] `docs/pseudocode/plugins/contracts.md`: replace placeholders with public plugin API contract and expectations.
+- [x] `docs/pseudocode/plugins/profile_selection.md`: replace placeholders with profile-to-plugin selection strategy.
+- [x] `docs/pseudocode/plugins/devices/_device_template/plugin.md`: replace placeholders with plugin implementation template and required exports.
+- [x] `docs/pseudocode/plugins/devices/_device_template/processor.md`: replace placeholders with processor behavior contract and preprocessing model.
+- [x] `docs/pseudocode/plugins/devices/_device_template/settings.md`: replace placeholders with settings schema and defaults.
+- [x] `docs/pseudocode/plugins/pcs/_pc_template/plugin.md`: replace placeholders with PC plugin contract and sync lifecycle hooks.
+- [x] `docs/pseudocode/plugins/pcs/_pc_template/settings.md`: replace placeholders with PC profile and sync settings schema.
 
 ### Manual Check
-- [ ] Ensure each plugin template has explicit required entry points: init metadata, process/prepare methods, and capability flags.
-- [ ] Ensure templates map to real V1 plugin directories in the mapping document.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/plugins`.
+- [x] Ensure each plugin template has explicit required entry points: init metadata, process/prepare methods, and capability flags.
+- [x] Ensure templates map to real V1 plugin directories in the mapping document.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/plugins`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated plugin host/discovery/catalog/contracts/profile specs and device/pc templates with deterministic selection/lifecycle behavior and explicit required entry points (`metadata`, `capabilities`, processor/sync factories); verified `rg "TBD" docs/pseudocode/plugins` returns no matches.
 
 ---
 
