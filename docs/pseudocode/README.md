@@ -40,6 +40,8 @@
   - `docs/checklists/20260304-v2-pseudocode-traceability-refresh-checklist.md`
 - Active traceability gap-closure checklist:
   - `docs/checklists/20260304-v2-pseudocode-gap-closure-checklist.md`
+- Active traceability work-summary checklist:
+  - `docs/checklists/20260304-v2-pseudocode-traceability-work-summary-checklist.md`
 - Active traceability report:
   - `docs/reports/20260304-v2-pseudocode-implementation-traceability-report.md`
 - Active traceability matrix:
