@@ -9,7 +9,7 @@ Autonomy mode (mandatory):
 - Do not ask for human input during normal implementation flow.
 - Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
-Implement infrastructure adapters in TDD order.
+Phase 2 (hardening + gap closure): harden infrastructure adapters and close remaining mapped adapter gaps in TDD order.
 
 Allowed edits:
 - src/dpost_v2/infrastructure/**
@@ -19,6 +19,11 @@ Canonical references:
 - docs/pseudocode/infrastructure/**
 - docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
 - docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
+
+Phase focus (mandatory):
+- Prioritize reliability and failure-path behavior across storage, sync, runtime UI, and observability adapters.
+- Add integration-style tests for adapter interactions at contract boundaries (not just isolated happy paths).
+- Treat scaffolding-only changes as out of scope unless required to close a mapped implementation gap.
 
 TDD protocol (mandatory):
 1. Write failing adapter contract/behavior tests.

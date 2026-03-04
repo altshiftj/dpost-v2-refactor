@@ -16,6 +16,8 @@ Prompt file paths:
 - Agents are expected to run fully autonomous to completion (no human in the loop).
 - Only intervene on hard blockers (credentials, unavailable required systems, contradictory instructions).
 - This wave targets implementation in `src/dpost_v2` and `tests/dpost_v2`.
+- `infrastructure-adapters` and `plugins-device-system` are Phase 2 hardening + gap-closure passes.
+- `runtime-composition` and `tests-v2-harness` run as normal implementation lanes.
 - TDD order is mandatory (failing tests -> code -> refactor).
 - Run each lane from its dedicated `.worktrees/<lane>` checkout, never from the `D:\Repos\d-post` root checkout.
 - Keep one lane per branch and avoid cross-lane edits.

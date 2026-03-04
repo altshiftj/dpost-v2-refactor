@@ -9,7 +9,7 @@ Autonomy mode (mandatory):
 - Do not ask for human input during normal implementation flow.
 - Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
-Implement plugin host/discovery/device integration in TDD order.
+Phase 2 (hardening + gap closure): close mapped plugin migration gaps and harden plugin host/discovery/device integration in TDD order.
 
 Allowed edits:
 - src/dpost_v2/plugins/**
@@ -19,6 +19,11 @@ Canonical references:
 - docs/pseudocode/plugins/**
 - docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md
 - docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md
+
+Phase focus (mandatory):
+- Prioritize concrete device/pc plugin migrations listed in the V1->V2 mapping before adding new scaffolding.
+- Expand edge-case coverage for discovery, selection, loading, and host lifecycle behavior.
+- Treat template-only or cosmetic changes as out of scope unless required to unblock mapped migrations.
 
 TDD protocol (mandatory):
 1. Write failing tests for plugin discovery/selection/loading behavior.
