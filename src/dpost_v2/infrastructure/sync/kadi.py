@@ -86,6 +86,8 @@ class KadiSyncAdapter:
             raise KadiSyncLifecycleError("kadi sync adapter is not initialized")
         if not isinstance(request, SyncRequest):
             raise KadiSyncResponseError("request must be SyncRequest")
+        if request.record_id is None:
+            raise KadiSyncResponseError("request.record_id must be provided")
 
         payload = self._serialize_payload(request)
         headers = self._build_headers(request)
@@ -182,4 +184,3 @@ def _as_optional_string(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
-

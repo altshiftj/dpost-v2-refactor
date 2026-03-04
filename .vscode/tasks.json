@@ -70,6 +70,18 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:start-gap-closure-4",
+      "dependsOn": [
+        "lane:startup-bootstrap",
+        "lane:records-core",
+        "lane:plugins-device-system",
+        "lane:docs-pseudocode-traceability",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:start-all",
       "dependsOn": [
         "lane:contracts-interfaces",
@@ -127,6 +139,30 @@
         "${workspaceFolder}",
         "-Lane",
         "startup-bootstrap"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:records-core",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "records-core"
       ],
       "presentation": {
         "reveal": "always",
@@ -346,6 +382,15 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:prep-gap-closure-4",
+      "dependsOn": [
+        "codex:lanes:start-gap-closure-4",
+        "lane:prompt:gap-closure-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
       "label": "lane:prompt:core-4-pack:copy",
       "type": "process",
       "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
@@ -382,6 +427,24 @@
       "problemMatcher": []
     },
     {
+      "label": "lane:prompt:gap-closure-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/gap-closure-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
       "label": "lane:prompt:contracts-interfaces:copy",
       "type": "process",
       "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
@@ -414,6 +477,24 @@
         "${workspaceFolder}",
         "-PromptRelativePath",
         "docs/ops/lane-prompts/startup-bootstrap.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:records-core:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/records-core.md"
       ],
       "problemMatcher": []
     },

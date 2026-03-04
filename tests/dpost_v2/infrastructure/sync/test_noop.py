@@ -7,6 +7,7 @@ from dpost_v2.infrastructure.sync.noop import (
     NoopSyncAdapter,
     NoopSyncCancelledError,
     NoopSyncContractError,
+    NoopSyncInputError,
     NoopSyncLifecycleError,
 )
 
@@ -46,6 +47,14 @@ def test_noop_sync_can_simulate_cancellation() -> None:
         adapter.sync_record(
             SyncRequest(record_id="rec-1", payload={"cancelled": True})
         )
+
+
+def test_noop_sync_rejects_request_without_record_id() -> None:
+    adapter = NoopSyncAdapter()
+    adapter.initialize()
+
+    with pytest.raises(NoopSyncInputError):
+        adapter.sync_record(SyncRequest(payload={}))
 
 
 def test_noop_healthcheck_lifecycle_state_changes() -> None:

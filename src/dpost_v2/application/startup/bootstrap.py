@@ -89,9 +89,12 @@ def run(
         settings: StartupSettings,
         _request: BootstrapRequest,
     ) -> StartupDependencies:
+        resolved_environment = (
+            dict(os.environ) if environment is None else dict(environment)
+        )
         return resolve_startup_dependencies_root(
             settings=settings.to_dependency_payload(),
-            environment=environment or {},
+            environment=resolved_environment,
         )
 
     return run_bootstrap(
@@ -215,6 +218,7 @@ def _emit_started(
     request: BootstrapRequest,
     emit_event: Callable[[StartupEvent], None],
 ) -> None:
+    metadata = dict(request.metadata)
     emit_event(
         StartupEvent(
             name="startup_started",
@@ -223,6 +227,7 @@ def _emit_started(
                 {
                     "mode": request.mode,
                     "profile": request.profile,
+                    "metadata": metadata,
                 }
             ),
         )

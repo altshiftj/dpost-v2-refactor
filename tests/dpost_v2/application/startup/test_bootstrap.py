@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 
+from dpost_v2.application.startup import bootstrap as bootstrap_module
 from dpost_v2.application.startup.bootstrap import BootstrapRequest, run_bootstrap
 from dpost_v2.application.startup.settings_service import (
     SettingsLoadFailure,
@@ -20,6 +21,25 @@ from dpost_v2.runtime.startup_dependencies import resolve_startup_dependencies
 class FakeSettings:
     mode: str = "headless"
     profile: str = "ci"
+
+
+@dataclass(frozen=True)
+class FakeRunSettings:
+    mode: str = "headless"
+    profile: str = "ci"
+
+    def to_dependency_payload(self) -> dict[str, object]:
+        return {
+            "mode": self.mode,
+            "profile": self.profile,
+            "backends": {
+                "ui": "headless",
+                "sync": "noop",
+                "plugins": "builtin",
+                "observability": "structured",
+                "storage": "filesystem",
+            },
+        }
 
 
 class DummyApp:
@@ -287,3 +307,84 @@ def test_bootstrap_integration_with_settings_service_and_runtime_modules(tmp_pat
     assert result.runtime_handle["trace_id"] == "trace-006"
     assert result.context.settings.profile == "ci"
     assert [event.name for event in events] == ["startup_started", "startup_succeeded"]
+
+
+def test_bootstrap_started_event_includes_request_metadata() -> None:
+    request = BootstrapRequest(
+        mode="headless",
+        profile="ci",
+        trace_id="trace-007",
+        metadata={"source": "cli", "attempt": 2},
+    )
+    events = []
+    settings = FakeSettings()
+    dependencies = _dependencies()
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=lambda _request: settings,
+        resolve_dependencies=lambda _settings, _request: dependencies,
+        compose_runtime=lambda _context: CompositionBundle(
+            app=DummyApp(),
+            port_bindings={"ui": object(), "event_sink": object()},
+            diagnostics={},
+            shutdown_all=lambda: None,
+        ),
+        launch_runtime=lambda app, _context: app,
+        emit_event=events.append,
+    )
+
+    assert result.is_success is True
+    assert events[0].name == "startup_started"
+    assert events[0].payload["metadata"] == {"source": "cli", "attempt": 2}
+
+
+def test_run_uses_process_environment_when_override_not_supplied(monkeypatch) -> None:
+    request = BootstrapRequest(mode="headless", profile="ci", trace_id="trace-008")
+    events = []
+    captured_environment: dict[str, str] = {}
+    settings = FakeRunSettings()
+
+    monkeypatch.setenv("DPOST_BOOTSTRAP_TEST_TOKEN", "present")
+
+    def fake_load_startup_settings(_request, *, root_hint, cache):
+        return SettingsLoadResult(is_success=True, settings=settings)
+
+    def fake_resolve_startup_dependencies(*, settings, environment):
+        captured_environment.update(environment)
+        return StartupDependencies(
+            factories={
+                "observability": lambda: object(),
+                "storage": lambda: object(),
+                "sync": lambda: object(),
+                "ui": lambda: object(),
+                "event_sink": lambda: object(),
+                "plugins": lambda: object(),
+            },
+            selected_backends={
+                "ui": "headless",
+                "sync": "noop",
+                "plugins": "builtin",
+                "observability": "structured",
+                "storage": "filesystem",
+            },
+            lazy_factories=frozenset(),
+            warnings=(),
+            cleanup=None,
+        )
+
+    monkeypatch.setattr(
+        bootstrap_module,
+        "load_startup_settings",
+        fake_load_startup_settings,
+    )
+    monkeypatch.setattr(
+        bootstrap_module,
+        "resolve_startup_dependencies_root",
+        fake_resolve_startup_dependencies,
+    )
+
+    result = bootstrap_module.run(request=request, emit_event=events.append)
+
+    assert result.is_success is True
+    assert captured_environment["DPOST_BOOTSTRAP_TEST_TOKEN"] == "present"

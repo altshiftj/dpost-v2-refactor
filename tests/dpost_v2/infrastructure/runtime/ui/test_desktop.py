@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -10,6 +11,8 @@ from dpost_v2.infrastructure.runtime.ui.desktop import (
     DesktopUiAdapterError,
     DesktopUiCallbackError,
 )
+from dpost_v2.infrastructure.runtime.ui.dialogs import dispatch_dialog
+from dpost_v2.infrastructure.runtime.ui.tkinter import TkinterUiAdapter
 
 
 @dataclass
@@ -94,3 +97,17 @@ def test_desktop_adapter_maps_callback_failures() -> None:
 
     with pytest.raises(DesktopUiCallbackError):
         adapter.prompt(prompt_type="confirm", payload={})
+
+
+def test_desktop_adapter_integrates_dialog_dispatch_with_tkinter_backend() -> None:
+    backend = _Backend(statuses=[])
+    tkinter = TkinterUiAdapter(backend=backend, ui_thread_id=threading.get_ident())
+    adapter = DesktopUiAdapter(backend=tkinter, dialog_dispatch=dispatch_dialog)
+    adapter.initialize()
+
+    result = adapter.prompt(prompt_type="confirm", payload={"question": "Proceed?"})
+
+    assert result["action"] == "accepted"
+    assert result["cancelled"] is False
+    assert result["values"]["accepted"] is True
+    assert result["values"]["prompt_type"] == "confirm"

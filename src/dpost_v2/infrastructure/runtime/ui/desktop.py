@@ -78,7 +78,7 @@ class DesktopUiAdapter:
             result = self._dialog_dispatch(
                 prompt_type=prompt_type,
                 payload=dict(payload),
-                backend_prompt=self._backend.prompt,
+                backend_prompt=self._dispatch_backend_prompt,
             )
         except Exception as exc:  # noqa: BLE001
             raise DesktopUiAdapterError(str(exc)) from exc
@@ -100,6 +100,20 @@ class DesktopUiAdapter:
 
         return dict(result)
 
+    def _dispatch_backend_prompt(self, request: Mapping[str, Any]) -> Mapping[str, Any] | None:
+        if not isinstance(request, Mapping):
+            raise DesktopUiPayloadError("dialog request must be a mapping")
+        backend_prompt_type = request.get("prompt_type")
+        if not isinstance(backend_prompt_type, str) or not backend_prompt_type.strip():
+            raise DesktopUiPayloadError("dialog request prompt_type must be non-empty")
+        backend_payload = request.get("payload", {})
+        if not isinstance(backend_payload, Mapping):
+            raise DesktopUiPayloadError("dialog request payload must be a mapping")
+        return self._backend.prompt(
+            prompt_type=backend_prompt_type,
+            payload=dict(backend_payload),
+        )
+
     def show_status(self, *, message: str) -> None:
         """Forward status update and store latest message."""
         try:
@@ -118,4 +132,3 @@ class DesktopUiAdapter:
             self._backend.shutdown()
         except Exception as exc:  # noqa: BLE001
             raise DesktopUiAdapterError(str(exc)) from exc
-

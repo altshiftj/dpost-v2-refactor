@@ -11,6 +11,10 @@ function Get-LaneMap {
             Branch = "rewrite/v2-lane-startup-bootstrap"
             Prompt = "docs/ops/lane-prompts/startup-bootstrap.md"
         }
+        "records-core" = @{
+            Branch = "rewrite/v2-lane-records-core"
+            Prompt = "docs/ops/lane-prompts/records-core.md"
+        }
         "domain-core-models" = @{
             Branch = "rewrite/v2-lane-domain-core-models"
             Prompt = "docs/ops/lane-prompts/domain-core-models.md"
@@ -45,4 +49,3 @@ function Get-LaneMap {
         }
     }
 }
-
