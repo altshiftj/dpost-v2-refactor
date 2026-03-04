@@ -103,6 +103,8 @@ def cleanup_candidates(
     filtered: list[Path] = []
     for raw_path in candidate_paths:
         candidate = Path(raw_path).expanduser().resolve(strict=False)
+        if not _is_within(candidate, layout.root):
+            continue
         if _is_within(candidate, layout.intake) or _is_within(candidate, layout.staging):
             continue
         filtered.append(candidate)
@@ -133,4 +135,3 @@ def _is_within(path: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
-

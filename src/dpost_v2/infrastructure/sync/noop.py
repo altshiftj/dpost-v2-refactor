@@ -66,6 +66,8 @@ class NoopSyncAdapter:
             raise NoopSyncLifecycleError("noop sync adapter is not initialized")
         if not isinstance(request, SyncRequest):
             raise NoopSyncContractError("request must be SyncRequest")
+        if request.record_id is None:
+            raise NoopSyncInputError("request.record_id must be provided")
 
         if self._simulate_latency > 0:
             time.sleep(self._simulate_latency)
@@ -83,4 +85,3 @@ class NoopSyncAdapter:
             reason_code=self._reason_code,
             metadata=metadata,
         )
-
