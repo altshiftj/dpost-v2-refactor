@@ -82,6 +82,18 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:start-cleanup-4",
+      "dependsOn": [
+        "lane:legacy-runtime-cutover",
+        "lane:legacy-code-retirement",
+        "lane:legacy-tests-retirement",
+        "lane:legacy-docs-tooling",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:start-all",
       "dependsOn": [
         "lane:contracts-interfaces",
@@ -364,6 +376,102 @@
       "problemMatcher": []
     },
     {
+      "label": "lane:legacy-runtime-cutover",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "legacy-runtime-cutover"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:legacy-code-retirement",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "legacy-code-retirement"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:legacy-tests-retirement",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "legacy-tests-retirement"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:legacy-docs-tooling",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "legacy-docs-tooling"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:prep-core-4",
       "dependsOn": [
         "codex:lanes:start-core-4",
@@ -386,6 +494,15 @@
       "dependsOn": [
         "codex:lanes:start-gap-closure-4",
         "lane:prompt:gap-closure-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-cleanup-4",
+      "dependsOn": [
+        "codex:lanes:start-cleanup-4",
+        "lane:prompt:cleanup-4-pack:copy"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
@@ -441,6 +558,24 @@
         "${workspaceFolder}",
         "-PromptRelativePath",
         "docs/ops/lane-prompts/gap-closure-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:cleanup-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/legacy-cleanup-4-launch-pack.md"
       ],
       "problemMatcher": []
     },
@@ -639,6 +774,78 @@
         "${workspaceFolder}",
         "-PromptRelativePath",
         "docs/ops/lane-prompts/ci-v2-gates.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:legacy-runtime-cutover:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/legacy-runtime-cutover.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:legacy-code-retirement:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/legacy-code-retirement.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:legacy-tests-retirement:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/legacy-tests-retirement.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:legacy-docs-tooling:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/legacy-docs-tooling.md"
       ],
       "problemMatcher": []
     }

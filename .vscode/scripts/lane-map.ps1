@@ -47,5 +47,21 @@ function Get-LaneMap {
             Branch = "rewrite/v2-lane-ci-v2-gates"
             Prompt = "docs/ops/lane-prompts/ci-v2-gates.md"
         }
+        "legacy-runtime-cutover" = @{
+            Branch = "rewrite/v2-lane-legacy-runtime-cutover"
+            Prompt = "docs/ops/lane-prompts/legacy-runtime-cutover.md"
+        }
+        "legacy-code-retirement" = @{
+            Branch = "rewrite/v2-lane-legacy-code-retirement"
+            Prompt = "docs/ops/lane-prompts/legacy-code-retirement.md"
+        }
+        "legacy-tests-retirement" = @{
+            Branch = "rewrite/v2-lane-legacy-tests-retirement"
+            Prompt = "docs/ops/lane-prompts/legacy-tests-retirement.md"
+        }
+        "legacy-docs-tooling" = @{
+            Branch = "rewrite/v2-lane-legacy-docs-tooling"
+            Prompt = "docs/ops/lane-prompts/legacy-docs-tooling.md"
+        }
     }
 }
