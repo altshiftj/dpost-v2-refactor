@@ -1,8 +1,10 @@
 You are working in D:\Repos\d-post.
 
 Lane: contracts-interfaces
-Branch: rewrite/v2-lane-contracts-interfaces
-
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
 Implement V2 contracts/interfaces in TDD order (tests first, then code).
 
@@ -32,3 +34,4 @@ Output:
 - Tests added/updated
 - Commands run and results
 - Risks/assumptions
+

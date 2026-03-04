@@ -1,8 +1,10 @@
 You are working in D:\Repos\d-post.
 
 Lane: docs-pseudocode-traceability
-Branch: rewrite/v2-lane-docs-pseudocode-traceability
-
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
 Maintain implementation traceability as code lands.
 
@@ -25,3 +27,4 @@ Output:
 - Files changed
 - Coverage/traceability notes
 - Remaining implementation gaps
+

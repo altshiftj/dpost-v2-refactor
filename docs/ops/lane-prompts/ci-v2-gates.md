@@ -1,8 +1,10 @@
 You are working in D:\Repos\d-post.
 
 Lane: ci-v2-gates
-Branch: rewrite/v2-lane-ci-v2-gates
-
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
 Maintain CI gates for parallel V2 implementation.
 
@@ -23,3 +25,4 @@ Output:
 - Files changed
 - CI behavior changes
 - Risks/assumptions
+

@@ -1,8 +1,10 @@
 You are working in D:\Repos\d-post.
 
 Lane: domain-core-models
-Branch: rewrite/v2-lane-domain-core-models
-
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
 Implement domain models/rules in TDD order.
 
@@ -29,3 +31,4 @@ Output:
 - Tests added/updated
 - Commands run and results
 - Risks/assumptions
+

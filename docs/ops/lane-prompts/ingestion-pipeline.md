@@ -1,8 +1,10 @@
 You are working in D:\Repos\d-post.
 
 Lane: ingestion-pipeline
-Branch: rewrite/v2-lane-ingestion-pipeline
-
+Autonomy mode (mandatory):
+- Execute fully autonomously until the lane task is complete.
+- Do not ask for human input during normal implementation flow.
+- Only stop/ask if hard-blocked by missing credentials, unavailable required external systems, or contradictory instructions.
 Goal:
 Implement ingestion/pipeline orchestration in TDD order.
 
@@ -29,3 +31,4 @@ Output:
 - Tests added/updated
 - Commands run and results
 - Risks/assumptions
+

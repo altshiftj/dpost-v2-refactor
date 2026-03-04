@@ -18,7 +18,8 @@
 - Autonomous execution is default.
 - Work in discrete, high-coherence sections (contracts, startup, domain, ingestion, infrastructure, plugins, runtime, tests).
 - Continue until the user issues a stop or the assigned lane packet is complete.
-- Only ask for human input when ambiguity threatens correctness.
+- No human-in-the-loop by default; continue autonomously until lane completion.
+- Only ask for human input when hard-blocked by missing credentials, unavailable required systems, or contradictory instructions.
 
 ## Scope
 - Prefer edits under `src/dpost_v2/`, `tests/dpost_v2/`, `docs/ops/lane-prompts/`, `docs/checklists/`, `docs/planning/`, and `docs/reports/`.
@@ -116,3 +117,4 @@ A slice is incomplete if:
 - Execute all assigned sections continuously in order with minimal interruption.
 - Provide updates only at section boundaries and blocker points.
 - End the shift with a concise handoff note and exact next file.
+
