@@ -1,98 +1,93 @@
 # AI Agent Instructions (dpost)
 
 ## Purpose
-- Build `dpost` V2 as a cleanroom, OSS-ready architecture with explicit contracts.
-- Treat V1 as reference input, not as the design authority for new code.
-- Optimize for clarity, contributor onboarding, and safe incremental delivery.
+- Task focus (current run): populate V2 pseudocode documents in `docs/pseudocode/` with concrete implementation intent.
+- Preserve traceability to migration mapping so models can execute V2 implementation in parallel without interpretation drift.
+- Keep work reviewable, deterministic, and checkpointed.
 
 ## Current Phase (Locked)
-- Repository of record: `D:\Repos\d-post`.
-- Canonical planning docs:
+- Execution target: documentation completion for V2 pseudocode only.
+- Canonical artifacts:
   - `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
   - `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
-- Canonical pseudocode tree: `docs/pseudocode/` (no `docs/pseudocode/v2`).
-- Primary implementation target: `src/dpost_v2/`.
-- V1 runtime (`src/dpost/`) is maintenance-only unless explicitly requested.
+  - `docs/checklists/20260304-v2-pseudocode-population-checklist.md`
+  - `docs/pseudocode/`
+- Runtime implementation is out of scope until the pseudocode pass is complete.
 
 ## Operating Mode
-- Autonomous execution is default: analyze, red test, green implementation, refactor, validate, document.
-- Do not pause for micro-approvals unless requirements are ambiguous, contradictory, or unsafe.
-- Work in subsystem slices with clear ownership boundaries.
+- Autonomous execution is default.
+- Work in discrete, high-coherence sections (contracts, startup, domain, ingestion, infrastructure, plugins).
+- Continue until the user issues a stop or the checklist is complete.
+- Only ask for human input when ambiguity threatens correctness.
 
 ## Scope
-- Prefer edits under:
-  - `docs/pseudocode/`
-  - `docs/planning/`
-  - `docs/checklists/`
-  - `docs/reports/`
-  - `src/dpost_v2/`
-  - `tests/` (V2-focused coverage)
-- Avoid touching `.venv/`, lockfiles, generated artifacts, and unrelated legacy files unless asked.
+- Prefer edits under `docs/pseudocode/`, `docs/checklists/`, `docs/planning/`, and `docs/reports/`.
+- Do not edit `src/` or `tests/` unless implementation is explicitly resumed.
+- Do not touch `.venv/`, lockfiles, build artifacts, or generated files.
 
-## Execution Workflow (V2)
-1. Align contract intent in planning docs and pseudocode docs.
-2. Add or update focused failing tests for the current slice.
-3. Implement minimal V2 code to pass tests.
-4. Refactor for readability and boundary clarity with tests still green.
-5. Run targeted checks, then periodic full checkpoints.
-6. Record concise slice notes in checklist/report artifacts.
+## Pseudocode Completion Rules (Mandatory)
+Each `.md` under `docs/pseudocode/` must contain:
+- `Intent`
+- `Inputs`
+- `Outputs`
+- `Invariants`
+- `Failure Modes`
+- `Pseudocode`
+- `Tests To Implement`
+- explicit `origin` or `source` mapping to V1 when applicable.
+
+A file is incomplete if it still contains:
+- `TBD`
+- placeholder-only language without concrete behavior
+
+## Execution Workflow for This Task
+1. Map/align
+   - Confirm each target pseudocode file has a mapping path in the file-mapping doc.
+2. Populate
+   - Replace placeholders with concrete behavior-oriented descriptions.
+3. Normalize
+   - Normalize terminology and imports/ownership boundaries across sections.
+4. Validate
+   - Run grep checks and reconcile with checklist completion.
+5. Commit
+   - Commit section-complete checkpoints with scoped messages.
+
+## Checkpoint and Commit Protocol
+- Commit frequently by completed section/lane, not as one giant pass.
+- Suggested commit style: `docs: populate v2 pseudocode - <section>`.
+- Do not wait for extra approvals for routine documentation edits.
+
+## Planning and Tracking
+- Use `docs/checklists/` for execution order and completion state.
+- Use `docs/reports/` for summary risk/quality notes.
+- Use `docs/planning/` for any architecture or scope changes.
+- Keep checklists with:
+  - `Why this matters`
+  - `Manual Check`
+  - `Completion Notes`
 
 ## Layering Constraints
-- Domain: pure business/data rules with no infrastructure dependencies.
-- Application: orchestration, use-cases, and port contracts only.
-- Infrastructure: adapter implementations and external integrations.
-- Plugins: extension points for device/PC behavior.
-- Composition wiring belongs at runtime/composition boundaries.
-- Do not introduce new global singletons without explicit approval.
-
-## Import Policy
-- `src/dpost_v2/**` must not import `ipat_watchdog.*`.
-- `src/dpost_v2/**` must not depend directly on `src/dpost/**` runtime internals.
-- Any exception requires explicit human approval plus architecture notes.
-
-## Cleanroom Guardrails
-- No compatibility wrapper carryover by default.
-- No ambient config lookups in deep helpers.
-- No hidden side effects in constructors.
-- Prefer explicit context objects and port interfaces.
-
-## Testing Standard
-- TDD for non-trivial behavior and architecture slices:
-  - capture red-state evidence
-  - implement to green
-  - refactor with green tests
-- Use focused unit tests during slices; run broader gates at checkpoints.
-- Keep test intent explicit and deterministic.
-
-## Documentation Standard
-- Pseudocode docs in `docs/pseudocode/` are the executable design contract.
-- Keep blueprint/mapping docs synchronized with actual structure.
-- Checklists must include:
-  - brief `Why this matters`
-  - completion note (`How it was done`)
-  - `Manual Check` validation steps
-
-## Code Style
-- Python 3.12+.
-- Format with Black (88 columns).
-- Lint with Ruff.
-- Keep strict typing discipline.
-- Add type hints for public functions.
-- Add concise docstrings for new tests and new public functions.
+- Preserve V2 layer boundaries:
+  - domain: pure business and data semantics
+  - application: orchestration, contracts, orchestrators
+  - infrastructure: adapters and side effects
+  - plugins: extension points
+  - runtime: composition and startup
+- Document ownership per layer; do not mix concrete adapter behavior into domain/application files.
 
 ## Commands
-- Lint: `python -m ruff check .`
-- Lint fix: `python -m ruff check . --fix`
-- Format: `python -m black .`
-- Pre-commit: `python -m pre_commit run --all-files`
-- Tests: `python -m pytest`
+- Documentation validation:
+  - `rg "TBD" docs/pseudocode`
+  - `rg "origin|source|v1" docs/pseudocode -n`
+  - `git status`
+  - `git diff`
+- Optional quality gate: `python -m pre_commit run --all-files`
 
 ## Git Safety Rules
-- Primary goal: prevent destructive operations during autonomous execution.
-- Allowed git write operations:
+- Allowed:
   - `git add ...`
   - `git commit ...`
-- Allowed git read operations:
+- Allowed read only:
   - `git status`
   - `git diff`
   - `git log`
@@ -106,12 +101,17 @@
   - `git commit --amend`
   - `git push --force`
 
-## Output Expectations
-- Summarize what changed and why.
-- Report tests/lint run, or clearly state if not run.
-- Provide terminal-ready commands when listing commands.
-
 ## Glossary Rules
-- Maintain `GLOSSARY.csv` at repo root.
-- Columns: `term,type,purpose,usage`.
-- Add entries when introducing project-defined terms.
+- If new internal terms are introduced in pseudocode or planning docs, add/update entries in `GLOSSARY.csv` at repo root.
+- Required columns: `term,type,purpose,usage`.
+
+## Output Expectations
+- At section completion, report:
+  - files modified,
+  - checks run,
+  - any blocked or deferred items.
+
+## Overnight Autonomous SOP (When Requested)
+- Execute all sections continuously in order with minimal interruption.
+- Provide updates only at section boundaries and blocker points.
+- End the shift with a concise handoff note and exact next file.
