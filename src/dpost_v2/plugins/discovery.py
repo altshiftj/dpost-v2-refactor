@@ -207,6 +207,23 @@ def discover_from_namespaces(
             "dpost_v2.plugins.pcs": "pc",
         }
     )
+    normalized_mapping: dict[str, str] = {}
+    for namespace_name, family in mapping.items():
+        if not isinstance(namespace_name, str) or not namespace_name.strip():
+            raise PluginDiscoveryFamilyError(
+                "namespace_families keys must be non-empty strings"
+            )
+        if not isinstance(family, str) or not family.strip():
+            raise PluginDiscoveryFamilyError(
+                f"namespace {namespace_name!r} family token must be a non-empty string"
+            )
+        normalized_family = family.strip().lower()
+        if normalized_family not in {"device", "pc"}:
+            raise PluginDiscoveryFamilyError(
+                f"namespace {namespace_name!r} has unsupported family token {family!r}"
+            )
+        normalized_mapping[namespace_name] = normalized_family
+
     importer = module_importer or import_module
     iter_modules = iter_modules_fn or pkgutil.iter_modules
 
@@ -214,7 +231,7 @@ def discover_from_namespaces(
     module_expected_families: dict[str, str] = {}
     namespace_import_issues: list[PluginDiscoveryIssue] = []
 
-    for namespace_name in sorted(mapping):
+    for namespace_name in sorted(normalized_mapping):
         try:
             namespace_module = importer(namespace_name)
         except Exception as exc:  # noqa: BLE001
@@ -242,12 +259,12 @@ def discover_from_namespaces(
                 continue
             module_name = f"{package_name}.plugin"
             module_names.append(module_name)
-            module_expected_families[module_name] = mapping[namespace_name]
+            module_expected_families[module_name] = normalized_mapping[namespace_name]
 
     discovered = discover_plugins(
         module_names=tuple(sorted(set(module_names))),
         module_importer=importer,
-        allowed_families=tuple(sorted(set(mapping.values()))),
+        allowed_families=tuple(sorted(set(normalized_mapping.values()))),
     )
 
     for descriptor in discovered.descriptors:

@@ -276,3 +276,37 @@ def test_host_lifecycle_activation_processor_creation_and_shutdown() -> None:
 
     assert host.get_device_plugins() == ()
     assert hooks == [("activate", "device.alpha"), ("shutdown", "device.alpha")]
+
+
+def test_host_profile_reactivation_handles_removed_and_unchanged_plugins() -> None:
+    hooks: list[tuple[str, str]] = []
+    host = PluginHost(
+        (
+            _device_descriptor(
+                plugin_id="device.alpha",
+                profiles=("prod",),
+                hooks=hooks,
+            ),
+            _device_descriptor(
+                plugin_id="device.shared",
+                profiles=("prod", "qa"),
+                hooks=hooks,
+            ),
+            _device_descriptor(
+                plugin_id="device.beta",
+                profiles=("qa",),
+                hooks=hooks,
+            ),
+        )
+    )
+
+    host.activate_profile(profile="prod", known_profiles={"prod", "qa"})
+    host.activate_profile(profile="qa", known_profiles={"prod", "qa"})
+
+    assert host.get_device_plugins() == ("device.beta", "device.shared")
+    assert hooks == [
+        ("activate", "device.alpha"),
+        ("activate", "device.shared"),
+        ("shutdown", "device.alpha"),
+        ("activate", "device.beta"),
+    ]
