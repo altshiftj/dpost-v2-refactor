@@ -9,8 +9,11 @@ Goal:
 Build V2 test harness/fixtures/utilities in TDD-friendly form.
 
 Allowed edits:
-- tests/dpost_v2/**
-- src/dpost_v2/** (only shared test-support code when unavoidable)
+- tests/dpost_v2/conftest.py
+- tests/dpost_v2/_support/**
+- tests/dpost_v2/harness/**
+- tests/dpost_v2/smoke/**
+- src/dpost_v2/testing/** (only shared test-support code when unavoidable)
 
 Canonical references:
 - docs/pseudocode/** (testing-related)
@@ -24,6 +27,8 @@ TDD protocol (mandatory):
 Constraints:
 - Prefer test-side utilities under `tests/dpost_v2`.
 - Keep fixtures deterministic.
+- Do not modify lane-owned behavior tests under `tests/dpost_v2/application/**`, `tests/dpost_v2/domain/**`, `tests/dpost_v2/infrastructure/**`, or `tests/dpost_v2/plugins/**`.
+- If an unavoidable harness API touch-up is needed in an existing test, keep it minimal and document it in output.
 
 Output:
 - Files changed

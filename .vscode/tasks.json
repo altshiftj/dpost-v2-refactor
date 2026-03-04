@@ -8,7 +8,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "$repo='D:/Repos/d-post'; $base='D:/Repos/d-post-lanes'; New-Item -ItemType Directory -Force -Path $base | Out-Null; Set-Location $repo; $map=@{ 'contracts-interfaces'='rewrite/v2-lane-contracts-interfaces'; 'startup-bootstrap'='rewrite/v2-lane-startup-bootstrap'; 'domain-core-models'='rewrite/v2-lane-domain-core-models'; 'ingestion-pipeline'='rewrite/v2-lane-ingestion-pipeline'; 'infrastructure-adapters'='rewrite/v2-lane-infrastructure-adapters'; 'plugins-device-system'='rewrite/v2-lane-plugins-device-system'; 'runtime-composition'='rewrite/v2-lane-runtime-composition'; 'docs-pseudocode-traceability'='rewrite/v2-lane-docs-pseudocode-traceability'; 'tests-v2-harness'='rewrite/v2-lane-tests-v2-harness'; 'ci-v2-gates'='rewrite/v2-lane-ci-v2-gates' }; foreach ($k in $map.Keys) { $path = Join-Path $base $k; if (Test-Path $path) { Write-Host \"exists: $path\"; continue }; git worktree add $path $map[$k] }; Write-Host 'worktree setup done'"
+        "$repo='D:/Repos/d-post'; $base='D:/Repos/d-post/.worktrees'; New-Item -ItemType Directory -Force -Path $base | Out-Null; Set-Location $repo; $map=@{ 'contracts-interfaces'='rewrite/v2-lane-contracts-interfaces'; 'startup-bootstrap'='rewrite/v2-lane-startup-bootstrap'; 'domain-core-models'='rewrite/v2-lane-domain-core-models'; 'ingestion-pipeline'='rewrite/v2-lane-ingestion-pipeline'; 'infrastructure-adapters'='rewrite/v2-lane-infrastructure-adapters'; 'plugins-device-system'='rewrite/v2-lane-plugins-device-system'; 'runtime-composition'='rewrite/v2-lane-runtime-composition'; 'docs-pseudocode-traceability'='rewrite/v2-lane-docs-pseudocode-traceability'; 'tests-v2-harness'='rewrite/v2-lane-tests-v2-harness'; 'ci-v2-gates'='rewrite/v2-lane-ci-v2-gates' }; foreach ($k in $map.Keys) { $path = Join-Path $base $k; if (Test-Path $path) { Write-Host \"exists: $path\"; continue }; git worktree add $path $map[$k] }; Write-Host 'worktree setup done'"
       ],
       "presentation": {
         "reveal": "always",
@@ -46,6 +46,18 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:start-next-4",
+      "dependsOn": [
+        "lane:infrastructure-adapters",
+        "lane:plugins-device-system",
+        "lane:runtime-composition",
+        "lane:tests-v2-harness",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:start-all",
       "dependsOn": [
         "lane:contracts-interfaces",
@@ -70,7 +82,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/contracts-interfaces'; git switch rewrite/v2-lane-contracts-interfaces; Write-Host 'Ready: contracts-interfaces'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/contracts-interfaces'; git switch rewrite/v2-lane-contracts-interfaces; Write-Host 'Ready: contracts-interfaces'"
       ],
       "presentation": {
         "reveal": "always",
@@ -86,7 +98,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/startup-bootstrap'; git switch rewrite/v2-lane-startup-bootstrap; Write-Host 'Ready: startup-bootstrap'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/startup-bootstrap'; git switch rewrite/v2-lane-startup-bootstrap; Write-Host 'Ready: startup-bootstrap'"
       ],
       "presentation": {
         "reveal": "always",
@@ -102,7 +114,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/domain-core-models'; git switch rewrite/v2-lane-domain-core-models; Write-Host 'Ready: domain-core-models'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/domain-core-models'; git switch rewrite/v2-lane-domain-core-models; Write-Host 'Ready: domain-core-models'"
       ],
       "presentation": {
         "reveal": "always",
@@ -118,7 +130,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/ingestion-pipeline'; git switch rewrite/v2-lane-ingestion-pipeline; Write-Host 'Ready: ingestion-pipeline'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/ingestion-pipeline'; git switch rewrite/v2-lane-ingestion-pipeline; Write-Host 'Ready: ingestion-pipeline'"
       ],
       "presentation": {
         "reveal": "always",
@@ -134,7 +146,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/infrastructure-adapters'; git switch rewrite/v2-lane-infrastructure-adapters; Write-Host 'Ready: infrastructure-adapters'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/infrastructure-adapters'; git switch rewrite/v2-lane-infrastructure-adapters; Write-Host 'Ready: infrastructure-adapters'"
       ],
       "presentation": {
         "reveal": "always",
@@ -150,7 +162,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/plugins-device-system'; git switch rewrite/v2-lane-plugins-device-system; Write-Host 'Ready: plugins-device-system'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/plugins-device-system'; git switch rewrite/v2-lane-plugins-device-system; Write-Host 'Ready: plugins-device-system'"
       ],
       "presentation": {
         "reveal": "always",
@@ -166,7 +178,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/runtime-composition'; git switch rewrite/v2-lane-runtime-composition; Write-Host 'Ready: runtime-composition'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/runtime-composition'; git switch rewrite/v2-lane-runtime-composition; Write-Host 'Ready: runtime-composition'"
       ],
       "presentation": {
         "reveal": "always",
@@ -182,7 +194,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/docs-pseudocode-traceability'; git switch rewrite/v2-lane-docs-pseudocode-traceability; Write-Host 'Ready: docs-pseudocode-traceability'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/docs-pseudocode-traceability'; git switch rewrite/v2-lane-docs-pseudocode-traceability; Write-Host 'Ready: docs-pseudocode-traceability'"
       ],
       "presentation": {
         "reveal": "always",
@@ -198,7 +210,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/tests-v2-harness'; git switch rewrite/v2-lane-tests-v2-harness; Write-Host 'Ready: tests-v2-harness'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/tests-v2-harness'; git switch rewrite/v2-lane-tests-v2-harness; Write-Host 'Ready: tests-v2-harness'"
       ],
       "presentation": {
         "reveal": "always",
@@ -214,7 +226,7 @@
       "args": [
         "-NoExit",
         "-Command",
-        "Set-Location 'D:/Repos/d-post-lanes/ci-v2-gates'; git switch rewrite/v2-lane-ci-v2-gates; Write-Host 'Ready: ci-v2-gates'"
+        "Set-Location 'D:/Repos/d-post/.worktrees/ci-v2-gates'; git switch rewrite/v2-lane-ci-v2-gates; Write-Host 'Ready: ci-v2-gates'"
       ],
       "presentation": {
         "reveal": "always",
@@ -233,12 +245,31 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:prep-next-4",
+      "dependsOn": [
+        "codex:lanes:start-next-4",
+        "lane:prompt:next-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
       "label": "lane:prompt:core-4-pack:copy",
       "type": "shell",
       "command": "pwsh",
       "args": [
         "-Command",
         "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/core-4-launch-pack.md' -Raw | Set-Clipboard; Write-Host 'Copied: core-4 launch pack'"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:next-4-pack:copy",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-Command",
+        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/next-4-launch-pack.md' -Raw | Set-Clipboard; Write-Host 'Copied: next-4 launch pack'"
       ],
       "problemMatcher": []
     },
