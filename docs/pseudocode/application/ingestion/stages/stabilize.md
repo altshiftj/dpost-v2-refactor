@@ -23,25 +23,40 @@ writes: []
 - Target responsibility: Stability gate logic and settle-time policy application.
 - Improvement goal: Consolidate duplicated logic into a single canonical owner.
 ## Inputs
-- TBD
+- Resolved candidate metadata from resolve stage.
+- Stability settings (settle delay, debounce window, max wait, ignore patterns).
+- Modified-event gate policy and clock readings.
+- Optional prior event state cache keyed by candidate identity/path.
 
 ## Outputs
-- TBD
+- `StabilizeStageResult` with terminal type `ready`, `defer_retry`, or `drop_duplicate`.
+- Updated stabilization state snapshot for future events.
+- Retry plan hint for deferred outcomes.
+- Stage diagnostics (elapsed settle time, debounce decision reason).
 
 ## Invariants
-- TBD
+- Candidate is forwarded only when stability policy marks it ready.
+- Debounce key calculation is deterministic and based on candidate identity/path.
+- Stabilize stage does not perform file persistence or routing decisions.
+- Terminal result type is explicit and limited to stabilize contract values.
 
 ## Failure Modes
-- TBD
+- Invalid/negative settle settings yield `StabilizePolicyConfigurationError`.
+- Clock regression during stabilization yields `StabilizeTimeSourceError`.
+- Gate state backend failure yields typed failure outcome (retryable by policy).
+- Missing required candidate timestamps yields `StabilizeCandidateError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Compute debounce/stabilization key from candidate identity and source path.
+2. Consult modified-event gate with current timestamp and configured debounce window.
+3. If gate says duplicate within window, return `drop_duplicate` terminal result.
+4. Evaluate settle-time policy using file timestamps and configured thresholds.
+5. Return `defer_retry` with retry hint when still unstable, else return `ready` with unchanged candidate.
+6. Persist updated gate/stability state for subsequent events.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: duplicate suppression, settle-time evaluation, defer-ready transitions, and clock regression handling.
+- integration: pipeline stabilize stage defers unstable files and later forwards the same candidate when stabilization criteria are met.
 
 
 

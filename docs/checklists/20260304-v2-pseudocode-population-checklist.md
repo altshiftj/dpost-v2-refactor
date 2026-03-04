@@ -88,31 +88,31 @@
 - Why this matters: this is the functional heart of V2 and has the highest parity risk.
 
 ### Checklist
-- [ ] `docs/pseudocode/application/ingestion/engine.md`: replace placeholders with high-level pipeline execution flow and halt semantics.
-- [ ] `docs/pseudocode/application/ingestion/processor_factory.md`: replace placeholders with plugin selection, caching, and fallback policy.
-- [ ] `docs/pseudocode/application/ingestion/runtime_services.md`: replace placeholders with runtime side-effect boundary and ownership matrix.
-- [ ] `docs/pseudocode/application/ingestion/models/candidate.md`: replace placeholders with candidate creation, validation, and immutable constraints.
-- [ ] `docs/pseudocode/application/ingestion/stages/pipeline.md`: replace placeholders with stage graph transitions and result propagation.
-- [ ] `docs/pseudocode/application/ingestion/stages/resolve.md`: replace placeholders with plugin resolution and device lookup semantics.
-- [ ] `docs/pseudocode/application/ingestion/stages/stabilize.md`: replace placeholders with debounce and settle-time behavior.
-- [ ] `docs/pseudocode/application/ingestion/stages/route.md`: replace placeholders with deterministic route decision and naming policy integration.
-- [ ] `docs/pseudocode/application/ingestion/stages/persist.md`: replace placeholders with persist/rename/reject control flow and outcomes.
-- [ ] `docs/pseudocode/application/ingestion/stages/post_persist.md`: replace placeholders with post-persist hooks and sync triggers.
-- [ ] `docs/pseudocode/application/ingestion/policies/error_handling.md`: replace placeholders with normalized severity mapping and conversion policy.
-- [ ] `docs/pseudocode/application/ingestion/policies/failure_outcome.md`: replace placeholders with failure taxonomy and state transitions.
-- [ ] `docs/pseudocode/application/ingestion/policies/failure_emitter.md`: replace placeholders with emission channel and formatting rules.
-- [ ] `docs/pseudocode/application/ingestion/policies/modified_event_gate.md`: replace placeholders with dedupe strategy and time-window behavior.
-- [ ] `docs/pseudocode/application/ingestion/policies/immediate_sync_error_emitter.md`: replace placeholders with immediate-sync error escalation policy.
-- [ ] `docs/pseudocode/application/ingestion/policies/force_path.md`: replace placeholders with force-path override and safety checks.
-- [ ] `docs/pseudocode/application/ingestion/policies/retry_planner.md`: replace placeholders with retry windows, caps, and jitter strategy.
+- [x] `docs/pseudocode/application/ingestion/engine.md`: replace placeholders with high-level pipeline execution flow and halt semantics.
+- [x] `docs/pseudocode/application/ingestion/processor_factory.md`: replace placeholders with plugin selection, caching, and fallback policy.
+- [x] `docs/pseudocode/application/ingestion/runtime_services.md`: replace placeholders with runtime side-effect boundary and ownership matrix.
+- [x] `docs/pseudocode/application/ingestion/models/candidate.md`: replace placeholders with candidate creation, validation, and immutable constraints.
+- [x] `docs/pseudocode/application/ingestion/stages/pipeline.md`: replace placeholders with stage graph transitions and result propagation.
+- [x] `docs/pseudocode/application/ingestion/stages/resolve.md`: replace placeholders with plugin resolution and device lookup semantics.
+- [x] `docs/pseudocode/application/ingestion/stages/stabilize.md`: replace placeholders with debounce and settle-time behavior.
+- [x] `docs/pseudocode/application/ingestion/stages/route.md`: replace placeholders with deterministic route decision and naming policy integration.
+- [x] `docs/pseudocode/application/ingestion/stages/persist.md`: replace placeholders with persist/rename/reject control flow and outcomes.
+- [x] `docs/pseudocode/application/ingestion/stages/post_persist.md`: replace placeholders with post-persist hooks and sync triggers.
+- [x] `docs/pseudocode/application/ingestion/policies/error_handling.md`: replace placeholders with normalized severity mapping and conversion policy.
+- [x] `docs/pseudocode/application/ingestion/policies/failure_outcome.md`: replace placeholders with failure taxonomy and state transitions.
+- [x] `docs/pseudocode/application/ingestion/policies/failure_emitter.md`: replace placeholders with emission channel and formatting rules.
+- [x] `docs/pseudocode/application/ingestion/policies/modified_event_gate.md`: replace placeholders with dedupe strategy and time-window behavior.
+- [x] `docs/pseudocode/application/ingestion/policies/immediate_sync_error_emitter.md`: replace placeholders with immediate-sync error escalation policy.
+- [x] `docs/pseudocode/application/ingestion/policies/force_path.md`: replace placeholders with force-path override and safety checks.
+- [x] `docs/pseudocode/application/ingestion/policies/retry_planner.md`: replace placeholders with retry windows, caps, and jitter strategy.
 
 ### Manual Check
-- [ ] Map every stage/policy file to the equivalent V1 files in the v1-to-v2 exhaustive mapping.
-- [ ] Validate stage contracts are acyclic and every stage has one explicit terminal result type.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/application/ingestion`.
+- [x] Map every stage/policy file to the equivalent V1 files in the v1-to-v2 exhaustive mapping.
+- [x] Validate stage contracts are acyclic and every stage has one explicit terminal result type.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/application/ingestion`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated all ingestion engine/model/stage/policy docs with deterministic stage flow, typed terminal outcomes, retry/failure normalization, and side-effect boundary semantics; verified `rg "TBD" docs/pseudocode/application/ingestion` returns no matches.
 
 ---
 

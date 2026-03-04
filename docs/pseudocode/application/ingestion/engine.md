@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: Stage runner coordinating resolve/stabilize/route/persist/post-persist stages.
 - Improvement goal: Decompose orchestration into focused modules/stages with tighter ownership.
 ## Inputs
-- TBD
+- Incoming file-system event payload and seed `ProcessingContext`.
+- Stage pipeline runner (`pipeline`) and stage handlers (`resolve`, `stabilize`, `route`, `persist`, `post_persist`).
+- Runtime services facade for side effects.
+- Failure handling policies (`error_handling`, `failure_outcome`, `failure_emitter`, `retry_planner`).
 
 ## Outputs
-- TBD
+- Terminal `IngestionOutcome` (`succeeded`, `deferred_retry`, `rejected`, `failed_terminal`).
+- Stage execution trace for observability and debugging.
+- Optional retry plan attached to retryable failure outcomes.
+- Emitted failure events when terminal or escalation policy requires them.
 
 ## Invariants
-- TBD
+- Stage order is fixed: resolve -> stabilize -> route -> persist -> post-persist.
+- Exactly one terminal outcome is returned per input event.
+- Stage input snapshots are immutable; each stage returns a new state object.
+- Unhandled exceptions are normalized into failure outcomes before returning.
 
 ## Failure Modes
-- TBD
+- Stage contract violation yields `IngestionStageContractError` and terminal failure outcome.
+- Unexpected stage exception is mapped by `error_handling` policy and may become retryable.
+- Cancellation request mid-run returns deterministic aborted/failed terminal outcome.
+- Missing required stage handler binding yields startup-time `IngestionEngineConfigurationError`.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Create initial pipeline state from observer event and `ProcessingContext`.
+2. Execute stage graph via `pipeline.run(initial_state, stage_handlers)`.
+3. For each stage transition, append trace entries with stage id, status, and correlation id.
+4. On raised exception, convert exception to normalized failure outcome via `error_handling` and `failure_outcome`.
+5. If outcome requires emission, call `failure_emitter` and attach emission status.
+6. Return terminal `IngestionOutcome` with optional retry plan and stage trace.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: fixed stage ordering, single terminal outcome guarantee, and exception normalization to retry/terminal outcomes.
+- integration: runtime app calls engine for real observer events and receives deterministic outcomes plus failure emissions across all stage paths.
 
 
 
