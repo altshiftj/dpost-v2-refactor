@@ -3,12 +3,18 @@
   "tasks": [
     {
       "label": "codex:lanes:setup-worktrees",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "$repo='D:/Repos/d-post'; $base='D:/Repos/d-post/.worktrees'; New-Item -ItemType Directory -Force -Path $base | Out-Null; Set-Location $repo; $map=@{ 'contracts-interfaces'='rewrite/v2-lane-contracts-interfaces'; 'startup-bootstrap'='rewrite/v2-lane-startup-bootstrap'; 'domain-core-models'='rewrite/v2-lane-domain-core-models'; 'ingestion-pipeline'='rewrite/v2-lane-ingestion-pipeline'; 'infrastructure-adapters'='rewrite/v2-lane-infrastructure-adapters'; 'plugins-device-system'='rewrite/v2-lane-plugins-device-system'; 'runtime-composition'='rewrite/v2-lane-runtime-composition'; 'docs-pseudocode-traceability'='rewrite/v2-lane-docs-pseudocode-traceability'; 'tests-v2-harness'='rewrite/v2-lane-tests-v2-harness'; 'ci-v2-gates'='rewrite/v2-lane-ci-v2-gates' }; foreach ($k in $map.Keys) { $path = Join-Path $base $k; if (Test-Path $path) { Write-Host \"exists: $path\"; continue }; git worktree add $path $map[$k] }; Write-Host 'worktree setup done'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/setup-worktrees.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}"
       ],
       "presentation": {
         "reveal": "always",
@@ -19,12 +25,18 @@
     },
     {
       "label": "codex:lanes:coordination",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post'; git switch rewrite/v2; Write-Host 'Ready: coordination terminal on rewrite/v2'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-coordination.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}"
       ],
       "presentation": {
         "reveal": "always",
@@ -77,12 +89,20 @@
     },
     {
       "label": "lane:contracts-interfaces",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/contracts-interfaces'; git switch rewrite/v2-lane-contracts-interfaces; Write-Host 'Ready: contracts-interfaces'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "contracts-interfaces"
       ],
       "presentation": {
         "reveal": "always",
@@ -93,12 +113,20 @@
     },
     {
       "label": "lane:startup-bootstrap",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/startup-bootstrap'; git switch rewrite/v2-lane-startup-bootstrap; Write-Host 'Ready: startup-bootstrap'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "startup-bootstrap"
       ],
       "presentation": {
         "reveal": "always",
@@ -109,12 +137,20 @@
     },
     {
       "label": "lane:domain-core-models",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/domain-core-models'; git switch rewrite/v2-lane-domain-core-models; Write-Host 'Ready: domain-core-models'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "domain-core-models"
       ],
       "presentation": {
         "reveal": "always",
@@ -125,12 +161,20 @@
     },
     {
       "label": "lane:ingestion-pipeline",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/ingestion-pipeline'; git switch rewrite/v2-lane-ingestion-pipeline; Write-Host 'Ready: ingestion-pipeline'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "ingestion-pipeline"
       ],
       "presentation": {
         "reveal": "always",
@@ -141,12 +185,20 @@
     },
     {
       "label": "lane:infrastructure-adapters",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/infrastructure-adapters'; git switch rewrite/v2-lane-infrastructure-adapters; Write-Host 'Ready: infrastructure-adapters'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "infrastructure-adapters"
       ],
       "presentation": {
         "reveal": "always",
@@ -157,12 +209,20 @@
     },
     {
       "label": "lane:plugins-device-system",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/plugins-device-system'; git switch rewrite/v2-lane-plugins-device-system; Write-Host 'Ready: plugins-device-system'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "plugins-device-system"
       ],
       "presentation": {
         "reveal": "always",
@@ -173,12 +233,20 @@
     },
     {
       "label": "lane:runtime-composition",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/runtime-composition'; git switch rewrite/v2-lane-runtime-composition; Write-Host 'Ready: runtime-composition'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "runtime-composition"
       ],
       "presentation": {
         "reveal": "always",
@@ -189,12 +257,20 @@
     },
     {
       "label": "lane:docs-pseudocode-traceability",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/docs-pseudocode-traceability'; git switch rewrite/v2-lane-docs-pseudocode-traceability; Write-Host 'Ready: docs-pseudocode-traceability'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "docs-pseudocode-traceability"
       ],
       "presentation": {
         "reveal": "always",
@@ -205,12 +281,20 @@
     },
     {
       "label": "lane:tests-v2-harness",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/tests-v2-harness'; git switch rewrite/v2-lane-tests-v2-harness; Write-Host 'Ready: tests-v2-harness'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "tests-v2-harness"
       ],
       "presentation": {
         "reveal": "always",
@@ -221,12 +305,20 @@
     },
     {
       "label": "lane:ci-v2-gates",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
         "-NoExit",
-        "-Command",
-        "Set-Location 'D:/Repos/d-post/.worktrees/ci-v2-gates'; git switch rewrite/v2-lane-ci-v2-gates; Write-Host 'Ready: ci-v2-gates'"
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "ci-v2-gates"
       ],
       "presentation": {
         "reveal": "always",
@@ -255,121 +347,217 @@
     },
     {
       "label": "lane:prompt:core-4-pack:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/core-4-launch-pack.md' -Raw | Set-Clipboard; Write-Host 'Copied: core-4 launch pack'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/core-4-launch-pack.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:next-4-pack:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/next-4-launch-pack.md' -Raw | Set-Clipboard; Write-Host 'Copied: next-4 launch pack'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/next-4-launch-pack.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:contracts-interfaces:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/contracts-interfaces.md' -Raw | Set-Clipboard; Write-Host 'Copied: contracts-interfaces prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/contracts-interfaces.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:startup-bootstrap:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/startup-bootstrap.md' -Raw | Set-Clipboard; Write-Host 'Copied: startup-bootstrap prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/startup-bootstrap.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:domain-core-models:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/domain-core-models.md' -Raw | Set-Clipboard; Write-Host 'Copied: domain-core-models prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/domain-core-models.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:ingestion-pipeline:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/ingestion-pipeline.md' -Raw | Set-Clipboard; Write-Host 'Copied: ingestion-pipeline prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/ingestion-pipeline.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:infrastructure-adapters:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/infrastructure-adapters.md' -Raw | Set-Clipboard; Write-Host 'Copied: infrastructure-adapters prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/infrastructure-adapters.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:plugins-device-system:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/plugins-device-system.md' -Raw | Set-Clipboard; Write-Host 'Copied: plugins-device-system prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/plugins-device-system.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:runtime-composition:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/runtime-composition.md' -Raw | Set-Clipboard; Write-Host 'Copied: runtime-composition prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/runtime-composition.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:docs-pseudocode-traceability:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/docs-pseudocode-traceability.md' -Raw | Set-Clipboard; Write-Host 'Copied: docs-pseudocode-traceability prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/docs-pseudocode-traceability.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:tests-v2-harness:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/tests-v2-harness.md' -Raw | Set-Clipboard; Write-Host 'Copied: tests-v2-harness prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/tests-v2-harness.md"
       ],
       "problemMatcher": []
     },
     {
       "label": "lane:prompt:ci-v2-gates:copy",
-      "type": "shell",
-      "command": "pwsh",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
       "args": [
-        "-Command",
-        "Get-Content 'D:/Repos/d-post/docs/ops/lane-prompts/ci-v2-gates.md' -Raw | Set-Clipboard; Write-Host 'Copied: ci-v2-gates prompt'"
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/ci-v2-gates.md"
       ],
       "problemMatcher": []
     }

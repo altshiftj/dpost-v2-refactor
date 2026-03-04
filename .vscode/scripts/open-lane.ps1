@@ -9,6 +9,11 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
+if (-not (Test-Path -LiteralPath $WorkspaceRoot)) {
+    Write-Error "Workspace root not found: $WorkspaceRoot"
+    exit 1
+}
+
 . "$PSScriptRoot/lane-map.ps1"
 
 $laneMap = Get-LaneMap
