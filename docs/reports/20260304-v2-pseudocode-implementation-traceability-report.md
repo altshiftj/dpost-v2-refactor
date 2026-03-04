@@ -11,6 +11,10 @@
   - `docs/planning/20260303-v2-cleanroom-rewrite-blueprint-rpc.md`
   - `docs/planning/20260303-v1-to-v2-exhaustive-file-mapping-rpc.md`
 
+## Refresh Status
+- Refreshed against current worktree state on 2026-03-04.
+- Deterministic regeneration produced no matrix deltas (`docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv` unchanged).
+
 ## Deterministic Traceability Rules
 1. Input set: every non-README file under `docs/pseudocode/**` with frontmatter `id`.
 2. Implementation status:
