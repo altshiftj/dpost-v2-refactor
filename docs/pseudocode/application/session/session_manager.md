@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: Session timeout, state transitions, and lifecycle hooks.
 - Improvement goal: Carry forward stable behavior while enforcing V2 contracts and explicit context.
 ## Inputs
-- TBD
+- Session policy settings (idle timeout, max runtime, heartbeat interval).
+- Clock port for deterministic time evaluation.
+- Session lifecycle events (`start`, `activity`, `pause`, `resume`, `stop`, `abort`).
+- Optional callback hooks for UI/observability notifications.
 
 ## Outputs
-- TBD
+- `SessionState` value object (`inactive`, `starting`, `active`, `stopping`, `aborted`, `completed`).
+- Transition result model with previous state, next state, and reason code.
+- Expiration decisions (`still_active`, `soft_timeout`, `hard_timeout`).
+- Session summary snapshot for runtime shutdown diagnostics.
 
 ## Invariants
-- TBD
+- State transitions follow explicit transition table; invalid jumps are rejected.
+- Session ids are unique per runtime and immutable after creation.
+- Re-applying `start` to an already active identical session id is idempotent (no duplicate side effects).
+- Timeout checks are monotonic with respect to clock readings.
 
 ## Failure Modes
-- TBD
+- Invalid transition request raises `SessionTransitionError`.
+- Missing session before activity/stop call raises `SessionNotStartedError`.
+- Clock regression detected during timeout checks raises `SessionTimeSourceError`.
+- Callback hook failure is isolated and returned as structured warning/failure outcome.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Define explicit transition matrix and immutable `SessionState` model with timestamps.
+2. Implement `start_session(context)` that creates active state or returns idempotent existing state.
+3. Implement `record_activity(session_id, event_time)` to update heartbeat and evaluate timeout policy.
+4. Implement `stop_session` and `abort_session` with deterministic terminal state mapping.
+5. Implement `evaluate_timeouts(now)` to classify soft/hard timeout outcomes for runtime loop decisions.
+6. Emit transition callbacks/events without allowing callback failures to corrupt state machine integrity.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: transition table enforcement, idempotent `start_session`, timeout evaluation, and clock regression handling.
+- integration: runtime loop interacts with session manager across normal completion, idle timeout, and abort scenarios.
 
 
 

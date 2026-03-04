@@ -70,17 +70,17 @@
 - Why this matters: session boundaries and orchestration define the production behavior envelope; these should be explicit before implementation starts.
 
 ### Checklist
-- [ ] `docs/pseudocode/application/runtime/dpost_app.md`: replace placeholders with event loop, retry cadence, and stage handoff behavior.
-- [ ] `docs/pseudocode/application/session/session_manager.md`: replace placeholders with timeout, transitions, and abort semantics.
-- [ ] `docs/pseudocode/application/records/service.md`: replace placeholders with `create`, `update`, `mark_unsynced`, `save` lifecycle contract.
+- [x] `docs/pseudocode/application/runtime/dpost_app.md`: replace placeholders with event loop, retry cadence, and stage handoff behavior.
+- [x] `docs/pseudocode/application/session/session_manager.md`: replace placeholders with timeout, transitions, and abort semantics.
+- [x] `docs/pseudocode/application/records/service.md`: replace placeholders with `create`, `update`, `mark_unsynced`, `save` lifecycle contract.
 
 ### Manual Check
-- [ ] Confirm `application/runtime` references `application/contracts` and not implementation internals.
-- [ ] Confirm each file has at least one explicit idempotency condition.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/application/runtime docs/pseudocode/application/session docs/pseudocode/application/records/service.md`.
+- [x] Confirm `application/runtime` references `application/contracts` and not implementation internals.
+- [x] Confirm each file has at least one explicit idempotency condition.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/application/runtime docs/pseudocode/application/session docs/pseudocode/application/records/service.md`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated runtime orchestration, session lifecycle, and records service docs with deterministic transitions, explicit idempotency conditions, and normalized failure outcomes; verified lane grep has no `TBD`.
 
 ---
 
