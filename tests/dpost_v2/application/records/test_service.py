@@ -27,8 +27,14 @@ class _ConflictError(RuntimeError):
 class _FakeRecordStore:
     def __init__(self) -> None:
         self.snapshots: dict[str, dict[str, Any]] = {}
+        self.create_calls = 0
+        self.save_calls = 0
+        self.update_calls = 0
+        self.mark_unsynced_calls = 0
+        self.last_mark_unsynced_id: str | None = None
 
     def create(self, record: object) -> object:
+        self.create_calls += 1
         payload = _as_store_record(record)
         record_id = payload["record_id"]
         if record_id in self.snapshots:
@@ -38,6 +44,7 @@ class _FakeRecordStore:
         return _clone_snapshot(snapshot)
 
     def save(self, record: object) -> object:
+        self.save_calls += 1
         payload = _as_store_record(record)
         record_id = payload["record_id"]
         snapshot = _store_snapshot_from_payload(payload)
@@ -45,6 +52,7 @@ class _FakeRecordStore:
         return _clone_snapshot(snapshot)
 
     def update(self, record_id: str, mutation: object) -> object:
+        self.update_calls += 1
         if record_id not in self.snapshots:
             raise RuntimeError(f"record not found: {record_id}")
         if not isinstance(mutation, Mapping):
@@ -69,6 +77,8 @@ class _FakeRecordStore:
         return _clone_snapshot(current)
 
     def mark_unsynced(self, record_id: str) -> None:
+        self.mark_unsynced_calls += 1
+        self.last_mark_unsynced_id = record_id
         snapshot = self.get_or_raise(record_id)
         if snapshot["payload"].get("sync_status") == "unsynced":
             return
@@ -133,6 +143,19 @@ def test_records_service_mark_unsynced_transitions_synced_record() -> None:
     assert marked.revision == synced_record.revision + 1
 
 
+def test_records_service_mark_unsynced_normalizes_record_id_input() -> None:
+    store = _FakeRecordStore()
+    service = RecordsService(record_store=store)
+    service.save(_synced_record("rec-normalized"))
+
+    marked = service.mark_unsynced("  rec-normalized  ")
+
+    assert marked.record_id == "rec-normalized"
+    assert marked.sync_status is SyncStatus.UNSYNCED
+    assert store.mark_unsynced_calls == 1
+    assert store.last_mark_unsynced_id == "rec-normalized"
+
+
 def test_records_service_maps_missing_record_to_not_found_error() -> None:
     service = RecordsService(record_store=_FakeRecordStore())
 
@@ -160,6 +183,73 @@ def test_records_service_rejects_invalid_inputs() -> None:
 
     with pytest.raises(RecordValidationError):
         service.update("rec-1", "bad-mutation")  # type: ignore[arg-type]
+
+
+def test_records_service_create_validates_record_before_store_call() -> None:
+    store = _FakeRecordStore()
+    service = RecordsService(record_store=store)
+    invalid = LocalRecord(
+        record_id="",
+        source_identity="source-rec-create-validation",
+        canonical_name="artifact.csv",
+        sync_status=SyncStatus.UNSYNCED,
+        processing_status=RecordProcessingStatus.PENDING,
+        revision=0,
+        created_at=_ts(10),
+        updated_at=_ts(10),
+        metadata={"batch": "A"},
+    )
+
+    with pytest.raises(RecordValidationError):
+        service.create(invalid)
+
+    assert store.create_calls == 0
+
+
+def test_records_service_save_validates_record_before_store_call() -> None:
+    store = _FakeRecordStore()
+    service = RecordsService(record_store=store)
+    invalid = LocalRecord(
+        record_id="rec-save-validation",
+        source_identity="source-rec-save-validation",
+        canonical_name="",
+        sync_status=SyncStatus.UNSYNCED,
+        processing_status=RecordProcessingStatus.PENDING,
+        revision=0,
+        created_at=_ts(10),
+        updated_at=_ts(10),
+        metadata={"batch": "A"},
+    )
+
+    with pytest.raises(RecordValidationError):
+        service.save(invalid)
+
+    assert store.save_calls == 0
+
+
+def test_records_service_update_requires_expected_revision_before_store_call() -> None:
+    store = _FakeRecordStore()
+    service = RecordsService(record_store=store)
+    service.create(_record("rec-update-validation"))
+
+    with pytest.raises(RecordValidationError):
+        service.update("rec-update-validation", {"payload": {}})
+
+    assert store.update_calls == 0
+
+
+def test_records_service_update_requires_payload_mapping_before_store_call() -> None:
+    store = _FakeRecordStore()
+    service = RecordsService(record_store=store)
+    service.create(_record("rec-update-payload-validation"))
+
+    with pytest.raises(RecordValidationError):
+        service.update(
+            "rec-update-payload-validation",
+            {"expected_revision": 0, "payload": "invalid"},  # type: ignore[dict-item]
+        )
+
+    assert store.update_calls == 0
 
 
 def _record(record_id: str) -> LocalRecord:
