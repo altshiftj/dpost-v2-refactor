@@ -354,12 +354,14 @@ def test_run_uses_process_environment_when_override_not_supplied(monkeypatch) ->
         captured_environment.update(environment)
         return StartupDependencies(
             factories={
-                "observability": lambda: object(),
-                "storage": lambda: object(),
-                "sync": lambda: object(),
-                "ui": lambda: object(),
-                "event_sink": lambda: object(),
-                "plugins": lambda: object(),
+                "observability": lambda: {"kind": "observability"},
+                "storage": lambda: {"kind": "storage", "backend": "filesystem"},
+                "sync": lambda: {"kind": "sync", "backend": "noop"},
+                "ui": lambda: {"kind": "ui", "backend": "headless"},
+                "event_sink": lambda: {"kind": "event_sink"},
+                "plugins": lambda: {"kind": "plugins"},
+                "clock": lambda: {"kind": "clock"},
+                "filesystem": lambda: {"kind": "filesystem"},
             },
             selected_backends={
                 "ui": "headless",
