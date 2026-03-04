@@ -86,20 +86,41 @@ class PluginHost:
         selected_ids = set(selection.selected_by_family["device"]) | set(
             selection.selected_by_family["pc"]
         )
+        current_active = set(self._active_plugin_ids)
+        removed_ids = sorted(current_active - selected_ids, reverse=True)
+        added_ids = sorted(selected_ids - current_active)
 
-        for plugin_id in sorted(selected_ids):
+        for plugin_id in removed_ids:
+            descriptor = get_plugin(self._catalog, plugin_id)
+            on_shutdown = descriptor.module_exports.get("on_shutdown")
+            if not callable(on_shutdown):
+                current_active.discard(plugin_id)
+                continue
+            try:
+                on_shutdown()
+            except Exception as exc:  # noqa: BLE001
+                self._active_plugin_ids = current_active
+                raise PluginHostShutdownError(
+                    f"plugin {plugin_id!r} shutdown hook failed"
+                ) from exc
+            current_active.discard(plugin_id)
+
+        for plugin_id in added_ids:
             descriptor = get_plugin(self._catalog, plugin_id)
             on_activate = descriptor.module_exports.get("on_activate")
             if not callable(on_activate):
+                current_active.add(plugin_id)
                 continue
             try:
                 on_activate({"plugin_id": plugin_id, "profile": profile})
             except Exception as exc:  # noqa: BLE001
+                self._active_plugin_ids = current_active
                 raise PluginHostActivationError(
                     f"plugin {plugin_id!r} activation hook failed"
                 ) from exc
+            current_active.add(plugin_id)
 
-        self._active_plugin_ids = selected_ids
+        self._active_plugin_ids = current_active
         return selection
 
     def get_device_plugins(self, *, active_only: bool = True) -> tuple[str, ...]:
