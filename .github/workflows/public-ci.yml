@@ -53,12 +53,18 @@ jobs:
           python -m pip install black ruff
       - name: Lint and format checks
         run: |
-          if [ -d "src/dpost_v2" ]; then
-            python -m ruff check src/dpost_v2
-            python -m black --check src/dpost_v2
-          else
-            echo "Skipping quality checks: src/dpost_v2 not present yet."
+          if [ ! -d "src/dpost_v2" ]; then
+            echo "::error::Missing src/dpost_v2"
+            exit 1
           fi
+
+          targets=(src/dpost_v2)
+          if [ -d "tests/dpost_v2" ]; then
+            targets+=(tests/dpost_v2)
+          fi
+
+          python -m ruff check "${targets[@]}"
+          python -m black --check "${targets[@]}"
 
   unit-tests:
     name: unit-tests (py${{ matrix.python-version }})
@@ -87,11 +93,12 @@ jobs:
       - name: Unit test suite
         shell: pwsh
         run: |
-          if (Test-Path "tests/unit/dpost_v2") {
-            python -m pytest -q tests/unit/dpost_v2
-          } else {
-            Write-Host "Skipping unit tests: tests/unit/dpost_v2 not present."
+          if (-not (Test-Path "tests/dpost_v2")) {
+            Write-Error "Missing tests/dpost_v2"
+            exit 1
           }
+
+          python -m pytest -q tests/dpost_v2
 
   integration-tests:
     name: integration-tests (py3.12)
@@ -116,11 +123,19 @@ jobs:
       - name: Integration test suite
         shell: pwsh
         run: |
-          if (Test-Path "tests/integration/dpost_v2") {
-            python -m pytest -q tests/integration/dpost_v2
-          } else {
-            Write-Host "Skipping integration tests: tests/integration/dpost_v2 not present."
+          $targets = @(
+            "tests/dpost_v2/application/ingestion/test_pipeline_integration.py",
+            "tests/dpost_v2/plugins/test_device_integration.py",
+            "tests/dpost_v2/smoke"
+          )
+
+          $existingTargets = $targets | Where-Object { Test-Path $_ }
+          if ($existingTargets.Count -eq 0) {
+            Write-Error "No integration targets found under tests/dpost_v2."
+            exit 1
           }
+
+          python -m pytest -q $existingTargets
 
   bootstrap-smoke:
     name: bootstrap-smoke
@@ -147,11 +162,18 @@ jobs:
           DEVICE_PLUGINS: ""
         shell: pwsh
         run: |
-          if (Test-Path "tests/unit/dpost_v2/runtime/test_bootstrap.py") {
-            python -m pytest -q tests/unit/dpost_v2/runtime/test_bootstrap.py tests/unit/dpost_v2/runtime/test_bootstrap_additional.py
-          } else {
-            Write-Host "Skipping bootstrap smoke tests: dpost_v2 runtime tests not present."
+          $targets = @(
+            "tests/dpost_v2/application/startup/test_bootstrap.py",
+            "tests/dpost_v2/smoke/test_bootstrap_harness_smoke.py"
+          )
+
+          $existingTargets = $targets | Where-Object { Test-Path $_ }
+          if ($existingTargets.Count -eq 0) {
+            Write-Error "No bootstrap smoke targets found under tests/dpost_v2."
+            exit 1
           }
+
+          python -m pytest -q $existingTargets
 
   package-build:
     name: package-build

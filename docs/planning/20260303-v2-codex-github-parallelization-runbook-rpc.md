@@ -52,7 +52,11 @@
 4. For `rewrite/v2` and `rewrite/v2-lane-*`, verify lightweight checks run on push/PR:
 - `rewrite-workflow-lint`
 - `rewrite-artifact-hygiene`
-5. Keep branch protection required contexts tied to `main` only. Rewrite checks are integration governance and should stay lightweight.
+- `rewrite-v2-quality`
+- `rewrite-v2-tests`
+5. For `rewrite/v2` push events, verify trunk integration check also runs:
+- `rewrite-v2-integration`
+6. Keep branch protection required contexts tied to `main` only. Rewrite checks are integration governance and should stay lightweight.
 
 ### 4. Apply Branch Protection (Terminal-Ready)
 1. Set token:
