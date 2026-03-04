@@ -22,25 +22,40 @@ writes: []
 - Target responsibility: Load/merge settings sources and expose validated settings object.
 - Improvement goal: Clarify layer boundaries and naming without changing behavior intent.
 ## Inputs
-- TBD
+- Ordered settings sources: defaults, config file, environment, CLI overrides.
+- Schema validator from `settings_schema`.
+- Normalization helpers from `settings`.
+- Optional in-memory cache handle for repeated bootstrap calls in one process.
 
 ## Outputs
-- TBD
+- Validated `StartupSettings` object.
+- Source provenance metadata showing which layer set each final key.
+- Redacted diagnostics payload for startup logs.
+- Stable error result for parse/merge/validation failures.
 
 ## Invariants
-- TBD
+- Source precedence is deterministic: defaults < file < environment < CLI.
+- Merge operation is pure for provided inputs; no hidden global state.
+- Cached settings may be reused only if source fingerprint is unchanged.
+- Service never silently drops unknown keys; it reports them via schema errors.
 
 ## Failure Modes
-- TBD
+- Config file read/parse failures raise `SettingsSourceReadError`.
+- Schema validation failures raise `SettingsValidationError` with field-level details.
+- Merge conflicts in incompatible types raise `SettingsMergeTypeError`.
+- Cache desynchronization detection raises `SettingsCacheIntegrityError` and forces reload.
 
 ## Pseudocode
-1. TBD
-2. TBD
-3. TBD
+1. Resolve active source list from bootstrap request and read each source into raw dictionaries.
+2. Merge dictionaries by precedence while capturing provenance per key.
+3. Pass merged payload through schema validation and normalization helpers.
+4. Build immutable `StartupSettings` and optional redacted diagnostics snapshot.
+5. Store/reuse cache entry keyed by source fingerprint when cache is enabled.
+6. Return typed success/failure result consumed by bootstrap orchestration.
 
 ## Tests To Implement
-- unit: TBD
-- integration: TBD
+- unit: precedence ordering, provenance tracking, validation failures, and cache fingerprint behavior.
+- integration: bootstrap consumes service output and aborts launch on typed settings errors with deterministic messages.
 
 
 

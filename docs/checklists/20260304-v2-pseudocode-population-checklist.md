@@ -47,22 +47,22 @@
 - Why this matters: entrypoint and startup docs define how V2 boots; ambiguities here propagate into all slices.
 
 ### Checklist
-- [ ] `docs/pseudocode/__main__.md`: replace placeholders with arg parsing, mode dispatch, and safe defaulting behavior.
-- [ ] `docs/pseudocode/application/startup/context.md`: replace placeholders with explicit context builder and startup lifecycle state.
-- [ ] `docs/pseudocode/application/startup/settings.md`: replace placeholders with naming, profile, and mode settings intent.
-- [ ] `docs/pseudocode/application/startup/settings_schema.md`: replace placeholders with schema rules and validation errors.
-- [ ] `docs/pseudocode/application/startup/settings_service.md`: replace placeholders with load/merge/normalize policy and cache behavior.
-- [ ] `docs/pseudocode/application/startup/bootstrap.md`: replace placeholders with startup sequence and failure boundaries.
-- [ ] `docs/pseudocode/runtime/composition.md`: replace placeholders with composition root wiring and ownership boundaries.
-- [ ] `docs/pseudocode/runtime/startup_dependencies.md`: replace placeholders with dependency graph and lazy vs eager loading policy.
+- [x] `docs/pseudocode/__main__.md`: replace placeholders with arg parsing, mode dispatch, and safe defaulting behavior.
+- [x] `docs/pseudocode/application/startup/context.md`: replace placeholders with explicit context builder and startup lifecycle state.
+- [x] `docs/pseudocode/application/startup/settings.md`: replace placeholders with naming, profile, and mode settings intent.
+- [x] `docs/pseudocode/application/startup/settings_schema.md`: replace placeholders with schema rules and validation errors.
+- [x] `docs/pseudocode/application/startup/settings_service.md`: replace placeholders with load/merge/normalize policy and cache behavior.
+- [x] `docs/pseudocode/application/startup/bootstrap.md`: replace placeholders with startup sequence and failure boundaries.
+- [x] `docs/pseudocode/runtime/composition.md`: replace placeholders with composition root wiring and ownership boundaries.
+- [x] `docs/pseudocode/runtime/startup_dependencies.md`: replace placeholders with dependency graph and lazy vs eager loading policy.
 
 ### Manual Check
-- [ ] Confirm `docs/pseudocode/application/startup` and `docs/pseudocode/runtime` are internally aligned: startup docs reference composition/runtime docs and vice versa.
-- [ ] Ensure every startup doc has at least one explicit startup failure mode.
-- [ ] Run a grep audit: `rg "TBD" docs/pseudocode/application/startup docs/pseudocode/runtime docs/pseudocode/__main__.md`.
+- [x] Confirm `docs/pseudocode/application/startup` and `docs/pseudocode/runtime` are internally aligned: startup docs reference composition/runtime docs and vice versa.
+- [x] Ensure every startup doc has at least one explicit startup failure mode.
+- [x] Run a grep audit: `rg "TBD" docs/pseudocode/application/startup docs/pseudocode/runtime docs/pseudocode/__main__.md`.
 
 ### Completion Notes
-- How it was done: pending.
+- How it was done: populated entrypoint/startup/runtime composition specs with explicit boot order, validation boundaries, dependency selection, and typed startup failures; verified no `TBD` remains in startup/runtime scopes.
 
 ---
 
