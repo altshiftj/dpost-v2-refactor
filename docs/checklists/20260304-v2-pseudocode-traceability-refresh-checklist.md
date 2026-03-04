@@ -42,7 +42,7 @@
 - [x] No matrix gap row is omitted from the report.
 
 ### Completion Notes
-- How it was done: verified gap register against matrix statuses and kept severity ordering stable; no gap changes were detected and counts remained `63 implemented / 2 missing / 2 direct-test gaps`.
+- How it was done: verified gap register against matrix statuses and kept severity ordering stable; no open gaps remained and counts were `65 implemented / 0 missing / 0 direct-test gaps`.
 
 ---
 

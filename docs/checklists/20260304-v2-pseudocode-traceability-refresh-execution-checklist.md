@@ -35,10 +35,10 @@
 ### Manual Check
 - [x] Recompute totals matched expected snapshot:
   - `65` pseudocode specs
-  - `63` implemented
-  - `2` missing implementation
-  - `61` direct-module tested
-  - `2` direct-test traceability gaps
+  - `65` implemented
+  - `0` missing implementation
+  - `65` direct-module tested
+  - `0` direct-test traceability gaps
 - [x] Regenerated matrix was byte-identical to `docs/reports/20260304-v2-pseudocode-implementation-traceability-matrix.csv`.
 
 ### Completion Notes
@@ -73,27 +73,23 @@
 
 ### Manual Check
 - [x] Ruff result: pass.
-- [x] Pytest result: `313 passed`.
-- [x] Commit recorded: `9c99eab` (`v2: docs-pseudocode-traceability refresh snapshot`).
+- [x] Pytest result: `350 passed`.
+- [x] Commit recorded: `f0d5704` (`v2: docs-pseudocode-traceability refresh execution checklist`).
 
 ### Completion Notes
 - How it was done: executed lane validation commands, confirmed green state, and committed refreshed docs artifacts.
 
 ---
 
-## Section: Remaining Implementation Gaps (Forwarded to Implementation Lanes)
-- Why this matters: open gaps must stay explicit until implementation lanes close them.
+## Section: Remaining Implementation Gaps
+- Why this matters: confirms whether implementation lanes still have unresolved traceability targets.
 
 ### Checklist
-- [x] Confirmed missing modules remain:
-  - `src/dpost_v2/__main__.py`
-  - `src/dpost_v2/application/records/service.py`
-- [x] Confirmed direct-test traceability gaps remain:
-  - `src/dpost_v2/plugins/contracts.py`
-  - `src/dpost_v2/plugins/devices/_device_template/processor.py`
+- [x] Confirmed no missing modules remain in matrix `gap_severity=critical_missing_module`.
+- [x] Confirmed no direct-test traceability gaps remain in matrix `gap_severity=test_traceability_gap`.
 
 ### Manual Check
 - [x] Gap list matches the matrix gap rows and report gap register exactly.
 
 ### Completion Notes
-- How it was done: cross-checked matrix, report, and direct filesystem/test-import evidence; no additional gaps were introduced in this refresh run.
+- How it was done: cross-checked matrix, report, and direct filesystem/test-import evidence; all prior gap rows are now closed.
