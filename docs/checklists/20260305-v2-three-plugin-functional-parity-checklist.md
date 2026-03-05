@@ -17,12 +17,18 @@
   - `docs/planning/20260305-v2-three-plugin-parallel-lanes-rpc.md`
   - `docs/checklists/20260305-v2-three-plugin-parallel-coordination-checklist.md`
   - `docs/ops/lane-prompts/three-plugin-5-launch-pack.md`
-- [ ] Start execution with:
+- [x] Start execution with:
   - `Section: Behavior spec lock (TDD)`
   - `Section: sem_phenomxl2 parity slice (TDD)`
 
 ### Completion Notes
 - How it was done:
+  - Execution order was followed as planned:
+    1. `lane0-spec-lock`
+    2. `laneA-sem-phenomxl2`
+    3. `laneB-utm-zwick`
+    4. `laneC-psa-horiba`
+    5. `laneD-closeout`
 
 ---
 
@@ -30,16 +36,20 @@
 - Why this matters: Functional parity work needs a stable V2 runtime baseline so plugin bugs are not confused with wiring regressions.
 
 ### Manual Check
-- [ ] `git status --short --branch` is captured in notes.
-- [ ] Handshake closeout report is referenced as the baseline runtime proof.
+- [x] `git status --short --branch` is captured in notes.
+- [x] Handshake closeout report is referenced as the baseline runtime proof.
 
 ### Checklist
-- [ ] Re-use `docs/reports/20260305-v2-handshake-closeout-report.md` as the baseline lock.
-- [ ] Record current branch state and any local-only manual artifacts that must remain untracked.
-- [ ] Avoid re-running architecture bring-up unless runtime assumptions change.
+- [x] Re-use `docs/reports/20260305-v2-handshake-closeout-report.md` as the baseline lock.
+- [x] Record current branch state and any local-only manual artifacts that must remain untracked.
+- [x] Avoid re-running architecture bring-up unless runtime assumptions change.
 
 ### Completion Notes
 - How it was done:
+  - Baseline runtime proof remained:
+    - `docs/reports/20260305-v2-handshake-closeout-report.md`
+  - Closeout branch state was captured on `three-plugin/laneD-closeout` starting from `835e1e1` before lane intake.
+  - Lane work remained isolated to worktrees; untracked lane log artifacts stayed outside the commit scope.
 
 ---
 
@@ -47,18 +57,25 @@
 - Why this matters: The three plugin migrations need explicit parity targets before implementation starts, otherwise "done" will drift.
 
 ### Manual Check
-- [ ] Legacy source reference is identified for each target plugin.
-- [ ] Accepted/deferred behavior list exists for each target plugin.
+- [x] Legacy source reference is identified for each target plugin.
+- [x] Accepted/deferred behavior list exists for each target plugin.
 
 ### Checklist
-- [ ] Add red parity-spec tests for `sem_phenomxl2` under `tests/dpost_v2/plugins/devices/sem_phenomxl2/`.
-- [ ] Add red parity-spec tests for `utm_zwick` under `tests/dpost_v2/plugins/devices/utm_zwick/`.
-- [ ] Add red parity-spec tests for `psa_horiba` under `tests/dpost_v2/plugins/devices/psa_horiba/`.
-- [ ] Build a parity matrix mapping legacy behaviors to V2 test ids.
-- [ ] Record explicit accepted/deferred behaviors in completion notes.
+- [x] Add red parity-spec tests for `sem_phenomxl2` under `tests/dpost_v2/plugins/devices/sem_phenomxl2/`.
+- [x] Add red parity-spec tests for `utm_zwick` under `tests/dpost_v2/plugins/devices/utm_zwick/`.
+- [x] Add red parity-spec tests for `psa_horiba` under `tests/dpost_v2/plugins/devices/psa_horiba/`.
+- [x] Build a parity matrix mapping legacy behaviors to V2 test ids.
+- [x] Record explicit accepted/deferred behaviors in completion notes.
 
 ### Completion Notes
 - How it was done:
+  - Legacy plugin source under `src/ipat_watchdog/device_plugins/**` was used as the primary reference.
+  - Legacy reference tests under `tests_legacy_reference/ipat_watchdog/tests/unit/device_plugins/**` were used as secondary evidence.
+  - Published parity matrix:
+    - `docs/checklists/20260305-v2-three-plugin-parity-matrix.md`
+  - Published findings/risk notes:
+    - `docs/reports/20260305-v2-lane0-spec-lock-report.md`
+  - Added red parity-spec tests under `tests/dpost_v2/plugins/devices/**`.
 
 ---
 
@@ -66,18 +83,24 @@
 - Why this matters: SEM is the cleanest first migration target and establishes the pattern for moving real plugin behavior into V2 contracts.
 
 ### Manual Check
-- [ ] Headless runtime processes SEM sample artifacts under `tischrem_blb`.
-- [ ] Expected SEM-specific output behavior is visible in persisted payloads and filesystem side effects.
+- [x] Headless runtime processes SEM sample artifacts under `tischrem_blb`.
+- [x] Expected SEM-specific output behavior is visible in persisted payloads and filesystem side effects.
 
 ### Checklist
-- [ ] Add red tests for trailing-digit normalization behavior.
-- [ ] Add red tests for native image handling behavior.
-- [ ] Add red tests for ELID zip/descriptor flow behavior.
-- [ ] Implement minimal processor changes in `src/dpost_v2/plugins/devices/sem_phenomxl2/processor.py`.
-- [ ] Add or update runtime smoke for SEM parity path.
+- [x] Add red tests for trailing-digit normalization behavior.
+- [x] Add red tests for native image handling behavior.
+- [x] Add red tests for ELID zip/descriptor flow behavior.
+- [x] Implement minimal processor changes in `src/dpost_v2/plugins/devices/sem_phenomxl2/processor.py`.
+- [x] Add or update runtime smoke for SEM parity path.
 
 ### Completion Notes
 - How it was done:
+  - Lane A delivered the SEM processor/settings slice and published:
+    - `docs/reports/20260305-v2-laneA-sem-phenomxl2-report.md`
+  - Closeout runtime probe under `tischrem_blb` succeeded end-to-end:
+    - file moved to `processed/`
+    - persisted `plugin_id="sem_phenomxl2"`
+    - persisted `datatype="img"`
 
 ---
 
@@ -89,14 +112,24 @@
 - [ ] Series state and final output behavior are deterministic across repeated runs.
 
 ### Checklist
-- [ ] Add red tests for `.zs2` plus sentinel `.xlsx` series assembly.
+- [x] Add red tests for `.zs2` plus sentinel `.xlsx` series assembly.
 - [ ] Add red tests for TTL/flush behavior.
 - [ ] Add red tests for unique move semantics and overwrite protection.
-- [ ] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/utm_zwick/processor.py`.
+- [x] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/utm_zwick/processor.py`.
 - [ ] Add or update integration/runtime smoke for repeated series handling.
 
 ### Completion Notes
 - How it was done:
+  - Lane B delivered the Zwick processor/test slice and published:
+    - `docs/reports/20260305-v2-laneB-utm-zwick-report.md`
+  - Plugin-local parity is green, including staged `.zs2` gating and matching `.xlsx` finalization.
+  - Closeout runtime remains blocked:
+    - raw `.zs2` is rejected in `resolve` with `reason_code="processor_not_found"`
+    - `app.run()` with `.zs2` + `.xlsx` stops on the first staged pre-event and persists no record
+  - Deferred items remain:
+    - TTL/session-end flush
+    - unique move semantics/overwrite protection
+    - shared runtime deferred outcome for staged pre-events
 
 ---
 
@@ -108,14 +141,29 @@
 - [ ] Bucket/pair/flush behavior is deterministic and leaves expected final artifacts.
 
 ### Checklist
-- [ ] Add red tests for bucketed pairing behavior.
-- [ ] Add red tests for staged flush and sequence naming.
-- [ ] Add red tests for zip behavior and stale purge behavior.
-- [ ] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/psa_horiba/processor.py`.
+- [x] Add red tests for bucketed pairing behavior.
+- [x] Add red tests for staged flush and sequence naming.
+- [x] Add red tests for zip behavior and stale purge behavior.
+- [x] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/psa_horiba/processor.py`.
 - [ ] Add or update integration/runtime smoke for PSA staged handling.
 
 ### Completion Notes
 - How it was done:
+  - Lane C delivered the PSA plugin/processor/settings/test slice and published:
+    - `docs/reports/20260305-v2-laneC-psa-horiba-report.md`
+  - Plugin-local parity is green for:
+    - `.tsv` acceptance
+    - bucketed pairing
+    - deterministic staged-folder naming
+    - numbered `.csv` and `.zip` outputs
+    - conservative stale-state purge
+  - Closeout runtime remains blocked:
+    - raw `.ngb` resolves `psa_horiba` but is rejected in `transform` with `reason_code="cannot_process"`
+    - `app.run()` with a full bucket/sentinel batch stops on the first staged pre-event and persists no record
+  - Deferred items remain:
+    - shared runtime deferred outcome for incomplete PSA events
+    - rename-cancel whole-folder handling
+    - exception-bucket handling
 
 ---
 
@@ -128,10 +176,20 @@
 - [ ] No fallback processor/runtime path is exercised during the final probes.
 
 ### Checklist
-- [ ] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
-- [ ] Run targeted plugin/runtime/integration suites for the three migrated plugins.
-- [ ] Run `python -m pytest -q tests/dpost_v2`.
-- [ ] Publish a migration closeout report in `docs/reports/` with residual risks and deferred parity gaps.
+- [x] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
+- [x] Run targeted plugin/runtime/integration suites for the three migrated plugins.
+- [x] Run `python -m pytest -q tests/dpost_v2`.
+- [x] Publish a migration closeout report in `docs/reports/` with residual risks and deferred parity gaps.
 
 ### Completion Notes
 - How it was done:
+  - Ran `python -m ruff check src/dpost_v2 tests/dpost_v2` and it passed.
+  - Ran targeted checks:
+    - `python -m pytest -q tests/dpost_v2/plugins/devices/sem_phenomxl2/test_parity_spec.py tests/dpost_v2/plugins/devices/utm_zwick tests/dpost_v2/plugins/devices/psa_horiba tests/dpost_v2/runtime/test_composition.py`
+    - `python -m pytest -q tests/dpost_v2/plugins/test_migration_coverage.py`
+  - Ran full suite:
+    - `python -m pytest -q tests/dpost_v2`
+    - result: `415 passed`, `9 failed`
+  - Published:
+    - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
+  - Closeout is not complete yet because the remaining `9` failures all sit in `tests/dpost_v2/runtime/test_composition.py` and represent the shared staged/deferred runtime seam still required for PSA and Zwick.

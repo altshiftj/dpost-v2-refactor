@@ -38,12 +38,21 @@
 - Why this matters: Plugin lanes need one stable parity target before they start implementing behavior.
 
 ### Checklist
-- [ ] Publish parity-spec tests for all three plugins.
-- [ ] Publish accepted/deferred behavior notes for all three plugins.
-- [ ] Confirm plugin lanes only consume the spec-lock output and do not redefine parity independently.
+- [x] Publish parity-spec tests for all three plugins.
+- [x] Publish accepted/deferred behavior notes for all three plugins.
+- [x] Confirm plugin lanes only consume the spec-lock output and do not redefine parity independently.
 
 ### Completion Notes
 - How it was done:
+  - Published red parity-spec tests for:
+    - `sem_phenomxl2`
+    - `utm_zwick`
+    - `psa_horiba`
+  - Published the visible handoff matrix:
+    - `docs/checklists/20260305-v2-three-plugin-parity-matrix.md`
+  - Published the lane0 findings/risk report:
+    - `docs/reports/20260305-v2-lane0-spec-lock-report.md`
+  - Lane A/B/C should treat the matrix and test ids as the parity target instead of re-deriving behavior from the legacy repo independently.
 
 ---
 
@@ -51,12 +60,22 @@
 - Why this matters: Shared runtime and docs surfaces can become a merge bottleneck if plugin lanes drift into them.
 
 ### Checklist
-- [ ] Keep shared runtime and coordination docs centralized.
-- [ ] Merge plugin lanes only after their targeted gates are green.
-- [ ] Re-run full V2 suite after each merged plugin lane if shared helpers were touched.
+- [x] Keep shared runtime and coordination docs centralized.
+- [x] Integrate plugin lanes only after their targeted gates are green.
+- [x] Re-run full V2 suite after integrated lane intake if shared helpers were touched.
 
 ### Completion Notes
 - How it was done:
+  - Runtime/composition and closeout docs were updated only in `laneD-closeout`.
+  - Lane intake happened only after the lane-local gates were green:
+    - `laneA-sem-phenomxl2` at `a4f289a`
+    - `laneB-utm-zwick` at `cc4ce02`
+    - `laneC-psa-horiba` at `3dd0457`
+  - Re-ran:
+    - `python -m ruff check src/dpost_v2 tests/dpost_v2`
+    - targeted plugin/runtime suites
+    - `python -m pytest -q tests/dpost_v2`
+  - Intake revealed the expected staged-runtime blocker rather than additional cross-lane file drift.
 
 ---
 
@@ -64,9 +83,16 @@
 - Why this matters: The migration phase is not done until the three plugins are proven together on the real V2 path.
 
 ### Checklist
-- [ ] Merge `laneD-closeout` last.
-- [ ] Run full `ruff`, targeted plugin/runtime suites, and full `tests/dpost_v2`.
-- [ ] Publish the cross-plugin migration closeout report.
+- [x] Execute `laneD-closeout` last.
+- [x] Run full `ruff`, targeted plugin/runtime suites, and full `tests/dpost_v2`.
+- [x] Publish the cross-plugin migration closeout report.
 
 ### Completion Notes
 - How it was done:
+  - `laneD-closeout` consumed the committed lane outputs after plugin lanes completed.
+  - Published:
+    - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
+  - Final status:
+    - plugin-local parity slices are committed and documented
+    - SEM runtime proof is green
+    - PSA and Zwick remain blocked on a shared deferred/staged runtime seam
