@@ -4,13 +4,33 @@
 - Why this matters: Parallel execution fails quickly when ownership and sequencing are vague.
 
 ### Checklist
-- [ ] Confirm the handshake closeout report is the accepted runtime baseline.
-- [ ] Create one branch/worktree per lane before implementation starts.
-- [ ] Assign one exact allowed edit scope per lane with no overlap.
-- [ ] Confirm `lane0-spec-lock` starts before plugin implementation lanes.
+- [x] Confirm the handshake closeout report is the accepted runtime baseline.
+- [x] Create one branch/worktree per lane before implementation starts.
+- [x] Assign one exact allowed edit scope per lane with no overlap.
+- [x] Confirm `lane0-spec-lock` starts before plugin implementation lanes.
 
 ### Completion Notes
 - How it was done:
+  - Accepted runtime baseline:
+    - `docs/reports/20260305-v2-handshake-closeout-report.md`
+  - Created lane branches from `main` at commit `367edc2`:
+    - `three-plugin/lane0-spec-lock`
+    - `three-plugin/laneA-sem-phenomxl2`
+    - `three-plugin/laneB-utm-zwick`
+    - `three-plugin/laneC-psa-horiba`
+    - `three-plugin/laneD-closeout`
+  - Created local worktrees:
+    - `.worktrees/lane0-spec-lock`
+    - `.worktrees/laneA-sem-phenomxl2`
+    - `.worktrees/laneB-utm-zwick`
+    - `.worktrees/laneC-psa-horiba`
+    - `.worktrees/laneD-closeout`
+  - Launch order for the wave:
+    1. `lane0-spec-lock`
+    2. `laneA-sem-phenomxl2`
+    3. `laneB-utm-zwick`
+    4. `laneC-psa-horiba`
+    5. `laneD-closeout`
 
 ---
 
