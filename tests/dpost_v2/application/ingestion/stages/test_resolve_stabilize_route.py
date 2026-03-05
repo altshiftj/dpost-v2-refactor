@@ -55,6 +55,84 @@ def test_resolve_stage_continues_to_stabilize_on_success() -> None:
     assert directive.state.candidate is not None
 
 
+def test_resolve_stage_rejects_empty_source_path() -> None:
+    state = IngestionState(event={"event_kind": "created", "observed_at": 100.0})
+
+    directive = run_resolve_stage(
+        state,
+        fs_facts_provider=lambda path: {"size": 1, "modified_at": 95.0},
+        processor_selector=lambda candidate: ProcessorSelection(
+            processor=_Processor(),
+            descriptor=SelectionDescriptor(
+                plugin_id="plug",
+                processor_key="proc",
+                capability_reason="ok",
+                cache_hit=False,
+            ),
+        ),
+    )
+
+    assert directive.kind == "terminal"
+    assert directive.outcome is PipelineTerminalOutcome.REJECTED
+    assert directive.state.diagnostics["resolve"]["reason_code"] == "invalid_candidate"
+
+
+def test_resolve_stage_rejects_unsupported_event_kind() -> None:
+    state = IngestionState(
+        event={
+            "path": "incoming/file.txt",
+            "event_kind": "something_else",
+            "observed_at": 100.0,
+        }
+    )
+
+    directive = run_resolve_stage(
+        state,
+        fs_facts_provider=lambda path: {"size": 1, "modified_at": 95.0},
+        processor_selector=lambda candidate: ProcessorSelection(
+            processor=_Processor(),
+            descriptor=SelectionDescriptor(
+                plugin_id="plug",
+                processor_key="proc",
+                capability_reason="ok",
+                cache_hit=False,
+            ),
+        ),
+    )
+
+    assert directive.kind == "terminal"
+    assert directive.outcome is PipelineTerminalOutcome.REJECTED
+    assert directive.state.diagnostics["resolve"]["reason_code"] == "invalid_candidate"
+
+
+def test_resolve_stage_allows_partial_event_with_default_observed_at() -> None:
+    state = IngestionState(
+        event={
+            "path": "incoming/file.txt",
+            "event_kind": "created",
+        }
+    )
+
+    directive = run_resolve_stage(
+        state,
+        fs_facts_provider=lambda path: {"size": 1, "modified_at": 95.0},
+        processor_selector=lambda candidate: ProcessorSelection(
+            processor=_Processor(),
+            descriptor=SelectionDescriptor(
+                plugin_id="plug",
+                processor_key="proc",
+                capability_reason="ok",
+                cache_hit=False,
+            ),
+        ),
+    )
+
+    assert directive.kind == "continue"
+    assert directive.next_stage == "stabilize"
+    assert directive.state.candidate is not None
+    assert directive.state.candidate.observed_at == 0.0
+
+
 def test_stabilize_stage_returns_retry_for_unstable_candidate() -> None:
     candidate = Candidate.from_event(
         {"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0},

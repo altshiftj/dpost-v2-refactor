@@ -18,8 +18,76 @@ def _status_token(result: Any) -> str:
 
 
 def _reason_code(result: Any, fallback: str) -> str:
-    diagnostics = getattr(result, "diagnostics", {}) or {}
+    diagnostics = _diagnostics(result)
     return str(diagnostics.get("reason_code", fallback))
+
+
+def _diagnostics(result: Any) -> Mapping[str, Any]:
+    diagnostics = getattr(result, "diagnostics", {}) or {}
+    if isinstance(diagnostics, Mapping):
+        return diagnostics
+    return {}
+
+
+def _normalized_retry_plan(
+    raw_plan: Any,
+    *,
+    attempt_index: int,
+) -> dict[str, Any] | None:
+    if not isinstance(raw_plan, Mapping):
+        return None
+    plan = dict(raw_plan)
+    terminal_type = str(plan.get("terminal_type", "")).strip().lower()
+    if terminal_type != "retry":
+        return plan
+
+    try:
+        next_attempt = int(plan.get("next_attempt", attempt_index + 1))
+        delay_seconds = float(plan.get("delay_seconds", 0.0))
+    except (TypeError, ValueError):
+        return None
+
+    if next_attempt <= attempt_index:
+        next_attempt = attempt_index + 1
+    if delay_seconds < 0:
+        delay_seconds = 0.0
+
+    plan["terminal_type"] = "retry"
+    plan["next_attempt"] = next_attempt
+    plan["delay_seconds"] = round(delay_seconds, 6)
+    return plan
+
+
+def _retry_or_terminal_for_failure(
+    state: IngestionState,
+    *,
+    reason: str,
+    retry_planner: Callable[[str, int], Mapping[str, Any]],
+) -> StageDirective[IngestionState] | None:
+    try:
+        raw_plan = retry_planner(reason, state.attempt_index)
+    except Exception:  # noqa: BLE001
+        failed = state.with_updates(
+            diagnostics={"persist": {"reason_code": "invalid_retry_plan"}}
+        )
+        return StageDirective.terminal(PipelineTerminalOutcome.FAILED, failed)
+
+    plan = _normalized_retry_plan(raw_plan, attempt_index=state.attempt_index)
+    if plan is None:
+        failed = state.with_updates(
+            diagnostics={"persist": {"reason_code": "invalid_retry_plan"}}
+        )
+        return StageDirective.terminal(PipelineTerminalOutcome.FAILED, failed)
+
+    if plan.get("terminal_type") != "retry":
+        return None
+
+    retry_state = state.with_updates(
+        retry_plan=plan,
+        attempt_index=int(plan.get("next_attempt", state.attempt_index + 1)),
+        diagnostics={"persist": {"reason_code": reason}},
+    )
+    return StageDirective.terminal(PipelineTerminalOutcome.RETRY, retry_state)
 
 
 def run_persist_stage(
@@ -37,14 +105,13 @@ def run_persist_stage(
     move_result = move_file(candidate.source_path, candidate.target_path)
     if _status_token(move_result) != RuntimeCallStatus.SUCCESS.value:
         reason = _reason_code(move_result, "move_failed")
-        plan = dict(retry_planner(reason, state.attempt_index))
-        if plan.get("terminal_type") == "retry":
-            retry_state = state.with_updates(
-                retry_plan=plan,
-                attempt_index=int(plan.get("next_attempt", state.attempt_index + 1)),
-                diagnostics={"persist": {"reason_code": reason}},
-            )
-            return StageDirective.terminal(PipelineTerminalOutcome.RETRY, retry_state)
+        retry_directive = _retry_or_terminal_for_failure(
+            state,
+            reason=reason,
+            retry_planner=retry_planner,
+        )
+        if retry_directive is not None:
+            return retry_directive
         if reason == "collision":
             rejected = state.with_updates(
                 diagnostics={"persist": {"reason_code": reason}}
@@ -60,14 +127,13 @@ def run_persist_stage(
     save_result = save_record(record_payload)
     if _status_token(save_result) != RuntimeCallStatus.SUCCESS.value:
         reason = _reason_code(save_result, "record_save_failed")
-        plan = dict(retry_planner(reason, state.attempt_index))
-        if plan.get("terminal_type") == "retry":
-            retry_state = state.with_updates(
-                retry_plan=plan,
-                attempt_index=int(plan.get("next_attempt", state.attempt_index + 1)),
-                diagnostics={"persist": {"reason_code": reason}},
-            )
-            return StageDirective.terminal(PipelineTerminalOutcome.RETRY, retry_state)
+        retry_directive = _retry_or_terminal_for_failure(
+            state,
+            reason=reason,
+            retry_planner=retry_planner,
+        )
+        if retry_directive is not None:
+            return retry_directive
         failed = state.with_updates(diagnostics={"persist": {"reason_code": reason}})
         return StageDirective.terminal(PipelineTerminalOutcome.FAILED, failed)
 

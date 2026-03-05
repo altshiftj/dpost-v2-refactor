@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -212,5 +212,130 @@ def test_engine_maps_rejected_failure_outcome() -> None:
     outcome = engine.process(event={"path": "input.csv"})
 
     assert outcome.kind is IngestionOutcomeKind.REJECTED
+    assert outcome.retry_plan is None
+    assert outcome.emission_status == "skipped"
+
+
+def test_engine_returns_failed_terminal_when_initial_state_factory_raises() -> None:
+    engine = IngestionEngine(
+        pipeline_runner=PipelineRunner(
+            start_stage="resolve",
+            transition_table=DEFAULT_INGESTION_TRANSITION_TABLE,
+        ),
+        stage_handlers={
+            "resolve": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "stabilize": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "route": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "post_persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+        },
+    )
+
+    def _raising_factory(_: Any) -> DemoState:
+        raise ValueError("bad-initial-state")
+
+    outcome = engine.process(
+        event=cast(dict[str, Any], None),
+        initial_state_factory=_raising_factory,
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.FAILED_TERMINAL
+    assert outcome.final_stage_id is None
+    assert outcome.state is None
+    assert outcome.retry_plan is None
+
+
+def test_engine_returns_failed_terminal_when_error_policy_raises() -> None:
+    engine = IngestionEngine(
+        pipeline_runner=_ExplodingPipelineRunner(),
+        stage_handlers={
+            "resolve": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "stabilize": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "route": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "post_persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+        },
+        error_handling_policy=lambda exc, stage_id: (_ for _ in ()).throw(
+            RuntimeError("classification_failed")
+        ),
+    )
+
+    outcome = engine.process(event={"path": "input.csv"})
+
+    assert outcome.kind is IngestionOutcomeKind.FAILED_TERMINAL
+    assert outcome.retry_plan is None
+    assert outcome.emission_status == "skipped"
+
+
+def test_engine_returns_failed_terminal_when_failure_outcome_policy_raises() -> None:
+    engine = IngestionEngine(
+        pipeline_runner=_ExplodingPipelineRunner(),
+        stage_handlers={
+            "resolve": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "stabilize": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "route": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+            "post_persist": lambda state: StageDirective.terminal(
+                PipelineTerminalOutcome.COMPLETED,
+                state,
+            ),
+        },
+        error_handling_policy=lambda exc, stage_id: FailureClassification(
+            reason_code="unexpected",
+            severity="error",
+            retryable=False,
+            stage_id=stage_id,
+            diagnostics={"message": str(exc)},
+        ),
+        failure_outcome_policy=lambda classification: (_ for _ in ()).throw(
+            RuntimeError("failure_outcome_failed")
+        ),
+    )
+
+    outcome = engine.process(event={"path": "input.csv"})
+
+    assert outcome.kind is IngestionOutcomeKind.FAILED_TERMINAL
     assert outcome.retry_plan is None
     assert outcome.emission_status == "skipped"
