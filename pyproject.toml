@@ -47,7 +47,7 @@ test_pc         = []
 eirich_blb      = []
 
 [project.scripts]
-dpost = "dpost_v2.__main__:main"
+dpost = "dpost.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

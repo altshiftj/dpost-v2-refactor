@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+import dpost.__main__ as dpost_entrypoint
 import dpost_v2.__main__ as entrypoint
 from dpost_v2.application.startup.bootstrap import BootstrapResult, StartupFailure
 
@@ -183,3 +184,19 @@ def test_main_maps_keyboard_interrupt_to_exit_code_one(
     exit_code = entrypoint.main(["--mode", "v2"])
 
     assert exit_code == 1
+
+
+def test_dpost_entrypoint_delegates_to_v2_main(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        captured["request_mode"] = request.mode
+        _ = emit_event
+        return entrypoint.BootstrapResult(is_success=True)
+
+    monkeypatch.setattr(entrypoint, "run", _run)
+
+    exit_code = dpost_entrypoint.main([])
+
+    assert exit_code == 0
+    assert captured["request_mode"] == "v2"
