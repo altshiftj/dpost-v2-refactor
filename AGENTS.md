@@ -16,6 +16,16 @@
 - Migration-era V1->V2 planning artifacts are historical records unless
   explicitly marked active.
 
+## Current Focus (Active Override)
+- Primary objective: runtime wiring from startup-only success to real V2
+  ingestion execution in headless mode.
+- Execution mode for this phase: single-agent sequential delivery (no
+  parallel lane splitting for the wiring checklist itself).
+- Architectural clarification for this phase:
+  - PC plugin owns workstation policy/scope (including allowed device plugins).
+  - Device plugins own file processing behavior.
+  - Sync backend owns outbound transport.
+
 ## Operating Mode
 - Autonomous execution is default.
 - Work in high-coherence sections (contracts, startup, domain, ingestion,
