@@ -57,6 +57,35 @@
 - Composed runtime can resolve a concrete device plugin id (`psa_horiba` in the `.ngb` runtime smoke) and perform real file movement plus sqlite record persistence.
 - The runtime still does not implement PC-scoped device policy, processor `prepare/process` handoff, or PC-owned sync payload shaping. Those remain the next handshake sections.
 
+## Manual Probe Addendum
+- Manual probe workspace:
+  - `C:\Users\fitz\AppData\Local\Temp\dpost-v2-probe-20260305-194406`
+- Probe with stock [dpost-v2-prod.config.json](D:/Repos/dpost-v2-refactor/configs/dpost-v2-prod.config.json):
+  - startup succeeded
+  - files remained in `incoming`
+  - `processed` stayed empty
+  - sqlite file was created but contained no `records` rows
+- Reproduced runtime result for that stock config:
+  - `processed_count = 3`
+  - `failed_count = 0`
+  - `terminal_reason = end_of_stream`
+  - each event emitted `ingestion_deferred`
+- Root cause isolated to the stabilize/facts handshake:
+  - stock prod config sets `ingestion.retry_delay_seconds = 1.0`
+  - runtime currently feeds `candidate.modified_at` from `now_seconds` instead of file mtime in [composition.py](D:/Repos/dpost-v2-refactor/src/dpost_v2/runtime/composition.py:565)
+  - stabilize retries whenever `age < settle_delay_seconds` in [stabilize.py](D:/Repos/dpost-v2-refactor/src/dpost_v2/application/ingestion/stages/stabilize.py:69)
+- Probe with a temp config override setting `ingestion.retry_delay_seconds = 0.0`:
+  - `incoming` drained
+  - `processed` contained `sample.ngb`, `sample.tif`, `sample.zs2`
+  - sqlite `records` rows persisted with:
+    - `psa_horiba`
+    - `sem_phenomxl2`
+    - `utm_zwick`
+- Practical interpretation:
+  - concrete runtime wiring is working
+  - real headless side effects are working
+  - the remaining blocker for stock prod standalone behavior is the stabilize/facts seam, not startup/composition/persist wiring
+
 ## Deferred
 - `Plugin policy handshake (PC scope first)`
 - `Ingestion handshake (processor contract path)`

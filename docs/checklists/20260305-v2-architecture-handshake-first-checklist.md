@@ -83,6 +83,7 @@
 
 ### Completion Notes
 - How it was done: Added red runtime tests for real plugin resolution and file movement, then updated composition to save/update real sqlite record payloads, treat `queued` and `skipped_noop` sync outcomes as non-failures, and keep the runtime on the concrete adapter path.
+- Manual probe note: Stock prod config still defers fresh files at stabilize; a temporary `retry_delay_seconds = 0.0` override proved the same composed runtime moves files and persists records with `psa_horiba`, `sem_phenomxl2`, and `utm_zwick`.
 
 ---
 
@@ -99,7 +100,7 @@
 - [ ] Implement minimal runtime policy wiring using plugin host/profile selection.
 
 ### Completion Notes
-- How it was done:
+- How it was done: Manual probe evidence now exists for both sides of the current limit. Stock prod config (`retry_delay_seconds = 1.0`) deferred all three fresh files before persist, while a temporary no-settle config moved and persisted `.ngb`, `.tif`, and `.zs2` successfully. This section remains open until the stock prod stabilize/facts seam is fixed.
 
 ---
 
