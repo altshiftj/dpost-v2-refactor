@@ -70,7 +70,7 @@ def validate_startup_context(context: StartupContext) -> None:
 
     mode = _resolve_mode(context.settings, context.launch)
     launch_mode = str(context.launch.requested_mode).strip().lower()
-    if launch_mode != mode:
+    if launch_mode not in {mode, "v2"}:
         raise StartupContextValidationError(
             "Launch metadata mode does not match normalized settings mode."
         )

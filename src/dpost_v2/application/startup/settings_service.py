@@ -227,7 +227,7 @@ def _default_sources_from_request(
         },
         "file": {},
         "environment": {},
-        "cli": {"mode": request.mode, "profile": request.profile},
+        "cli": {"profile": request.profile},
     }
 
 
