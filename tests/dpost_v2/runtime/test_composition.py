@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import json
+import os
+import sqlite3
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
-import json
-import os
 from pathlib import Path
-import sqlite3
-import time
 from typing import Mapping
 
 import pytest
@@ -586,7 +586,9 @@ def test_composition_headless_fallback_event_source_scans_watch_dir(
     assert [event["event_id"] for event in processed_events] == expected_ids
 
 
-def test_composition_default_runtime_uses_concrete_dependency_bindings(tmp_path) -> None:
+def test_composition_default_runtime_uses_concrete_dependency_bindings(
+    tmp_path,
+) -> None:
     context = _build_real_runtime_context(tmp_path)
 
     bundle = compose_runtime(context)
@@ -702,9 +704,7 @@ def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
 
     database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
     with sqlite3.connect(database_path) as connection:
-        rows = connection.execute(
-            "select count(*) from records"
-        ).fetchone()
+        rows = connection.execute("select count(*) from records").fetchone()
 
     assert rows == (3,)
 

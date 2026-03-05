@@ -212,9 +212,7 @@ class PluginHost:
         """Resolve the device plugin ids allowed by one selected PC plugin."""
         descriptor = get_plugin(self._catalog, plugin_id)
         if descriptor.family != "pc":
-            raise PluginHostActivationError(
-                f"plugin {plugin_id!r} is not a pc plugin"
-            )
+            raise PluginHostActivationError(f"plugin {plugin_id!r} is not a pc plugin")
         if active_only and plugin_id not in self._active_plugin_ids:
             raise PluginHostActivationError(
                 f"plugin {plugin_id!r} is not active for the current profile"

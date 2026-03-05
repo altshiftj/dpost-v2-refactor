@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from dataclasses import dataclass, field
-from pathlib import Path
 import tempfile
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
@@ -411,6 +411,7 @@ def _sync_factory_builder(
 
         return factory
     if backend == "noop":
+
         def factory() -> object:
             adapter = NoopSyncAdapter()
             adapter.initialize()

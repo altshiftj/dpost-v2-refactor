@@ -72,9 +72,7 @@ def test_engine_requires_all_required_stage_handlers() -> None:
                 "stabilize": lambda state: StageDirective.continue_to(
                     "transform", state
                 ),
-                "transform": lambda state: StageDirective.continue_to(
-                    "route", state
-                ),
+                "transform": lambda state: StageDirective.continue_to("route", state),
                 "route": lambda state: StageDirective.continue_to("persist", state),
                 "persist": lambda state: StageDirective.terminal(
                     PipelineTerminalOutcome.COMPLETED,

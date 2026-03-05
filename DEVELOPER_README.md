@@ -84,6 +84,7 @@ PC plugin required exports:
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e .[dev]
+python -m pre_commit install
 ```
 
 Run runtime:
@@ -101,6 +102,7 @@ dpost
 python -m ruff check src/dpost_v2 tests/dpost_v2
 python -m black --check src/dpost_v2 tests/dpost_v2
 python -m pytest -q tests/dpost_v2
+python -m pre_commit run --all-files
 ```
 
 CI-equivalent subsets:

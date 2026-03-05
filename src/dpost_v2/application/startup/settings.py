@@ -85,7 +85,9 @@ class PluginPolicySettings:
 
     def __post_init__(self) -> None:
         pc_name = _normalize_optional_string(self.pc_name)
-        object.__setattr__(self, "pc_name", None if pc_name is None else pc_name.lower())
+        object.__setattr__(
+            self, "pc_name", None if pc_name is None else pc_name.lower()
+        )
 
         normalized_device_plugins: list[str] = []
         for plugin_id in self.device_plugins:

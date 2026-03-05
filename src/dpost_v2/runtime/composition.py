@@ -9,13 +9,13 @@ from pathlib import Path, PurePath
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
+from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
 from dpost_v2.application.contracts.ports import (
     PortBindingError,
     SyncRequest,
     SyncResponse,
     validate_port_bindings,
 )
-from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
 from dpost_v2.application.ingestion.engine import IngestionEngine, IngestionOutcome
 from dpost_v2.application.ingestion.models.candidate import Candidate
 from dpost_v2.application.ingestion.processor_factory import (
@@ -686,7 +686,9 @@ def _build_runtime_ingestion_engine(
                         "payload": {
                             "bookkeeping": "updated",
                             "plugin_id": getattr(candidate, "plugin_id", None),
-                            "persisted_path": getattr(candidate, "persisted_path", None),
+                            "persisted_path": getattr(
+                                candidate, "persisted_path", None
+                            ),
                         },
                     },
                 )
@@ -762,9 +764,11 @@ def _build_runtime_ingestion_engine(
             route_selector=route_selector,
             filename_builder=lambda state: _build_runtime_filename(
                 state,
-                fallback_name=filename_builder(state.candidate)
-                if state.candidate is not None
-                else "artifact.dat",
+                fallback_name=(
+                    filename_builder(state.candidate)
+                    if state.candidate is not None
+                    else "artifact.dat"
+                ),
             ),
         ),
         "persist": lambda state: run_persist_stage(
@@ -872,7 +876,9 @@ def _clock_seconds(clock: object) -> float:
         return 0.0
 
 
-def _coerce_observed_at_datetime(event: Mapping[str, Any], *, clock: object) -> datetime:
+def _coerce_observed_at_datetime(
+    event: Mapping[str, Any], *, clock: object
+) -> datetime:
     observed_at = event.get("observed_at")
     if isinstance(observed_at, datetime):
         return observed_at
@@ -896,7 +902,9 @@ def _build_runtime_processing_context(
     clock: object,
     plugin_policy: _RuntimePluginPolicy,
 ) -> ProcessingContext:
-    event_id = str(event.get("event_id", "")).strip() or f"{context.launch.trace_id}:event"
+    event_id = (
+        str(event.get("event_id", "")).strip() or f"{context.launch.trace_id}:event"
+    )
     runtime_context = RuntimeContext.from_settings(
         settings={
             "mode": context.settings.mode,
@@ -914,7 +922,9 @@ def _build_runtime_processing_context(
         },
     )
     source_path = str(event.get("path", event.get("source_path", ""))).strip()
-    event_type = str(event.get("event_type", event.get("event_kind", "created"))).strip()
+    event_type = str(
+        event.get("event_type", event.get("event_kind", "created"))
+    ).strip()
     candidate_event: dict[str, Any] = {
         "source_path": source_path,
         "event_type": event_type or "created",
@@ -1043,9 +1053,7 @@ def _resolve_runtime_plugin_policy(
     if raw_device_plugins:
         allowed = set(raw_device_plugins)
         scoped_device_plugins = tuple(
-            plugin_id
-            for plugin_id in scoped_device_plugins
-            if plugin_id in allowed
+            plugin_id for plugin_id in scoped_device_plugins if plugin_id in allowed
         )
 
     return _RuntimePluginPolicy(

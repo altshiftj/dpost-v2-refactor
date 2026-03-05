@@ -22,7 +22,7 @@ dependencies = [
 [project.optional-dependencies]
 ci              = ["pytest", "pyfakefs"]
 build           = ["pyinstaller"]
-dev             = ["black", "mypy", "ruff"]
+dev             = ["black", "mypy", "pre-commit", "pyfakefs", "pytest", "ruff"]
 kadi            = ["kadi-apy"]
 
 # Device plugin dependencies

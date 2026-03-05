@@ -59,6 +59,12 @@ Development install:
 python -m pip install -e ".[dev]"
 ```
 
+Install repository git hooks:
+
+```powershell
+python -m pre_commit install
+```
+
 Optional Kadi backend:
 
 ```powershell
@@ -103,6 +109,7 @@ Run active quality gates:
 python -m ruff check src/dpost_v2 tests/dpost_v2
 python -m black --check src/dpost_v2 tests/dpost_v2
 python -m pytest -q tests/dpost_v2
+python -m pre_commit run --all-files
 ```
 
 Optional parity checks for CI-equivalent subsets:
