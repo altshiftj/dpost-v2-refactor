@@ -82,4 +82,4 @@ def run_stabilize_stage(
     ready_state = state.with_updates(
         diagnostics={"stabilize": {"reason_code": "ready"}}
     )
-    return StageDirective.continue_to("route", ready_state)
+    return StageDirective.continue_to("transform", ready_state)

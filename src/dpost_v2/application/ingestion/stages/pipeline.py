@@ -224,10 +224,19 @@ DEFAULT_INGESTION_TRANSITION_TABLE: dict[str, PipelineTransitionPolicy] = {
         ),
     ),
     "stabilize": PipelineTransitionPolicy(
-        allowed_next_stages=frozenset({"route"}),
+        allowed_next_stages=frozenset({"transform"}),
         allowed_terminal_outcomes=frozenset(
             {
                 PipelineTerminalOutcome.RETRY,
+                PipelineTerminalOutcome.REJECTED,
+                PipelineTerminalOutcome.FAILED,
+            }
+        ),
+    ),
+    "transform": PipelineTransitionPolicy(
+        allowed_next_stages=frozenset({"route"}),
+        allowed_terminal_outcomes=frozenset(
+            {
                 PipelineTerminalOutcome.REJECTED,
                 PipelineTerminalOutcome.FAILED,
             }

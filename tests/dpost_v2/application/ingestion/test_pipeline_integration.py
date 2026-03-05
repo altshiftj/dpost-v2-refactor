@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime
+
+from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
+from dpost_v2.application.contracts.plugin_contracts import ProcessorResult
 from dpost_v2.application.ingestion.engine import IngestionEngine, IngestionOutcomeKind
 from dpost_v2.application.ingestion.processor_factory import (
     ProcessorSelection,
@@ -14,12 +18,47 @@ from dpost_v2.application.ingestion.stages.post_persist import run_post_persist_
 from dpost_v2.application.ingestion.stages.resolve import run_resolve_stage
 from dpost_v2.application.ingestion.stages.route import run_route_stage
 from dpost_v2.application.ingestion.stages.stabilize import run_stabilize_stage
+from dpost_v2.application.ingestion.stages.transform import run_transform_stage
 from dpost_v2.application.ingestion.state import IngestionState
 
 
 class _Processor:
-    def process(self) -> None:
-        return None
+    def prepare(self, raw_input: dict[str, object]) -> dict[str, object]:
+        return dict(raw_input)
+
+    def can_process(self, candidate: dict[str, object]) -> bool:
+        return bool(candidate.get("source_path"))
+
+    def process(
+        self,
+        prepared_input: dict[str, object],
+        _context: ProcessingContext,
+    ) -> ProcessorResult:
+        return ProcessorResult(
+            final_path=str(prepared_input["source_path"]),
+            datatype="plug/output",
+        )
+
+
+def _processing_context() -> ProcessingContext:
+    runtime_context = RuntimeContext.from_settings(
+        settings={
+            "mode": "headless",
+            "profile": "ci",
+            "session_id": "session-pipeline",
+            "event_id": "event-pipeline",
+            "trace_id": "trace-pipeline",
+        },
+        dependency_ids={"clock": "clock-1", "ui": "ui-1", "sync": "sync-1"},
+    )
+    return ProcessingContext.for_candidate(
+        runtime_context,
+        {
+            "source_path": "incoming/file.txt",
+            "event_type": "created",
+            "observed_at": datetime(2026, 3, 5),
+        },
+    )
 
 
 def test_full_ingestion_pipeline_happy_path() -> None:
@@ -45,11 +84,12 @@ def test_full_ingestion_pipeline_happy_path() -> None:
             now_provider=lambda: 100.0,
             settle_delay_seconds=5.0,
         ),
+        "transform": lambda state: run_transform_stage(state),
         "route": lambda state: run_route_stage(
             state,
             allowed_roots=("C:/dest",),
             route_selector=lambda c: "C:/dest",
-            filename_builder=lambda c: "file.txt",
+            filename_builder=lambda _state: "file.txt",
         ),
         "persist": lambda state: run_persist_stage(
             state,
@@ -90,7 +130,10 @@ def test_full_ingestion_pipeline_happy_path() -> None:
             "event_kind": "created",
             "observed_at": 100.0,
         },
-        initial_state_factory=IngestionState.from_event,
+        initial_state_factory=lambda event: IngestionState.from_event(
+            event,
+            processing_context=_processing_context(),
+        ),
     )
 
     assert outcome.kind is IngestionOutcomeKind.SUCCEEDED

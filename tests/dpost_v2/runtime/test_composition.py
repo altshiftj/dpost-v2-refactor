@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
+import json
 import os
 from pathlib import Path
 import sqlite3
@@ -706,6 +707,31 @@ def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
         ).fetchone()
 
     assert rows == (3,)
+
+
+def test_composition_runtime_persists_processor_result_payload(tmp_path) -> None:
+    context = _build_real_runtime_context(tmp_path)
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.failed_count == 0
+    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute(
+            "select payload_json from records order by record_id"
+        ).fetchone()
+
+    assert row is not None
+    payload = json.loads(row[0])
+    assert payload["processor_result"]["datatype"] == "psa_horiba/template"
+    assert payload["processor_result"]["final_path"].endswith("sample.ngb")
 
 
 def test_composition_exposes_selected_pc_scope_in_diagnostics(tmp_path) -> None:

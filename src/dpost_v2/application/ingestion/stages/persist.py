@@ -122,6 +122,15 @@ def run_persist_stage(
 
     record_payload = {
         "candidate": candidate.to_payload(),
+        "processor_result": (
+            {
+                "final_path": state.processor_result.final_path,
+                "datatype": state.processor_result.datatype,
+                "force_paths": state.processor_result.force_paths,
+            }
+            if state.processor_result is not None
+            else None
+        ),
         "target_path": candidate.target_path,
     }
     save_result = save_record(record_payload)

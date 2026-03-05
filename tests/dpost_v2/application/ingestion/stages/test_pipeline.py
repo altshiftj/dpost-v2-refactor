@@ -33,13 +33,19 @@ def _default_transition_table() -> dict[str, PipelineTransitionPolicy]:
             ),
         ),
         "stabilize": PipelineTransitionPolicy(
-            allowed_next_stages=frozenset({"route"}),
+            allowed_next_stages=frozenset({"transform"}),
             allowed_terminal_outcomes=frozenset(
                 {
                     PipelineTerminalOutcome.RETRY,
                     PipelineTerminalOutcome.REJECTED,
                     PipelineTerminalOutcome.FAILED,
                 }
+            ),
+        ),
+        "transform": PipelineTransitionPolicy(
+            allowed_next_stages=frozenset({"route"}),
+            allowed_terminal_outcomes=frozenset(
+                {PipelineTerminalOutcome.REJECTED, PipelineTerminalOutcome.FAILED}
             ),
         ),
         "route": PipelineTransitionPolicy(
@@ -78,7 +84,10 @@ def test_pipeline_runner_sequences_stages_and_records_transition_log() -> None:
             "stabilize", _with_step(state, "resolve")
         ),
         "stabilize": lambda state: StageDirective.continue_to(
-            "route", _with_step(state, "stabilize")
+            "transform", _with_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.continue_to(
+            "route", _with_step(state, "transform")
         ),
         "route": lambda state: StageDirective.continue_to(
             "persist", _with_step(state, "route")
@@ -99,6 +108,7 @@ def test_pipeline_runner_sequences_stages_and_records_transition_log() -> None:
     assert result.state.steps == (
         "resolve",
         "stabilize",
+        "transform",
         "route",
         "persist",
         "post_persist",
@@ -106,6 +116,7 @@ def test_pipeline_runner_sequences_stages_and_records_transition_log() -> None:
     assert [entry.stage_id for entry in result.transition_log] == [
         "resolve",
         "stabilize",
+        "transform",
         "route",
         "persist",
         "post_persist",
@@ -123,7 +134,10 @@ def test_pipeline_runner_raises_for_missing_stage_handler() -> None:
             "stabilize", _with_step(state, "resolve")
         ),
         "stabilize": lambda state: StageDirective.continue_to(
-            "route", _with_step(state, "stabilize")
+            "transform", _with_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.continue_to(
+            "route", _with_step(state, "transform")
         ),
     }
 
@@ -158,7 +172,10 @@ def test_pipeline_runner_enforces_transition_table_for_terminal_outcome() -> Non
             "stabilize", _with_step(state, "resolve")
         ),
         "stabilize": lambda state: StageDirective.continue_to(
-            "route", _with_step(state, "stabilize")
+            "transform", _with_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.continue_to(
+            "route", _with_step(state, "transform")
         ),
         "route": lambda state: StageDirective.terminal(
             PipelineTerminalOutcome.COMPLETED,
@@ -216,7 +233,10 @@ def test_pipeline_runner_returns_cancellation_terminal_outcome() -> None:
     handlers = {
         "resolve": resolve_handler,
         "stabilize": lambda state: StageDirective.continue_to(
-            "route", _with_step(state, "stabilize")
+            "transform", _with_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.continue_to(
+            "route", _with_step(state, "transform")
         ),
     }
 

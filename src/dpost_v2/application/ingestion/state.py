@@ -4,6 +4,8 @@ import hashlib
 from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
+from dpost_v2.application.contracts.context import ProcessingContext
+from dpost_v2.application.contracts.plugin_contracts import ProcessorResult
 from dpost_v2.application.ingestion.models.candidate import Candidate
 
 
@@ -15,6 +17,9 @@ class IngestionState:
     correlation_id: str | None = None
     candidate: Candidate | None = None
     processor: Any | None = None
+    processing_context: ProcessingContext | None = None
+    prepared_input: Mapping[str, Any] | None = None
+    processor_result: ProcessorResult | None = None
     record_id: str | None = None
     retry_plan: Mapping[str, Any] | None = None
     sync_warning: str | None = None
@@ -22,7 +27,12 @@ class IngestionState:
     diagnostics: Mapping[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_event(cls, event: Mapping[str, Any]) -> IngestionState:
+    def from_event(
+        cls,
+        event: Mapping[str, Any],
+        *,
+        processing_context: ProcessingContext | None = None,
+    ) -> IngestionState:
         """Create the initial state snapshot from one observer event."""
         event_id = str(event.get("event_id", "")).strip()
         if event_id:
@@ -30,7 +40,11 @@ class IngestionState:
         else:
             base = f"{event.get('path', '')}|{event.get('observed_at', '')}"
             correlation_id = hashlib.sha256(base.encode("utf-8")).hexdigest()[:16]
-        return cls(event=dict(event), correlation_id=correlation_id)
+        return cls(
+            event=dict(event),
+            correlation_id=correlation_id,
+            processing_context=processing_context,
+        )
 
     def with_updates(self, **updates: Any) -> IngestionState:
         """Return a new immutable state snapshot with requested field updates."""

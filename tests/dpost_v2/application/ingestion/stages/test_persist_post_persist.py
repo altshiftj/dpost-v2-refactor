@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dpost_v2.application.contracts.plugin_contracts import ProcessorResult
 from dpost_v2.application.ingestion.models.candidate import Candidate
 from dpost_v2.application.ingestion.runtime_services import (
     RuntimeCallResult,
@@ -27,7 +28,15 @@ def _candidate() -> Candidate:
 
 
 def test_persist_stage_continues_to_post_persist_on_success() -> None:
-    state = IngestionState(event={}, candidate=_candidate())
+    captured_payload: list[dict[str, object]] = []
+    state = IngestionState(
+        event={},
+        candidate=_candidate(),
+        processor_result=ProcessorResult(
+            final_path="D:/normalized/out.txt",
+            datatype="plug/output",
+        ),
+    )
 
     directive = run_persist_stage(
         state,
@@ -36,7 +45,8 @@ def test_persist_stage_continues_to_post_persist_on_success() -> None:
             value=target,
             diagnostics={},
         ),
-        save_record=lambda payload: RuntimeCallResult(
+        save_record=lambda payload: captured_payload.append(dict(payload))
+        or RuntimeCallResult(
             status=RuntimeCallStatus.SUCCESS,
             value={"record_id": "r1"},
             diagnostics={},
@@ -47,6 +57,17 @@ def test_persist_stage_continues_to_post_persist_on_success() -> None:
     assert directive.kind == "continue"
     assert directive.next_stage == "post_persist"
     assert directive.state.record_id == "r1"
+    assert captured_payload == [
+        {
+            "candidate": _candidate().to_payload(),
+            "processor_result": {
+                "final_path": "D:/normalized/out.txt",
+                "datatype": "plug/output",
+                "force_paths": (),
+            },
+            "target_path": "C:/dest/out.txt",
+        }
+    ]
 
 
 def test_persist_stage_returns_retry_when_move_fails_with_retry_plan() -> None:

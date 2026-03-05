@@ -20,7 +20,7 @@ def run_route_stage(
     *,
     allowed_roots: tuple[str, ...],
     route_selector: Callable[[Candidate], str | None],
-    filename_builder: Callable[[Candidate], str],
+    filename_builder: Callable[[IngestionState], str],
 ) -> StageDirective[IngestionState]:
     """Compute routed target path and enforce force-path policy constraints."""
     candidate = state.candidate
@@ -34,7 +34,7 @@ def run_route_stage(
         )
         return StageDirective.terminal(PipelineTerminalOutcome.REJECTED, rejected)
 
-    filename = filename_builder(candidate)
+    filename = filename_builder(state)
     default_target = str(PurePath(route_root) / filename)
     decision = evaluate_force_path(
         override_path=state.event.get("force_path"),

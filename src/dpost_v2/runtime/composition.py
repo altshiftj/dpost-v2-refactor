@@ -15,6 +15,7 @@ from dpost_v2.application.contracts.ports import (
     SyncResponse,
     validate_port_bindings,
 )
+from dpost_v2.application.contracts.context import ProcessingContext, RuntimeContext
 from dpost_v2.application.ingestion.engine import IngestionEngine, IngestionOutcome
 from dpost_v2.application.ingestion.models.candidate import Candidate
 from dpost_v2.application.ingestion.processor_factory import (
@@ -35,6 +36,7 @@ from dpost_v2.application.ingestion.stages.post_persist import run_post_persist_
 from dpost_v2.application.ingestion.stages.resolve import run_resolve_stage
 from dpost_v2.application.ingestion.stages.route import run_route_stage
 from dpost_v2.application.ingestion.stages.stabilize import run_stabilize_stage
+from dpost_v2.application.ingestion.stages.transform import run_transform_stage
 from dpost_v2.application.ingestion.state import IngestionState
 from dpost_v2.application.runtime.dpost_app import DPostApp
 from dpost_v2.application.session.session_manager import SessionManager, SessionPolicy
@@ -640,6 +642,9 @@ def _build_runtime_ingestion_engine(
                     "revision": next_revision,
                     "payload": {
                         "candidate": dict(record_payload.get("candidate", {})),
+                        "processor_result": dict(
+                            record_payload.get("processor_result") or {}
+                        ),
                         "target_path": record_payload.get("target_path"),
                         "sync_status": "pending",
                     },
@@ -750,11 +755,17 @@ def _build_runtime_ingestion_engine(
             now_provider=now_provider,
             settle_delay_seconds=settle_delay_seconds,
         ),
+        "transform": lambda state: run_transform_stage(state),
         "route": lambda state: run_route_stage(
             state,
             allowed_roots=allowed_roots,
             route_selector=route_selector,
-            filename_builder=filename_builder,
+            filename_builder=lambda state: _build_runtime_filename(
+                state,
+                fallback_name=filename_builder(state.candidate)
+                if state.candidate is not None
+                else "artifact.dat",
+            ),
         ),
         "persist": lambda state: run_persist_stage(
             state,
@@ -778,7 +789,15 @@ def _build_runtime_ingestion_engine(
         ),
         stage_handlers=stage_handlers,
     )
-    return _RuntimeIngestionEngineAdapter(engine)
+    return _RuntimeIngestionEngineAdapter(
+        engine,
+        processing_context_builder=lambda event: _build_runtime_processing_context(
+            event,
+            context=context,
+            clock=clock,
+            plugin_policy=plugin_policy,
+        ),
+    )
 
 
 def _resolve_route_root(settings: StartupSettings | object) -> str:
@@ -801,6 +820,15 @@ def _resolve_settle_delay_seconds(settings: StartupSettings | object) -> float:
     if value < 0:
         return 0.0
     return value
+
+
+def _build_runtime_filename(state: IngestionState, *, fallback_name: str) -> str:
+    processor_result = state.processor_result
+    if processor_result is not None:
+        candidate_name = PurePath(processor_result.final_path).name
+        if candidate_name.strip():
+            return candidate_name
+    return fallback_name
 
 
 def _read_runtime_file_facts(path: str, *, clock: object) -> Mapping[str, Any]:
@@ -842,6 +870,63 @@ def _clock_seconds(clock: object) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _coerce_observed_at_datetime(event: Mapping[str, Any], *, clock: object) -> datetime:
+    observed_at = event.get("observed_at")
+    if isinstance(observed_at, datetime):
+        return observed_at
+    if observed_at is not None:
+        try:
+            return datetime.fromtimestamp(float(observed_at), tz=UTC)
+        except (TypeError, ValueError, OSError):
+            pass
+    now_fn = getattr(clock, "now", None)
+    if callable(now_fn):
+        value = now_fn()
+        if isinstance(value, datetime):
+            return value
+    return datetime.now(UTC)
+
+
+def _build_runtime_processing_context(
+    event: Mapping[str, Any],
+    *,
+    context: StartupContext,
+    clock: object,
+    plugin_policy: _RuntimePluginPolicy,
+) -> ProcessingContext:
+    event_id = str(event.get("event_id", "")).strip() or f"{context.launch.trace_id}:event"
+    runtime_context = RuntimeContext.from_settings(
+        settings={
+            "mode": context.settings.mode,
+            "profile": context.settings.profile or "default",
+            "session_id": f"session-{context.launch.trace_id}",
+            "event_id": event_id,
+            "trace_id": context.launch.trace_id,
+            "selected_pc_plugin": plugin_policy.selected_pc_plugin,
+            "scoped_device_plugins": plugin_policy.scoped_device_plugins,
+        },
+        dependency_ids={
+            "clock": f"clock:{context.dependencies.selected_backends.get('observability', 'default')}",
+            "ui": f"ui:{context.dependencies.selected_backends.get('ui', 'default')}",
+            "sync": f"sync:{context.dependencies.selected_backends.get('sync', 'default')}",
+        },
+    )
+    source_path = str(event.get("path", event.get("source_path", ""))).strip()
+    event_type = str(event.get("event_type", event.get("event_kind", "created"))).strip()
+    candidate_event: dict[str, Any] = {
+        "source_path": source_path,
+        "event_type": event_type or "created",
+        "observed_at": _coerce_observed_at_datetime(event, clock=clock),
+        "event_id": event_id,
+        "trace_id": context.launch.trace_id,
+    }
+    if "force_paths" in event:
+        candidate_event["force_paths"] = event["force_paths"]
+    elif "force_path" in event:
+        candidate_event["force_paths"] = event["force_path"]
+    return ProcessingContext.for_candidate(runtime_context, candidate_event)
 
 
 def _extract_record_id(saved: object, *, record_payload: Mapping[str, Any]) -> str:
@@ -1070,8 +1155,14 @@ class _SystemClock(_ClockPort):
 
 
 class _RuntimeIngestionEngineAdapter:
-    def __init__(self, engine: IngestionEngine[IngestionState]) -> None:
+    def __init__(
+        self,
+        engine: IngestionEngine[IngestionState],
+        *,
+        processing_context_builder: Callable[[Mapping[str, Any]], ProcessingContext],
+    ) -> None:
         self._engine = engine
+        self._processing_context_builder = processing_context_builder
 
     def process(
         self,
@@ -1079,10 +1170,15 @@ class _RuntimeIngestionEngineAdapter:
         event: Mapping[str, Any],
         processing_context: Any | None = None,
     ) -> IngestionOutcome[object]:
-        _ = processing_context
+        resolved_processing_context = processing_context
+        if not isinstance(resolved_processing_context, ProcessingContext):
+            resolved_processing_context = self._processing_context_builder(event)
         return self._engine.process(
             event=event,
-            initial_state_factory=IngestionState.from_event,
+            initial_state_factory=lambda payload: IngestionState.from_event(
+                payload,
+                processing_context=resolved_processing_context,
+            ),
         )
 
 
@@ -1209,7 +1305,7 @@ class _DefaultDeviceProcessor:
         _ = context
         return {
             "final_path": str(candidate.get("source_path", "")),
-            "plugin_id": self.plugin_id,
+            "datatype": f"{self.plugin_id}/output",
         }
 
 

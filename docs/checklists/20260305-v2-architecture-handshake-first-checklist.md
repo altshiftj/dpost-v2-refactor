@@ -127,16 +127,34 @@
 - Why this matters: Functional migration later depends on verified processor contract flow now.
 
 ### Manual Check
-- [ ] Runtime executes processor handshake (`prepare/can_process/process`) through ingestion path.
-- [ ] Stage handoff carries typed processor output into route/persist/post-persist.
+- [x] Runtime executes processor handshake (`prepare/can_process/process`) through ingestion path.
+- [x] Stage handoff carries typed processor output into route/persist/post-persist.
 
 ### Checklist
-- [ ] Add failing stage/integration tests for explicit processor transform handshake.
-- [ ] Add failing test that rejects candidates when processor cannot process under current scope.
-- [ ] Implement minimal ingestion wiring to pass without changing device-specific logic.
+- [x] Add failing stage/integration tests for explicit processor transform handshake.
+- [x] Add failing test that rejects candidates when processor cannot process under current scope.
+- [x] Implement minimal ingestion wiring to pass without changing device-specific logic.
 
 ### Completion Notes
 - How it was done:
+  - Added an explicit `transform` stage between `stabilize` and `route`.
+  - Added red tests in:
+    - `tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py`
+    - `tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py`
+    - `tests/dpost_v2/application/ingestion/stages/test_pipeline.py`
+    - `tests/dpost_v2/application/ingestion/test_engine.py`
+    - `tests/dpost_v2/application/ingestion/test_pipeline_integration.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+  - Runtime processing context is now passed into ingestion state instead of being discarded by the runtime adapter.
+  - `transform` now executes:
+    - optional `prepare(...)`
+    - `can_process(...)`
+    - `process(...)`
+    - `validate_processor_result(...)`
+  - Route now derives the output filename from processor `final_path` when present.
+  - Persist now includes validated `processor_result` in the saved record payload.
+  - Compatibility note:
+    - fallback/default runtime processor shim was updated to emit a contract-valid `datatype` so non-plugin-host composition tests still use the same seam cleanly.
 
 ---
 

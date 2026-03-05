@@ -88,6 +88,7 @@ FailureEmitter = Callable[[FailureOutcome, Mapping[str, Any]], None]
 REQUIRED_STAGE_ORDER: tuple[str, ...] = (
     "resolve",
     "stabilize",
+    "transform",
     "route",
     "persist",
     "post_persist",

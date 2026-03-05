@@ -31,6 +31,35 @@ def _append_step(state: DemoState, stage_id: str) -> DemoState:
     return DemoState(event=state.event, steps=(*state.steps, stage_id))
 
 
+def _terminal_handlers() -> dict[str, Any]:
+    return {
+        "resolve": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "stabilize": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "transform": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "route": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "persist": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "post_persist": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+    }
+
+
 def test_engine_requires_all_required_stage_handlers() -> None:
     with pytest.raises(IngestionEngineConfigurationError, match="post_persist"):
         IngestionEngine(
@@ -40,7 +69,12 @@ def test_engine_requires_all_required_stage_handlers() -> None:
             ),
             stage_handlers={
                 "resolve": lambda state: StageDirective.continue_to("stabilize", state),
-                "stabilize": lambda state: StageDirective.continue_to("route", state),
+                "stabilize": lambda state: StageDirective.continue_to(
+                    "transform", state
+                ),
+                "transform": lambda state: StageDirective.continue_to(
+                    "route", state
+                ),
                 "route": lambda state: StageDirective.continue_to("persist", state),
                 "persist": lambda state: StageDirective.terminal(
                     PipelineTerminalOutcome.COMPLETED,
@@ -56,7 +90,10 @@ def test_engine_maps_completed_pipeline_result_to_succeeded_outcome() -> None:
             "stabilize", _append_step(state, "resolve")
         ),
         "stabilize": lambda state: StageDirective.continue_to(
-            "route", _append_step(state, "stabilize")
+            "transform", _append_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.continue_to(
+            "route", _append_step(state, "transform")
         ),
         "route": lambda state: StageDirective.continue_to(
             "persist", _append_step(state, "route")
@@ -87,6 +124,7 @@ def test_engine_maps_completed_pipeline_result_to_succeeded_outcome() -> None:
     assert outcome.state.steps == (
         "resolve",
         "stabilize",
+        "transform",
         "route",
         "persist",
         "post_persist",
@@ -94,6 +132,7 @@ def test_engine_maps_completed_pipeline_result_to_succeeded_outcome() -> None:
     assert [entry.stage_id for entry in outcome.stage_trace] == [
         "resolve",
         "stabilize",
+        "transform",
         "route",
         "persist",
         "post_persist",
@@ -119,28 +158,7 @@ def test_engine_normalizes_exceptions_and_returns_retry_outcome() -> None:
 
     engine = IngestionEngine(
         pipeline_runner=_ExplodingPipelineRunner(),
-        stage_handlers={
-            "resolve": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "stabilize": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "route": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "post_persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-        },
+        stage_handlers=_terminal_handlers(),
         error_handling_policy=lambda exc, stage_id: FailureClassification(
             reason_code="unexpected",
             severity="error",
@@ -170,28 +188,7 @@ def test_engine_normalizes_exceptions_and_returns_retry_outcome() -> None:
 def test_engine_maps_rejected_failure_outcome() -> None:
     engine = IngestionEngine(
         pipeline_runner=_ExplodingPipelineRunner(),
-        stage_handlers={
-            "resolve": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "stabilize": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "route": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "post_persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-        },
+        stage_handlers=_terminal_handlers(),
         error_handling_policy=lambda exc, stage_id: FailureClassification(
             reason_code="validation",
             severity="warning",
@@ -222,28 +219,7 @@ def test_engine_returns_failed_terminal_when_initial_state_factory_raises() -> N
             start_stage="resolve",
             transition_table=DEFAULT_INGESTION_TRANSITION_TABLE,
         ),
-        stage_handlers={
-            "resolve": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "stabilize": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "route": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "post_persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-        },
+        stage_handlers=_terminal_handlers(),
     )
 
     def _raising_factory(_: Any) -> DemoState:
@@ -263,28 +239,7 @@ def test_engine_returns_failed_terminal_when_initial_state_factory_raises() -> N
 def test_engine_returns_failed_terminal_when_error_policy_raises() -> None:
     engine = IngestionEngine(
         pipeline_runner=_ExplodingPipelineRunner(),
-        stage_handlers={
-            "resolve": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "stabilize": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "route": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "post_persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-        },
+        stage_handlers=_terminal_handlers(),
         error_handling_policy=lambda exc, stage_id: (_ for _ in ()).throw(
             RuntimeError("classification_failed")
         ),
@@ -300,28 +255,7 @@ def test_engine_returns_failed_terminal_when_error_policy_raises() -> None:
 def test_engine_returns_failed_terminal_when_failure_outcome_policy_raises() -> None:
     engine = IngestionEngine(
         pipeline_runner=_ExplodingPipelineRunner(),
-        stage_handlers={
-            "resolve": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "stabilize": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "route": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-            "post_persist": lambda state: StageDirective.terminal(
-                PipelineTerminalOutcome.COMPLETED,
-                state,
-            ),
-        },
+        stage_handlers=_terminal_handlers(),
         error_handling_policy=lambda exc, stage_id: FailureClassification(
             reason_code="unexpected",
             severity="error",
