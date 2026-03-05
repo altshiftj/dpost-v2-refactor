@@ -13,6 +13,10 @@
 ### Checklist
 - [x] Treat `docs/checklists/20260305-v2-architecture-handshake-first-checklist.md` as closed for this phase.
 - [x] Use `docs/planning/20260305-v2-three-plugin-phased-migration-rpc.md` as historical planning input only.
+- [x] Parallel execution pack is available if this phase is lane-split:
+  - `docs/planning/20260305-v2-three-plugin-parallel-lanes-rpc.md`
+  - `docs/checklists/20260305-v2-three-plugin-parallel-coordination-checklist.md`
+  - `docs/ops/lane-prompts/three-plugin-5-launch-pack.md`
 - [ ] Start execution with:
   - `Section: Behavior spec lock (TDD)`
   - `Section: sem_phenomxl2 parity slice (TDD)`
