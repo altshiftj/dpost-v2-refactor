@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import pytest
 
@@ -342,6 +343,39 @@ def test_bootstrap_started_event_includes_request_metadata() -> None:
     assert events[0].payload["metadata"] == {"source": "cli", "attempt": 2}
 
 
+def test_bootstrap_success_event_includes_request_metadata_and_boot_timestamp() -> None:
+    fixed_now = datetime(2026, 3, 5, 9, 15, tzinfo=UTC)
+    request = BootstrapRequest(
+        mode="headless",
+        profile="ci",
+        trace_id="trace-008a",
+        metadata={"headless": True, "dry_run": False},
+    )
+    events = []
+    settings = FakeSettings()
+    dependencies = _dependencies()
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=lambda _request: settings,
+        resolve_dependencies=lambda _settings, _request: dependencies,
+        compose_runtime=lambda _context: CompositionBundle(
+            app=DummyApp(),
+            port_bindings={"ui": object(), "event_sink": object()},
+            diagnostics={},
+            shutdown_all=lambda: None,
+        ),
+        launch_runtime=lambda app, _context: app,
+        emit_event=events.append,
+        now_utc=lambda: fixed_now,
+    )
+
+    assert result.is_success is True
+    assert [event.name for event in events] == ["startup_started", "startup_succeeded"]
+    assert events[1].payload["metadata"] == {"headless": True, "dry_run": False}
+    assert events[1].payload["boot_timestamp_utc"] == "2026-03-05T09:15:00+00:00"
+
+
 def test_bootstrap_emits_stable_diagnostics_fields_on_success() -> None:
     request = BootstrapRequest(mode="v2", profile="ci", trace_id="trace-009")
     events = []
@@ -432,6 +466,36 @@ def test_bootstrap_emits_stable_diagnostics_fields_on_success() -> None:
     assert succeeded_payload["plugin_visibility"] == "bound"
 
 
+def test_bootstrap_failure_event_includes_request_metadata() -> None:
+    fixed_now = datetime(2026, 3, 5, 9, 30, tzinfo=UTC)
+    request = BootstrapRequest(
+        mode="headless",
+        profile="ci",
+        trace_id="trace-010a",
+        metadata={"headless": True, "dry_run": True},
+    )
+    events = []
+    settings = FakeSettings()
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=lambda _request: settings,
+        resolve_dependencies=lambda _settings, _request: _dependencies(),
+        compose_runtime=lambda _context: (_ for _ in ()).throw(
+            RuntimeError("composition failed")
+        ),
+        launch_runtime=lambda _app, _context: "unused",
+        emit_event=events.append,
+        now_utc=lambda: fixed_now,
+    )
+
+    assert result.is_success is False
+    assert result.failure is not None
+    assert [event.name for event in events] == ["startup_started", "startup_failed"]
+    assert events[1].payload["metadata"] == {"headless": True, "dry_run": True}
+    assert events[1].payload["boot_timestamp_utc"] == "2026-03-05T09:30:00+00:00"
+
+
 def test_bootstrap_failed_event_preserves_diagnostics_snapshot() -> None:
     request = BootstrapRequest(mode="headless", profile="ci", trace_id="trace-010")
     events = []
@@ -485,6 +549,50 @@ def test_bootstrap_failed_event_preserves_diagnostics_snapshot() -> None:
     assert failed_payload["selected_backends"]["plugins"] == "builtin"
     assert failed_payload["plugin_backend"] == "builtin"
     assert failed_payload["plugin_visibility"] == "configured"
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_bootstrap_cleanup_order_is_stable_for_dry_run_and_non_dry_run(
+    dry_run: bool,
+) -> None:
+    request = BootstrapRequest(
+        mode="headless",
+        profile="ci",
+        trace_id=f"trace-011-{'dry' if dry_run else 'live'}",
+        metadata={"headless": True, "dry_run": dry_run},
+    )
+    cleanup_calls: list[str] = []
+
+    def load_settings(_request):
+        return FakeSettings()
+
+    def resolve_dependencies(_settings, _request):
+        return _dependencies(cleanup=lambda: cleanup_calls.append("deps_cleanup"))
+
+    def compose(_context):
+        return CompositionBundle(
+            app=DummyApp(),
+            port_bindings={"ui": object(), "event_sink": object()},
+            diagnostics={},
+            shutdown_all=lambda: cleanup_calls.append("composition_shutdown"),
+        )
+
+    def launch_runtime(_app, _context):
+        raise RuntimeError("launch failed")
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=load_settings,
+        resolve_dependencies=resolve_dependencies,
+        compose_runtime=compose,
+        launch_runtime=launch_runtime,
+        emit_event=lambda _event: None,
+    )
+
+    assert result.is_success is False
+    assert result.failure is not None
+    assert result.failure.stage == "launch"
+    assert cleanup_calls == ["composition_shutdown", "deps_cleanup"]
 
 
 def test_run_uses_process_environment_when_override_not_supplied(monkeypatch) -> None:

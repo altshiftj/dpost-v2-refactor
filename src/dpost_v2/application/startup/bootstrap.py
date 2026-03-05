@@ -133,6 +133,7 @@ def run_bootstrap(
     """Run fixed startup sequence: settings -> dependencies -> context -> composition -> launch."""
     timestamp_factory = now_utc or (lambda: datetime.now(UTC))
     boot_timestamp = timestamp_factory().isoformat()
+    request_metadata = dict(request.metadata)
     event_diagnostics = _initialize_event_diagnostics(
         request=request,
         boot_timestamp_utc=boot_timestamp,
@@ -160,6 +161,7 @@ def run_bootstrap(
             exc=exc,
             request=request,
             event_diagnostics=event_diagnostics,
+            request_metadata=request_metadata,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -174,6 +176,7 @@ def run_bootstrap(
             exc=exc,
             request=request,
             event_diagnostics=event_diagnostics,
+            request_metadata=request_metadata,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -197,6 +200,7 @@ def run_bootstrap(
             exc=exc,
             request=request,
             event_diagnostics=event_diagnostics,
+            request_metadata=request_metadata,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -210,6 +214,7 @@ def run_bootstrap(
             exc=exc,
             request=request,
             event_diagnostics=event_diagnostics,
+            request_metadata=request_metadata,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -223,6 +228,7 @@ def run_bootstrap(
             exc=exc,
             request=request,
             event_diagnostics=event_diagnostics,
+            request_metadata=request_metadata,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -231,7 +237,10 @@ def run_bootstrap(
         StartupEvent(
             name="startup_succeeded",
             trace_id=request.trace_id,
-            payload=_build_startup_event_payload(event_diagnostics),
+            payload=_build_startup_event_payload(
+                event_diagnostics,
+                extra_payload={"metadata": request_metadata},
+            ),
         )
     )
     return BootstrapResult(
@@ -267,6 +276,7 @@ def _build_failure_result(
     exc: Exception,
     request: BootstrapRequest,
     event_diagnostics: Mapping[str, Any],
+    request_metadata: Mapping[str, Any],
     cleanup_hooks: list[Callable[[], None]],
     emit_event: Callable[[StartupEvent], None],
 ) -> BootstrapResult:
@@ -286,6 +296,7 @@ def _build_failure_result(
                     "stage": failure.stage,
                     "error_type": failure.error_type,
                     "message": failure.message,
+                    "metadata": dict(request_metadata),
                 },
             ),
         )
@@ -294,7 +305,14 @@ def _build_failure_result(
 
 
 def _run_cleanup(cleanup_hooks: list[Callable[[], None]]) -> None:
-    for hook in reversed(cleanup_hooks):
+    hooks = tuple(cleanup_hooks)
+    cleanup_hooks.clear()
+    seen_hook_ids: set[int] = set()
+    for hook in reversed(hooks):
+        hook_id = id(hook)
+        if hook_id in seen_hook_ids:
+            continue
+        seen_hook_ids.add(hook_id)
         try:
             hook()
         except Exception:
