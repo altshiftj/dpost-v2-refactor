@@ -1,131 +1,86 @@
 # Architecture Contract
 
 ## Purpose
-- Define enforceable dependency and ownership rules for the canonical `dpost` architecture.
-- Prevent architecture drift while modules evolve and are decomposed.
+
+- Define enforceable dependency and ownership rules for the V2 runtime.
+- Prevent drift across domain/application/infrastructure/plugin/runtime layers.
 
 ## Layer Dependency Rules
-1. Domain layer:
-- can depend on Python standard library and pure domain models/utilities.
-- must not depend on infrastructure SDKs, UI frameworks, or runtime wiring.
-- must not import application/infrastructure modules even for typing-only
-  references; use domain-local protocols/contracts instead.
 
-2. Application layer:
-- can depend on domain and application ports.
-- can orchestrate use-cases and workflows.
-- must not depend directly on concrete infrastructure implementations by default.
+1. Domain layer (`src/dpost_v2/domain/**`):
+- can use stdlib and domain-local modules
+- must not import application/infrastructure/runtime/plugin modules
+- must remain side-effect free
 
-3. Infrastructure layer:
-- can depend on domain/application ports and external SDKs/APIs.
-- implements adapters for filesystem, sync backends, UI/runtime glue, observability.
-- must not contain core domain decision logic.
+2. Application layer (`src/dpost_v2/application/**`):
+- can depend on domain and application contracts
+- orchestrates use-case flows (startup, ingestion, runtime/session, records)
+- must not hard-depend on concrete infrastructure implementations
 
-4. Plugin layer:
-- can provide device/PC specific implementations against plugin contracts.
-- must not perform global runtime composition or cross-layer wiring.
+3. Infrastructure layer (`src/dpost_v2/infrastructure/**`):
+- can depend on application contracts and external SDKs
+- owns adapter implementations (storage/sync/observability/runtime UI)
+- must not own domain decision policy
+
+4. Plugin layer (`src/dpost_v2/plugins/**`):
+- provides extension implementations against plugin contracts
+- owns discovery/host/profile selection
+- must not own global runtime composition policy
+
+5. Runtime layer (`src/dpost_v2/runtime/**`):
+- owns dependency resolution and composition root wiring
+- must not absorb domain policy or plugin business logic
 
 ## Runtime Composition Rules
-- Dependency wiring happens in one composition root.
-- Avoid new module-level singletons outside explicit runtime composition.
-- Runtime mode selection (headless/desktop) is configured at composition root.
 
-## Framework Kernel Boundary (Phase 3)
-- The dpost kernel boundary is currently limited to these framework surfaces:
-- `src/dpost/runtime/composition.py` (startup composition and adapter/profile selection)
-- `src/dpost/runtime/bootstrap.py` (native startup contracts and runtime bootstrap boundary API)
-- `src/dpost/application/services/runtime_startup.py` (application-level runtime startup orchestration)
-- `src/dpost/runtime/startup_config.py` (startup config/env-to-settings boundary)
-- `src/dpost/application/ports/sync.py` (sync adapter port contract)
-- `src/dpost/plugins/reference.py` (reference plugin profile contract)
-- `src/dpost/plugins/profile_selection.py` (plugin profile selection boundary)
-- `src/dpost/plugins/loading.py` (plugin loading boundary)
-- `src/dpost/plugins/contracts.py` (plugin protocol contract types)
-- `src/dpost/application/ports/ui.py` (runtime UI contract types)
-- `src/dpost/application/ports/interactions.py` (runtime interaction contract types)
-- `src/dpost/infrastructure/runtime_adapters/ui_adapters.py` (runtime UI adapter boundary)
-- `src/dpost/infrastructure/runtime_adapters/desktop_ui.py` (desktop UI boundary)
-- `src/dpost/infrastructure/runtime_adapters/tkinter_ui.py` (desktop UI implementation)
-- `src/dpost/infrastructure/runtime_adapters/dialogs.py` (desktop rename dialog boundary)
-- `src/dpost/application/config/` (runtime/application config ownership boundary)
-- `src/dpost/application/metrics.py` (runtime/application metrics ownership boundary)
-- Kernel composition paths can map explicit profile names to startup settings.
-- Kernel runtime modules should depend on dpost-owned bootstrap contracts, not
-  direct legacy bootstrap module imports.
-- Canonical startup modules should resolve logging and observability through
-  `dpost.infrastructure` boundaries, not direct legacy module imports.
-- Legacy source package ownership under `src/ipat_watchdog/**` is retired;
-  new canonical code must not recreate runtime dependencies on that package.
-- Canonical runtime app/bootstrap modules should use dpost-owned dependency
-  boundary modules for staged session/UI/runtime integrations instead of
-  direct legacy imports in canonical runtime files.
-- Canonical dpost config and metrics boundaries must remain dpost-owned and
-  must not directly import `ipat_watchdog.core.config*` or
-  `ipat_watchdog.metrics`.
-- Canonical processing modules under `src/dpost/application/processing/` must
-  not import `ipat_watchdog.core.processing.*` directly; processing helper
-  dependencies must resolve through dpost-owned modules.
-- Canonical dpost application/runtime modules must consume filesystem utility
-  helpers through `src/dpost/infrastructure/storage/filesystem_utils.py`
-  instead of direct `ipat_watchdog.core.storage.filesystem_utils` imports.
-- Runtime composition should delegate plugin/config resolution to explicit
-  boundary helpers and orchestration services instead of embedding env parsing.
-- Canonical plugin discovery groups should use `dpost.device_plugins` and
-  `dpost.pc_plugins`; canonical dpost paths must not depend on legacy
-  namespace fallback mappings.
-- Canonical plugin hook namespace must use `dpost` only in dpost-owned runtime
-  paths.
-- Public contributor extension contracts must remain aligned with
-  `docs/architecture/extension-contracts.md`.
-- Device plugin contract in canonical dpost paths includes both configuration
-  access (`get_config`) and processor construction (`get_file_processor`).
-- Kernel composition paths must not import concrete backend SDK modules directly.
-- Concrete backend and plugin integrations stay behind infrastructure/plugin boundaries.
+- Composition is centralized in `src/dpost_v2/runtime/composition.py`.
+- Startup dependency selection is centralized in
+  `src/dpost_v2/runtime/startup_dependencies.py`.
+- Startup orchestration is centralized in
+  `src/dpost_v2/application/startup/bootstrap.py`.
+- Runtime mode policy is V2-only (`headless`/`desktop`).
+- Transition architecture modes (`v1`/`shadow`) are retired and are not valid
+  targets for active runbooks/checks.
 
-## Framework-first Sequencing Rules
-- Build framework kernel contracts before adopting concrete integrations.
-- Validate framework with reference implementations first (for example noop adapter, test plugin flow).
-- Adopt concrete adapters/plugins only after kernel contract tests are green.
+## Port/Adapter Rules
 
-## Sync Adapter Rules
-- Application code uses sync adapter port abstractions.
-- Concrete backends (for example Kadi) are infrastructure adapters.
-- Adapter selection is explicit and validated at startup.
-- Backend-specific SDK dependencies stay optional in packaging and are enabled
-  through explicit optional dependency groups.
-- dpost sync adapter kernel contract currently lives in:
-- `src/dpost/application/ports/sync.py`
-- dpost reference adapter for kernel validation currently lives in:
-- `src/dpost/infrastructure/sync/noop.py`
+- Application contracts in `src/dpost_v2/application/contracts/ports.py` are the
+  only stable adapter boundary.
+- Composition must validate complete port bindings before runtime launch.
+- Adapter selection must be explicit (`noop`/`kadi` sync backend policy).
+- Optional backend SDKs remain optional dependencies (for example `kadi`).
 
-## Naming Clarity Rules
-- Prefer intention-revealing names for orchestration-stage functions and variables.
-- Avoid generic stage-boundary names (for example `item`, `data`, `thing`) when
-  a domain term exists (`request`, `candidate`, `context`, `decision`,
-  `result`).
-- Function names should reflect side effects: route/decision functions should
-  not imply persistence or sync side effects; persistence/sync functions should
-  state that intent directly.
-- Naming settings consolidation direction (single source of truth in schema)
-  is tracked in:
-  - `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
+## Plugin Contract Rules
+
+- Plugin contracts are defined in
+  `src/dpost_v2/application/contracts/plugin_contracts.py`.
+- Discovery namespaces are:
+  - `dpost_v2.plugins.devices`
+  - `dpost_v2.plugins.pcs`
+- Device plugin exports must include metadata/capabilities/settings validation
+  and processor creation.
+- PC plugin exports must include metadata/capabilities/sync adapter creation and
+  sync payload preparation.
 
 ## Documentation Rules
-- Architecture-impacting changes require:
-- relevant report/plan/checklist updates
-- ADR update when direction or policy changes
-- responsibility catalog updates when ownership changes
-- glossary updates for new project-defined terms
+
+Architecture-impacting changes must update, in the same change set:
+
+- relevant plan/report/checklist artifacts
+- architecture baseline and/or responsibility catalog when ownership changes
+- extension contract doc when contributor-facing contracts change
+- glossary when new internal terms are introduced
 
 ## Test Isolation Rules
-- Archived compatibility characterization tests use the `legacy` marker.
-- Canonical behavior, boundary, and contract tests live under
-  `tests/unit/`, `tests/integration/`, and `tests/manual/`.
-- Changes that affect archived compatibility paths should include
-  marker-specific verification runs.
+
+- Active test target is `tests/dpost_v2/`.
+- Legacy test lanes (`tests/unit`, `tests/integration`, `tests/manual`) are
+  archived and excluded from active CI requirements.
+- Archived compatibility tests may use marker `legacy`.
 
 ## Compliance Gate
-- A delivery phase cannot close until impacted contract rules are either:
-- satisfied, or
-- explicitly amended in this contract with rationale and ADR reference.
 
+A delivery slice cannot close unless impacted rules are either:
+
+- satisfied, or
+- explicitly amended here with rationale and ADR linkage.

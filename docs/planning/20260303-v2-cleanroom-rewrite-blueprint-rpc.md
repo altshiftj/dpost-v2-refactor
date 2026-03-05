@@ -1,5 +1,10 @@
 # RPC: V2 Clean-Room Rewrite Blueprint (Intent-Driven)
 
+## Archive Status
+- Historical rewrite-planning artifact retained for execution traceability.
+- Any references to transition architecture modes (`v1`, `shadow`) are
+  historical and not active runtime guidance.
+
 ## Date
 - 2026-03-03
 

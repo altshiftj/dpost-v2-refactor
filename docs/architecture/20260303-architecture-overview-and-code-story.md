@@ -1,101 +1,92 @@
 # Architecture Overview and Code Story
 
 ## Date
-- 2026-03-03
+
+- 2026-03-05 (V2-only refresh)
 
 ## What This System Is
+
 - `dpost` is a plugin-driven watchdog runtime for scientific data ingestion.
-- It watches filesystem drop zones, resolves device-specific processors, transforms/routes outputs, persists local record state, and optionally syncs to an external backend.
+- It watches filesystem drop zones, routes artifacts to plugin processors,
+  persists record state, and can sync through pluggable adapters.
 
 ## Structural Shape
-1. Domain layer (`src/dpost/domain/`)
+
+1. Domain layer (`src/dpost_v2/domain/`)
 - Pure models and policy logic.
-- No infrastructure/runtime wiring.
+- No runtime wiring or adapter side effects.
 
-2. Application layer (`src/dpost/application/`)
-- Orchestration and use-case flow.
-- Ports and contracts consumed by runtime/infrastructure.
+2. Application layer (`src/dpost_v2/application/`)
+- Startup orchestration, ingestion flow, runtime/session coordination,
+  contracts.
 
-3. Infrastructure layer (`src/dpost/infrastructure/`)
-- Concrete adapters: UI runtime, storage/fs, logging, observability, sync.
+3. Infrastructure layer (`src/dpost_v2/infrastructure/`)
+- Concrete adapters for storage, sync, observability, and runtime UI.
 
-4. Plugin layer (`src/dpost/plugins/`, `src/dpost/device_plugins/`, `src/dpost/pc_plugins/`)
-- Extension points for PC/device behavior and discovery.
+4. Plugin layer (`src/dpost_v2/plugins/`)
+- Contract-aware plugin discovery, host lifecycle, profile selection, and
+  plugin namespaces.
+
+5. Runtime layer (`src/dpost_v2/runtime/`)
+- Startup dependency resolution and composition root.
 
 ## Runtime Story (Startup to Running Loop)
-1. Composition root resolves runtime mode, sync adapter, profile/settings:
-- `src/dpost/runtime/composition.py`
 
-2. Bootstrap constructs concrete runtime dependencies:
-- `src/dpost/runtime/bootstrap.py`
-- `src/dpost/infrastructure/runtime_adapters/startup_dependencies.py`
+1. Entrypoint normalizes request:
+- `src/dpost_v2/__main__.py`
 
-3. UI runtime selection is adapter-based:
-- `headless`: `src/dpost/infrastructure/runtime_adapters/headless_ui.py`
-- `desktop`: `src/dpost/infrastructure/runtime_adapters/tkinter_ui.py`
-- selector: `src/dpost/infrastructure/runtime_adapters/ui_factory.py`
+2. Startup bootstrap orchestrates settings/dependencies/context/composition:
+- `src/dpost_v2/application/startup/bootstrap.py`
 
-4. Main app loop owns observer/event-queue lifecycle:
-- `src/dpost/application/runtime/device_watchdog_app.py`
+3. Dependencies and adapter factories are resolved:
+- `src/dpost_v2/runtime/startup_dependencies.py`
+
+4. Composition validates port bindings and builds runnable app:
+- `src/dpost_v2/runtime/composition.py`
+
+5. Runtime app coordinates lifecycle and ingestion dispatch:
+- `src/dpost_v2/application/runtime/dpost_app.py`
 
 ## Processing Story (Per Artifact)
-1. `FileProcessManager` is the orchestration shell:
-- `src/dpost/application/processing/file_process_manager.py`
 
-2. `_ProcessingPipeline` is the stage machine:
-- resolve device
-- stability guard
-- device preprocessing
-- route decision
-- persist or rename/reject flow
-- file: `src/dpost/application/processing/processing_pipeline.py`
+1. Ingestion engine runs deterministic stage flow:
+- `src/dpost_v2/application/ingestion/engine.py`
 
-3. `ProcessingPipelineRuntime` is the runtime adapter used by the stage machine:
-- exposes manager-owned collaborators behind a runtime port
-- file: `src/dpost/application/processing/processing_pipeline_runtime.py`
+2. Runtime services expose side-effect collaborators to ingestion flow:
+- `src/dpost_v2/application/ingestion/runtime_services.py`
 
-## Why Pipeline and Pipeline Runtime Both Exist
-- `_ProcessingPipeline` keeps stage logic explicit and testable as a flow machine.
-- `ProcessingPipelineRuntime` isolates side-effect collaborators and manager internals behind a contract.
-- This split reduces orchestration sprawl without changing runtime behavior.
-
-## Configuration and Naming Story
-1. Config schema owns canonical runtime policy surface:
-- `src/dpost/application/config/schema.py`
-- `NamingSettings` is the naming source of truth (separator/pattern policy).
-
-2. Config service provides active PC/device context:
-- `src/dpost/application/config/service.py`
-- includes explicit `ConfigDeviceProtocol` for device matching/activation contract shape.
-
-3. Application naming facade applies runtime naming context to pure domain policy:
-- `src/dpost/application/naming/policy.py`
-- pure domain helpers: `src/dpost/domain/naming/identifiers.py`, `src/dpost/domain/naming/prefix_policy.py`
+3. Domain rules keep naming/routing/processing decisions pure:
+- `src/dpost_v2/domain/naming/`
+- `src/dpost_v2/domain/routing/rules.py`
+- `src/dpost_v2/domain/processing/`
 
 ## Plugin Story
-- Pluggy host and hooks live in `src/dpost/plugins/system.py`.
-- Loader boundary lives in `src/dpost/plugins/loading.py`.
-- Device and PC plugins provide config + processor capabilities via contract-conformant factories.
+
+- Discovery and descriptor normalization:
+  - `src/dpost_v2/plugins/discovery.py`
+- Registry/activation host:
+  - `src/dpost_v2/plugins/host.py`
+- Profile-driven selection:
+  - `src/dpost_v2/plugins/profile_selection.py`
+- Plugin namespaces:
+  - `src/dpost_v2/plugins/devices/`
+  - `src/dpost_v2/plugins/pcs/`
 
 ## Records and Sync Story
-- Local record lifecycle/persistence is owned by:
-- `src/dpost/application/records/record_manager.py`
-- Storage/path/move helpers are owned by:
-- `src/dpost/infrastructure/storage/filesystem_utils.py`
-- Sync is port-driven with adapter selection at composition:
-- port: `src/dpost/application/ports/sync.py`
-- adapters: `src/dpost/infrastructure/sync/noop.py`, `src/dpost/infrastructure/sync/kadi.py`
+
+- Record lifecycle service:
+  - `src/dpost_v2/application/records/service.py`
+- Storage adapters:
+  - `src/dpost_v2/infrastructure/storage/`
+- Sync contracts and adapters:
+  - `src/dpost_v2/application/contracts/ports.py`
+  - `src/dpost_v2/infrastructure/sync/noop.py`
+  - `src/dpost_v2/infrastructure/sync/kadi.py`
 
 ## Governance Story
-- Architecture baseline, contract, and responsibility catalog are explicit and maintained:
-- `docs/architecture/architecture-baseline.md`
-- `docs/architecture/architecture-contract.md`
-- `docs/architecture/responsibility-catalog.md`
 
-## Delivery Story (As Written Today)
-- The code reflects a migration from mixed legacy seams toward explicit ownership in `src/dpost/**`.
-- Current posture emphasizes:
-- explicit runtime boundaries at composition/startup
-- explicit naming/config context in hot paths
-- isolated manual test lane (`tests/manual`) outside default CI/test runs
-- CI lanes split by intent (`quality`, `unit-tests`, `integration-tests`, smoke, hygiene)
+- Baseline/contract/responsibility docs are maintained under
+  `docs/architecture/`.
+- Active CI and local quality gates target V2 paths only.
+- Legacy architecture modes (`v1`, `shadow`) and legacy test lanes are retired
+  from active runbooks.

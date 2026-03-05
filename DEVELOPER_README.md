@@ -1,118 +1,118 @@
 # dpost Developer Guide
 
 ## Architecture Overview
-`dpost` is the canonical runtime identity. The architecture follows explicit
-layer boundaries:
+`dpost` remains the command name, and V2 runtime ownership is under
+`src/dpost_v2/`.
 
-- `src/dpost/domain/`: pure domain rules and data models.
-- `src/dpost/application/`: orchestration, ports, processing, records, session.
-- `src/dpost/infrastructure/`: runtime/UI/logging/storage/sync adapters.
-- `src/dpost/plugins/`: plugin loader, contracts, profile selection boundaries.
-- `src/dpost/runtime/`: composition root and runtime bootstrap entry surfaces.
+Layer boundaries:
 
-Canonical dependency and ownership rules live in:
+- `src/dpost_v2/domain/`: pure rules/models.
+- `src/dpost_v2/application/`: startup + ingestion + runtime/session + contracts.
+- `src/dpost_v2/infrastructure/`: storage/sync/observability/runtime adapters.
+- `src/dpost_v2/plugins/`: plugin contracts/discovery/host and namespaces.
+- `src/dpost_v2/runtime/`: composition and dependency wiring.
+
+Canonical architecture docs:
+
 - `docs/architecture/architecture-contract.md`
 - `docs/architecture/responsibility-catalog.md`
 - `docs/architecture/extension-contracts.md`
 
-## Startup Flow and Environment
-1. `python -m dpost` enters `src/dpost/__main__.py`.
-2. Startup composes dependencies through `src/dpost/runtime/composition.py`.
-3. Runtime bootstrap executes via `src/dpost/runtime/bootstrap.py`.
+## Startup Flow
 
-Key environment variables:
-- `PC_NAME` (required): active PC plugin identifier.
-- `DEVICE_PLUGINS` (optional): comma/semicolon override list for active devices.
-- `DPOST_RUNTIME_MODE` (optional): `headless` (default) or `desktop`.
-- `DPOST_SYNC_ADAPTER` (optional): `noop` (default) or `kadi`.
-- `PROMETHEUS_PORT` and `OBSERVABILITY_PORT` (optional): observability ports.
+1. `dpost` dispatches to `dpost_v2.__main__.main`.
+2. Startup orchestration runs in `src/dpost_v2/application/startup/bootstrap.py`.
+3. Runtime dependencies resolve via `src/dpost_v2/runtime/startup_dependencies.py`.
+4. Runtime composition executes via `src/dpost_v2/runtime/composition.py`.
 
-## Plugin System (Canonical)
-Canonical plugin loading is owned by:
-- `src/dpost/plugins/system.py`
-- `src/dpost/plugins/loading.py`
-- `src/dpost/plugins/contracts.py`
+## Runtime Modes
 
-Canonical plugin namespace contract:
-- hook namespace: `dpost`
-- device group: `dpost.device_plugins`
-- PC group: `dpost.pc_plugins`
+Active runtime UI modes:
 
-In-repo canonical plugin packages:
-- `src/dpost/device_plugins/<plugin_name>/`
-- `src/dpost/pc_plugins/<plugin_name>/`
+- `headless` (default)
+- `desktop`
 
-Legacy namespace/hook fallback is retired from canonical `src/dpost/**` paths.
+Retired architecture modes:
 
-## Processing, Records, and Sync
-- Processing orchestration:
-  - `src/dpost/application/processing/file_process_manager.py`
-- Record lifecycle:
-  - `src/dpost/application/records/record_manager.py`
-- Sync port and adapters:
-  - `src/dpost/application/ports/sync.py`
-  - `src/dpost/infrastructure/sync/noop.py`
-  - `src/dpost/infrastructure/sync/kadi.py`
+- `v1`
+- `shadow`
 
-Immediate-sync policy remains best-effort and now surfaces actionable user
-errors through dpost interaction messages when sync fails.
+## Plugin System
 
-## Extending dpost
-### Add a Device Plugin
-1. Create `src/dpost/device_plugins/<name>/` with:
-   - `settings.py`
-   - `file_processor.py`
-   - `plugin.py`
-2. In `plugin.py`, register with `@hookimpl` from `dpost.plugins.system`.
-3. Factory contract must provide:
-   - `get_config()`
-   - `get_file_processor()`
-4. Ensure processor implements required `FileProcessorABS` behavior.
-5. Add focused unit/integration tests for probe/preprocess/process behavior.
+Plugin namespaces:
 
-### Add a PC Plugin
-1. Create `src/dpost/pc_plugins/<name>/` with:
-   - `settings.py`
-   - `plugin.py`
-2. Register with `@hookimpl` in `plugin.py`.
-3. Return a `PCConfig` with `active_device_plugins` populated.
-4. Add tests covering plugin configuration and loader behavior.
+- Device plugins: `src/dpost_v2/plugins/devices/<name>/`
+- PC plugins: `src/dpost_v2/plugins/pcs/<name>/`
 
-### Add a Sync Adapter
-1. Implement adapter against `SyncAdapterPort` in `src/dpost/infrastructure/sync/`.
-2. Wire selection in `src/dpost/runtime/composition.py`.
-3. Add unit/integration tests for adapter selection and startup failure messaging.
+Discovery/host modules:
+
+- `src/dpost_v2/plugins/discovery.py`
+- `src/dpost_v2/plugins/host.py`
+- `src/dpost_v2/plugins/contracts.py`
+
+Plugin contracts:
+
+- `src/dpost_v2/application/contracts/plugin_contracts.py`
+
+Device plugin required exports:
+
+- `metadata()`
+- `capabilities()`
+- `validate_settings(raw_settings)`
+- `create_processor(settings)`
+
+PC plugin required exports:
+
+- `metadata()`
+- `capabilities()`
+- `create_sync_adapter(settings)`
+- `prepare_sync_payload(record, context)`
+
+## Ingestion, Records, Sync
+
+- Ingestion engine: `src/dpost_v2/application/ingestion/engine.py`
+- Runtime services: `src/dpost_v2/application/ingestion/runtime_services.py`
+- Record service: `src/dpost_v2/application/records/service.py`
+- Sync contract: `dpost_v2.application.contracts.ports.SyncPort`
+- Sync adapters:
+  - `src/dpost_v2/infrastructure/sync/noop.py`
+  - `src/dpost_v2/infrastructure/sync/kadi.py`
 
 ## Local Development
+
 ```powershell
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -e .[dev]
 ```
 
-Run app:
+Run runtime:
+
 ```powershell
-$env:PC_NAME = "test_pc"
-$env:DEVICE_PLUGINS = "test_device"
-python -m dpost
+$env:DPOST_PLUGIN_PROFILE = "reference"
+$env:DPOST_RUNTIME_MODE = "headless"
+$env:DPOST_SYNC_ADAPTER = "noop"
+dpost
 ```
 
 ## Quality Gates
-Run from repository root:
+
 ```powershell
-python -m ruff check .
-python -m black --check src tests
-python -m pytest -q tests/unit/runtime/test_bootstrap.py tests/unit/runtime/test_bootstrap_additional.py
-python -m pytest -q tests/unit
-python -m pytest -q tests/integration
-# Optional manual smoke lane:
-python -m pytest -q -m manual tests/manual
+python -m ruff check src/dpost_v2 tests/dpost_v2
+python -m black --check src/dpost_v2 tests/dpost_v2
+python -m pytest -q tests/dpost_v2
 ```
 
-Marker intent:
-- `legacy`: archived compatibility characterization contracts.
-- `manual`: manually-invoked smoke checks excluded from default CI/local runs.
+CI-equivalent subsets:
 
-## Architecture Docs
-- Architecture ADRs:
-  - `docs/architecture/adr/`
+```powershell
+python -m pytest -q tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/plugins/test_device_integration.py tests/dpost_v2/smoke
+python -m pytest -q tests/dpost_v2/application/startup/test_bootstrap.py tests/dpost_v2/smoke/test_bootstrap_harness_smoke.py
+```
+
+## Notes
+
+- Legacy test lanes (`tests/unit`, `tests/integration`, `tests/manual`) are
+  archived and not part of active V2 gates.
+- Migration-era planning/pseudocode artifacts are historical references unless
+  explicitly marked active.

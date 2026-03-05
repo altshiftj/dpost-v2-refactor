@@ -1,64 +1,56 @@
 # Architecture Documentation Guide
 
 ## Purpose
-- Keep architecture decisions, component boundaries, and domain vocabulary explicit for the canonical `dpost` runtime.
-- Ensure every major change is discussed, documented, and traceable.
+
+- Keep V2 architecture boundaries explicit for the canonical `dpost` runtime.
+- Keep ownership, layering, and extension contracts stable as implementation
+  evolves.
 
 ## Canonical Artifacts
-- Baseline architecture snapshot:
-- `docs/architecture/architecture-baseline.md`
-- Dependency and layering rules:
-- `docs/architecture/architecture-contract.md`
-- Public extension contracts:
-- `docs/architecture/extension-contracts.md`
-- Object and module responsibilities:
-- `docs/architecture/responsibility-catalog.md`
-- Narrative architecture walkthrough:
-- `docs/architecture/20260303-architecture-overview-and-code-story.md`
-- Architecture decisions:
-- `docs/architecture/adr/`
-- Change-level findings and plans:
-- `docs/reports/`
-- `docs/planning/`
-- `docs/checklists/`
-- Naming-settings single-source roadmap:
-- `docs/planning/archive/20260224-naming-settings-single-source-of-truth-rpc.md`
-- Test contract split:
-- `tests/unit/`, `tests/integration/`, `tests/manual/` for canonical `dpost`
-  behavior and boundary tests
-- Vocabulary and term definitions:
-- `GLOSSARY.csv`
+
+- Baseline snapshot: `docs/architecture/architecture-baseline.md`
+- Layer contract: `docs/architecture/architecture-contract.md`
+- Extension contracts: `docs/architecture/extension-contracts.md`
+- Responsibility ownership: `docs/architecture/responsibility-catalog.md`
+- Narrative walkthrough: `docs/architecture/20260303-architecture-overview-and-code-story.md`
+- Architecture decisions: `docs/architecture/adr/`
+- Risk/status reports: `docs/reports/`
+- Execution checklists: `docs/checklists/`
+- Vocabulary: `GLOSSARY.csv`
+
+## Active Code/Test Scope
+
+- Runtime/package source of truth: `src/dpost_v2/`
+- Active verification suites: `tests/dpost_v2/`
+
+Archived lanes may still exist in the repository for historical traceability but
+are not the active architecture target.
 
 ## Update Protocol
-1. Before implementing a major architectural change:
-- Capture findings in a report (`docs/reports/`).
-- Capture intent and approach in a plan (`docs/planning/`).
-- Capture execution steps in a checklist (`docs/checklists/`).
 
-2. When architecture direction changes:
-- Add an ADR in `docs/architecture/adr/`.
-- Reference impacted modules and tradeoffs.
+1. Before major architecture changes:
+- capture findings in `docs/reports/`
+- capture approach in `docs/planning/`
+- capture execution steps in `docs/checklists/`
 
-3. After implementation reaches green:
-- Refresh `architecture-baseline.md` if structure changed.
-- Refresh `responsibility-catalog.md` if ownership changed.
-- Add/adjust terms in `GLOSSARY.csv` for new project-defined vocabulary.
+2. When direction changes:
+- add/update ADR entries
+- document rationale and tradeoffs
 
-## Definition of Done for Architecture-impacting Work
-- Tests/lint pass for changed scope.
-- Architecture decision captured (ADR) when relevant.
-- Responsibility ownership is documented.
-- Vocabulary changes are reflected in `GLOSSARY.csv`.
+3. After implementation is green:
+- refresh baseline and responsibility docs when ownership changed
+- update glossary for new internal terms
 
-## Sequencing Guard
-- Framework delivery is framework-first:
-- implement framework kernel/contracts first
-- validate with reference implementations second
-- adopt concrete plugins/adapters third
+## Definition of Done (Architecture-impacting Work)
 
-## Test Isolation Commands
-- Full suite:
-- `python -m pytest`
-- Archived compatibility-only:
-- `python -m pytest -m legacy`
+- Changed-scope checks pass (`ruff`/`pytest` for active V2 targets).
+- Ownership updates are documented.
+- ADR updated when policy/direction changed.
+- Glossary updated when new terms are introduced.
 
+## Suggested Validation Commands
+
+```powershell
+python -m ruff check src/dpost_v2 tests/dpost_v2
+python -m pytest -q tests/dpost_v2
+```

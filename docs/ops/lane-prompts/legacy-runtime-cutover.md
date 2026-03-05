@@ -1,3 +1,7 @@
+ARCHIVE STATUS:
+- Historical lane prompt from V2 cutover.
+- Retained for audit traceability; not an active runtime/runbook target.
+
 You are working in D:\Repos\d-post\.worktrees\legacy-runtime-cutover.
 
 Lane: legacy-runtime-cutover

@@ -30,7 +30,7 @@
 - `rewrite-v2-integration` on `rewrite/v2` push/manual dispatch.
 
 ## Rationale
-- Existing `Public CI` test paths (`tests/unit/dpost_v2`, `tests/integration/dpost_v2`) no longer matched the active layout and could silently skip significant V2 coverage.
+- Previous `Public CI` test path assumptions no longer matched the active layout and could silently skip significant V2 coverage.
 - Lane branches need fast checks to prevent merge churn, but trunk still needs an additional integration signal.
 - Job-name stability on `main` prevents required-check drift.
 

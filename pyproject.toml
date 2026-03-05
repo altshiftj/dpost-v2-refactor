@@ -47,7 +47,7 @@ test_pc         = []
 eirich_blb      = []
 
 [project.scripts]
-dpost = "dpost.__main__:main"
+dpost = "dpost_v2.__main__:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -58,7 +58,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 addopts = "--strict-markers -m \"not manual\""
 markers = [
-    "legacy: Archived compatibility characterization tests.",
+    "legacy: Archived historical compatibility tests outside active V2 lanes.",
     "manual: Manually-invoked smoke tests excluded from default CI/test runs.",
 ]
 
@@ -79,7 +79,7 @@ per-file-ignores = { "tests/**" = ["D"], "tests/migration/**" = ["D"] }
 
 [tool.black]
 line-length = 88
-# Keep Black enforcement focused on active runtime surfaces.
+# Keep Black enforcement focused on active V2 surfaces.
 extend-exclude = '''
 (
   ^/tests/unit/

@@ -1,3 +1,7 @@
+ARCHIVE STATUS:
+- Historical lane-pack prompt from V2 cutover.
+- Retained for audit traceability; not an active runtime/runbook target.
+
 Legacy-Cleanup-4 Launch Pack (Retirement + Alignment)
 
 Use `codex:lanes:prep-cleanup-4` to open terminals and copy this pack.

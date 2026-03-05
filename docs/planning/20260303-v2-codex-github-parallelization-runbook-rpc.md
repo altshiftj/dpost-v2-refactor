@@ -1,5 +1,10 @@
 # RPC: V2 Codex-GitHub Parallelization Runbook
 
+## Archive Status
+- Historical coordination runbook retained for migration auditability.
+- Active implementation/check surfaces are `src/dpost_v2/**` and
+  `tests/dpost_v2/**`.
+
 ## Date
 - 2026-03-03
 

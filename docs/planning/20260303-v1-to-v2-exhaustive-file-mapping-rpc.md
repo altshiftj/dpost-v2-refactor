@@ -1,5 +1,10 @@
 # RPC: V1 to V2 Exhaustive File Mapping (Parallel-Ready)
 
+## Archive Status
+- Historical migration artifact retained for traceability.
+- Active runtime source of truth is `src/dpost_v2/**` with checks under
+  `tests/dpost_v2/**`.
+
 ## Date
 - 2026-03-03
 
