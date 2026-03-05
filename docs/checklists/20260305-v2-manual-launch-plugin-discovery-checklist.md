@@ -62,15 +62,25 @@
 ### Check: Config Merge and Effective Profile
 - [x] `python -c "from dpost_v2.application.startup.bootstrap import BootstrapRequest; from dpost_v2.application.startup.settings_service import load_startup_settings; from pathlib import Path; request = BootstrapRequest(mode='v2', profile=None, trace_id='manual', metadata={'config_path':'configs/dpost-v2-prod.config.json'}); result = load_startup_settings(request, root_hint=Path('.')); print(result.settings.profile, result.settings.mode)"`
   - Result: `prod headless`
-  - Confirms file-based profile is active even when CLI banner reports request profile as default.
+  - Confirms file-based profile is active even when CLI request defaults to `mode=v2/profile=default`.
+  - Extended check: effective provenance now tracks file-backed overrides for profile/path/sync/naming fields and mode selection.
 
 ## Next Steps
-- [ ] Add/verify startup diagnostics visibility for selected profiles and plugin IDs.
-- [ ] Validate at least one concrete device+pc runtime path via a temporary config profile override.
-- [ ] Run focused test smoke before stability handoff:
-  - [ ] `python -m pytest -q tests/dpost_v2/application/startup`
-  - [ ] `python -m pytest -q tests/dpost_v2/plugins/test_discovery.py tests/dpost_v2/plugins/test_device_integration.py`
-  - [ ] `python -m pytest -q tests/dpost_v2/runtime`
+- [x] Add/verify startup diagnostics visibility for selected profiles and plugin IDs.
+  - [x] Confirmed via runtime output and `provenance` printout from `load_startup_settings`.
+- [x] Validate concrete device+pc runtime path via profile override.
+  - [x] Confirmed through:
+    - `python -m dpost --mode v2 --profile prod --headless --dry-run` → success
+    - `PluginHost(...).get_device_plugins()` includes expected device IDs and PC IDs
+    - `host.create_device_processor('test_device', ...)` succeeds
+    - `test_pc.create_sync_adapter({})` returns parsed endpoint/payload
+- [x] Run focused test smoke before stability handoff:
+  - [x] `python -m pytest -q tests/dpost_v2/application/startup`
+    - Result: `28 passed in 0.27s`
+  - [x] `python -m pytest -q tests/dpost_v2/plugins/test_discovery.py tests/dpost_v2/plugins/test_device_integration.py`
+    - Result: `7 passed in 0.20s`
+  - [x] `python -m pytest -q tests/dpost_v2/runtime`
+    - Result: `12 passed in 0.10s`
 - [ ] Capture a stabilization-wave checkpoint with:
   - [ ] Runtime resilience hardening (idempotent startup/shutdown)
   - [ ] Ingestion failure-path determinism
@@ -82,4 +92,5 @@
 - Config-file source now wires successfully into startup merge path.
 - Deprecated public assumptions (e.g., `discover_devices()` / `discover_pcs()`) were confirmed as unsupported in current API; valid calls are via `discover_from_namespaces()` and host/profile activation.
 - Drift note: CLI banner prints request profile (CLI/env), while effective settings profile comes from merged startup settings and may differ when only config-provided profile is set.
+- Open item: effective runtime mode in direct `load_startup_settings` probe can report `headless` from config/metadata in some call paths; this is consistent with current merge precedence but worth watching if/when CLI-mode normalization is hardened further.
 - Keep this checklist as the current launch baseline for the next manual/observability hardening wave.

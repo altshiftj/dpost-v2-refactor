@@ -24,6 +24,28 @@
       "problemMatcher": []
     },
     {
+      "label": "codex:lanes:setup-stabilization-worktrees",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/setup-stabilization-worktrees.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": true
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:coordination",
       "type": "process",
       "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
@@ -88,6 +110,18 @@
         "lane:legacy-code-retirement",
         "lane:legacy-tests-retirement",
         "lane:legacy-docs-tooling",
+        "codex:lanes:coordination"
+      ],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:start-stabilization-4",
+      "dependsOn": [
+        "lane:stabilization-runtime-resilience",
+        "lane:stabilization-ingestion-robustness",
+        "lane:stabilization-observability-quality",
+        "lane:stabilization-ci-reliability",
         "codex:lanes:coordination"
       ],
       "dependsOrder": "parallel",
@@ -472,6 +506,102 @@
       "problemMatcher": []
     },
     {
+      "label": "lane:stabilization-runtime-resilience",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "stabilization-runtime-resilience"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:stabilization-ingestion-robustness",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "stabilization-ingestion-robustness"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:stabilization-observability-quality",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "stabilization-observability-quality"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:stabilization-ci-reliability",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-NoExit",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/open-lane.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-Lane",
+        "stabilization-ci-reliability"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "codex:lanes:prep-core-4",
       "dependsOn": [
         "codex:lanes:start-core-4",
@@ -503,6 +633,15 @@
       "dependsOn": [
         "codex:lanes:start-cleanup-4",
         "lane:prompt:cleanup-4-pack:copy"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "codex:lanes:prep-stabilization-4",
+      "dependsOn": [
+        "codex:lanes:start-stabilization-4",
+        "lane:prompt:stabilization-4-pack:copy"
       ],
       "dependsOrder": "sequence",
       "problemMatcher": []
@@ -576,6 +715,24 @@
         "${workspaceFolder}",
         "-PromptRelativePath",
         "docs/ops/lane-prompts/legacy-cleanup-4-launch-pack.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:stabilization-4-pack:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/stabilization-4-launch-pack.md"
       ],
       "problemMatcher": []
     },
@@ -774,6 +931,78 @@
         "${workspaceFolder}",
         "-PromptRelativePath",
         "docs/ops/lane-prompts/ci-v2-gates.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:stabilization-runtime-resilience:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/stabilization-runtime-resilience.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:stabilization-ingestion-robustness:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/stabilization-ingestion-robustness.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:stabilization-observability-quality:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/stabilization-observability-quality.md"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "lane:prompt:stabilization-ci-reliability:copy",
+      "type": "process",
+      "command": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "args": [
+        "-NoLogo",
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/.vscode/scripts/copy-prompt.ps1",
+        "-WorkspaceRoot",
+        "${workspaceFolder}",
+        "-PromptRelativePath",
+        "docs/ops/lane-prompts/stabilization-ci-reliability.md"
       ],
       "problemMatcher": []
     },

@@ -63,5 +63,21 @@ function Get-LaneMap {
             Branch = "rewrite/v2-lane-legacy-docs-tooling"
             Prompt = "docs/ops/lane-prompts/legacy-docs-tooling.md"
         }
+        "stabilization-runtime-resilience" = @{
+            Branch = "rewrite/v2-lane-stabilization-runtime-resilience"
+            Prompt = "docs/ops/lane-prompts/stabilization-runtime-resilience.md"
+        }
+        "stabilization-ingestion-robustness" = @{
+            Branch = "rewrite/v2-lane-stabilization-ingestion-robustness"
+            Prompt = "docs/ops/lane-prompts/stabilization-ingestion-robustness.md"
+        }
+        "stabilization-observability-quality" = @{
+            Branch = "rewrite/v2-lane-stabilization-observability-quality"
+            Prompt = "docs/ops/lane-prompts/stabilization-observability-quality.md"
+        }
+        "stabilization-ci-reliability" = @{
+            Branch = "rewrite/v2-lane-stabilization-ci-reliability"
+            Prompt = "docs/ops/lane-prompts/stabilization-ci-reliability.md"
+        }
     }
 }
