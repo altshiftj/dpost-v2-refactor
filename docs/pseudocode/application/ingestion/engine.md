@@ -28,7 +28,7 @@ writes: []
 - Failure handling policies (`error_handling`, `failure_outcome`, `failure_emitter`, `retry_planner`).
 
 ## Outputs
-- Terminal `IngestionOutcome` (`succeeded`, `deferred_retry`, `rejected`, `failed_terminal`).
+- Terminal `IngestionOutcome` (`succeeded`, `deferred_stage`, `deferred_retry`, `rejected`, `failed_terminal`).
 - Stage execution trace for observability and debugging.
 - Optional retry plan attached to retryable failure outcomes.
 - Emitted failure events when terminal or escalation policy requires them.

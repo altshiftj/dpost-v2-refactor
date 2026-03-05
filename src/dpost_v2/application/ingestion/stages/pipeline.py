@@ -11,6 +11,7 @@ class PipelineTerminalOutcome(StrEnum):
     """Terminal outcomes supported by the ingestion stage pipeline."""
 
     COMPLETED = "completed"
+    DEFERRED_STAGE = "deferred_stage"
     RETRY = "retry"
     REJECTED = "rejected"
     FAILED = "failed"
@@ -237,6 +238,8 @@ DEFAULT_INGESTION_TRANSITION_TABLE: dict[str, PipelineTransitionPolicy] = {
         allowed_next_stages=frozenset({"route"}),
         allowed_terminal_outcomes=frozenset(
             {
+                PipelineTerminalOutcome.DEFERRED_STAGE,
+                PipelineTerminalOutcome.RETRY,
                 PipelineTerminalOutcome.REJECTED,
                 PipelineTerminalOutcome.FAILED,
             }

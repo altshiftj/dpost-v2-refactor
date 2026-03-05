@@ -44,10 +44,20 @@ def run_transform_stage(state: IngestionState) -> StageDirective[IngestionState]
         except Exception:  # noqa: BLE001
             supported = False
         if not supported:
-            rejected = state.with_updates(
-                diagnostics={"transform": {"reason_code": "cannot_process"}}
+            deferred = state.with_updates(
+                diagnostics={
+                    "transform": {
+                        "reason_code": "deferred",
+                        "prepared_kind": str(
+                            prepared_input.get("prepared_kind", "")
+                        ).strip(),
+                    }
+                }
             )
-            return StageDirective.terminal(PipelineTerminalOutcome.REJECTED, rejected)
+            return StageDirective.terminal(
+                PipelineTerminalOutcome.DEFERRED_STAGE,
+                deferred,
+            )
 
     process = getattr(processor, "process", None)
     if not callable(process):

@@ -268,6 +268,8 @@ def _outcome_payload(
             "status": "succeeded",
             "candidate_id": processing_context.event_id,
         }
+    if outcome_kind is IngestionOutcomeKind.DEFERRED_STAGE:
+        return {"status": "deferred_stage", "reason_code": "deferred_stage"}
     if outcome_kind is IngestionOutcomeKind.DEFERRED_RETRY:
         return {"status": "deferred_retry", "reason_code": "deferred_retry"}
     if outcome_kind is IngestionOutcomeKind.REJECTED:

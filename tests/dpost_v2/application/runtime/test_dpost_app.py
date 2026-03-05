@@ -103,6 +103,34 @@ def test_runtime_app_processes_events_in_order_and_emits_terminal_event() -> Non
     assert session_manager.state.kind is SessionStateKind.COMPLETED
 
 
+def test_runtime_app_treats_deferred_stage_as_non_failure_and_emits_deferred_event() -> (
+    None
+):
+    clock = FakeClock(datetime(2026, 3, 4, 10, 5, tzinfo=UTC))
+    session_manager = SessionManager(policy=SessionPolicy(), clock=clock)
+    engine = FakeEngine(
+        outcomes=[_outcome(IngestionOutcomeKind.DEFERRED_STAGE)],
+    )
+    emitted: list[Mapping[str, object]] = []
+
+    app = DPostApp(
+        session_manager=session_manager,
+        ingestion_engine=engine,
+        event_source=[_event("evt-stage-001")],
+        event_emitter=emitted.append,
+        clock=clock,
+        session_id="session-stage-001",
+        trace_id="trace-stage-001",
+    )
+
+    result = app.run()
+
+    assert result.processed_count == 1
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert any(event.get("kind") == "ingestion_deferred" for event in emitted)
+
+
 def test_runtime_app_skips_duplicate_event_ids() -> None:
     clock = FakeClock(datetime(2026, 3, 4, 11, 0, tzinfo=UTC))
     session_manager = SessionManager(policy=SessionPolicy(), clock=clock)

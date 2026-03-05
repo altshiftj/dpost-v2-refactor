@@ -17,6 +17,7 @@ class IngestionOutcomeKind(StrEnum):
     """Top-level terminal outcome returned by the ingestion engine."""
 
     SUCCEEDED = "succeeded"
+    DEFERRED_STAGE = "deferred_stage"
     DEFERRED_RETRY = "deferred_retry"
     REJECTED = "rejected"
     FAILED_TERMINAL = "failed_terminal"
@@ -151,6 +152,8 @@ class IngestionEngine(Generic[StateT]):
     ) -> IngestionOutcomeKind:
         if outcome is PipelineTerminalOutcome.COMPLETED:
             return IngestionOutcomeKind.SUCCEEDED
+        if outcome is PipelineTerminalOutcome.DEFERRED_STAGE:
+            return IngestionOutcomeKind.DEFERRED_STAGE
         if outcome is PipelineTerminalOutcome.RETRY:
             return IngestionOutcomeKind.DEFERRED_RETRY
         if outcome is PipelineTerminalOutcome.REJECTED:

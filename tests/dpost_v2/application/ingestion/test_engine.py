@@ -137,6 +137,49 @@ def test_engine_maps_completed_pipeline_result_to_succeeded_outcome() -> None:
     ]
 
 
+def test_engine_maps_deferred_stage_pipeline_result_to_distinct_outcome() -> None:
+    handlers = {
+        "resolve": lambda state: StageDirective.continue_to(
+            "stabilize", _append_step(state, "resolve")
+        ),
+        "stabilize": lambda state: StageDirective.continue_to(
+            "transform", _append_step(state, "stabilize")
+        ),
+        "transform": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.DEFERRED_STAGE,
+            _append_step(state, "transform"),
+        ),
+        "route": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "persist": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+        "post_persist": lambda state: StageDirective.terminal(
+            PipelineTerminalOutcome.COMPLETED,
+            state,
+        ),
+    }
+
+    engine = IngestionEngine(
+        pipeline_runner=PipelineRunner(
+            start_stage="resolve",
+            transition_table=DEFAULT_INGESTION_TRANSITION_TABLE,
+        ),
+        stage_handlers=handlers,
+    )
+
+    outcome = engine.process(
+        event={"path": "input.csv"}, initial_state_factory=DemoState
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_STAGE
+    assert outcome.final_stage_id == "transform"
+    assert outcome.state.steps == ("resolve", "stabilize", "transform")
+
+
 class _ExplodingPipelineRunner:
     def run(self, **_: Any) -> Any:
         raise RuntimeError("boom")

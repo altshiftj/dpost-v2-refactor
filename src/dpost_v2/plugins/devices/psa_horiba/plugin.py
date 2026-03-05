@@ -31,8 +31,8 @@ def capabilities() -> PluginCapabilities:
     """Return capability flags for concrete psa_horiba plugin."""
     return PluginCapabilities(
         can_process=True,
-        supports_preprocess=False,
-        supports_batch=False,
+        supports_preprocess=True,
+        supports_batch=True,
         supports_sync=False,
     )
 
