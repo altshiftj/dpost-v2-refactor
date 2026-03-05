@@ -340,3 +340,17 @@ def test_host_resolves_pc_scoped_device_plugins_from_pc_settings() -> None:
 
     assert scope.pc_plugin_id == "pc.gamma"
     assert scope.device_plugin_ids == ("device.beta",)
+
+
+def test_host_prepares_sync_payload_for_active_pc_plugin() -> None:
+    host = PluginHost((_pc_descriptor(plugin_id="pc.gamma"),))
+
+    host.activate_profile(profile="prod", known_profiles={"prod"})
+
+    payload = host.prepare_sync_payload(
+        "pc.gamma",
+        record={"record_id": "rec-1"},
+        context=_runtime_context(),
+    )
+
+    assert payload == {"record_id": "rec-1"}

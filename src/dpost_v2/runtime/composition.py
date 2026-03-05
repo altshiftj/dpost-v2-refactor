@@ -636,18 +636,17 @@ def _build_runtime_ingestion_engine(
         try:
             record_id = _resolve_runtime_record_id(record_payload)
             next_revision = record_revisions.get(record_id, -1) + 1
+            normalized_payload = {
+                "candidate": dict(record_payload.get("candidate", {})),
+                "processor_result": dict(record_payload.get("processor_result") or {}),
+                "target_path": record_payload.get("target_path"),
+                "sync_status": "pending",
+            }
             saved = getattr(record_store, "save")(
                 {
                     "record_id": record_id,
                     "revision": next_revision,
-                    "payload": {
-                        "candidate": dict(record_payload.get("candidate", {})),
-                        "processor_result": dict(
-                            record_payload.get("processor_result") or {}
-                        ),
-                        "target_path": record_payload.get("target_path"),
-                        "sync_status": "pending",
-                    },
+                    "payload": normalized_payload,
                 }
             )
             record_id = _extract_record_id(saved, record_payload=record_payload)
@@ -655,11 +654,18 @@ def _build_runtime_ingestion_engine(
                 saved,
                 fallback=next_revision,
             )
+            record_snapshot = _extract_runtime_record_snapshot(
+                saved,
+                record_id=record_id,
+                revision=record_revisions[record_id],
+                payload=normalized_payload,
+            )
             return RuntimeCallResult(
                 status=RuntimeCallStatus.SUCCESS,
                 value={
                     "record_id": record_id,
                     "revision": record_revisions[record_id],
+                    "record_snapshot": record_snapshot,
                 },
                 diagnostics={"operation": "save_record"},
             )
@@ -708,12 +714,30 @@ def _build_runtime_ingestion_engine(
                 diagnostics={"reason_code": "bookkeeping_failed", "error": str(exc)},
             )
 
-    def trigger_sync(record_id: str) -> RuntimeCallResult:
+    def trigger_sync(state: IngestionState) -> RuntimeCallResult:
+        record_id = state.record_id
+        if not isinstance(record_id, str) or not record_id.strip():
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.FAILED,
+                value=None,
+                diagnostics={"reason_code": "sync_failed"},
+            )
         try:
+            request_payload = _build_runtime_sync_payload(
+                state,
+                record_store=record_store,
+                plugin_host=plugin_host,
+                plugin_policy=plugin_policy,
+            )
             response = getattr(sync_port, "sync_record")(
-                SyncRequest(record_id=record_id, payload={"record_id": record_id})
+                SyncRequest(record_id=record_id, payload=request_payload)
             )
         except Exception as exc:  # noqa: BLE001
+            _mark_runtime_record_unsynced(
+                record_store,
+                record_id=record_id,
+                record_revisions=record_revisions,
+            )
             return RuntimeCallResult(
                 status=RuntimeCallStatus.FAILED,
                 value=None,
@@ -727,6 +751,11 @@ def _build_runtime_ingestion_engine(
                 value=response,
                 diagnostics={"operation": "trigger_sync"},
             )
+        _mark_runtime_record_unsynced(
+            record_store,
+            record_id=record_id,
+            record_revisions=record_revisions,
+        )
         return RuntimeCallResult(
             status=RuntimeCallStatus.FAILED,
             value=response,
@@ -966,6 +995,28 @@ def _extract_record_revision(saved: object, *, fallback: int) -> int:
     return fallback
 
 
+def _extract_runtime_record_snapshot(
+    saved: object,
+    *,
+    record_id: str,
+    revision: int,
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any]:
+    if isinstance(saved, Mapping):
+        snapshot_payload = saved.get("payload")
+        if isinstance(snapshot_payload, Mapping):
+            return {
+                "record_id": str(saved.get("record_id", record_id)),
+                "revision": _extract_record_revision(saved, fallback=revision),
+                "payload": dict(snapshot_payload),
+            }
+    return {
+        "record_id": record_id,
+        "revision": revision,
+        "payload": dict(payload),
+    }
+
+
 def _resolve_runtime_record_id(record_payload: Mapping[str, Any]) -> str:
     candidate_payload = record_payload.get("candidate")
     if isinstance(candidate_payload, Mapping):
@@ -976,6 +1027,82 @@ def _resolve_runtime_record_id(record_payload: Mapping[str, Any]) -> str:
     if isinstance(target_path, str) and target_path.strip():
         return f"record-{sha256(target_path.encode('utf-8')).hexdigest()[:12]}"
     return "record-generated"
+
+
+def _build_runtime_sync_payload(
+    state: IngestionState,
+    *,
+    record_store: object,
+    plugin_host: object,
+    plugin_policy: _RuntimePluginPolicy,
+) -> Mapping[str, Any]:
+    record_id = str(state.record_id or "").strip()
+    payload: Mapping[str, Any] = {"record_id": record_id}
+    runtime_context = getattr(state.processing_context, "runtime_context", None)
+    selected_pc_plugin = plugin_policy.selected_pc_plugin
+    if selected_pc_plugin is None or not isinstance(runtime_context, RuntimeContext):
+        return payload
+
+    prepare_sync_payload = getattr(plugin_host, "prepare_sync_payload", None)
+    if not callable(prepare_sync_payload):
+        return payload
+
+    record_snapshot = _load_runtime_record_snapshot(
+        record_store,
+        record_id=record_id,
+        fallback=state.record_snapshot,
+    )
+    return prepare_sync_payload(
+        selected_pc_plugin,
+        record=record_snapshot,
+        context=runtime_context,
+    )
+
+
+def _load_runtime_record_snapshot(
+    record_store: object,
+    *,
+    record_id: str,
+    fallback: Mapping[str, Any] | None,
+) -> Mapping[str, Any]:
+    getter = getattr(record_store, "get", None)
+    if callable(getter):
+        try:
+            snapshot = getter(record_id)
+        except Exception:  # noqa: BLE001
+            snapshot = None
+        if isinstance(snapshot, Mapping):
+            return dict(snapshot)
+    if isinstance(fallback, Mapping):
+        return dict(fallback)
+    return {"record_id": record_id, "payload": {"sync_status": "pending"}}
+
+
+def _mark_runtime_record_unsynced(
+    record_store: object,
+    *,
+    record_id: str,
+    record_revisions: dict[str, int],
+) -> None:
+    marker = getattr(record_store, "mark_unsynced", None)
+    if not callable(marker):
+        return
+    try:
+        marker(record_id)
+    except Exception:  # noqa: BLE001
+        return
+    getter = getattr(record_store, "get", None)
+    if not callable(getter):
+        return
+    try:
+        snapshot = getter(record_id)
+    except Exception:  # noqa: BLE001
+        return
+    if isinstance(snapshot, Mapping):
+        record_revisions[record_id] = _extract_record_revision(
+            snapshot,
+            fallback=record_revisions.get(record_id, 0),
+        )
 
 
 def _select_runtime_processor(

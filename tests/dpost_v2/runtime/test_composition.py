@@ -12,6 +12,7 @@ from typing import Mapping
 
 import pytest
 
+from dpost_v2.application.contracts.ports import SyncRequest, SyncResponse
 from dpost_v2.application.ingestion.engine import IngestionOutcomeKind
 from dpost_v2.application.runtime.dpost_app import DPostApp
 from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
@@ -112,6 +113,7 @@ def _build_real_runtime_context(
     retry_delay_seconds: float = 0.0,
     pc_name: str | None = None,
     device_plugins: tuple[str, ...] = (),
+    dependency_overrides: Mapping[str, object] | None = None,
 ):
     settings = _build_real_settings(
         tmp_path,
@@ -119,9 +121,24 @@ def _build_real_runtime_context(
         pc_name=pc_name,
         device_plugins=device_plugins,
     )
+
+    def _override_factory(adapter: object):
+        def factory() -> object:
+            initialize = getattr(adapter, "initialize", None)
+            if callable(initialize):
+                initialize()
+            return adapter
+
+        return factory
+
+    overrides = {
+        name: _override_factory(adapter)
+        for name, adapter in dict(dependency_overrides or {}).items()
+    }
     dependencies = resolve_startup_dependencies(
         settings=settings.to_dependency_payload(),
         environment={},
+        overrides=overrides,
     )
     return build_startup_context(
         settings=settings,
@@ -790,3 +807,116 @@ def test_composition_runtime_selects_allowed_device_with_selected_pc_scope(
     assert outcome.state is not None
     assert outcome.state.candidate is not None
     assert outcome.state.candidate.plugin_id == "sem_phenomxl2"
+
+
+def test_composition_runtime_shapes_sync_payload_via_selected_pc_plugin(
+    tmp_path,
+) -> None:
+    class CapturingSyncAdapter:
+        def __init__(self) -> None:
+            self.requests: list[SyncRequest] = []
+            self._ready = False
+
+        def initialize(self) -> None:
+            self._ready = True
+
+        def shutdown(self) -> None:
+            self._ready = False
+
+        def sync_record(self, request: SyncRequest) -> SyncResponse:
+            assert self._ready is True
+            self.requests.append(request)
+            return SyncResponse(status="queued", metadata={"backend": "captured"})
+
+    sync_adapter = CapturingSyncAdapter()
+    context = _build_real_runtime_context(
+        tmp_path,
+        pc_name="horiba_blb",
+        dependency_overrides={"sync": sync_adapter},
+    )
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.failed_count == 0
+    assert len(sync_adapter.requests) == 1
+    request = sync_adapter.requests[0]
+    assert request.record_id is not None
+    assert request.payload == {
+        "record_id": request.record_id,
+        "plugin_id": "horiba_blb",
+    }
+
+
+def test_composition_runtime_emits_sync_error_and_marks_record_unsynced_on_sync_failure(
+    tmp_path,
+) -> None:
+    class FailingSyncAdapter:
+        def __init__(self) -> None:
+            self.requests: list[SyncRequest] = []
+            self._ready = False
+
+        def initialize(self) -> None:
+            self._ready = True
+
+        def shutdown(self) -> None:
+            self._ready = False
+
+        def sync_record(self, request: SyncRequest) -> SyncResponse:
+            assert self._ready is True
+            self.requests.append(request)
+            return SyncResponse(status="conflict", reason_code="remote_conflict")
+
+    class EventSinkAdapter:
+        def __init__(self) -> None:
+            self.events: list[Mapping[str, object]] = []
+
+        def emit(self, event: Mapping[str, object]) -> None:
+            self.events.append(dict(event))
+
+    sync_adapter = FailingSyncAdapter()
+    event_sink = EventSinkAdapter()
+    context = _build_real_runtime_context(
+        tmp_path,
+        pc_name="horiba_blb",
+        dependency_overrides={"sync": sync_adapter, "event_sink": event_sink},
+    )
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert len(sync_adapter.requests) == 1
+    assert sync_adapter.requests[0].payload["plugin_id"] == "horiba_blb"
+
+    sync_error_events = [
+        event
+        for event in event_sink.events
+        if event.get("kind") == "immediate_sync_error"
+    ]
+    assert len(sync_error_events) == 1
+    assert sync_error_events[0]["record_id"] == sync_adapter.requests[0].record_id
+    assert sync_error_events[0]["reason_code"] == "remote_conflict"
+
+    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute(
+            "select payload_json from records order by record_id"
+        ).fetchone()
+
+    assert row is not None
+    payload = json.loads(row[0])
+    assert payload["sync_status"] == "unsynced"

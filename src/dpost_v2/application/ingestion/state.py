@@ -21,6 +21,7 @@ class IngestionState:
     prepared_input: Mapping[str, Any] | None = None
     processor_result: ProcessorResult | None = None
     record_id: str | None = None
+    record_snapshot: Mapping[str, Any] | None = None
     retry_plan: Mapping[str, Any] | None = None
     sync_warning: str | None = None
     attempt_index: int = 0

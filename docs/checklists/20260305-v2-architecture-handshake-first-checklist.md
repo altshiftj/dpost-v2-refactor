@@ -162,16 +162,30 @@
 - Why this matters: Payload policy and transport side effects must remain cleanly separated.
 
 ### Manual Check
-- [ ] PC plugin shapes sync payload independently of backend transport adapter.
-- [ ] Sync failure behavior emits canonical events and preserves ownership boundaries.
+- [x] PC plugin shapes sync payload independently of backend transport adapter.
+- [x] Sync failure behavior emits canonical events and preserves ownership boundaries.
 
 ### Checklist
-- [ ] Add failing tests for PC payload shaping call site and sync backend invocation contract.
-- [ ] Add failing tests for immediate sync error event emission path.
-- [ ] Implement minimal post-persist wiring updates.
+- [x] Add failing tests for PC payload shaping call site and sync backend invocation contract.
+- [x] Add failing tests for immediate sync error event emission path.
+- [x] Implement minimal post-persist wiring updates.
 
 ### Completion Notes
 - How it was done:
+  - Added red tests in:
+    - `tests/dpost_v2/plugins/test_host.py`
+    - `tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+  - Added `PluginHost.prepare_sync_payload(...)` so PC-owned payload shaping stays behind the plugin-host boundary.
+  - Extended `IngestionState` and persist-stage handoff with `record_snapshot` so post-persist sync uses persisted record data instead of a hard-coded payload token.
+  - Updated `run_post_persist_stage(...)` so runtime sync receives the full ingestion state, not only `record_id`.
+  - Updated runtime composition to:
+    - shape sync payloads through the selected PC plugin when one is explicitly selected,
+    - fall back to `{record_id}` payloads when no PC plugin is selected,
+    - mark persisted records `unsynced` on immediate sync failure,
+    - emit canonical `immediate_sync_error` events while keeping sync backend ownership limited to transport.
+  - Validation note:
+    - runtime proof now shows `horiba_blb` shaping the outbound payload while the sync adapter only receives `SyncRequest`.
 
 ---
 

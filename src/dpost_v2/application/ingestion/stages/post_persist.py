@@ -28,7 +28,7 @@ def run_post_persist_stage(
     state: IngestionState,
     *,
     update_bookkeeping: Callable[[str, Any], Any],
-    trigger_sync: Callable[[str], Any],
+    trigger_sync: Callable[[IngestionState], Any],
     emit_sync_error: Callable[[str, str, str], None],
     immediate_sync_enabled: bool,
 ) -> StageDirective[IngestionState]:
@@ -44,7 +44,7 @@ def run_post_persist_stage(
         return StageDirective.terminal(PipelineTerminalOutcome.FAILED, failed)
 
     if immediate_sync_enabled:
-        sync_result = trigger_sync(state.record_id)
+        sync_result = trigger_sync(state)
         if _status_token(sync_result) != RuntimeCallStatus.SUCCESS.value:
             diagnostics = _diagnostics(sync_result)
             reason_code = str(diagnostics.get("reason_code", "sync_failed"))

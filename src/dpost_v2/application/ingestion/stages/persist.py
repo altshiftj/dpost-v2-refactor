@@ -148,12 +148,16 @@ def run_persist_stage(
 
     saved_value = getattr(save_result, "value", {}) or {}
     record_id = str(saved_value.get("record_id", "")).strip() or "unknown-record"
+    record_snapshot = saved_value.get("record_snapshot")
+    if not isinstance(record_snapshot, Mapping):
+        record_snapshot = None
     persisted_candidate = candidate.with_persist_result(
         record_id, candidate.target_path
     )
     next_state = state.with_updates(
         candidate=persisted_candidate,
         record_id=record_id,
+        record_snapshot=record_snapshot,
         diagnostics={"persist": {"reason_code": "persisted"}},
     )
     return StageDirective.continue_to("post_persist", next_state)

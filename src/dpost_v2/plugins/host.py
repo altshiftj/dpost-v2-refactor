@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
+from dpost_v2.application.contracts.context import RuntimeContext
 from dpost_v2.application.contracts.plugin_contracts import (
     PluginContractError,
     ProcessorContract,
@@ -243,6 +245,40 @@ class PluginHost:
             device_plugin_ids=scoped_device_plugins,
             normalized_settings=normalized_settings,
         )
+
+    def prepare_sync_payload(
+        self,
+        plugin_id: str,
+        *,
+        record: Mapping[str, Any],
+        context: RuntimeContext,
+        active_only: bool = True,
+    ) -> Mapping[str, Any]:
+        """Prepare outbound sync payload using one active PC plugin."""
+        descriptor = get_plugin(self._catalog, plugin_id)
+        if descriptor.family != "pc":
+            raise PluginHostActivationError(f"plugin {plugin_id!r} is not a pc plugin")
+        if active_only and plugin_id not in self._active_plugin_ids:
+            raise PluginHostActivationError(
+                f"plugin {plugin_id!r} is not active for the current profile"
+            )
+
+        prepare_sync_payload = descriptor.module_exports.get("prepare_sync_payload")
+        if not callable(prepare_sync_payload):
+            raise PluginHostActivationError(
+                f"pc plugin {plugin_id!r} missing prepare_sync_payload export"
+            )
+        try:
+            payload = prepare_sync_payload(dict(record), context)
+        except Exception as exc:  # noqa: BLE001
+            raise PluginHostActivationError(
+                f"pc plugin {plugin_id!r} failed to prepare sync payload"
+            ) from exc
+        if not isinstance(payload, Mapping):
+            raise PluginHostActivationError(
+                f"pc plugin {plugin_id!r} returned invalid sync payload"
+            )
+        return MappingProxyType(dict(payload))
 
     def shutdown(self) -> None:
         """Invoke shutdown hooks for active plugins and clear active state."""
