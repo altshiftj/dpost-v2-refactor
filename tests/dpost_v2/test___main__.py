@@ -186,6 +186,19 @@ def test_main_maps_keyboard_interrupt_to_exit_code_one(
     assert exit_code == 1
 
 
+def test_main_handles_non_integer_system_exit_code_deterministically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _raise_system_exit(_argv):  # type: ignore[no-untyped-def]
+        raise SystemExit("invalid parser state")
+
+    monkeypatch.setattr(entrypoint, "_parse_cli", _raise_system_exit)
+
+    exit_code = entrypoint.main([])
+
+    assert exit_code == 1
+
+
 def test_dpost_entrypoint_delegates_to_v2_main(monkeypatch: pytest.MonkeyPatch) -> None:
     captured: dict[str, object] = {}
 

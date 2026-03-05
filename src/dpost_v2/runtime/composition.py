@@ -234,12 +234,23 @@ def _default_app_factory(
 
 def _build_shutdown_hook(bindings: Mapping[str, object]) -> Callable[[], None]:
     hooks: list[Callable[[], None]] = []
+    seen_hooks: set[int] = set()
     for adapter in bindings.values():
         shutdown = _extract_shutdown_hook(adapter)
         if shutdown is not None:
+            hook_id = id(shutdown)
+            if hook_id in seen_hooks:
+                continue
+            seen_hooks.add(hook_id)
             hooks.append(shutdown)
 
+    has_run = False
+
     def shutdown_all() -> None:
+        nonlocal has_run
+        if has_run:
+            return
+        has_run = True
         for hook in reversed(hooks):
             hook()
 

@@ -293,3 +293,48 @@ def test_composition_default_app_consumes_ui_event_source() -> None:
     assert result.processed_count == 1
     assert any(event["kind"] == "ingestion_succeeded" for event in event_sink.events)
     assert event_sink.events[-1]["kind"] == "runtime_completed"
+
+
+def test_composition_shutdown_hook_is_idempotent() -> None:
+    shutdown_calls: list[str] = []
+
+    class ShutdownAdapter:
+        def __init__(self, name: str) -> None:
+            self._name = name
+            self._called = False
+
+        def shutdown(self) -> None:
+            if self._called:
+                raise RuntimeError(f"{self._name} called twice")
+            self._called = True
+            shutdown_calls.append(self._name)
+
+    class CloseAdapter:
+        def __init__(self, name: str) -> None:
+            self._name = name
+            self._called = False
+
+        def close(self) -> None:
+            if self._called:
+                raise RuntimeError(f"{self._name} called twice")
+            self._called = True
+            shutdown_calls.append(self._name)
+
+    context = _build_context(
+        factories={
+            "observability": lambda: object(),
+            "ui": lambda: ShutdownAdapter("ui"),
+            "event_sink": lambda: object(),
+            "plugins": lambda: CloseAdapter("plugins"),
+        }
+    )
+    bundle = compose_runtime(
+        context,
+        required_ports=("observability", "ui", "plugins"),
+        app_factory=lambda _bindings, _context: object(),
+    )
+
+    bundle.shutdown_all()
+    bundle.shutdown_all()
+
+    assert shutdown_calls == ["plugins", "ui"]

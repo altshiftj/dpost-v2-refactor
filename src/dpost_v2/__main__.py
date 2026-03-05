@@ -44,7 +44,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         options = _parse_cli(argv)
     except SystemExit as exc:
-        return int(exc.code)
+        return _coerce_system_exit_code(exc.code)
     except UnsupportedRuntimeModeError as exc:
         print(f"Unsupported runtime mode: {exc}", file=sys.stderr)
         return 2
@@ -148,6 +148,15 @@ def _build_bootstrap_request(options: CliOptions) -> BootstrapRequest:
         trace_id=uuid.uuid4().hex,
         metadata=metadata,
     )
+
+
+def _coerce_system_exit_code(code: object) -> int:
+    if code is None:
+        return 0
+    try:
+        return int(code)
+    except (TypeError, ValueError):
+        return 1
 
 
 def _emit_startup_event(event: startup_bootstrap.StartupEvent) -> None:

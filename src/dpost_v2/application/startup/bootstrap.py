@@ -120,9 +120,10 @@ def run_bootstrap(
     """Run fixed startup sequence: settings -> dependencies -> context -> composition -> launch."""
     timestamp_factory = now_utc or (lambda: datetime.now(UTC))
     boot_timestamp = timestamp_factory().isoformat()
+    request_metadata = dict(request.metadata)
     cleanup_hooks: list[Callable[[], None]] = []
 
-    _emit_started(request, emit_event)
+    _emit_started(request, boot_timestamp_utc=boot_timestamp, emit_event=emit_event)
 
     try:
         loaded_settings = load_settings(request)
@@ -134,6 +135,8 @@ def run_bootstrap(
             stage="settings",
             exc=exc,
             request=request,
+            request_metadata=request_metadata,
+            boot_timestamp_utc=boot_timestamp,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -147,6 +150,8 @@ def run_bootstrap(
             stage="dependencies",
             exc=exc,
             request=request,
+            request_metadata=request_metadata,
+            boot_timestamp_utc=boot_timestamp,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -168,6 +173,8 @@ def run_bootstrap(
             stage="context",
             exc=exc,
             request=request,
+            request_metadata=request_metadata,
+            boot_timestamp_utc=boot_timestamp,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -180,6 +187,8 @@ def run_bootstrap(
             stage="composition",
             exc=exc,
             request=request,
+            request_metadata=request_metadata,
+            boot_timestamp_utc=boot_timestamp,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -191,6 +200,8 @@ def run_bootstrap(
             stage="launch",
             exc=exc,
             request=request,
+            request_metadata=request_metadata,
+            boot_timestamp_utc=boot_timestamp,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -203,6 +214,7 @@ def run_bootstrap(
                 {
                     "mode": request.mode,
                     "profile": request.profile,
+                    "metadata": request_metadata,
                     "boot_timestamp_utc": boot_timestamp,
                 }
             ),
@@ -218,6 +230,8 @@ def run_bootstrap(
 
 def _emit_started(
     request: BootstrapRequest,
+    *,
+    boot_timestamp_utc: str,
     emit_event: Callable[[StartupEvent], None],
 ) -> None:
     metadata = dict(request.metadata)
@@ -230,6 +244,7 @@ def _emit_started(
                     "mode": request.mode,
                     "profile": request.profile,
                     "metadata": metadata,
+                    "boot_timestamp_utc": boot_timestamp_utc,
                 }
             ),
         )
@@ -241,6 +256,8 @@ def _build_failure_result(
     stage: str,
     exc: Exception,
     request: BootstrapRequest,
+    request_metadata: Mapping[str, Any],
+    boot_timestamp_utc: str,
     cleanup_hooks: list[Callable[[], None]],
     emit_event: Callable[[StartupEvent], None],
 ) -> BootstrapResult:
@@ -259,6 +276,10 @@ def _build_failure_result(
                     "stage": failure.stage,
                     "error_type": failure.error_type,
                     "message": failure.message,
+                    "mode": request.mode,
+                    "profile": request.profile,
+                    "metadata": dict(request_metadata),
+                    "boot_timestamp_utc": boot_timestamp_utc,
                 }
             ),
         )
@@ -267,7 +288,14 @@ def _build_failure_result(
 
 
 def _run_cleanup(cleanup_hooks: list[Callable[[], None]]) -> None:
-    for hook in reversed(cleanup_hooks):
+    hooks = tuple(cleanup_hooks)
+    cleanup_hooks.clear()
+    seen_hook_ids: set[int] = set()
+    for hook in reversed(hooks):
+        hook_id = id(hook)
+        if hook_id in seen_hook_ids:
+            continue
+        seen_hook_ids.add(hook_id)
         try:
             hook()
         except Exception:
