@@ -1,0 +1,25 @@
+{
+  "mode": "headless",
+  "profile": "default",
+  "paths": {
+    "root": ".",
+    "watch": "incoming",
+    "dest": "processed",
+    "staging": "tmp"
+  },
+  "ui": {
+    "backend": "headless"
+  },
+  "sync": {
+    "backend": "noop",
+    "api_token": null
+  },
+  "ingestion": {
+    "retry_limit": 3,
+    "retry_delay_seconds": 1.0
+  },
+  "naming": {
+    "prefix": "DPOST",
+    "policy": "prefix_only"
+  }
+}
