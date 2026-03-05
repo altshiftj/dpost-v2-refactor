@@ -61,6 +61,10 @@ def resolve_startup_dependencies(
     normalized_settings = _normalize_settings_payload(settings)
     selected_mode = _resolve_mode(normalized_settings)
     selected_backends = _resolve_backend_tokens(normalized_settings)
+    backend_provenance = _resolve_backend_provenance(
+        normalized_settings,
+        selected_backends=selected_backends,
+    )
     _validate_mode_backend_compatibility(selected_mode, selected_backends)
     _validate_backend_requirements(selected_backends, env)
 
@@ -95,6 +99,9 @@ def resolve_startup_dependencies(
             "mode": selected_mode,
             "profile": normalized_settings.get("profile"),
             "selected_backends": dict(selected_backends),
+            "backend_provenance": backend_provenance,
+            "plugin_backend": selected_backends["plugins"],
+            "plugin_visibility": "configured",
             "warnings": tuple(warnings),
         },
         cleanup=None,
@@ -164,6 +171,51 @@ def _resolve_backend_tokens(settings: Mapping[str, Any]) -> dict[str, str]:
         ),
     }
     return selected
+
+
+def _resolve_backend_provenance(
+    settings: Mapping[str, Any],
+    *,
+    selected_backends: Mapping[str, str],
+) -> dict[str, str]:
+    raw_provenance = settings.get("provenance")
+    provenance_map = raw_provenance if isinstance(raw_provenance, Mapping) else {}
+
+    def _lookup(*keys: str, default: str = "unknown") -> str:
+        for key in keys:
+            raw_value = provenance_map.get(key)
+            if raw_value is None:
+                continue
+            token = str(raw_value).strip().lower()
+            if token:
+                return token
+        return default
+
+    resolved = {
+        "mode": _lookup("mode"),
+        "profile": _lookup("profile"),
+        "ui": _lookup("ui.backend", "backends.ui"),
+        "sync": _lookup("sync.backend", "backends.sync"),
+        "plugins": _lookup(
+            "plugins.backend",
+            "backends.plugins",
+            default="resolver_default",
+        ),
+        "observability": _lookup(
+            "observability.backend",
+            "backends.observability",
+            default="resolver_default",
+        ),
+        "storage": _lookup(
+            "storage.backend",
+            "backends.storage",
+            default="resolver_default",
+        ),
+    }
+    for backend_name in ("plugins", "observability", "storage"):
+        if backend_name in selected_backends and resolved[backend_name] == "unknown":
+            resolved[backend_name] = "resolver_default"
+    return resolved
 
 
 def _normalize_backend_token(

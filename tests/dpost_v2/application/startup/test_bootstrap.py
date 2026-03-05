@@ -342,6 +342,151 @@ def test_bootstrap_started_event_includes_request_metadata() -> None:
     assert events[0].payload["metadata"] == {"source": "cli", "attempt": 2}
 
 
+def test_bootstrap_emits_stable_diagnostics_fields_on_success() -> None:
+    request = BootstrapRequest(mode="v2", profile="ci", trace_id="trace-009")
+    events = []
+
+    loaded_settings = SettingsLoadResult(
+        is_success=True,
+        settings=FakeSettings(mode="headless", profile="ops"),
+        provenance={
+            "mode": "cli",
+            "profile": "file",
+            "ui.backend": "defaults",
+            "sync.backend": "environment",
+        },
+        fingerprint="fingerprint-009",
+    )
+    dependencies = StartupDependencies(
+        factories={
+            "observability": lambda: {"kind": "observability"},
+            "storage": lambda: {"kind": "storage"},
+            "filesystem": lambda: {"kind": "filesystem"},
+            "clock": lambda: {"kind": "clock"},
+            "sync": lambda: {"kind": "sync"},
+            "ui": lambda: {"kind": "ui"},
+            "event_sink": lambda: {"kind": "event_sink"},
+            "plugins": lambda: {"kind": "plugins"},
+        },
+        selected_backends={
+            "ui": "headless",
+            "sync": "noop",
+            "plugins": "builtin",
+            "observability": "structured",
+            "storage": "filesystem",
+        },
+        lazy_factories=frozenset({"sync", "plugins"}),
+        warnings=(),
+        cleanup=None,
+    )
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=lambda _request: loaded_settings,
+        resolve_dependencies=lambda _settings, _request: dependencies,
+        compose_runtime=lambda _context: CompositionBundle(
+            app=DummyApp(),
+            port_bindings={"plugins": object(), "event_sink": object()},
+            diagnostics={
+                "plugin_visibility": "bound",
+                "plugin_backend": "builtin",
+                "selected_backends": {"plugins": "builtin"},
+            },
+            shutdown_all=lambda: None,
+        ),
+        launch_runtime=lambda app, _context: app,
+        emit_event=events.append,
+    )
+
+    assert result.is_success is True
+    assert [event.name for event in events] == ["startup_started", "startup_succeeded"]
+
+    common_keys = {
+        "requested_mode",
+        "requested_profile",
+        "mode",
+        "profile",
+        "boot_timestamp_utc",
+        "settings_fingerprint",
+        "settings_provenance",
+        "selected_backends",
+        "plugin_backend",
+        "plugin_visibility",
+    }
+    started_payload = events[0].payload
+    succeeded_payload = events[1].payload
+
+    assert common_keys <= set(started_payload)
+    assert common_keys <= set(succeeded_payload)
+    assert started_payload["requested_mode"] == "v2"
+    assert started_payload["mode"] == "v2"
+    assert started_payload["selected_backends"] == {}
+    assert started_payload["plugin_backend"] is None
+    assert started_payload["plugin_visibility"] == "unknown"
+    assert succeeded_payload["mode"] == "headless"
+    assert succeeded_payload["profile"] == "ops"
+    assert succeeded_payload["settings_fingerprint"] == "fingerprint-009"
+    assert succeeded_payload["settings_provenance"]["mode"] == "cli"
+    assert succeeded_payload["selected_backends"]["plugins"] == "builtin"
+    assert succeeded_payload["plugin_backend"] == "builtin"
+    assert succeeded_payload["plugin_visibility"] == "bound"
+
+
+def test_bootstrap_failed_event_preserves_diagnostics_snapshot() -> None:
+    request = BootstrapRequest(mode="headless", profile="ci", trace_id="trace-010")
+    events = []
+    loaded_settings = SettingsLoadResult(
+        is_success=True,
+        settings=FakeSettings(mode="headless", profile="ci"),
+        provenance={"mode": "cli", "profile": "cli"},
+        fingerprint="fingerprint-010",
+    )
+    dependencies = StartupDependencies(
+        factories={
+            "observability": lambda: {"kind": "observability"},
+            "storage": lambda: {"kind": "storage"},
+            "filesystem": lambda: {"kind": "filesystem"},
+            "clock": lambda: {"kind": "clock"},
+            "sync": lambda: {"kind": "sync"},
+            "ui": lambda: {"kind": "ui"},
+            "event_sink": lambda: {"kind": "event_sink"},
+            "plugins": lambda: {"kind": "plugins"},
+        },
+        selected_backends={
+            "ui": "headless",
+            "sync": "noop",
+            "plugins": "builtin",
+            "observability": "structured",
+            "storage": "filesystem",
+        },
+        lazy_factories=frozenset({"sync", "plugins"}),
+        warnings=(),
+        cleanup=None,
+    )
+
+    result = run_bootstrap(
+        request=request,
+        load_settings=lambda _request: loaded_settings,
+        resolve_dependencies=lambda _settings, _request: dependencies,
+        compose_runtime=lambda _context: (_ for _ in ()).throw(
+            RuntimeError("composition broke")
+        ),
+        launch_runtime=lambda _app, _context: "unused",
+        emit_event=events.append,
+    )
+
+    assert result.is_success is False
+    assert [event.name for event in events] == ["startup_started", "startup_failed"]
+    failed_payload = events[1].payload
+    assert failed_payload["stage"] == "composition"
+    assert failed_payload["error_type"] == "RuntimeError"
+    assert failed_payload["settings_fingerprint"] == "fingerprint-010"
+    assert failed_payload["settings_provenance"]["profile"] == "cli"
+    assert failed_payload["selected_backends"]["plugins"] == "builtin"
+    assert failed_payload["plugin_backend"] == "builtin"
+    assert failed_payload["plugin_visibility"] == "configured"
+
+
 def test_run_uses_process_environment_when_override_not_supplied(monkeypatch) -> None:
     request = BootstrapRequest(mode="headless", profile="ci", trace_id="trace-008")
     events = []

@@ -23,12 +23,14 @@ class FakeSettings:
     profile: str = "ci"
 
 
-def _build_context(factories):
+def _build_context(factories, *, diagnostics=None, selected_backends=None):
     dependencies = StartupDependencies(
         factories=factories,
-        selected_backends={"ui": "headless", "sync": "noop", "plugins": "builtin"},
+        selected_backends=selected_backends
+        or {"ui": "headless", "sync": "noop", "plugins": "builtin"},
         lazy_factories=frozenset(),
         warnings=(),
+        diagnostics=diagnostics or {},
         cleanup=None,
     )
     return build_startup_context(
@@ -232,6 +234,65 @@ def test_composition_exposes_application_port_diagnostics() -> None:
         "sync",
         "ui",
     )
+
+
+def test_composition_emits_stable_runtime_diagnostics_contract() -> None:
+    class EventSinkAdapter:
+        def emit(self, event: object) -> None:
+            return None
+
+    context = _build_context(
+        factories={
+            "observability": lambda: object(),
+            "storage": lambda: {"kind": "storage", "backend": "filesystem"},
+            "sync": lambda: {"kind": "sync", "backend": "noop"},
+            "ui": lambda: {"kind": "ui", "backend": "headless"},
+            "event_sink": lambda: EventSinkAdapter(),
+            "plugins": lambda: {"kind": "plugins", "backend": "builtin"},
+            "clock": lambda: {"kind": "clock"},
+            "filesystem": lambda: {"kind": "filesystem"},
+        },
+        diagnostics={
+            "backend_provenance": {
+                "mode": "cli",
+                "profile": "environment",
+                "ui": "defaults",
+                "sync": "defaults",
+                "plugins": "resolver_default",
+                "observability": "resolver_default",
+                "storage": "resolver_default",
+            }
+        },
+        selected_backends={
+            "ui": "headless",
+            "sync": "noop",
+            "plugins": "builtin",
+            "observability": "structured",
+            "storage": "filesystem",
+        },
+    )
+
+    bundle = compose_runtime(context)
+    diagnostics = bundle.diagnostics
+
+    assert diagnostics["requested_mode"] == "headless"
+    assert diagnostics["requested_profile"] == "ci"
+    assert diagnostics["mode"] == "headless"
+    assert diagnostics["profile"] == "ci"
+    assert diagnostics["plugin_backend"] == "builtin"
+    assert diagnostics["plugin_visibility"] == "bound"
+    assert diagnostics["plugin_port_bound"] is True
+    assert diagnostics["plugin_contract_valid"] is True
+    assert diagnostics["selected_backends"]["plugins"] == "builtin"
+    assert diagnostics["backend_provenance"] == {
+        "mode": "cli",
+        "profile": "environment",
+        "ui": "defaults",
+        "sync": "defaults",
+        "plugins": "resolver_default",
+        "observability": "resolver_default",
+        "storage": "resolver_default",
+    }
 
 
 def test_composition_default_app_consumes_ui_event_source() -> None:

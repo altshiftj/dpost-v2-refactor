@@ -36,6 +36,39 @@ def test_dependency_resolution_uses_mode_defaults_and_lazy_markers() -> None:
     }
 
 
+def test_dependency_resolution_emits_stable_diagnostics_contract() -> None:
+    dependencies = resolve_startup_dependencies(
+        settings={
+            "mode": "headless",
+            "profile": "ci",
+            "backends": {"ui": "headless", "sync": "noop", "plugins": "builtin"},
+            "provenance": {
+                "mode": "cli",
+                "profile": "environment",
+                "ui.backend": "defaults",
+                "sync.backend": "defaults",
+            },
+        },
+        environment={},
+    )
+
+    diagnostics = dependencies.diagnostics
+    assert diagnostics["mode"] == "headless"
+    assert diagnostics["profile"] == "ci"
+    assert diagnostics["plugin_backend"] == "builtin"
+    assert diagnostics["plugin_visibility"] == "configured"
+    assert diagnostics["selected_backends"]["plugins"] == "builtin"
+    assert diagnostics["backend_provenance"] == {
+        "mode": "cli",
+        "profile": "environment",
+        "ui": "defaults",
+        "sync": "defaults",
+        "plugins": "resolver_default",
+        "observability": "resolver_default",
+        "storage": "resolver_default",
+    }
+
+
 def test_dependency_resolution_rejects_unknown_backend() -> None:
     with pytest.raises(DependencyBackendSelectionError, match="Unknown backend"):
         resolve_startup_dependencies(
