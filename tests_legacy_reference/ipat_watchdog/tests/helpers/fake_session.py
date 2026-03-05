@@ -1,0 +1,30 @@
+class FakeSessionManager:
+    def __init__(self, interactions=None, scheduler=None, end_session_callback=None, **kwargs):
+        self.session_active = False
+        self.started = False
+        self.ended = False
+        self.end_session_callback = end_session_callback
+        self.start_session_called = False
+        self.reset_timer_called = False
+        self.note_activity_called = False
+
+    def start_session(self):
+        self.session_active = True
+        self.started = True
+        self.start_session_called = True
+
+    def end_session(self):
+        self.session_active = False
+        self.ended = True
+        if self.end_session_callback:
+            self.end_session_callback()
+
+    def reset_timer(self):
+        self.reset_timer_called = True
+
+    def note_activity(self, record):
+        self.note_activity_called = True
+        if not self.session_active:
+            self.start_session()
+        else:
+            self.reset_timer()
