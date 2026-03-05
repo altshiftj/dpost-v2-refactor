@@ -92,16 +92,34 @@
 - Why this matters: Workstation policy ownership must sit in PC plugins before device functionality migration.
 
 ### Manual Check
-- [ ] Selected PC plugin(s) and active device plugin scope are visible in diagnostics/events.
-- [ ] Out-of-scope device plugins are rejected deterministically.
+- [x] Selected PC plugin(s) and active device plugin scope are visible in diagnostics/events.
+- [x] Out-of-scope device plugins are rejected deterministically.
 
 ### Checklist
-- [ ] Add failing tests for PC-scoped device selection (horiba/tischrem/zwick scope expectations).
-- [ ] Add failing tests for host activation + policy enforcement surfaces.
-- [ ] Implement minimal runtime policy wiring using plugin host/profile selection.
+- [x] Add failing tests for PC-scoped device selection (horiba/tischrem/zwick scope expectations).
+- [x] Add failing tests for host activation + policy enforcement surfaces.
+- [x] Implement minimal runtime policy wiring using plugin host/profile selection.
 
 ### Completion Notes
-- How it was done: Not started in code yet. Concrete plugin ids are now visible through persisted runtime records once files reach persist, but PC-scoped device policy enforcement is still unimplemented.
+- How it was done:
+  - Added red tests in:
+    - `tests/dpost_v2/application/startup/test_settings_schema.py`
+    - `tests/dpost_v2/application/startup/test_settings_service.py`
+    - `tests/dpost_v2/plugins/test_host.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+  - Introduced explicit startup plugin-policy settings:
+    - optional `plugins.pc_name`
+    - optional `plugins.device_plugins`
+  - Wired settings-service environment resolution for:
+    - `DPOST_PC_NAME` with `PC_NAME` fallback
+    - `DPOST_DEVICE_PLUGINS` with `DEVICE_PLUGINS` fallback
+  - Added `PluginHost.resolve_device_scope_for_pc(...)` so workstation scope is derived from the PC plugin's validated `active_device_plugins` settings.
+  - Updated composition/runtime to:
+    - expose `selected_pc_plugin`, `scoped_device_plugins`, and `pc_scope_applied` in diagnostics
+    - enforce scoped device selection only when a PC plugin is explicitly selected
+    - reject out-of-scope candidates deterministically at resolve time
+  - Deliberate compatibility choice:
+    - if no workstation PC is declared, runtime keeps existing profile-wide device selection instead of introducing a new hard startup failure in this slice.
 
 ---
 

@@ -131,6 +131,7 @@ def _pc_descriptor(
     *,
     plugin_id: str,
     profiles: tuple[str, ...] = ("prod",),
+    active_device_plugins: tuple[str, ...] = (),
 ) -> PluginDescriptor:
     def metadata() -> dict[str, object]:
         return {
@@ -151,6 +152,12 @@ def _pc_descriptor(
 
     def create_sync_adapter(_settings: dict[str, Any]) -> object:
         return object()
+
+    def validate_settings(raw_settings: dict[str, Any]) -> dict[str, Any]:
+        return {
+            **dict(raw_settings),
+            "active_device_plugins": active_device_plugins,
+        }
 
     def prepare_sync_payload(
         record: dict[str, Any],
@@ -177,6 +184,7 @@ def _pc_descriptor(
                 "metadata": metadata,
                 "capabilities": capabilities,
                 "create_sync_adapter": create_sync_adapter,
+                "validate_settings": validate_settings,
                 "prepare_sync_payload": prepare_sync_payload,
             }
         ),
@@ -312,3 +320,23 @@ def test_host_profile_reactivation_handles_removed_and_unchanged_plugins() -> No
         ("shutdown", "device.alpha"),
         ("activate", "device.beta"),
     ]
+
+
+def test_host_resolves_pc_scoped_device_plugins_from_pc_settings() -> None:
+    host = PluginHost(
+        (
+            _device_descriptor(plugin_id="device.alpha"),
+            _device_descriptor(plugin_id="device.beta"),
+            _pc_descriptor(
+                plugin_id="pc.gamma",
+                active_device_plugins=("device.beta", "device.missing"),
+            ),
+        )
+    )
+
+    host.activate_profile(profile="prod", known_profiles={"prod"})
+
+    scope = host.resolve_device_scope_for_pc("pc.gamma")
+
+    assert scope.pc_plugin_id == "pc.gamma"
+    assert scope.device_plugin_ids == ("device.beta",)

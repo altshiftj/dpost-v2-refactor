@@ -75,6 +75,13 @@ class CompositionPluginBindingError(CompositionError):
 
 
 @dataclass(frozen=True)
+class _RuntimePluginPolicy:
+    selected_pc_plugin: str | None
+    scoped_device_plugins: tuple[str, ...]
+    pc_scope_applied: bool
+
+
+@dataclass(frozen=True)
 class CompositionBundle:
     """Fully wired runtime application bundle."""
 
@@ -109,14 +116,28 @@ def compose_runtime(
     _validate_plugin_binding(bindings.get("plugins"))
     _run_healthchecks(bindings, healthchecks)
     application_ports: Mapping[str, object] | None = None
+    plugin_policy = _RuntimePluginPolicy(
+        selected_pc_plugin=None,
+        scoped_device_plugins=(),
+        pc_scope_applied=False,
+    )
     if app_factory is None:
         application_ports = _build_application_ports(bindings, context)
+        plugin_policy = _resolve_runtime_plugin_policy(
+            application_ports=application_ports,
+            context=context,
+        )
 
     try:
         app = (
             app_factory(bindings, context)
             if app_factory is not None
-            else _default_app_factory(bindings, context, application_ports)
+            else _default_app_factory(
+                bindings,
+                context,
+                application_ports,
+                plugin_policy=plugin_policy,
+            )
         )
     except Exception as exc:
         raise CompositionInitializationError("Failed to build runtime app.") from exc
@@ -157,6 +178,9 @@ def compose_runtime(
                 plugin_port_bound=plugin_port_bound,
                 plugin_contract_valid=plugin_contract_valid,
             ),
+            "selected_pc_plugin": plugin_policy.selected_pc_plugin,
+            "scoped_device_plugins": plugin_policy.scoped_device_plugins,
+            "pc_scope_applied": plugin_policy.pc_scope_applied,
             "warnings": tuple(context.dependencies.warnings),
             "application_ports": app_port_names,
         },
@@ -242,6 +266,8 @@ def _default_app_factory(
     bindings: Mapping[str, object],
     context: StartupContext,
     application_ports: Mapping[str, object] | None,
+    *,
+    plugin_policy: _RuntimePluginPolicy,
 ) -> DPostApp:
     if application_ports is None:
         raise CompositionBindingError(
@@ -262,6 +288,7 @@ def _default_app_factory(
         application_ports=application_ports,
         context=context,
         event_emitter=event_emitter,
+        plugin_policy=plugin_policy,
     )
     return DPostApp(
         session_manager=session_manager,
@@ -281,6 +308,8 @@ def _default_app_factory(
         settings_snapshot={
             "mode": context.settings.mode,
             "profile": context.settings.profile or "default",
+            "selected_pc_plugin": plugin_policy.selected_pc_plugin,
+            "scoped_device_plugins": plugin_policy.scoped_device_plugins,
         },
     )
 
@@ -543,6 +572,7 @@ def _build_runtime_ingestion_engine(
     application_ports: Mapping[str, object],
     context: StartupContext,
     event_emitter: Callable[[Mapping[str, Any]], None],
+    plugin_policy: _RuntimePluginPolicy,
 ) -> object:
     plugin_host = application_ports["plugin_host"]
     file_ops = application_ports["file_ops"]
@@ -565,6 +595,8 @@ def _build_runtime_ingestion_engine(
         selection = _select_runtime_processor(
             plugin_host=plugin_host,
             candidate=candidate,
+            scoped_plugin_ids=plugin_policy.scoped_device_plugins,
+            pc_scope_applied=plugin_policy.pc_scope_applied,
         )
         return selection
 
@@ -855,8 +887,18 @@ def _select_runtime_processor(
     *,
     plugin_host: object,
     candidate: Candidate,
+    scoped_plugin_ids: Sequence[str] = (),
+    pc_scope_applied: bool = False,
 ) -> ProcessorSelection:
-    plugin_ids = _resolve_device_plugin_ids(plugin_host)
+    if pc_scope_applied:
+        plugin_ids = tuple(
+            str(plugin_id).strip()
+            for plugin_id in scoped_plugin_ids
+            if str(plugin_id).strip()
+        )
+    else:
+        plugin_ids = _resolve_device_plugin_ids(plugin_host)
+
     for plugin_id in plugin_ids:
         processor = _build_runtime_processor(
             plugin_host=plugin_host,
@@ -870,11 +912,99 @@ def _select_runtime_processor(
             descriptor=SelectionDescriptor(
                 plugin_id=plugin_id,
                 processor_key=plugin_id,
-                capability_reason="pc_scope_default",
+                capability_reason=(
+                    "pc_scope_selected" if pc_scope_applied else "pc_scope_default"
+                ),
                 cache_hit=False,
             ),
         )
     raise ProcessorNotFoundError("No runtime processor available for candidate.")
+
+
+def _resolve_runtime_plugin_policy(
+    *,
+    application_ports: Mapping[str, object],
+    context: StartupContext,
+) -> _RuntimePluginPolicy:
+    plugin_host = application_ports.get("plugin_host")
+    if plugin_host is None:
+        return _RuntimePluginPolicy(
+            selected_pc_plugin=None,
+            scoped_device_plugins=(),
+            pc_scope_applied=False,
+        )
+
+    selected_pc_plugin = _extract_selected_pc_plugin(context.settings)
+    if selected_pc_plugin is None:
+        return _RuntimePluginPolicy(
+            selected_pc_plugin=None,
+            scoped_device_plugins=(),
+            pc_scope_applied=False,
+        )
+
+    raw_device_plugins = _extract_selected_device_plugins(context.settings)
+    resolver = getattr(plugin_host, "resolve_device_scope_for_pc", None)
+    if not callable(resolver):
+        raise CompositionPluginBindingError(
+            "binding for 'plugin_host' does not support PC device scope resolution"
+        )
+
+    try:
+        scope = resolver(selected_pc_plugin)
+    except PluginHostActivationError as exc:
+        raise CompositionPluginBindingError(str(exc)) from exc
+
+    scoped_device_plugins = tuple(scope.device_plugin_ids)
+    if raw_device_plugins:
+        allowed = set(raw_device_plugins)
+        scoped_device_plugins = tuple(
+            plugin_id
+            for plugin_id in scoped_device_plugins
+            if plugin_id in allowed
+        )
+
+    return _RuntimePluginPolicy(
+        selected_pc_plugin=selected_pc_plugin,
+        scoped_device_plugins=scoped_device_plugins,
+        pc_scope_applied=True,
+    )
+
+
+def _extract_selected_pc_plugin(settings: object) -> str | None:
+    plugins = getattr(settings, "plugins", None)
+    candidate = getattr(plugins, "pc_name", None)
+    if isinstance(candidate, str) and candidate.strip():
+        return candidate.strip().lower()
+    if isinstance(settings, Mapping):
+        raw_plugins = settings.get("plugins")
+        if isinstance(raw_plugins, Mapping):
+            raw_candidate = raw_plugins.get("pc_name")
+            if isinstance(raw_candidate, str) and raw_candidate.strip():
+                return raw_candidate.strip().lower()
+    return None
+
+
+def _extract_selected_device_plugins(settings: object) -> tuple[str, ...]:
+    plugins = getattr(settings, "plugins", None)
+    candidate = getattr(plugins, "device_plugins", None)
+    if isinstance(candidate, tuple | list):
+        return tuple(
+            str(plugin_id).strip().lower()
+            for plugin_id in candidate
+            if str(plugin_id).strip()
+        )
+
+    if isinstance(settings, Mapping):
+        raw_plugins = settings.get("plugins")
+        if isinstance(raw_plugins, Mapping):
+            raw_candidate = raw_plugins.get("device_plugins", ())
+            if isinstance(raw_candidate, tuple | list):
+                return tuple(
+                    str(plugin_id).strip().lower()
+                    for plugin_id in raw_candidate
+                    if str(plugin_id).strip()
+                )
+    return ()
 
 
 def _resolve_device_plugin_ids(plugin_host: object) -> tuple[str, ...]:

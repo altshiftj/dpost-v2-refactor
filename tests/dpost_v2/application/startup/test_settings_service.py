@@ -47,6 +47,34 @@ def test_settings_service_applies_source_precedence_and_provenance(
     assert result.provenance["naming.prefix"] == "cli"
 
 
+def test_settings_service_reads_plugin_policy_from_environment(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("PC_NAME", "legacy_pc")
+    monkeypatch.setenv("DPOST_PC_NAME", "tischrem_blb")
+    monkeypatch.setenv("DEVICE_PLUGINS", "legacy_device")
+    monkeypatch.setenv("DPOST_DEVICE_PLUGINS", "sem_phenomxl2; utm_zwick")
+
+    request = BootstrapRequest(
+        mode="v2",
+        profile="prod",
+        trace_id="trace-settings-env-plugins",
+        metadata={},
+    )
+    result = load_startup_settings(request, root_hint=tmp_path)
+
+    assert result.is_success is True
+    assert result.settings is not None
+    assert result.settings.plugins.pc_name == "tischrem_blb"
+    assert result.settings.plugins.device_plugins == (
+        "sem_phenomxl2",
+        "utm_zwick",
+    )
+    assert result.provenance["plugins.pc_name"] == "environment"
+    assert result.provenance["plugins.device_plugins"] == "environment"
+
+
 def test_settings_service_reuses_cache_for_unchanged_fingerprint(
     tmp_path: Path,
 ) -> None:

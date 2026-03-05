@@ -163,6 +163,14 @@ def _normalize_settings_payload(settings: Mapping[str, Any] | Any) -> dict[str, 
         "ui": {
             "backend": getattr(getattr(settings, "ui", None), "backend", "headless"),
         },
+        "plugins": {
+            "pc_name": getattr(getattr(settings, "plugins", None), "pc_name", None),
+            "device_plugins": getattr(
+                getattr(settings, "plugins", None),
+                "device_plugins",
+                (),
+            ),
+        },
         "backends": {
             "ui": getattr(getattr(settings, "ui", None), "backend", "headless"),
             "sync": getattr(getattr(settings, "sync", None), "backend", "noop"),

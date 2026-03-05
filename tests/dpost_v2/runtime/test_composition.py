@@ -18,6 +18,7 @@ from dpost_v2.application.startup.settings import (
     IngestionSettings,
     NamingSettings,
     PathSettings,
+    PluginPolicySettings,
     RuntimeSettings,
     StartupSettings,
     SyncSettings,
@@ -79,6 +80,8 @@ def _build_real_settings(
     tmp_path: Path,
     *,
     retry_delay_seconds: float = 0.0,
+    pc_name: str | None = None,
+    device_plugins: tuple[str, ...] = (),
 ) -> StartupSettings:
     return StartupSettings(
         runtime=RuntimeSettings(mode="headless", profile="prod"),
@@ -95,6 +98,10 @@ def _build_real_settings(
         ),
         sync=SyncSettings(backend="noop", api_token=None),
         ui=UiSettings(backend="headless"),
+        plugins=PluginPolicySettings(
+            pc_name=pc_name,
+            device_plugins=device_plugins,
+        ),
     )
 
 
@@ -102,10 +109,14 @@ def _build_real_runtime_context(
     tmp_path: Path,
     *,
     retry_delay_seconds: float = 0.0,
+    pc_name: str | None = None,
+    device_plugins: tuple[str, ...] = (),
 ):
     settings = _build_real_settings(
         tmp_path,
         retry_delay_seconds=retry_delay_seconds,
+        pc_name=pc_name,
+        device_plugins=device_plugins,
     )
     dependencies = resolve_startup_dependencies(
         settings=settings.to_dependency_payload(),
@@ -695,3 +706,61 @@ def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
         ).fetchone()
 
     assert rows == (3,)
+
+
+def test_composition_exposes_selected_pc_scope_in_diagnostics(tmp_path) -> None:
+    context = _build_real_runtime_context(tmp_path, pc_name="tischrem_blb")
+
+    bundle = compose_runtime(context)
+
+    assert bundle.diagnostics["selected_pc_plugin"] == "tischrem_blb"
+    assert bundle.diagnostics["pc_scope_applied"] is True
+    assert bundle.diagnostics["scoped_device_plugins"] == ("sem_phenomxl2",)
+
+
+def test_composition_runtime_rejects_candidate_outside_selected_pc_scope(
+    tmp_path,
+) -> None:
+    context = _build_real_runtime_context(tmp_path, pc_name="tischrem_blb")
+    incoming = Path(context.settings.paths.watch)
+    incoming.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    outcome = bundle.app._ingestion_engine.process(
+        event={
+            "event_id": "evt-out-of-scope-001",
+            "path": str(sample),
+            "event_kind": "created",
+            "observed_at": 1.0,
+        }
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.REJECTED
+    assert outcome.final_stage_id == "resolve"
+
+
+def test_composition_runtime_selects_allowed_device_with_selected_pc_scope(
+    tmp_path,
+) -> None:
+    context = _build_real_runtime_context(tmp_path, pc_name="tischrem_blb")
+    incoming = Path(context.settings.paths.watch)
+    incoming.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.tif"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    outcome = bundle.app._ingestion_engine.process(
+        event={
+            "event_id": "evt-pc-scope-001",
+            "path": str(sample),
+            "event_kind": "created",
+            "observed_at": 1.0,
+        }
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.state is not None
+    assert outcome.state.candidate is not None
+    assert outcome.state.candidate.plugin_id == "sem_phenomxl2"

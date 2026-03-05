@@ -80,3 +80,20 @@ def test_schema_rejects_alias_collision() -> None:
 
     assert exc_info.value.issues[0].code == "alias_collision"
     assert exc_info.value.issues[0].path == "runtime_mode"
+
+
+def test_schema_accepts_optional_plugin_policy_block() -> None:
+    validated = validate_raw_settings(
+        {
+            "mode": "headless",
+            "profile": "prod",
+            "paths": {"root": "./sandbox"},
+            "plugins": {
+                "pc_name": "TISCHREM_BLB",
+                "device_plugins": ["sem_phenomxl2"],
+            },
+        }
+    )
+
+    assert validated["plugins"]["pc_name"] == "tischrem_blb"
+    assert validated["plugins"]["device_plugins"] == ("sem_phenomxl2",)

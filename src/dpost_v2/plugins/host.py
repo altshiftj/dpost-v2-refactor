@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
 from dpost_v2.application.contracts.plugin_contracts import (
@@ -35,6 +36,23 @@ class PluginHostActivationError(PluginHostError):
 
 class PluginHostShutdownError(PluginHostError):
     """Raised when plugin shutdown hooks fail."""
+
+
+@dataclass(frozen=True, slots=True)
+class PcDeviceScope:
+    """Resolved workstation policy scope for one selected PC plugin."""
+
+    pc_plugin_id: str
+    device_plugin_ids: tuple[str, ...]
+    normalized_settings: object
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "pc_plugin_id", str(self.pc_plugin_id).strip())
+        object.__setattr__(
+            self,
+            "device_plugin_ids",
+            tuple(str(plugin_id).strip() for plugin_id in self.device_plugin_ids),
+        )
 
 
 class PluginHost:
@@ -184,6 +202,50 @@ class PluginHost:
             )
         return processor
 
+    def resolve_device_scope_for_pc(
+        self,
+        plugin_id: str,
+        *,
+        settings: Mapping[str, Any] | None = None,
+        active_only: bool = True,
+    ) -> PcDeviceScope:
+        """Resolve the device plugin ids allowed by one selected PC plugin."""
+        descriptor = get_plugin(self._catalog, plugin_id)
+        if descriptor.family != "pc":
+            raise PluginHostActivationError(
+                f"plugin {plugin_id!r} is not a pc plugin"
+            )
+        if active_only and plugin_id not in self._active_plugin_ids:
+            raise PluginHostActivationError(
+                f"plugin {plugin_id!r} is not active for the current profile"
+            )
+
+        raw_settings = dict(settings or {})
+        validate_settings = descriptor.module_exports.get("validate_settings")
+        normalized_settings: object = raw_settings
+        if callable(validate_settings):
+            try:
+                normalized_settings = validate_settings(raw_settings)
+            except Exception as exc:  # noqa: BLE001
+                raise PluginHostActivationError(
+                    f"pc plugin {plugin_id!r} failed to validate settings"
+                ) from exc
+
+        configured_device_plugins = _extract_active_device_plugins(normalized_settings)
+        available_device_plugins = set(self.get_device_plugins(active_only=active_only))
+        scoped_device_plugins = tuple(
+            sorted(
+                plugin_name
+                for plugin_name in configured_device_plugins
+                if plugin_name in available_device_plugins
+            )
+        )
+        return PcDeviceScope(
+            pc_plugin_id=plugin_id,
+            device_plugin_ids=scoped_device_plugins,
+            normalized_settings=normalized_settings,
+        )
+
     def shutdown(self) -> None:
         """Invoke shutdown hooks for active plugins and clear active state."""
         active_before = tuple(sorted(self._active_plugin_ids, reverse=True))
@@ -229,7 +291,29 @@ def _validate_descriptor_contract(descriptor: PluginDescriptor) -> None:
         )
 
 
+def _extract_active_device_plugins(settings: object) -> tuple[str, ...]:
+    if isinstance(settings, Mapping):
+        candidate = settings.get("active_device_plugins", ())
+    else:
+        extra = getattr(settings, "extra", None)
+        if isinstance(extra, Mapping):
+            candidate = extra.get("active_device_plugins", ())
+        else:
+            candidate = ()
+
+    if not isinstance(candidate, tuple | list):
+        return ()
+
+    normalized: list[str] = []
+    for plugin_id in candidate:
+        token = str(plugin_id).strip()
+        if token:
+            normalized.append(token)
+    return tuple(normalized)
+
+
 __all__ = [
+    "PcDeviceScope",
     "PluginHost",
     "PluginHostActivationError",
     "PluginHostContractError",

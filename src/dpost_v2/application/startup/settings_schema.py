@@ -25,6 +25,7 @@ _CANONICAL_TEMPLATE: dict[str, Any] = {
     "sync": {"backend": "noop", "api_token": None},
     "ingestion": {"retry_limit": 3, "retry_delay_seconds": 1.0},
     "naming": {"prefix": "DPOST", "policy": "prefix_only"},
+    "plugins": {"pc_name": None, "device_plugins": ()},
 }
 
 _ENUMS: dict[str, set[str]] = {
@@ -143,6 +144,7 @@ def _merge_with_template(raw: dict[str, Any]) -> dict[str, Any]:
             "sync",
             "ingestion",
             "naming",
+            "plugins",
         }:
             issue = SettingsSchemaIssue(
                 code="unknown_field",
@@ -234,6 +236,47 @@ def _normalize_tokens(payload: dict[str, Any]) -> None:
     payload["ui"]["backend"] = str(payload["ui"]["backend"]).strip().lower()
     payload["sync"]["backend"] = str(payload["sync"]["backend"]).strip().lower()
     payload["naming"]["policy"] = str(payload["naming"]["policy"]).strip().lower()
+
+    pc_name = payload["plugins"].get("pc_name")
+    if pc_name is None:
+        payload["plugins"]["pc_name"] = None
+    else:
+        payload["plugins"]["pc_name"] = str(pc_name).strip().lower() or None
+
+    device_plugins = payload["plugins"].get("device_plugins", ())
+    if device_plugins is None or device_plugins == "":
+        payload["plugins"]["device_plugins"] = ()
+    else:
+        if not isinstance(device_plugins, tuple | list):
+            issue = SettingsSchemaIssue(
+                code="invalid_type",
+                path="plugins.device_plugins",
+                message="plugins.device_plugins must be a sequence of plugin ids.",
+                hint="Provide plugins.device_plugins as a list or tuple of strings.",
+            )
+            raise SettingsSchemaValueError(
+                "Invalid startup settings field type.",
+                issues=(issue,),
+            )
+
+        normalized_plugins: list[str] = []
+        for plugin_id in device_plugins:
+            token = str(plugin_id).strip().lower()
+            if not token:
+                issue = SettingsSchemaIssue(
+                    code="invalid_value",
+                    path="plugins.device_plugins",
+                    message=(
+                        "plugins.device_plugins entries must be non-empty strings."
+                    ),
+                    hint="Remove empty plugin ids from plugins.device_plugins.",
+                )
+                raise SettingsSchemaValueError(
+                    "Invalid startup settings field value.",
+                    issues=(issue,),
+                )
+            normalized_plugins.append(token)
+        payload["plugins"]["device_plugins"] = tuple(normalized_plugins)
 
 
 def _validate_enums(payload: Mapping[str, Any]) -> None:

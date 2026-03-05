@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -77,6 +77,32 @@ class UiSettings:
 
 
 @dataclass(frozen=True)
+class PluginPolicySettings:
+    """Optional workstation policy selection used by runtime startup."""
+
+    pc_name: str | None = None
+    device_plugins: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        pc_name = _normalize_optional_string(self.pc_name)
+        object.__setattr__(self, "pc_name", None if pc_name is None else pc_name.lower())
+
+        normalized_device_plugins: list[str] = []
+        for plugin_id in self.device_plugins:
+            token = _normalize_optional_string(plugin_id)
+            if token is None:
+                raise SettingsNormalizationError(
+                    "plugins.device_plugins entries must be non-empty strings."
+                )
+            normalized_device_plugins.append(token.lower())
+        object.__setattr__(
+            self,
+            "device_plugins",
+            tuple(normalized_device_plugins),
+        )
+
+
+@dataclass(frozen=True)
 class StartupSettings:
     """Aggregate startup settings consumed by bootstrap and composition."""
 
@@ -86,6 +112,7 @@ class StartupSettings:
     ingestion: IngestionSettings
     sync: SyncSettings
     ui: UiSettings
+    plugins: PluginPolicySettings = field(default_factory=PluginPolicySettings)
     source_fingerprint: str | None = None
 
     @property
@@ -116,6 +143,10 @@ class StartupSettings:
             "ui": {
                 "backend": self.ui.backend,
             },
+            "plugins": {
+                "pc_name": self.plugins.pc_name,
+                "device_plugins": self.plugins.device_plugins,
+            },
             "backends": {
                 "ui": self.ui.backend,
                 "sync": self.sync.backend,
@@ -141,6 +172,9 @@ def from_raw(
     sync_block = _required_block(raw_config, "sync")
     ingestion_block = _required_block(raw_config, "ingestion")
     naming_block = _required_block(raw_config, "naming")
+    plugins_block = raw_config.get("plugins") or {}
+    if not isinstance(plugins_block, Mapping):
+        raise SettingsShapeError("Settings block 'plugins' must be a mapping.")
 
     root, watch, dest, staging = normalize_paths(paths_block, root_hint=root_hint)
     retry_limit, retry_delay = normalize_retry_policy(ingestion_block)
@@ -180,6 +214,12 @@ def from_raw(
             api_token=_normalize_optional_string(sync_block.get("api_token")),
         ),
         ui=UiSettings(backend=ui_backend),
+        plugins=PluginPolicySettings(
+            pc_name=_normalize_optional_string(plugins_block.get("pc_name")),
+            device_plugins=_normalize_device_plugin_ids(
+                plugins_block.get("device_plugins", ())
+            ),
+        ),
         source_fingerprint=source_fingerprint,
     )
 
@@ -279,3 +319,21 @@ def _normalize_optional_string(value: Any) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
+
+
+def _normalize_device_plugin_ids(value: Any) -> tuple[str, ...]:
+    if value in {None, ""}:
+        return ()
+    if not isinstance(value, tuple | list):
+        raise SettingsNormalizationError(
+            "plugins.device_plugins must be a sequence of plugin ids."
+        )
+    normalized: list[str] = []
+    for plugin_id in value:
+        token = _normalize_optional_string(plugin_id)
+        if token is None:
+            raise SettingsNormalizationError(
+                "plugins.device_plugins entries must be non-empty strings."
+            )
+        normalized.append(token.lower())
+    return tuple(normalized)

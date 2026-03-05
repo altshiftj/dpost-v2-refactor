@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
@@ -239,9 +240,10 @@ def _default_sources_from_request(
             "sync": {"backend": "noop"},
             "ingestion": {"retry_limit": 3, "retry_delay_seconds": 1.0},
             "naming": {"prefix": "DPOST", "policy": "prefix_only"},
+            "plugins": {"pc_name": None, "device_plugins": ()},
         },
         "file": config_settings,
-        "environment": {},
+        "environment": _load_environment_settings(os.environ),
         "cli": cli_settings,
     }
 
@@ -293,6 +295,42 @@ def _normalized_settings_mode(request: SupportsBootstrapRequest) -> str:
         return "headless"
 
     return requested_mode or "headless"
+
+
+def _load_environment_settings(environment: Mapping[str, str]) -> dict[str, Any]:
+    plugins: dict[str, Any] = {}
+    pc_name = _first_env_value(environment, "DPOST_PC_NAME", "PC_NAME")
+    if pc_name is not None:
+        plugins["pc_name"] = pc_name
+
+    device_plugins = _split_env_plugin_ids(
+        _first_env_value(environment, "DPOST_DEVICE_PLUGINS", "DEVICE_PLUGINS")
+    )
+    if device_plugins:
+        plugins["device_plugins"] = device_plugins
+
+    if not plugins:
+        return {}
+    return {"plugins": plugins}
+
+
+def _first_env_value(environment: Mapping[str, str], *names: str) -> str | None:
+    for name in names:
+        candidate = str(environment.get(name, "")).strip()
+        if candidate:
+            return candidate
+    return None
+
+
+def _split_env_plugin_ids(raw_value: str | None) -> tuple[str, ...]:
+    if raw_value is None:
+        return ()
+    tokens = [
+        token.strip()
+        for token in raw_value.replace(";", ",").split(",")
+        if token.strip()
+    ]
+    return tuple(tokens)
 
 
 def _merge_sources(
