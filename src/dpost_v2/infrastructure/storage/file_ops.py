@@ -100,6 +100,10 @@ class LocalFileOpsAdapter:
         except OSError as exc:
             raise self._map_os_error(exc, operation="delete")
 
+    def normalize_path(self, value: str) -> str:
+        """Return one canonical root-safe path string."""
+        return str(self._resolve_scoped_path(value))
+
     def _resolve_scoped_path(self, raw_path: str) -> Path:
         if not isinstance(raw_path, str) or not raw_path.strip():
             raise FileOpsPathSafetyError("path must be a non-empty string")

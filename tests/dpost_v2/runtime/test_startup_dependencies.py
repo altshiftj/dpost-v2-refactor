@@ -2,6 +2,11 @@ from __future__ import annotations
 
 import pytest
 
+from dpost_v2.infrastructure.runtime.ui.headless import HeadlessUiAdapter
+from dpost_v2.infrastructure.storage.file_ops import LocalFileOpsAdapter
+from dpost_v2.infrastructure.storage.record_store import SqliteRecordStoreAdapter
+from dpost_v2.infrastructure.sync.noop import NoopSyncAdapter
+from dpost_v2.plugins.host import PluginHost
 from dpost_v2.runtime.startup_dependencies import (
     DependencyBackendSelectionError,
     DependencyCompatibilityError,
@@ -103,3 +108,39 @@ def test_dependency_resolution_requires_kadi_token() -> None:
             },
             environment={},
         )
+
+
+def test_dependency_resolution_builds_concrete_runtime_bindings_for_headless_prod(
+    tmp_path,
+) -> None:
+    dependencies = resolve_startup_dependencies(
+        settings={
+            "mode": "headless",
+            "profile": "prod",
+            "paths": {"root": str(tmp_path)},
+            "sync": {"api_token": None},
+            "backends": {
+                "ui": "headless",
+                "sync": "noop",
+                "plugins": "builtin",
+                "observability": "structured",
+                "storage": "filesystem",
+            },
+        },
+        environment={},
+    )
+
+    ui = dependencies.factories["ui"]()
+    storage = dependencies.factories["storage"]()
+    filesystem = dependencies.factories["filesystem"]()
+    sync = dependencies.factories["sync"]()
+    plugins = dependencies.factories["plugins"]()
+    event_sink = dependencies.factories["event_sink"]()
+
+    assert isinstance(ui, HeadlessUiAdapter)
+    assert isinstance(storage, SqliteRecordStoreAdapter)
+    assert isinstance(filesystem, LocalFileOpsAdapter)
+    assert isinstance(sync, NoopSyncAdapter)
+    assert isinstance(plugins, PluginHost)
+    assert callable(getattr(event_sink, "emit", None))
+    assert "psa_horiba" in plugins.get_device_plugins()

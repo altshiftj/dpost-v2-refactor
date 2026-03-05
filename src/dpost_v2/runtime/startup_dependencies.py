@@ -2,9 +2,27 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from dataclasses import dataclass, field
+from pathlib import Path
+import tempfile
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
+
+from dpost_v2.infrastructure.observability.logging import (
+    StructuredLoggingConfig,
+    build_structured_logger,
+)
+from dpost_v2.infrastructure.runtime.ui.factory import build_ui_adapter
+from dpost_v2.infrastructure.storage.file_ops import LocalFileOpsAdapter
+from dpost_v2.infrastructure.storage.record_store import (
+    RecordStoreConfig,
+    SqliteRecordStoreAdapter,
+)
+from dpost_v2.infrastructure.sync.kadi import KadiSyncAdapter
+from dpost_v2.infrastructure.sync.noop import NoopSyncAdapter
+from dpost_v2.plugins.discovery import discover_from_namespaces
+from dpost_v2.plugins.host import PluginHost
 
 DependencyFactory = Callable[[], object]
 
@@ -66,19 +84,33 @@ def resolve_startup_dependencies(
         selected_backends=selected_backends,
     )
     _validate_mode_backend_compatibility(selected_mode, selected_backends)
-    _validate_backend_requirements(selected_backends, env)
+    _validate_backend_requirements(selected_backends, env, normalized_settings)
 
     factory_map: dict[str, DependencyFactory] = {
         "observability": _observability_factory_builder(
-            selected_backends["observability"]
+            selected_backends["observability"],
+            normalized_settings,
         ),
-        "storage": _storage_factory_builder(selected_backends["storage"]),
+        "storage": _storage_factory_builder(
+            selected_backends["storage"],
+            normalized_settings,
+        ),
         "clock": _clock_factory,
-        "event_sink": _event_sink_factory,
-        "filesystem": _filesystem_factory,
-        "ui": _ui_factory_builder(selected_backends["ui"]),
-        "sync": _sync_factory_builder(selected_backends["sync"]),
-        "plugins": _plugins_factory_builder(selected_backends["plugins"]),
+        "event_sink": _event_sink_factory_builder(normalized_settings),
+        "filesystem": _filesystem_factory_builder(normalized_settings),
+        "ui": _ui_factory_builder(
+            mode=selected_mode,
+            backend=selected_backends["ui"],
+        ),
+        "sync": _sync_factory_builder(
+            selected_backends["sync"],
+            normalized_settings,
+            env,
+        ),
+        "plugins": _plugins_factory_builder(
+            selected_backends["plugins"],
+            normalized_settings,
+        ),
     }
 
     for binding_name, binding_factory in dict(overrides or {}).items():
@@ -118,6 +150,19 @@ def _normalize_settings_payload(settings: Mapping[str, Any] | Any) -> dict[str, 
     return {
         "mode": getattr(settings, "mode", "headless"),
         "profile": getattr(settings, "profile", None),
+        "paths": {
+            "root": getattr(getattr(settings, "paths", None), "root", None),
+            "watch": getattr(getattr(settings, "paths", None), "watch", None),
+            "dest": getattr(getattr(settings, "paths", None), "dest", None),
+            "staging": getattr(getattr(settings, "paths", None), "staging", None),
+        },
+        "sync": {
+            "backend": getattr(getattr(settings, "sync", None), "backend", "noop"),
+            "api_token": getattr(getattr(settings, "sync", None), "api_token", None),
+        },
+        "ui": {
+            "backend": getattr(getattr(settings, "ui", None), "backend", "headless"),
+        },
         "backends": {
             "ui": getattr(getattr(settings, "ui", None), "backend", "headless"),
             "sync": getattr(getattr(settings, "sync", None), "backend", "noop"),
@@ -246,50 +291,244 @@ def _validate_mode_backend_compatibility(
 def _validate_backend_requirements(
     selected_backends: Mapping[str, str],
     environment: Mapping[str, str],
+    settings: Mapping[str, Any],
 ) -> None:
-    if selected_backends["sync"] == "kadi" and not environment.get("KADI_API_TOKEN"):
+    if selected_backends["sync"] != "kadi":
+        return
+
+    configured_token = _resolve_sync_api_token(settings, environment)
+    if not configured_token:
         raise DependencyResolutionError(
             "KADI_API_TOKEN is required when sync backend 'kadi' is selected."
         )
 
 
 def _clock_factory() -> object:
-    return {"kind": "clock"}
+    return _SystemClock()
 
 
-def _event_sink_factory() -> object:
-    return {"kind": "event_sink"}
+def _event_sink_factory_builder(settings: Mapping[str, Any]) -> DependencyFactory:
+    runtime_metadata = {
+        "mode": _resolve_mode(settings),
+        "profile": _resolve_profile(settings) or "default",
+    }
+
+    def factory() -> object:
+        return _RuntimeEventSink(runtime_metadata=runtime_metadata)
+
+    return factory
 
 
-def _filesystem_factory() -> object:
-    return {"kind": "filesystem"}
+def _filesystem_factory_builder(settings: Mapping[str, Any]) -> DependencyFactory:
+    root = _resolve_runtime_root(settings)
+    return lambda: LocalFileOpsAdapter(root=root)
 
 
-def _observability_factory_builder(backend: str) -> DependencyFactory:
-    return lambda: {"kind": "observability", "backend": backend}
+def _observability_factory_builder(
+    backend: str,
+    settings: Mapping[str, Any],
+) -> DependencyFactory:
+    if backend != "structured":
+        raise DependencyImportError(
+            f"Unsupported observability backend import path for {backend!r}."
+        )
+
+    config = StructuredLoggingConfig(
+        level="info",
+        redacted_fields={"api_token"},
+        runtime_metadata={
+            "mode": _resolve_mode(settings),
+            "profile": _resolve_profile(settings) or "default",
+        },
+    )
+    return lambda: build_structured_logger(config)
 
 
-def _storage_factory_builder(backend: str) -> DependencyFactory:
-    return lambda: {"kind": "storage", "backend": backend}
+def _storage_factory_builder(
+    backend: str,
+    settings: Mapping[str, Any],
+) -> DependencyFactory:
+    if backend != "filesystem":
+        raise DependencyImportError(
+            f"Unsupported storage backend import path for {backend!r}."
+        )
+
+    database_path = _resolve_runtime_root(settings) / "records.sqlite3"
+
+    def factory() -> object:
+        return SqliteRecordStoreAdapter(
+            RecordStoreConfig(
+                path=database_path,
+            )
+        )
+
+    return factory
 
 
-def _ui_factory_builder(backend: str) -> DependencyFactory:
-    return lambda: {"kind": "ui", "backend": backend}
+def _ui_factory_builder(*, mode: str, backend: str) -> DependencyFactory:
+    def factory() -> object:
+        selection = build_ui_adapter(mode=mode, backend_preference=backend)
+        return selection.adapter
+
+    return factory
 
 
-def _sync_factory_builder(backend: str) -> DependencyFactory:
+def _sync_factory_builder(
+    backend: str,
+    settings: Mapping[str, Any],
+    environment: Mapping[str, str],
+) -> DependencyFactory:
     if backend == "kadi":
-        return lambda: {"kind": "sync", "backend": "kadi"}
+        endpoint = _resolve_sync_setting(
+            settings,
+            key="endpoint",
+            default="https://kadi.invalid/api",
+        )
+        workspace_id = _resolve_sync_setting(
+            settings,
+            key="workspace_id",
+            default="dpost_v2",
+        )
+        api_token = _resolve_sync_api_token(settings, environment)
+
+        def factory() -> object:
+            adapter = KadiSyncAdapter(
+                endpoint=endpoint,
+                api_token=api_token,
+                workspace_id=workspace_id,
+                client=_default_kadi_client,
+            )
+            adapter.initialize()
+            return adapter
+
+        return factory
     if backend == "noop":
-        return lambda: {"kind": "sync", "backend": "noop"}
+        def factory() -> object:
+            adapter = NoopSyncAdapter()
+            adapter.initialize()
+            return adapter
+
+        return factory
     raise DependencyImportError(
         f"Unsupported sync backend import path for {backend!r}."
     )
 
 
-def _plugins_factory_builder(backend: str) -> DependencyFactory:
+def _plugins_factory_builder(
+    backend: str,
+    settings: Mapping[str, Any],
+) -> DependencyFactory:
     if backend != "builtin":
         raise DependencyImportError(
             f"Unsupported plugins backend import path for {backend!r}."
         )
-    return lambda: {"kind": "plugins", "backend": "builtin"}
+
+    def factory() -> object:
+        discovery = discover_from_namespaces()
+        host = PluginHost(discovery.descriptors)
+        known_profiles = {
+            profile
+            for descriptor in discovery.descriptors
+            for profile in descriptor.supported_profiles
+        }
+        selected_profile = _resolve_plugin_profile(settings, known_profiles)
+        host.activate_profile(
+            profile=selected_profile,
+            known_profiles=known_profiles or None,
+        )
+        return host
+
+    return factory
+
+
+def _resolve_runtime_root(settings: Mapping[str, Any]) -> Path:
+    raw_paths = settings.get("paths")
+    if isinstance(raw_paths, Mapping):
+        raw_root = raw_paths.get("root")
+        if isinstance(raw_root, str) and raw_root.strip():
+            return Path(raw_root).expanduser().resolve(strict=False)
+    return (Path(tempfile.gettempdir()) / "dpost_v2_runtime").resolve()
+
+
+def _resolve_profile(settings: Mapping[str, Any]) -> str | None:
+    raw_profile = settings.get("profile")
+    if raw_profile is None:
+        return None
+    token = str(raw_profile).strip().lower()
+    return token or None
+
+
+def _resolve_plugin_profile(
+    settings: Mapping[str, Any],
+    known_profiles: set[str],
+) -> str:
+    requested = _resolve_profile(settings)
+    if requested and requested in known_profiles:
+        return requested
+    if "default" in known_profiles:
+        return "default"
+    if "prod" in known_profiles:
+        return "prod"
+    if known_profiles:
+        return sorted(known_profiles)[0]
+    return "default"
+
+
+def _resolve_sync_setting(
+    settings: Mapping[str, Any],
+    *,
+    key: str,
+    default: str,
+) -> str:
+    raw_sync = settings.get("sync")
+    if isinstance(raw_sync, Mapping):
+        candidate = raw_sync.get(key)
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+    return default
+
+
+def _resolve_sync_api_token(
+    settings: Mapping[str, Any],
+    environment: Mapping[str, str],
+) -> str:
+    from_environment = str(environment.get("KADI_API_TOKEN", "")).strip()
+    if from_environment:
+        return from_environment
+
+    raw_sync = settings.get("sync")
+    if isinstance(raw_sync, Mapping):
+        candidate = raw_sync.get("api_token")
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+    return ""
+
+
+def _default_kadi_client(**kwargs: Any) -> Mapping[str, Any]:
+    payload = kwargs.get("payload", {})
+    record_id = None
+    if isinstance(payload, Mapping):
+        record_id = payload.get("record_id")
+    return {
+        "status_code": 202,
+        "remote_id": str(record_id or "queued-record"),
+    }
+
+
+class _SystemClock:
+    def now(self) -> datetime:
+        return datetime.now(UTC)
+
+
+class _RuntimeEventSink:
+    def __init__(self, *, runtime_metadata: Mapping[str, Any]) -> None:
+        self._runtime_metadata = MappingProxyType(dict(runtime_metadata))
+        self.events: list[Mapping[str, Any]] = []
+
+    def emit(self, event: object) -> None:
+        if isinstance(event, Mapping):
+            payload = dict(event)
+        else:
+            payload = {"event": event}
+        payload.setdefault("runtime", dict(self._runtime_metadata))
+        self.events.append(MappingProxyType(payload))

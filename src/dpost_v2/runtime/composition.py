@@ -552,6 +552,7 @@ def _build_runtime_ingestion_engine(
     clock = application_ports["clock"]
 
     gate_state = _ModifiedEventGateState()
+    record_revisions: dict[str, int] = {}
     settle_delay_seconds = _resolve_settle_delay_seconds(context.settings)
     route_root = _resolve_route_root(context.settings)
     allowed_roots = (route_root,)
@@ -604,11 +605,30 @@ def _build_runtime_ingestion_engine(
 
     def save_record(record_payload: Mapping[str, Any]) -> RuntimeCallResult:
         try:
-            saved = getattr(record_store, "save")(dict(record_payload))
+            record_id = _resolve_runtime_record_id(record_payload)
+            next_revision = record_revisions.get(record_id, -1) + 1
+            saved = getattr(record_store, "save")(
+                {
+                    "record_id": record_id,
+                    "revision": next_revision,
+                    "payload": {
+                        "candidate": dict(record_payload.get("candidate", {})),
+                        "target_path": record_payload.get("target_path"),
+                        "sync_status": "pending",
+                    },
+                }
+            )
             record_id = _extract_record_id(saved, record_payload=record_payload)
+            record_revisions[record_id] = _extract_record_revision(
+                saved,
+                fallback=next_revision,
+            )
             return RuntimeCallResult(
                 status=RuntimeCallStatus.SUCCESS,
-                value={"record_id": record_id},
+                value={
+                    "record_id": record_id,
+                    "revision": record_revisions[record_id],
+                },
                 diagnostics={"operation": "save_record"},
             )
         except Exception as exc:  # noqa: BLE001
@@ -623,11 +643,25 @@ def _build_runtime_ingestion_engine(
         return {"terminal_type": "stop_retrying", "reason_code": reason}
 
     def update_bookkeeping(record_id: str, candidate: Any) -> RuntimeCallResult:
-        _ = candidate
         try:
             update = getattr(record_store, "update", None)
-            if callable(update):
-                update(record_id, {"bookkeeping": "updated"})
+            expected_revision = record_revisions.get(record_id)
+            if callable(update) and expected_revision is not None:
+                updated = update(
+                    record_id,
+                    {
+                        "expected_revision": expected_revision,
+                        "payload": {
+                            "bookkeeping": "updated",
+                            "plugin_id": getattr(candidate, "plugin_id", None),
+                            "persisted_path": getattr(candidate, "persisted_path", None),
+                        },
+                    },
+                )
+                record_revisions[record_id] = _extract_record_revision(
+                    updated,
+                    fallback=expected_revision + 1,
+                )
             return RuntimeCallResult(
                 status=RuntimeCallStatus.SUCCESS,
                 value=True,
@@ -652,7 +686,8 @@ def _build_runtime_ingestion_engine(
                 diagnostics={"reason_code": "sync_failed", "error": str(exc)},
             )
 
-        if getattr(response, "status", "").lower() == "synced":
+        response_status = getattr(response, "status", "").lower()
+        if response_status in {"synced", "queued", "skipped_noop"}:
             return RuntimeCallResult(
                 status=RuntimeCallStatus.SUCCESS,
                 value=response,
@@ -773,6 +808,31 @@ def _extract_record_id(saved: object, *, record_payload: Mapping[str, Any]) -> s
         identity = candidate_payload.get("identity_token")
         if isinstance(identity, str) and identity.strip():
             return f"record-{identity[:12]}"
+    return "record-generated"
+
+
+def _extract_record_revision(saved: object, *, fallback: int) -> int:
+    if isinstance(saved, Mapping):
+        candidate = saved.get("revision")
+        if isinstance(candidate, int):
+            return candidate
+        if isinstance(candidate, str) and candidate.strip():
+            try:
+                return int(candidate)
+            except ValueError:
+                return fallback
+    return fallback
+
+
+def _resolve_runtime_record_id(record_payload: Mapping[str, Any]) -> str:
+    candidate_payload = record_payload.get("candidate")
+    if isinstance(candidate_payload, Mapping):
+        identity = candidate_payload.get("identity_token")
+        if isinstance(identity, str) and identity.strip():
+            return f"record-{identity[:12]}"
+    target_path = record_payload.get("target_path")
+    if isinstance(target_path, str) and target_path.strip():
+        return f"record-{sha256(target_path.encode('utf-8')).hexdigest()[:12]}"
     return "record-generated"
 
 

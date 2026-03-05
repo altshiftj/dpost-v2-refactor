@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
+from pathlib import Path
 from typing import Mapping
 
 import pytest
@@ -10,13 +11,30 @@ import pytest
 from dpost_v2.application.ingestion.engine import IngestionOutcomeKind
 from dpost_v2.application.runtime.dpost_app import DPostApp
 from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
+from dpost_v2.application.startup.settings import (
+    IngestionSettings,
+    NamingSettings,
+    PathSettings,
+    RuntimeSettings,
+    StartupSettings,
+    SyncSettings,
+    UiSettings,
+)
+from dpost_v2.infrastructure.runtime.ui.headless import HeadlessUiAdapter
+from dpost_v2.infrastructure.storage.file_ops import LocalFileOpsAdapter
+from dpost_v2.infrastructure.storage.record_store import SqliteRecordStoreAdapter
+from dpost_v2.infrastructure.sync.noop import NoopSyncAdapter
+from dpost_v2.plugins.host import PluginHost
 from dpost_v2.runtime.composition import (
     CompositionBindingError,
     CompositionDuplicateBindingError,
     CompositionInitializationError,
     compose_runtime,
 )
-from dpost_v2.runtime.startup_dependencies import StartupDependencies
+from dpost_v2.runtime.startup_dependencies import (
+    StartupDependencies,
+    resolve_startup_dependencies,
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +68,41 @@ def _build_context(
             trace_id="trace-compose",
             process_id=77,
             boot_timestamp_utc="2026-03-04T11:00:00Z",
+        ),
+    )
+
+
+def _build_real_settings(tmp_path: Path) -> StartupSettings:
+    return StartupSettings(
+        runtime=RuntimeSettings(mode="headless", profile="prod"),
+        paths=PathSettings(
+            root=str(tmp_path),
+            watch=str(tmp_path / "incoming"),
+            dest=str(tmp_path / "processed"),
+            staging=str(tmp_path / "tmp"),
+        ),
+        naming=NamingSettings(prefix="DPOST", policy="prefix_only"),
+        ingestion=IngestionSettings(retry_limit=1, retry_delay_seconds=0.0),
+        sync=SyncSettings(backend="noop", api_token=None),
+        ui=UiSettings(backend="headless"),
+    )
+
+
+def _build_real_runtime_context(tmp_path: Path):
+    settings = _build_real_settings(tmp_path)
+    dependencies = resolve_startup_dependencies(
+        settings=settings.to_dependency_payload(),
+        environment={},
+    )
+    return build_startup_context(
+        settings=settings,
+        dependencies=dependencies,
+        launch_meta=LaunchMetadata(
+            requested_mode="headless",
+            requested_profile="prod",
+            trace_id="trace-compose-real",
+            process_id=88,
+            boot_timestamp_utc="2026-03-05T10:00:00Z",
         ),
     )
 
@@ -502,3 +555,59 @@ def test_composition_headless_fallback_event_source_scans_watch_dir(
 
     assert result.processed_count == 2
     assert [event["event_id"] for event in processed_events] == expected_ids
+
+
+def test_composition_default_runtime_uses_concrete_dependency_bindings(tmp_path) -> None:
+    context = _build_real_runtime_context(tmp_path)
+
+    bundle = compose_runtime(context)
+
+    assert isinstance(bundle.port_bindings["ui"], HeadlessUiAdapter)
+    assert isinstance(bundle.port_bindings["storage"], SqliteRecordStoreAdapter)
+    assert isinstance(bundle.port_bindings["filesystem"], LocalFileOpsAdapter)
+    assert isinstance(bundle.port_bindings["sync"], NoopSyncAdapter)
+    assert isinstance(bundle.port_bindings["plugins"], PluginHost)
+
+
+def test_composition_default_runtime_resolves_real_plugin_id_instead_of_default_device(
+    tmp_path,
+) -> None:
+    context = _build_real_runtime_context(tmp_path)
+    incoming = Path(context.settings.paths.watch)
+    incoming.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    outcome = bundle.app._ingestion_engine.process(
+        event={
+            "event_id": "evt-real-plugin-001",
+            "path": str(sample),
+            "event_kind": "created",
+            "observed_at": 1.0,
+        }
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.state is not None
+    assert outcome.state.candidate is not None
+    assert outcome.state.candidate.plugin_id == "psa_horiba"
+    assert outcome.state.candidate.processor_key == "psa_horiba"
+
+
+def test_composition_default_runtime_moves_file_and_persists_record(tmp_path) -> None:
+    context = _build_real_runtime_context(tmp_path)
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert sample.exists() is False
+    assert (processed / "sample.ngb").exists() is True

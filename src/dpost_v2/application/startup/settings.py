@@ -103,6 +103,19 @@ class StartupSettings:
         return {
             "mode": self.mode,
             "profile": self.profile,
+            "paths": {
+                "root": self.paths.root,
+                "watch": self.paths.watch,
+                "dest": self.paths.dest,
+                "staging": self.paths.staging,
+            },
+            "sync": {
+                "backend": self.sync.backend,
+                "api_token": self.sync.api_token,
+            },
+            "ui": {
+                "backend": self.ui.backend,
+            },
             "backends": {
                 "ui": self.ui.backend,
                 "sync": self.sync.backend,
