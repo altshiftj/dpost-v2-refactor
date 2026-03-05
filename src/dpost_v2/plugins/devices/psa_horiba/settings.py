@@ -18,7 +18,7 @@ def validate_psa_horiba_settings(
         raw_settings,
         profile_overrides={
             "plugin_id": "psa_horiba",
-            "source_extensions": (".csv", ".ngb"),
+            "source_extensions": (".csv", ".tsv", ".ngb"),
             "strict_unknown_keys": False,
         },
     )
