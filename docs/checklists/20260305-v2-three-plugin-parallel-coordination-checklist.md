@@ -38,12 +38,21 @@
 - Why this matters: Plugin lanes need one stable parity target before they start implementing behavior.
 
 ### Checklist
-- [ ] Publish parity-spec tests for all three plugins.
-- [ ] Publish accepted/deferred behavior notes for all three plugins.
-- [ ] Confirm plugin lanes only consume the spec-lock output and do not redefine parity independently.
+- [x] Publish parity-spec tests for all three plugins.
+- [x] Publish accepted/deferred behavior notes for all three plugins.
+- [x] Confirm plugin lanes only consume the spec-lock output and do not redefine parity independently.
 
 ### Completion Notes
 - How it was done:
+  - Published red parity-spec tests for:
+    - `sem_phenomxl2`
+    - `utm_zwick`
+    - `psa_horiba`
+  - Published the visible handoff matrix:
+    - `docs/checklists/20260305-v2-three-plugin-parity-matrix.md`
+  - Published the lane0 findings/risk report:
+    - `docs/reports/20260305-v2-lane0-spec-lock-report.md`
+  - Lane A/B/C should treat the matrix and test ids as the parity target instead of re-deriving behavior from the legacy repo independently.
 
 ---
 

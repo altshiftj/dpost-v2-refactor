@@ -47,18 +47,25 @@
 - Why this matters: The three plugin migrations need explicit parity targets before implementation starts, otherwise "done" will drift.
 
 ### Manual Check
-- [ ] Legacy source reference is identified for each target plugin.
-- [ ] Accepted/deferred behavior list exists for each target plugin.
+- [x] Legacy source reference is identified for each target plugin.
+- [x] Accepted/deferred behavior list exists for each target plugin.
 
 ### Checklist
-- [ ] Add red parity-spec tests for `sem_phenomxl2` under `tests/dpost_v2/plugins/devices/sem_phenomxl2/`.
-- [ ] Add red parity-spec tests for `utm_zwick` under `tests/dpost_v2/plugins/devices/utm_zwick/`.
-- [ ] Add red parity-spec tests for `psa_horiba` under `tests/dpost_v2/plugins/devices/psa_horiba/`.
-- [ ] Build a parity matrix mapping legacy behaviors to V2 test ids.
-- [ ] Record explicit accepted/deferred behaviors in completion notes.
+- [x] Add red parity-spec tests for `sem_phenomxl2` under `tests/dpost_v2/plugins/devices/sem_phenomxl2/`.
+- [x] Add red parity-spec tests for `utm_zwick` under `tests/dpost_v2/plugins/devices/utm_zwick/`.
+- [x] Add red parity-spec tests for `psa_horiba` under `tests/dpost_v2/plugins/devices/psa_horiba/`.
+- [x] Build a parity matrix mapping legacy behaviors to V2 test ids.
+- [x] Record explicit accepted/deferred behaviors in completion notes.
 
 ### Completion Notes
 - How it was done:
+  - Legacy plugin source under `src/ipat_watchdog/device_plugins/**` was used as the primary reference.
+  - Legacy reference tests under `tests_legacy_reference/ipat_watchdog/tests/unit/device_plugins/**` were used as secondary evidence.
+  - Published parity matrix:
+    - `docs/checklists/20260305-v2-three-plugin-parity-matrix.md`
+  - Published findings/risk notes:
+    - `docs/reports/20260305-v2-lane0-spec-lock-report.md`
+  - Added red parity-spec tests under `tests/dpost_v2/plugins/devices/**`.
 
 ---
 
