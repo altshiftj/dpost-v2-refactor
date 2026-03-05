@@ -110,13 +110,13 @@
 - Why this matters: after structural retirement, value shifts to reliability, observability, and performance hardening.
 
 ### Checklist
-- [ ] Opened stabilization planning doc/checklist for next wave.
-- [ ] Scoped hardening focus areas (runtime resilience, performance, observability, CI signal quality).
-- [ ] Explicitly deferred further structural deletion unless blocker-driven.
+- [x] Opened stabilization planning doc/checklist for next wave.
+- [x] Scoped hardening focus areas (runtime resilience, performance, observability, CI signal quality).
+- [x] Explicitly deferred further structural deletion unless blocker-driven.
 
 ### Manual Check
-- [ ] Created/updated planning artifact under `docs/planning/` or `docs/checklists/`.
-- [ ] `git status --short` shows only intended stabilization planning changes.
+- [x] Created/updated planning artifact under `docs/planning/` or `docs/checklists/`.
+- [x] `git status --short` shows only intended stabilization planning changes.
 
 ### Completion Notes
-- [ ] Pending
+- [x] Added `docs/planning/20260305-v2-post-cleanup-stabilization-wave-rpc.md` with explicit hardening workstreams and scope constraints.
