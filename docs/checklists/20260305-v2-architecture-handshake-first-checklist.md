@@ -227,6 +227,14 @@
     - empty `incoming/`
     - expected file present in `processed/`
     - `terminal_reason='end_of_stream'`
+  - Direct user CLI probes also confirmed the same matrix at:
+    - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-horiba-20260305-215159`
+    - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-tischrem-20260305-215344`
+    - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-zwick-20260305-215424`
+    - persisted sqlite `candidate.plugin_id` values:
+      - `psa_horiba`
+      - `sem_phenomxl2`
+      - `utm_zwick`
   - Validation runs:
     - `python -m ruff check src/dpost_v2 tests/dpost_v2` -> passed
     - `python -m pytest -q tests/dpost_v2/test___main__.py tests/dpost_v2/application/startup tests/dpost_v2/runtime tests/dpost_v2/application/runtime tests/dpost_v2/application/ingestion tests/dpost_v2/plugins` -> `189 passed`

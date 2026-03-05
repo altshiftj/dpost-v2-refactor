@@ -16,10 +16,17 @@ legacy fallback runtime paths.
 
 ## Manual Probe Evidence
 
-Probe root:
-- `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-closeout-7b_a28e4`
+Two manual proof sets were captured on March 5, 2026:
 
-Installed runtime bootstrap probes were executed for one file per workstation/device pair.
+- closeout harness probe root:
+  - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-closeout-7b_a28e4`
+- direct user CLI probes:
+  - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-horiba-20260305-215159`
+  - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-tischrem-20260305-215344`
+  - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-zwick-20260305-215424`
+
+Installed runtime bootstrap probes and direct CLI probes were both executed for one
+file per workstation/device pair.
 
 | PC plugin | Input file | Resolved plugin | Terminal reason | Incoming after run | Processed after run |
 |---|---|---|---|---|---|
@@ -29,6 +36,13 @@ Installed runtime bootstrap probes were executed for one file per workstation/de
 
 Each probe persisted a sqlite record whose payload `candidate.plugin_id` matched the
 expected concrete device plugin.
+
+Direct user CLI observations also confirmed:
+- `python -m dpost --help` printed the V2 CLI surface correctly
+- `python -m dpost --mode v2 --profile prod --headless --dry-run --config ...`
+  succeeded
+- each live headless run printed:
+  - `dpost startup succeeded (mode=v2, profile=prod).`
 
 ## Automated Closeout Evidence
 
