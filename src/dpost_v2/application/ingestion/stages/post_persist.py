@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any, Callable, Mapping
 
 from dpost_v2.application.ingestion.runtime_services import RuntimeCallStatus
 from dpost_v2.application.ingestion.stages.pipeline import (
@@ -15,6 +15,13 @@ def _status_token(result: Any) -> str:
     if hasattr(status, "value"):
         return str(getattr(status, "value"))
     return str(status)
+
+
+def _diagnostics(result: Any) -> Mapping[str, Any]:
+    diagnostics = getattr(result, "diagnostics", {}) or {}
+    if isinstance(diagnostics, Mapping):
+        return diagnostics
+    return {}
 
 
 def run_post_persist_stage(
@@ -39,7 +46,7 @@ def run_post_persist_stage(
     if immediate_sync_enabled:
         sync_result = trigger_sync(state.record_id)
         if _status_token(sync_result) != RuntimeCallStatus.SUCCESS.value:
-            diagnostics = getattr(sync_result, "diagnostics", {}) or {}
+            diagnostics = _diagnostics(sync_result)
             reason_code = str(diagnostics.get("reason_code", "sync_failed"))
             emit_sync_error(
                 str(state.event.get("event_id", state.correlation_id or "")),

@@ -123,10 +123,11 @@ class IngestionEngine(Generic[StateT]):
         initial_state_factory: Callable[[Mapping[str, Any]], StateT] | None = None,
     ) -> IngestionOutcome[StateT]:
         """Run one ingestion event through pipeline and normalize terminal outcome."""
+        event_payload = self._coerce_event_payload(event)
         state_factory = initial_state_factory or (lambda payload: payload)  # type: ignore[return-value]
-        initial_state = state_factory(event)
 
         try:
+            initial_state = state_factory(event_payload)
             pipeline_result = self.pipeline_runner.run(
                 initial_state=initial_state,
                 stage_handlers=self.stage_handlers,
@@ -135,7 +136,13 @@ class IngestionEngine(Generic[StateT]):
             )
             return self._map_pipeline_result(pipeline_result)
         except Exception as exc:  # noqa: BLE001
-            return self._normalize_exception(exc, event)
+            return self._normalize_exception(exc, event_payload)
+
+    @staticmethod
+    def _coerce_event_payload(event: Any) -> Mapping[str, Any]:
+        if isinstance(event, Mapping):
+            return dict(event)
+        return {"raw_event": repr(event)}
 
     @staticmethod
     def _map_pipeline_terminal(
@@ -177,8 +184,8 @@ class IngestionEngine(Generic[StateT]):
         event: Mapping[str, Any],
     ) -> IngestionOutcome[StateT]:
         stage_id = getattr(exc, "stage_id", None)
-        classification = self._classify_exception(exc, stage_id)
-        failure_outcome = self._build_failure_outcome(classification)
+        classification = self._safe_classification(exc, stage_id)
+        failure_outcome = self._safe_failure_outcome(classification)
         emission_status = self._emit_failure_if_needed(failure_outcome, event)
 
         return IngestionOutcome(
@@ -189,6 +196,43 @@ class IngestionEngine(Generic[StateT]):
             retry_plan=failure_outcome.retry_plan,
             emission_status=emission_status,
         )
+
+    def _safe_classification(
+        self,
+        exc: Exception,
+        stage_id: str | None,
+    ) -> FailureClassification:
+        try:
+            return self._classify_exception(exc, stage_id)
+        except Exception as policy_exc:  # noqa: BLE001
+            return FailureClassification(
+                reason_code="error_handling_policy_failed",
+                severity="error",
+                retryable=False,
+                stage_id=stage_id,
+                diagnostics={
+                    "type": exc.__class__.__name__,
+                    "message": str(exc),
+                    "policy_error_type": policy_exc.__class__.__name__,
+                    "policy_error_message": str(policy_exc),
+                },
+            )
+
+    def _safe_failure_outcome(
+        self,
+        classification: FailureClassification,
+    ) -> FailureOutcome:
+        try:
+            return self._build_failure_outcome(classification)
+        except Exception:  # noqa: BLE001
+            return FailureOutcome(
+                terminal_type=FailureTerminalType.FAILED,
+                stage_id=classification.stage_id,
+                reason_code=classification.reason_code,
+                severity=classification.severity,
+                retry_plan=None,
+                should_emit=True,
+            )
 
     def _classify_exception(
         self,
