@@ -235,7 +235,7 @@ def test_transform_stage_defers_candidate_when_processor_is_not_ready() -> None:
     directive = run_transform_stage(state)
 
     assert directive.kind == "terminal"
-    assert directive.outcome is PipelineTerminalOutcome.RETRY
+    assert directive.outcome is PipelineTerminalOutcome.DEFERRED_STAGE
     assert directive.state.diagnostics["transform"]["reason_code"] == "deferred"
 
 

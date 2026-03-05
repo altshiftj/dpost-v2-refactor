@@ -54,7 +54,10 @@ def run_transform_stage(state: IngestionState) -> StageDirective[IngestionState]
                     }
                 }
             )
-            return StageDirective.terminal(PipelineTerminalOutcome.RETRY, deferred)
+            return StageDirective.terminal(
+                PipelineTerminalOutcome.DEFERRED_STAGE,
+                deferred,
+            )
 
     process = getattr(processor, "process", None)
     if not callable(process):

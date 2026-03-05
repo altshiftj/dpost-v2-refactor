@@ -142,7 +142,7 @@ def test_full_ingestion_pipeline_happy_path() -> None:
     assert outcome.final_stage_id == "post_persist"
 
 
-def test_full_ingestion_pipeline_maps_transform_retry_to_deferred_retry() -> None:
+def test_full_ingestion_pipeline_maps_transform_deferred_stage_to_outcome() -> None:
     handlers = {
         "resolve": lambda state: run_resolve_stage(
             state,
@@ -166,7 +166,7 @@ def test_full_ingestion_pipeline_maps_transform_retry_to_deferred_retry() -> Non
             settle_delay_seconds=5.0,
         ),
         "transform": lambda state: StageDirective.terminal(
-            PipelineTerminalOutcome.RETRY,
+            PipelineTerminalOutcome.DEFERRED_STAGE,
             state,
         ),
         "route": lambda state: run_route_stage(
@@ -220,5 +220,5 @@ def test_full_ingestion_pipeline_maps_transform_retry_to_deferred_retry() -> Non
         ),
     )
 
-    assert outcome.kind is IngestionOutcomeKind.DEFERRED_RETRY
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_STAGE
     assert outcome.final_stage_id == "transform"

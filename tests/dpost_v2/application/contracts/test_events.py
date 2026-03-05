@@ -143,6 +143,18 @@ def test_event_from_outcome_maps_deferred_retry_to_warning_event() -> None:
     assert event.payload["reason_code"] == "stabilizing"
 
 
+def test_event_from_outcome_maps_deferred_stage_to_warning_event() -> None:
+    context = _processing_context()
+    event = event_from_outcome(
+        {"status": "deferred_stage", "reason_code": "awaiting_pair"},
+        context,
+    )
+
+    assert isinstance(event, IngestionDeferred)
+    assert event.severity is EventSeverity.WARNING
+    assert event.payload["reason_code"] == "awaiting_pair"
+
+
 def test_event_from_outcome_maps_sync_and_startup_statuses() -> None:
     processing_context = _processing_context()
     runtime_context = _runtime_context()

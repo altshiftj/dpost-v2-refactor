@@ -664,7 +664,7 @@ def test_composition_default_runtime_resolves_real_plugin_id_instead_of_default_
         }
     )
 
-    assert outcome.kind is IngestionOutcomeKind.DEFERRED_RETRY
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_STAGE
     assert outcome.state is not None
     assert outcome.state.candidate is not None
     assert outcome.state.candidate.plugin_id == "psa_horiba"
@@ -710,7 +710,7 @@ def test_composition_runtime_uses_real_file_facts_for_stabilize_and_candidate(
         }
     )
 
-    assert outcome.kind is IngestionOutcomeKind.DEFERRED_RETRY
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_STAGE
     assert outcome.state is not None
     assert outcome.state.candidate is not None
     assert outcome.state.candidate.size == len("payload-ngb")
@@ -805,11 +805,11 @@ def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
     ]
     assert [event["outcome_kind"] for event in processed_events] == [
         "succeeded",
-        "deferred_retry",
+        "deferred_stage",
         "succeeded",
-        "deferred_retry",
-        "deferred_retry",
-        "deferred_retry",
+        "deferred_stage",
+        "deferred_stage",
+        "deferred_stage",
         "succeeded",
     ]
 
@@ -979,7 +979,7 @@ def test_composition_runtime_processes_pc_scoped_zwick_staged_pair_end_to_end(
         if event.get("kind") == "runtime_event_processed"
     ]
     assert [event["outcome_kind"] for event in processed_events] == [
-        "deferred_retry",
+        "deferred_stage",
         "succeeded",
     ]
 
@@ -1047,9 +1047,9 @@ def test_composition_runtime_processes_pc_scoped_psa_staged_batch_end_to_end(
         if event.get("kind") == "runtime_event_processed"
     ]
     assert [event["outcome_kind"] for event in processed_events] == [
-        "deferred_retry",
-        "deferred_retry",
-        "deferred_retry",
+        "deferred_stage",
+        "deferred_stage",
+        "deferred_stage",
         "succeeded",
     ]
 

@@ -20,10 +20,10 @@
 
 ## Shared seam changes
 - Transform stage:
-  - `can_process == False` now yields `PipelineTerminalOutcome.RETRY`
+  - `can_process == False` now yields `PipelineTerminalOutcome.DEFERRED_STAGE`
   - diagnostics now record `reason_code="deferred"`
 - Transition table:
-  - `transform` now allows terminal `RETRY`
+  - `transform` now allows terminal `DEFERRED_STAGE`
 - Runtime processor selection:
   - selection uses declared source-extension support before immediate readiness
   - processor instances are cached per plugin for the runtime session so staged state survives across events
@@ -39,11 +39,11 @@
 
 ## Tests added or updated first
 - `tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py`
-  - transform not-ready -> deferred retry
+  - transform not-ready -> deferred stage
 - `tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py`
   - finalized artifact move plan and normalized persisted paths
 - `tests/dpost_v2/application/ingestion/test_pipeline_integration.py`
-  - transform retry maps to `IngestionOutcomeKind.DEFERRED_RETRY`
+  - transform deferred-stage maps to `IngestionOutcomeKind.DEFERRED_STAGE`
 - `tests/dpost_v2/runtime/test_composition.py`
   - headless event ordering by mtime
   - staged Zwick runtime path
@@ -52,12 +52,12 @@
   - persisted processor-result path normalization
 
 ## Validation
-- `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/runtime/test_composition.py`
-  - `43 passed`
+- `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/application/ingestion/test_engine.py tests/dpost_v2/application/contracts/test_events.py tests/dpost_v2/application/runtime/test_dpost_app.py tests/dpost_v2/runtime/test_composition.py`
+  - `66 passed`
 - `python -m ruff check src/dpost_v2 tests/dpost_v2`
   - passed
 - `python -m pytest -q tests/dpost_v2`
-  - `426 passed`
+  - `429 passed`
 
 ## Result
 - `tischrem_blb -> sem_phenomxl2` still succeeds end-to-end

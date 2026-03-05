@@ -211,12 +211,14 @@ def event_from_outcome(
             occurred_at=occurred_at,
             payload={"reason_code": outcome.get("reason_code", "unknown_failure")},
         )
-    if normalized_status == "deferred_retry":
+    if normalized_status in {"deferred_retry", "deferred_stage"}:
         return IngestionDeferred(
             event_id=event_id,
             trace_id=trace_id,
             occurred_at=occurred_at,
-            payload={"reason_code": outcome.get("reason_code", "deferred_retry")},
+            payload={
+                "reason_code": outcome.get("reason_code", normalized_status),
+            },
         )
     if normalized_status == "sync_triggered":
         payload = {}

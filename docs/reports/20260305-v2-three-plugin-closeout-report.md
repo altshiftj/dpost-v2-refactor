@@ -20,12 +20,12 @@
 ## Validation Run
 - `python -m ruff check src/dpost_v2 tests/dpost_v2`
   - passed
-- `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/runtime/test_composition.py`
-  - `43 passed`
+- `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/application/ingestion/test_engine.py tests/dpost_v2/application/contracts/test_events.py tests/dpost_v2/application/runtime/test_dpost_app.py tests/dpost_v2/runtime/test_composition.py`
+  - `66 passed`
 - `python -m pytest -q tests/dpost_v2/plugins/test_migration_coverage.py`
   - passed
 - `python -m pytest -q tests/dpost_v2`
-  - `426 passed`
+  - `429 passed`
 
 ## Runtime Proof
 - `tischrem_blb -> sem_phenomxl2`
@@ -50,8 +50,9 @@
 ## Shared seam outcome
 - The closeout blocker is resolved.
 - Implemented in the shared runtime:
-  - transform-stage deferred retry for not-ready staged inputs
-  - transform retry transition support
+  - transform-stage deferred-stage outcome for not-ready staged inputs
+  - explicit transform deferred-stage transition support
+  - separate `deferred_stage` vs `deferred_retry` ingestion/runtime semantics
   - per-plugin runtime processor reuse across events
   - headless event ordering by file mtime
   - persist move-plan support for finalized artifacts and normalized `force_paths`

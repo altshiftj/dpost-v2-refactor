@@ -185,12 +185,12 @@
 - How it was done:
   - Ran `python -m ruff check src/dpost_v2 tests/dpost_v2` and it passed.
   - Ran targeted checks:
-    - `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/runtime/test_composition.py`
+    - `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/application/ingestion/test_engine.py tests/dpost_v2/application/contracts/test_events.py tests/dpost_v2/application/runtime/test_dpost_app.py tests/dpost_v2/runtime/test_composition.py`
     - `python -m pytest -q tests/dpost_v2/plugins/test_migration_coverage.py`
   - Ran full suite:
     - `python -m pytest -q tests/dpost_v2`
-    - result: `426 passed`
+    - result: `429 passed`
   - Published:
     - `docs/reports/20260305-v2-staged-runtime-seam-report.md`
     - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
-  - Closeout is green for the accepted three-plugin parity scope; remaining deferred items are explicitly documented and out of scope for this phase.
+  - Closeout is green for the accepted three-plugin parity scope; staged pre-events now use explicit `deferred_stage` semantics and remaining deferred items are documented as out of scope for this phase.
