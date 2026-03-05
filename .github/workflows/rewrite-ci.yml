@@ -20,7 +20,7 @@ concurrency:
 jobs:
   workflow-lint:
     name: rewrite-workflow-lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -30,7 +30,7 @@ jobs:
 
   hygiene:
     name: rewrite-artifact-hygiene
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Checkout
@@ -77,7 +77,7 @@ jobs:
 
   v2-quality:
     name: rewrite-v2-quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: workflow-lint
     timeout-minutes: 15
     steps:
@@ -88,10 +88,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install lint tooling
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install black ruff
+          python -m pip install --upgrade pip --retries 5 --timeout 60
+          python -m pip install black ruff --retries 5 --timeout 60
       - name: Lint V2 sources and tests
         shell: bash
         run: |
@@ -112,7 +113,7 @@ jobs:
 
   v2-tests:
     name: rewrite-v2-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: v2-quality
     timeout-minutes: 30
     env:
@@ -126,10 +127,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install project test dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install ".[ci,dev]"
+          python -m pip install --upgrade pip --retries 5 --timeout 60
+          python -m pip install ".[ci,dev]" --retries 5 --timeout 60
       - name: Run lightweight V2 tests
         shell: bash
         run: |
@@ -140,11 +142,19 @@ jobs:
             exit 1
           fi
 
-          python -m pytest -q tests/dpost_v2 --ignore tests/dpost_v2/smoke
+          mkdir -p test-results
+          python -m pytest -q -ra --junitxml test-results/rewrite-v2-tests.xml tests/dpost_v2 --ignore tests/dpost_v2/smoke
+      - name: Upload rewrite V2 test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rewrite-ci-v2-tests
+          path: test-results/rewrite-v2-tests.xml
+          if-no-files-found: warn
 
   v2-integration:
     name: rewrite-v2-integration
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: v2-tests
     if: github.ref == 'refs/heads/rewrite/v2' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     timeout-minutes: 30
@@ -159,10 +169,11 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install project test dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install ".[ci,dev]"
+          python -m pip install --upgrade pip --retries 5 --timeout 60
+          python -m pip install ".[ci,dev]" --retries 5 --timeout 60
       - name: Run V2 integration/smoke subset
         shell: bash
         run: |
@@ -186,4 +197,12 @@ jobs:
             exit 1
           fi
 
-          python -m pytest -q "${existing_targets[@]}"
+          mkdir -p test-results
+          python -m pytest -q -ra --junitxml test-results/rewrite-v2-integration.xml "${existing_targets[@]}"
+      - name: Upload rewrite V2 integration report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rewrite-ci-v2-integration
+          path: test-results/rewrite-v2-integration.xml
+          if-no-files-found: warn
