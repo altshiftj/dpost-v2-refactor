@@ -69,7 +69,10 @@ def validate_startup_context(context: StartupContext) -> None:
         )
 
     mode = _resolve_mode(context.settings, context.launch)
-    launch_mode = str(context.launch.requested_mode).strip().lower()
+    launch_mode = _normalize_launch_mode(context.launch)
+    if launch_mode == "v2":
+        launch_mode = mode
+
     if launch_mode != mode:
         raise StartupContextValidationError(
             "Launch metadata mode does not match normalized settings mode."
@@ -149,3 +152,10 @@ def _resolve_mode(settings: Any, launch_meta: LaunchMetadata) -> str:
     if normalized not in {"headless", "desktop"}:
         raise StartupContextValidationError(f"Unsupported startup mode: {mode!r}.")
     return normalized
+
+
+def _normalize_launch_mode(launch_meta: LaunchMetadata) -> str:
+    mode = str(launch_meta.requested_mode).strip().lower()
+    if mode in {"headless", "desktop", "v2"}:
+        return mode
+    raise StartupContextValidationError(f"Unsupported startup mode: {mode!r}.")

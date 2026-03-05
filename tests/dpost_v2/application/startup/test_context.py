@@ -69,6 +69,27 @@ def test_startup_context_is_immutable() -> None:
         context.settings = FakeSettings(mode="desktop")
 
 
+def test_build_startup_context_accepts_v2_architecture_request_mode() -> None:
+    dependencies = StartupDependencies(
+        factories={
+            "ui": lambda: object(),
+            "event_sink": lambda: object(),
+        },
+        selected_backends={"ui": "headless"},
+        lazy_factories=frozenset(),
+        warnings=(),
+        cleanup=None,
+    )
+
+    context = build_startup_context(
+        settings=FakeSettings(mode="headless"),
+        dependencies=dependencies,
+        launch_meta=_meta("v2"),
+    )
+
+    assert context.launch.requested_mode == "v2"
+
+
 def test_with_override_rejects_duplicate_override_keys() -> None:
     dependencies = StartupDependencies(
         factories={

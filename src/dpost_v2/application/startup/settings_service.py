@@ -207,6 +207,7 @@ def _default_sources_from_request(
     request: SupportsBootstrapRequest,
 ) -> dict[str, Mapping[str, Any]]:
     metadata_sources = request.metadata.get("settings_sources")
+    normalized_mode = _normalized_settings_mode(request)
     if isinstance(metadata_sources, Mapping):
         return {
             "defaults": metadata_sources.get("defaults", {}),
@@ -217,7 +218,7 @@ def _default_sources_from_request(
 
     return {
         "defaults": {
-            "mode": "headless",
+            "mode": normalized_mode,
             "profile": "default",
             "paths": {"root": "."},
             "ui": {"backend": "headless"},
@@ -227,8 +228,18 @@ def _default_sources_from_request(
         },
         "file": {},
         "environment": {},
-        "cli": {"mode": request.mode, "profile": request.profile},
+        "cli": {"mode": normalized_mode, "profile": request.profile},
     }
+
+
+def _normalized_settings_mode(request: SupportsBootstrapRequest) -> str:
+    """Map launch architecture mode to a runtime settings mode token."""
+    requested_mode = str(request.mode or "").strip().lower()
+
+    if requested_mode == "v2":
+        return "headless"
+
+    return requested_mode or "headless"
 
 
 def _merge_sources(

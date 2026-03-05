@@ -82,6 +82,39 @@ def test_settings_service_reuses_cache_for_unchanged_fingerprint(
     assert first.settings is second.settings
 
 
+def test_settings_service_maps_v2_request_mode_to_headless_runtime_mode(
+    tmp_path: Path,
+) -> None:
+    request = BootstrapRequest(
+        mode="v2",
+        profile="ci",
+        trace_id="trace-settings-v2",
+        metadata={"headless": True},
+    )
+    result = load_startup_settings(
+        request,
+        root_hint=tmp_path,
+        sources={
+            "defaults": {
+                "mode": "headless",
+                "profile": "default",
+                "paths": {"root": "defaults"},
+                "ui": {"backend": "headless"},
+                "sync": {"backend": "noop"},
+                "ingestion": {"retry_limit": 1, "retry_delay_seconds": 1.0},
+                "naming": {"prefix": "DEF", "policy": "prefix_only"},
+            },
+            "file": {},
+            "environment": {},
+            "cli": {"profile": "ci"},
+        },
+    )
+
+    assert result.is_success is True
+    assert result.settings is not None
+    assert result.settings.mode == "headless"
+
+
 def test_settings_service_detects_cache_desync_and_recovers(tmp_path: Path) -> None:
     request = _request()
     cache = SettingsCache(

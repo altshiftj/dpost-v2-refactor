@@ -12,6 +12,15 @@ from typing import Mapping, Sequence
 from dpost_v2.application.startup import bootstrap as startup_bootstrap
 from dpost_v2.application.startup.bootstrap import BootstrapRequest
 
+# Backward-compatible symbols for legacy test expectations and external patch points.
+BootstrapResult = startup_bootstrap.BootstrapResult
+
+
+def run(*, request: BootstrapRequest, emit_event, **kwargs) -> BootstrapResult:
+    """Delegate to the configured bootstrap run implementation."""
+    return startup_bootstrap.run(request=request, emit_event=emit_event, **kwargs)
+
+
 _SUPPORTED_MODES = frozenset({"v2"})
 
 
@@ -43,7 +52,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     request = _build_bootstrap_request(options)
 
     try:
-        result = startup_bootstrap.run(request=request, emit_event=_emit_startup_event)
+        result = run(request=request, emit_event=_emit_startup_event)
     except KeyboardInterrupt:
         print("Startup interrupted by user.", file=sys.stderr)
         return 1

@@ -194,6 +194,9 @@ def test_dpost_entrypoint_delegates_to_v2_main(monkeypatch: pytest.MonkeyPatch) 
         _ = emit_event
         return entrypoint.BootstrapResult(is_success=True)
 
+    monkeypatch.delenv("DPOST_MODE", raising=False)
+    monkeypatch.delenv("DPOST_PROFILE", raising=False)
+    monkeypatch.delenv("DPOST_CONFIG", raising=False)
     monkeypatch.setattr(entrypoint, "run", _run)
 
     exit_code = dpost_entrypoint.main([])
