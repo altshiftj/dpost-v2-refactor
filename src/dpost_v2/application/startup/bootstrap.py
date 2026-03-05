@@ -27,6 +27,19 @@ from dpost_v2.runtime.startup_dependencies import (
     resolve_startup_dependencies as resolve_startup_dependencies_root,
 )
 
+_STARTUP_DIAGNOSTIC_FIELDS: tuple[str, ...] = (
+    "requested_mode",
+    "requested_profile",
+    "mode",
+    "profile",
+    "boot_timestamp_utc",
+    "settings_fingerprint",
+    "settings_provenance",
+    "selected_backends",
+    "plugin_backend",
+    "plugin_visibility",
+)
+
 
 @dataclass(frozen=True)
 class BootstrapRequest:
@@ -120,13 +133,25 @@ def run_bootstrap(
     """Run fixed startup sequence: settings -> dependencies -> context -> composition -> launch."""
     timestamp_factory = now_utc or (lambda: datetime.now(UTC))
     boot_timestamp = timestamp_factory().isoformat()
+    event_diagnostics = _initialize_event_diagnostics(
+        request=request,
+        boot_timestamp_utc=boot_timestamp,
+    )
     cleanup_hooks: list[Callable[[], None]] = []
 
-    _emit_started(request, emit_event)
+    _emit_started(request, emit_event, event_diagnostics=event_diagnostics)
 
     try:
         loaded_settings = load_settings(request)
-        settings = _unwrap_settings(loaded_settings)
+        settings, settings_provenance, settings_fingerprint = _unwrap_settings(
+            loaded_settings
+        )
+        _update_diagnostics_with_settings(
+            event_diagnostics,
+            settings=settings,
+            settings_provenance=settings_provenance,
+            settings_fingerprint=settings_fingerprint,
+        )
     except (
         Exception
     ) as exc:  # pragma: no cover - exercised by tests through result path
@@ -134,6 +159,7 @@ def run_bootstrap(
             stage="settings",
             exc=exc,
             request=request,
+            event_diagnostics=event_diagnostics,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -147,9 +173,11 @@ def run_bootstrap(
             stage="dependencies",
             exc=exc,
             request=request,
+            event_diagnostics=event_diagnostics,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
+    _update_diagnostics_with_dependencies(event_diagnostics, dependencies=dependencies)
 
     try:
         context = build_startup_context(
@@ -168,6 +196,7 @@ def run_bootstrap(
             stage="context",
             exc=exc,
             request=request,
+            event_diagnostics=event_diagnostics,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -180,9 +209,11 @@ def run_bootstrap(
             stage="composition",
             exc=exc,
             request=request,
+            event_diagnostics=event_diagnostics,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
+    _update_diagnostics_with_composition(event_diagnostics, composition=composition)
 
     try:
         runtime_handle = launch_runtime(composition.app, context)
@@ -191,6 +222,7 @@ def run_bootstrap(
             stage="launch",
             exc=exc,
             request=request,
+            event_diagnostics=event_diagnostics,
             cleanup_hooks=cleanup_hooks,
             emit_event=emit_event,
         )
@@ -199,13 +231,7 @@ def run_bootstrap(
         StartupEvent(
             name="startup_succeeded",
             trace_id=request.trace_id,
-            payload=MappingProxyType(
-                {
-                    "mode": request.mode,
-                    "profile": request.profile,
-                    "boot_timestamp_utc": boot_timestamp,
-                }
-            ),
+            payload=_build_startup_event_payload(event_diagnostics),
         )
     )
     return BootstrapResult(
@@ -219,18 +245,17 @@ def run_bootstrap(
 def _emit_started(
     request: BootstrapRequest,
     emit_event: Callable[[StartupEvent], None],
+    *,
+    event_diagnostics: Mapping[str, Any],
 ) -> None:
     metadata = dict(request.metadata)
     emit_event(
         StartupEvent(
             name="startup_started",
             trace_id=request.trace_id,
-            payload=MappingProxyType(
-                {
-                    "mode": request.mode,
-                    "profile": request.profile,
-                    "metadata": metadata,
-                }
+            payload=_build_startup_event_payload(
+                event_diagnostics,
+                extra_payload={"metadata": metadata},
             ),
         )
     )
@@ -241,6 +266,7 @@ def _build_failure_result(
     stage: str,
     exc: Exception,
     request: BootstrapRequest,
+    event_diagnostics: Mapping[str, Any],
     cleanup_hooks: list[Callable[[], None]],
     emit_event: Callable[[StartupEvent], None],
 ) -> BootstrapResult:
@@ -254,12 +280,13 @@ def _build_failure_result(
         StartupEvent(
             name="startup_failed",
             trace_id=request.trace_id,
-            payload=MappingProxyType(
-                {
+            payload=_build_startup_event_payload(
+                event_diagnostics,
+                extra_payload={
                     "stage": failure.stage,
                     "error_type": failure.error_type,
                     "message": failure.message,
-                }
+                },
             ),
         )
     )
@@ -276,10 +303,10 @@ def _run_cleanup(cleanup_hooks: list[Callable[[], None]]) -> None:
 
 def _unwrap_settings(loaded: Any) -> StartupSettings | Any:
     if not isinstance(loaded, SettingsLoadResult):
-        return loaded
+        return loaded, MappingProxyType({}), None
 
     if loaded.is_success and loaded.settings is not None:
-        return loaded.settings
+        return loaded.settings, loaded.provenance, loaded.fingerprint
 
     failure = loaded.failure or SettingsLoadFailure(
         stage="settings_service",
@@ -287,3 +314,129 @@ def _unwrap_settings(loaded: Any) -> StartupSettings | Any:
         message="Settings load returned unsuccessful result.",
     )
     raise RuntimeError(f"{failure.error_type}: {failure.message}")
+
+
+def _initialize_event_diagnostics(
+    *,
+    request: BootstrapRequest,
+    boot_timestamp_utc: str,
+) -> dict[str, Any]:
+    return {
+        "requested_mode": request.mode,
+        "requested_profile": request.profile,
+        "mode": request.mode,
+        "profile": request.profile,
+        "boot_timestamp_utc": boot_timestamp_utc,
+        "settings_fingerprint": None,
+        "settings_provenance": {},
+        "selected_backends": {},
+        "plugin_backend": None,
+        "plugin_visibility": "unknown",
+    }
+
+
+def _update_diagnostics_with_settings(
+    diagnostics: dict[str, Any],
+    *,
+    settings: StartupSettings | Any,
+    settings_provenance: Mapping[str, str],
+    settings_fingerprint: str | None,
+) -> None:
+    diagnostics["settings_fingerprint"] = settings_fingerprint
+    diagnostics["settings_provenance"] = dict(settings_provenance)
+    if hasattr(settings, "mode"):
+        diagnostics["mode"] = getattr(settings, "mode")
+    if hasattr(settings, "profile"):
+        diagnostics["profile"] = getattr(settings, "profile")
+
+    plugin_backend = _resolve_plugin_backend_from_settings(settings)
+    if plugin_backend is not None:
+        diagnostics["plugin_backend"] = plugin_backend
+        diagnostics["plugin_visibility"] = "configured"
+
+
+def _resolve_plugin_backend_from_settings(settings: object) -> str | None:
+    if isinstance(settings, Mapping):
+        backends = settings.get("backends")
+        if isinstance(backends, Mapping):
+            candidate = backends.get("plugins")
+            if candidate is not None:
+                token = str(candidate).strip().lower()
+                if token:
+                    return token
+
+    payload_builder = getattr(settings, "to_dependency_payload", None)
+    if not callable(payload_builder):
+        return None
+
+    payload = payload_builder()
+    if not isinstance(payload, Mapping):
+        return None
+    backends = payload.get("backends")
+    if not isinstance(backends, Mapping):
+        return None
+    candidate = backends.get("plugins")
+    if candidate is None:
+        return None
+    token = str(candidate).strip().lower()
+    return token or None
+
+
+def _update_diagnostics_with_dependencies(
+    diagnostics: dict[str, Any],
+    *,
+    dependencies: StartupDependencies,
+) -> None:
+    selected_backends = dict(dependencies.selected_backends)
+    diagnostics["selected_backends"] = selected_backends
+    plugin_backend = selected_backends.get("plugins")
+    if plugin_backend is None:
+        return
+    diagnostics["plugin_backend"] = str(plugin_backend)
+    diagnostics["plugin_visibility"] = "configured"
+
+
+def _update_diagnostics_with_composition(
+    diagnostics: dict[str, Any],
+    *,
+    composition: CompositionBundle,
+) -> None:
+    selected_backends = composition.diagnostics.get("selected_backends")
+    if isinstance(selected_backends, Mapping):
+        diagnostics["selected_backends"] = dict(selected_backends)
+
+    plugin_backend = composition.diagnostics.get("plugin_backend")
+    if plugin_backend is not None:
+        token = str(plugin_backend).strip()
+        if token:
+            diagnostics["plugin_backend"] = token
+
+    plugin_visibility = composition.diagnostics.get("plugin_visibility")
+    if isinstance(plugin_visibility, str) and plugin_visibility.strip():
+        diagnostics["plugin_visibility"] = plugin_visibility.strip().lower()
+        return
+    if "plugins" in composition.port_bindings:
+        diagnostics["plugin_visibility"] = "bound"
+
+
+def _build_startup_event_payload(
+    diagnostics: Mapping[str, Any],
+    *,
+    extra_payload: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    payload = {
+        key: _copy_value(diagnostics.get(key)) for key in _STARTUP_DIAGNOSTIC_FIELDS
+    }
+    for key, value in dict(extra_payload or {}).items():
+        payload[key] = _copy_value(value)
+    return MappingProxyType(payload)
+
+
+def _copy_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return {str(key): _copy_value(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return tuple(_copy_value(item) for item in value)
+    if isinstance(value, list):
+        return [_copy_value(item) for item in value]
+    return value

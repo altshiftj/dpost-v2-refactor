@@ -101,14 +101,39 @@ def compose_runtime(
     app_port_names = (
         tuple(sorted(application_ports)) if application_ports is not None else ()
     )
+    selected_backends = dict(context.dependencies.selected_backends)
+    plugin_backend = selected_backends.get("plugins")
+    plugin_port_bound = bindings.get("plugins") is not None
+    plugin_contract_valid = (
+        application_ports is not None and "plugin_host" in application_ports
+    )
     return CompositionBundle(
         app=app,
         port_bindings=bindings,
         diagnostics={
-            "mode": context.launch.requested_mode,
-            "profile": context.launch.requested_profile,
+            "requested_mode": context.launch.requested_mode,
+            "requested_profile": context.launch.requested_profile,
+            "mode": str(
+                getattr(context.settings, "mode", context.launch.requested_mode)
+            ),
+            "profile": getattr(
+                context.settings,
+                "profile",
+                context.launch.requested_profile,
+            ),
             "required_ports": ordered_ports,
-            "selected_backends": dict(context.dependencies.selected_backends),
+            "bound_ports": tuple(sorted(bindings)),
+            "selected_backends": selected_backends,
+            "backend_provenance": _extract_backend_provenance(
+                context.dependencies.diagnostics
+            ),
+            "plugin_backend": plugin_backend,
+            "plugin_port_bound": plugin_port_bound,
+            "plugin_contract_valid": plugin_contract_valid,
+            "plugin_visibility": _resolve_plugin_visibility(
+                plugin_port_bound=plugin_port_bound,
+                plugin_contract_valid=plugin_contract_valid,
+            ),
             "warnings": tuple(context.dependencies.warnings),
             "application_ports": app_port_names,
         },
@@ -252,6 +277,27 @@ def _extract_shutdown_hook(adapter: object) -> Callable[[], None] | None:
         if callable(candidate):
             return candidate
     return None
+
+
+def _extract_backend_provenance(
+    dependency_diagnostics: Mapping[str, Any],
+) -> dict[str, str]:
+    raw = dependency_diagnostics.get("backend_provenance")
+    if not isinstance(raw, Mapping):
+        return {}
+    return {str(key): str(value) for key, value in raw.items()}
+
+
+def _resolve_plugin_visibility(
+    *,
+    plugin_port_bound: bool,
+    plugin_contract_valid: bool,
+) -> str:
+    if not plugin_port_bound:
+        return "missing"
+    if plugin_contract_valid:
+        return "bound"
+    return "configured"
 
 
 def _default_session_policy(context: StartupContext) -> SessionPolicy:
