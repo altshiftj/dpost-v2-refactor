@@ -116,9 +116,67 @@ def test_persist_stage_continues_to_post_persist_on_success() -> None:
         {
             "candidate": _candidate().to_payload(),
             "processor_result": {
-                "final_path": "D:/normalized/out.txt",
+                "final_path": "C:/dest/out.txt",
                 "datatype": "plug/output",
                 "force_paths": (),
+            },
+            "target_path": "C:/dest/out.txt",
+        }
+    ]
+
+
+def test_persist_stage_moves_finalized_artifacts_and_persists_normalized_paths() -> (
+    None
+):
+    moved_pairs: list[tuple[str, str]] = []
+    captured_payload: list[dict[str, object]] = []
+    state = IngestionState(
+        event={},
+        candidate=_candidate(),
+        processor_result=ProcessorResult(
+            final_path="D:/normalized/out.txt",
+            datatype="plug/output",
+            force_paths=(
+                "D:/normalized/out.bin",
+                "D:/normalized/out.txt",
+                "D:/normalized/out.meta",
+            ),
+        ),
+    )
+
+    directive = run_persist_stage(
+        state,
+        move_file=lambda source, target: moved_pairs.append((source, target))
+        or RuntimeCallResult(
+            status=RuntimeCallStatus.SUCCESS,
+            value=target,
+            diagnostics={},
+        ),
+        save_record=lambda payload: captured_payload.append(dict(payload))
+        or RuntimeCallResult(
+            status=RuntimeCallStatus.SUCCESS,
+            value={"record_id": "r2", "revision": 1},
+            diagnostics={},
+        ),
+        retry_planner=lambda reason, attempt: {"terminal_type": "stop_retrying"},
+    )
+
+    assert directive.kind == "continue"
+    assert moved_pairs == [
+        ("D:/normalized/out.txt", "C:/dest/out.txt"),
+        ("D:/normalized/out.bin", "C:/dest/out.bin"),
+        ("D:/normalized/out.meta", "C:/dest/out.meta"),
+    ]
+    assert captured_payload == [
+        {
+            "candidate": _candidate().to_payload(),
+            "processor_result": {
+                "final_path": "C:/dest/out.txt",
+                "datatype": "plug/output",
+                "force_paths": (
+                    "C:/dest/out.bin",
+                    "C:/dest/out.meta",
+                ),
             },
             "target_path": "C:/dest/out.txt",
         }

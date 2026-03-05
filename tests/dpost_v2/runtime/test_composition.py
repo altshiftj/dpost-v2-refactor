@@ -153,6 +153,27 @@ def _build_real_runtime_context(
     )
 
 
+def _write_probe_text(path: Path, payload: str, *, modified_at: float) -> Path:
+    path.write_text(payload, encoding="utf-8")
+    os.utime(path, (modified_at, modified_at))
+    return path
+
+
+def _write_probe_bytes(path: Path, payload: bytes, *, modified_at: float) -> Path:
+    path.write_bytes(payload)
+    os.utime(path, (modified_at, modified_at))
+    return path
+
+
+def _load_record_payloads(bundle) -> list[dict[str, object]]:
+    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
+    with sqlite3.connect(database_path) as connection:
+        rows = connection.execute(
+            "select payload_json from records order by record_id"
+        ).fetchall()
+    return [json.loads(row[0]) for row in rows]
+
+
 def test_composition_raises_for_missing_required_port() -> None:
     context = _build_context(
         factories={
@@ -564,8 +585,24 @@ def test_composition_headless_fallback_event_source_scans_watch_dir(
     processed = tmp_path / "processed"
     processed.mkdir(parents=True, exist_ok=True)
 
-    (incoming / "b-file.txt").write_text("b", encoding="utf-8")
-    (incoming / "a-file.txt").write_text("a", encoding="utf-8")
+    older_path = _write_probe_text(
+        incoming / "b-file.txt",
+        "b",
+        modified_at=1_700_000_001.0,
+    )
+    newer_path = _write_probe_text(
+        incoming / "a-file.txt",
+        "a",
+        modified_at=1_700_000_002.0,
+    )
+    expected_ids = []
+    for path in (older_path, newer_path):
+        stat = path.stat()
+        expected_ids.append(
+            sha256(
+                f"{path.resolve()}|{float(stat.st_mtime)}".encode("utf-8")
+            ).hexdigest()[:16]
+        )
 
     event_sink = EventSinkAdapter()
     context = _build_context(
@@ -590,15 +627,6 @@ def test_composition_headless_fallback_event_source_scans_watch_dir(
         for event in event_sink.events
         if event.get("kind") == "runtime_event_processed"
     ]
-    expected_ids: list[str] = []
-    for path in sorted(incoming.glob("*")):
-        stat = path.stat()
-        expected_ids.append(
-            sha256(
-                f"{path.resolve()}|{float(stat.st_mtime)}".encode("utf-8")
-            ).hexdigest()[:16]
-        )
-
     assert result.processed_count == 2
     assert [event["event_id"] for event in processed_events] == expected_ids
 
@@ -636,7 +664,7 @@ def test_composition_default_runtime_resolves_real_plugin_id_instead_of_default_
         }
     )
 
-    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_RETRY
     assert outcome.state is not None
     assert outcome.state.candidate is not None
     assert outcome.state.candidate.plugin_id == "psa_horiba"
@@ -649,7 +677,7 @@ def test_composition_default_runtime_moves_file_and_persists_record(tmp_path) ->
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
-    sample = incoming / "sample.ngb"
+    sample = incoming / "sample.tif"
     sample.write_text("payload", encoding="utf-8")
 
     bundle = compose_runtime(context)
@@ -658,7 +686,7 @@ def test_composition_default_runtime_moves_file_and_persists_record(tmp_path) ->
     assert result.failed_count == 0
     assert result.terminal_reason == "end_of_stream"
     assert sample.exists() is False
-    assert (processed / "sample.ngb").exists() is True
+    assert (processed / "sample.tif").exists() is True
 
 
 def test_composition_runtime_uses_real_file_facts_for_stabilize_and_candidate(
@@ -682,7 +710,7 @@ def test_composition_runtime_uses_real_file_facts_for_stabilize_and_candidate(
         }
     )
 
-    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.kind is IngestionOutcomeKind.DEFERRED_RETRY
     assert outcome.state is not None
     assert outcome.state.candidate is not None
     assert outcome.state.candidate.size == len("payload-ngb")
@@ -695,60 +723,127 @@ def test_composition_runtime_uses_real_file_facts_for_stabilize_and_candidate(
 def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
     tmp_path,
 ) -> None:
-    context = _build_real_runtime_context(tmp_path, retry_delay_seconds=1.0)
+    class EventSinkAdapter:
+        def __init__(self) -> None:
+            self.events: list[Mapping[str, object]] = []
+
+        def emit(self, event: Mapping[str, object]) -> None:
+            self.events.append(dict(event))
+
+    event_sink = EventSinkAdapter()
+    context = _build_real_runtime_context(
+        tmp_path,
+        retry_delay_seconds=1.0,
+        device_plugins=("psa_horiba", "sem_phenomxl2", "utm_zwick"),
+        dependency_overrides={"event_sink": event_sink},
+    )
     incoming = Path(context.settings.paths.watch)
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
 
-    for name, payload in (
-        ("sample.ngb", "payload-ngb"),
-        ("sample.tif", "payload-tif"),
-        ("sample.zs2", "payload-zs2"),
-    ):
-        (incoming / name).write_text(payload, encoding="utf-8")
+    _write_probe_text(
+        incoming / "sem-sample.tif",
+        "payload-tif",
+        modified_at=1_700_000_001.0,
+    )
+    _write_probe_bytes(
+        incoming / "zwick-series.zs2",
+        b"payload-zs2",
+        modified_at=1_700_000_002.0,
+    )
+    _write_probe_bytes(
+        incoming / "zwick-series.xlsx",
+        b"payload-xlsx",
+        modified_at=1_700_000_003.0,
+    )
+    _write_probe_bytes(
+        incoming / "psa-bucket.ngb",
+        b"payload-ngb-1",
+        modified_at=1_700_000_004.0,
+    )
+    _write_probe_text(
+        incoming / "psa-bucket.csv",
+        "Probenname\tBucket Sample\nX(mm)\tValue\n",
+        modified_at=1_700_000_005.0,
+    )
+    _write_probe_text(
+        incoming / "psa-sentinel.csv",
+        "Probenname;Final Sample\nX(mm);Value\n",
+        modified_at=1_700_000_006.0,
+    )
+    _write_probe_bytes(
+        incoming / "psa-sentinel.ngb",
+        b"payload-ngb-2",
+        modified_at=1_700_000_007.0,
+    )
 
     bundle = compose_runtime(context)
     result = bundle.app.run()
 
-    assert result.processed_count == 3
+    assert result.processed_count == 7
     assert result.failed_count == 0
     assert result.terminal_reason == "end_of_stream"
     assert tuple(incoming.iterdir()) == ()
-    assert (processed / "sample.ngb").exists() is True
-    assert (processed / "sample.tif").exists() is True
-    assert (processed / "sample.zs2").exists() is True
+    assert (processed / "sem-sample.tif").exists() is True
+    assert (processed / "zwick-series.xlsx").exists() is True
+    assert (processed / "zwick-series.zs2").exists() is True
+    assert (processed / "Final Sample-01.csv").exists() is True
+    assert (processed / "Final Sample-01.zip").exists() is True
+    assert (processed / "Final Sample-02.csv").exists() is True
+    assert (processed / "Final Sample-02.zip").exists() is True
 
-    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
-    with sqlite3.connect(database_path) as connection:
-        rows = connection.execute("select count(*) from records").fetchone()
+    payloads = _load_record_payloads(bundle)
+    plugin_ids = {payload["candidate"]["plugin_id"] for payload in payloads}
+    assert len(payloads) == 3
+    assert plugin_ids == {"psa_horiba", "sem_phenomxl2", "utm_zwick"}
 
-    assert rows == (3,)
+    processed_events = [
+        event
+        for event in event_sink.events
+        if event.get("kind") == "runtime_event_processed"
+    ]
+    assert [event["outcome_kind"] for event in processed_events] == [
+        "succeeded",
+        "deferred_retry",
+        "succeeded",
+        "deferred_retry",
+        "deferred_retry",
+        "deferred_retry",
+        "succeeded",
+    ]
 
 
 def test_composition_runtime_persists_processor_result_payload(tmp_path) -> None:
-    context = _build_real_runtime_context(tmp_path)
+    context = _build_real_runtime_context(tmp_path, pc_name="zwick_blb")
     incoming = Path(context.settings.paths.watch)
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
-    sample = incoming / "sample.ngb"
-    sample.write_text("payload", encoding="utf-8")
+    _write_probe_bytes(
+        incoming / "sample.zs2",
+        b"payload-zs2",
+        modified_at=1_700_000_001.0,
+    )
+    _write_probe_bytes(
+        incoming / "sample.xlsx",
+        b"payload-xlsx",
+        modified_at=1_700_000_002.0,
+    )
 
     bundle = compose_runtime(context)
     result = bundle.app.run()
 
     assert result.failed_count == 0
-    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
-    with sqlite3.connect(database_path) as connection:
-        row = connection.execute(
-            "select payload_json from records order by record_id"
-        ).fetchone()
+    payloads = _load_record_payloads(bundle)
 
-    assert row is not None
-    payload = json.loads(row[0])
-    assert payload["processor_result"]["datatype"] == "psa_horiba/template"
-    assert payload["processor_result"]["final_path"].endswith("sample.ngb")
+    assert len(payloads) == 1
+    payload = payloads[0]
+    assert payload["processor_result"]["datatype"] == "xlsx"
+    assert payload["processor_result"]["final_path"].endswith("processed/sample.xlsx")
+    assert payload["processor_result"]["force_paths"] == [
+        str(processed / "sample.zs2").replace("\\", "/")
+    ]
 
 
 def test_composition_exposes_selected_pc_scope_in_diagnostics(tmp_path) -> None:
@@ -809,26 +904,15 @@ def test_composition_runtime_selects_allowed_device_with_selected_pc_scope(
     assert outcome.state.candidate.plugin_id == "sem_phenomxl2"
 
 
-@pytest.mark.parametrize(
-    ("pc_name", "filename", "expected_plugin_id"),
-    (
-        ("horiba_blb", "sample.ngb", "psa_horiba"),
-        ("tischrem_blb", "sample.tif", "sem_phenomxl2"),
-        ("zwick_blb", "sample.zs2", "utm_zwick"),
-    ),
-)
-def test_composition_runtime_processes_pc_scoped_device_pairs_end_to_end(
+def test_composition_runtime_processes_pc_scoped_sem_pair_end_to_end(
     tmp_path,
-    pc_name: str,
-    filename: str,
-    expected_plugin_id: str,
 ) -> None:
-    context = _build_real_runtime_context(tmp_path, pc_name=pc_name)
+    context = _build_real_runtime_context(tmp_path, pc_name="tischrem_blb")
     incoming = Path(context.settings.paths.watch)
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
-    sample = incoming / filename
+    sample = incoming / "sample.tif"
     sample.write_text("payload", encoding="utf-8")
 
     bundle = compose_runtime(context)
@@ -837,17 +921,137 @@ def test_composition_runtime_processes_pc_scoped_device_pairs_end_to_end(
     assert result.failed_count == 0
     assert result.terminal_reason == "end_of_stream"
     assert sample.exists() is False
-    assert (processed / filename).exists() is True
+    assert (processed / "sample.tif").exists() is True
 
-    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
-    with sqlite3.connect(database_path) as connection:
-        row = connection.execute(
-            "select payload_json from records order by record_id"
-        ).fetchone()
+    payloads = _load_record_payloads(bundle)
+    assert len(payloads) == 1
+    assert payloads[0]["candidate"]["plugin_id"] == "sem_phenomxl2"
 
-    assert row is not None
-    payload = json.loads(row[0])
-    assert payload["candidate"]["plugin_id"] == expected_plugin_id
+
+def test_composition_runtime_processes_pc_scoped_zwick_staged_pair_end_to_end(
+    tmp_path,
+) -> None:
+    class EventSinkAdapter:
+        def __init__(self) -> None:
+            self.events: list[Mapping[str, object]] = []
+
+        def emit(self, event: Mapping[str, object]) -> None:
+            self.events.append(dict(event))
+
+    event_sink = EventSinkAdapter()
+    context = _build_real_runtime_context(
+        tmp_path,
+        pc_name="zwick_blb",
+        dependency_overrides={"event_sink": event_sink},
+    )
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    _write_probe_bytes(
+        incoming / "sample.zs2",
+        b"payload-zs2",
+        modified_at=1_700_000_001.0,
+    )
+    _write_probe_bytes(
+        incoming / "sample.xlsx",
+        b"payload-xlsx",
+        modified_at=1_700_000_002.0,
+    )
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.processed_count == 2
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert tuple(incoming.iterdir()) == ()
+    assert (processed / "sample.xlsx").exists() is True
+    assert (processed / "sample.zs2").exists() is True
+
+    payloads = _load_record_payloads(bundle)
+    assert len(payloads) == 1
+    assert payloads[0]["candidate"]["plugin_id"] == "utm_zwick"
+
+    processed_events = [
+        event
+        for event in event_sink.events
+        if event.get("kind") == "runtime_event_processed"
+    ]
+    assert [event["outcome_kind"] for event in processed_events] == [
+        "deferred_retry",
+        "succeeded",
+    ]
+
+
+def test_composition_runtime_processes_pc_scoped_psa_staged_batch_end_to_end(
+    tmp_path,
+) -> None:
+    class EventSinkAdapter:
+        def __init__(self) -> None:
+            self.events: list[Mapping[str, object]] = []
+
+        def emit(self, event: Mapping[str, object]) -> None:
+            self.events.append(dict(event))
+
+    event_sink = EventSinkAdapter()
+    context = _build_real_runtime_context(
+        tmp_path,
+        pc_name="horiba_blb",
+        dependency_overrides={"event_sink": event_sink},
+    )
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    _write_probe_bytes(
+        incoming / "bucket.ngb",
+        b"payload-ngb-1",
+        modified_at=1_700_000_001.0,
+    )
+    _write_probe_text(
+        incoming / "bucket.csv",
+        "Probenname\tBucket Sample\nX(mm)\tValue\n",
+        modified_at=1_700_000_002.0,
+    )
+    _write_probe_text(
+        incoming / "sentinel.csv",
+        "Probenname;Final Sample\nX(mm);Value\n",
+        modified_at=1_700_000_003.0,
+    )
+    _write_probe_bytes(
+        incoming / "sentinel.ngb",
+        b"payload-ngb-2",
+        modified_at=1_700_000_004.0,
+    )
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.processed_count == 4
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert tuple(incoming.iterdir()) == ()
+    assert (processed / "Final Sample-01.csv").exists() is True
+    assert (processed / "Final Sample-01.zip").exists() is True
+    assert (processed / "Final Sample-02.csv").exists() is True
+    assert (processed / "Final Sample-02.zip").exists() is True
+
+    payloads = _load_record_payloads(bundle)
+    assert len(payloads) == 1
+    assert payloads[0]["candidate"]["plugin_id"] == "psa_horiba"
+
+    processed_events = [
+        event
+        for event in event_sink.events
+        if event.get("kind") == "runtime_event_processed"
+    ]
+    assert [event["outcome_kind"] for event in processed_events] == [
+        "deferred_retry",
+        "deferred_retry",
+        "deferred_retry",
+        "succeeded",
+    ]
 
 
 def test_composition_runtime_shapes_sync_payload_via_selected_pc_plugin(
@@ -872,14 +1076,14 @@ def test_composition_runtime_shapes_sync_payload_via_selected_pc_plugin(
     sync_adapter = CapturingSyncAdapter()
     context = _build_real_runtime_context(
         tmp_path,
-        pc_name="horiba_blb",
+        pc_name="tischrem_blb",
         dependency_overrides={"sync": sync_adapter},
     )
     incoming = Path(context.settings.paths.watch)
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
-    sample = incoming / "sample.ngb"
+    sample = incoming / "sample.tif"
     sample.write_text("payload", encoding="utf-8")
 
     bundle = compose_runtime(context)
@@ -891,7 +1095,7 @@ def test_composition_runtime_shapes_sync_payload_via_selected_pc_plugin(
     assert request.record_id is not None
     assert request.payload == {
         "record_id": request.record_id,
-        "plugin_id": "horiba_blb",
+        "plugin_id": "tischrem_blb",
     }
 
 
@@ -925,14 +1129,14 @@ def test_composition_runtime_emits_sync_error_and_marks_record_unsynced_on_sync_
     event_sink = EventSinkAdapter()
     context = _build_real_runtime_context(
         tmp_path,
-        pc_name="horiba_blb",
+        pc_name="tischrem_blb",
         dependency_overrides={"sync": sync_adapter, "event_sink": event_sink},
     )
     incoming = Path(context.settings.paths.watch)
     processed = Path(context.settings.paths.dest)
     incoming.mkdir(parents=True, exist_ok=True)
     processed.mkdir(parents=True, exist_ok=True)
-    sample = incoming / "sample.ngb"
+    sample = incoming / "sample.tif"
     sample.write_text("payload", encoding="utf-8")
 
     bundle = compose_runtime(context)
@@ -941,7 +1145,7 @@ def test_composition_runtime_emits_sync_error_and_marks_record_unsynced_on_sync_
     assert result.failed_count == 0
     assert result.terminal_reason == "end_of_stream"
     assert len(sync_adapter.requests) == 1
-    assert sync_adapter.requests[0].payload["plugin_id"] == "horiba_blb"
+    assert sync_adapter.requests[0].payload["plugin_id"] == "tischrem_blb"
 
     sync_error_events = [
         event

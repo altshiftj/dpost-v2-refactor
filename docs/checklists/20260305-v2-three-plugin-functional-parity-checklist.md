@@ -116,20 +116,20 @@
 - [ ] Add red tests for TTL/flush behavior.
 - [ ] Add red tests for unique move semantics and overwrite protection.
 - [x] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/utm_zwick/processor.py`.
-- [ ] Add or update integration/runtime smoke for repeated series handling.
+- [x] Add or update integration/runtime smoke for repeated series handling.
 
 ### Completion Notes
 - How it was done:
   - Lane B delivered the Zwick processor/test slice and published:
     - `docs/reports/20260305-v2-laneB-utm-zwick-report.md`
   - Plugin-local parity is green, including staged `.zs2` gating and matching `.xlsx` finalization.
-  - Closeout runtime remains blocked:
-    - raw `.zs2` is rejected in `resolve` with `reason_code="processor_not_found"`
-    - `app.run()` with `.zs2` + `.xlsx` stops on the first staged pre-event and persists no record
+  - Shared runtime seam is now green:
+    - raw `.zs2` defers without failing the watch loop
+    - matching `.xlsx` finalizes and persists one record under `zwick_blb`
+    - normalized processed payload paths are stored in sqlite
   - Deferred items remain:
     - TTL/session-end flush
     - unique move semantics/overwrite protection
-    - shared runtime deferred outcome for staged pre-events
 
 ---
 
@@ -145,7 +145,7 @@
 - [x] Add red tests for staged flush and sequence naming.
 - [x] Add red tests for zip behavior and stale purge behavior.
 - [x] Implement minimal processor/state changes in `src/dpost_v2/plugins/devices/psa_horiba/processor.py`.
-- [ ] Add or update integration/runtime smoke for PSA staged handling.
+- [x] Add or update integration/runtime smoke for PSA staged handling.
 
 ### Completion Notes
 - How it was done:
@@ -157,11 +157,11 @@
     - deterministic staged-folder naming
     - numbered `.csv` and `.zip` outputs
     - conservative stale-state purge
-  - Closeout runtime remains blocked:
-    - raw `.ngb` resolves `psa_horiba` but is rejected in `transform` with `reason_code="cannot_process"`
-    - `app.run()` with a full bucket/sentinel batch stops on the first staged pre-event and persists no record
+  - Shared runtime seam is now green:
+    - raw staged events defer without failing the watch loop
+    - a full bucket/sentinel batch finalizes and persists one record under `horiba_blb`
+    - numbered `.csv` and `.zip` outputs land in `processed/`
   - Deferred items remain:
-    - shared runtime deferred outcome for incomplete PSA events
     - rename-cancel whole-folder handling
     - exception-bucket handling
 
@@ -185,11 +185,12 @@
 - How it was done:
   - Ran `python -m ruff check src/dpost_v2 tests/dpost_v2` and it passed.
   - Ran targeted checks:
-    - `python -m pytest -q tests/dpost_v2/plugins/devices/sem_phenomxl2/test_parity_spec.py tests/dpost_v2/plugins/devices/utm_zwick tests/dpost_v2/plugins/devices/psa_horiba tests/dpost_v2/runtime/test_composition.py`
+    - `python -m pytest -q tests/dpost_v2/application/ingestion/stages/test_resolve_stabilize_route.py tests/dpost_v2/application/ingestion/stages/test_persist_post_persist.py tests/dpost_v2/application/ingestion/test_pipeline_integration.py tests/dpost_v2/runtime/test_composition.py`
     - `python -m pytest -q tests/dpost_v2/plugins/test_migration_coverage.py`
   - Ran full suite:
     - `python -m pytest -q tests/dpost_v2`
-    - result: `415 passed`, `9 failed`
+    - result: `426 passed`
   - Published:
+    - `docs/reports/20260305-v2-staged-runtime-seam-report.md`
     - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
-  - Closeout is not complete yet because the remaining `9` failures all sit in `tests/dpost_v2/runtime/test_composition.py` and represent the shared staged/deferred runtime seam still required for PSA and Zwick.
+  - Closeout is green for the accepted three-plugin parity scope; remaining deferred items are explicitly documented and out of scope for this phase.

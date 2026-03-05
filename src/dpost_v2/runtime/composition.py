@@ -543,7 +543,7 @@ def _discover_headless_events(
         files = tuple(
             sorted(
                 (path for path in incoming_dir.iterdir() if path.is_file()),
-                key=lambda path: str(path),
+                key=_headless_event_sort_key,
             )
         )
     except OSError:
@@ -569,6 +569,14 @@ def _discover_headless_events(
     return tuple(events)
 
 
+def _headless_event_sort_key(path: Path) -> tuple[int, str]:
+    try:
+        modified_at_ns = int(path.stat().st_mtime_ns)
+    except OSError:
+        modified_at_ns = 0
+    return (modified_at_ns, str(path))
+
+
 def _build_runtime_ingestion_engine(
     *,
     application_ports: Mapping[str, object],
@@ -585,6 +593,7 @@ def _build_runtime_ingestion_engine(
 
     gate_state = _ModifiedEventGateState()
     record_revisions: dict[str, int] = {}
+    processor_cache: dict[str, object] = {}
     settle_delay_seconds = _resolve_settle_delay_seconds(context.settings)
     route_root = _resolve_route_root(context.settings)
     allowed_roots = (route_root,)
@@ -599,6 +608,7 @@ def _build_runtime_ingestion_engine(
             candidate=candidate,
             scoped_plugin_ids=plugin_policy.scoped_device_plugins,
             pc_scope_applied=plugin_policy.pc_scope_applied,
+            processor_cache=processor_cache,
         )
         return selection
 
@@ -1111,8 +1121,9 @@ def _select_runtime_processor(
     candidate: Candidate,
     scoped_plugin_ids: Sequence[str] = (),
     pc_scope_applied: bool = False,
+    processor_cache: dict[str, object] | None = None,
 ) -> ProcessorSelection:
-    if pc_scope_applied:
+    if pc_scope_applied or scoped_plugin_ids:
         plugin_ids = tuple(
             str(plugin_id).strip()
             for plugin_id in scoped_plugin_ids
@@ -1122,10 +1133,11 @@ def _select_runtime_processor(
         plugin_ids = _resolve_device_plugin_ids(plugin_host)
 
     for plugin_id in plugin_ids:
-        processor = _build_runtime_processor(
+        processor, cache_hit = _build_runtime_processor(
             plugin_host=plugin_host,
             plugin_id=plugin_id,
             candidate=candidate,
+            processor_cache=processor_cache,
         )
         if processor is None:
             continue
@@ -1135,9 +1147,15 @@ def _select_runtime_processor(
                 plugin_id=plugin_id,
                 processor_key=plugin_id,
                 capability_reason=(
-                    "pc_scope_selected" if pc_scope_applied else "pc_scope_default"
+                    (
+                        "pc_scope_selected"
+                        if pc_scope_applied
+                        else "device_scope_selected"
+                    )
+                    if scoped_plugin_ids
+                    else "pc_scope_default"
                 ),
-                cache_hit=False,
+                cache_hit=cache_hit,
             ),
         )
     raise ProcessorNotFoundError("No runtime processor available for candidate.")
@@ -1157,14 +1175,13 @@ def _resolve_runtime_plugin_policy(
         )
 
     selected_pc_plugin = _extract_selected_pc_plugin(context.settings)
+    raw_device_plugins = _extract_selected_device_plugins(context.settings)
     if selected_pc_plugin is None:
         return _RuntimePluginPolicy(
             selected_pc_plugin=None,
-            scoped_device_plugins=(),
+            scoped_device_plugins=raw_device_plugins,
             pc_scope_applied=False,
         )
-
-    raw_device_plugins = _extract_selected_device_plugins(context.settings)
     resolver = getattr(plugin_host, "resolve_device_scope_for_pc", None)
     if not callable(resolver):
         raise CompositionPluginBindingError(
@@ -1248,10 +1265,13 @@ def _build_runtime_processor(
     plugin_host: object,
     plugin_id: str,
     candidate: Candidate,
-) -> object | None:
+    processor_cache: dict[str, object] | None = None,
+) -> tuple[object | None, bool]:
     factory = getattr(plugin_host, "create_device_processor", None)
-    processor = None
-    if callable(factory):
+    cache = processor_cache if isinstance(processor_cache, dict) else {}
+    processor = cache.get(plugin_id)
+    cache_hit = processor is not None
+    if processor is None and callable(factory):
         try:
             processor = factory(plugin_id, settings={})
         except PluginHostActivationError:
@@ -1260,19 +1280,40 @@ def _build_runtime_processor(
             processor = None
     if processor is None:
         processor = _DefaultDeviceProcessor(plugin_id)
+    elif plugin_id not in cache:
+        cache[plugin_id] = processor
+
+    if not _processor_supports_runtime_candidate(processor, candidate):
+        return None, cache_hit
+    process = getattr(processor, "process", None)
+    if not callable(process):
+        return None, cache_hit
+    return processor, cache_hit
+
+
+def _processor_supports_runtime_candidate(
+    processor: object,
+    candidate: Candidate,
+) -> bool:
+    settings = getattr(processor, "settings", None)
+    source_extensions = getattr(settings, "source_extensions", None)
+    candidate_extension = Path(candidate.source_path).suffix.lower()
+    if isinstance(source_extensions, tuple | list):
+        normalized_extensions = {
+            str(token).strip().lower()
+            for token in source_extensions
+            if str(token).strip()
+        }
+        if candidate_extension:
+            return candidate_extension in normalized_extensions
 
     can_process = getattr(processor, "can_process", None)
     if callable(can_process):
         try:
-            supported = bool(can_process({"source_path": candidate.source_path}))
+            return bool(can_process({"source_path": candidate.source_path}))
         except Exception:  # noqa: BLE001
-            supported = False
-        if not supported:
-            return None
-    process = getattr(processor, "process", None)
-    if not callable(process):
-        return None
-    return processor
+            return False
+    return True
 
 
 class _ClockPort:

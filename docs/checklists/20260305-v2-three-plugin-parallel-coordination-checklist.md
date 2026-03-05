@@ -75,7 +75,8 @@
     - `python -m ruff check src/dpost_v2 tests/dpost_v2`
     - targeted plugin/runtime suites
     - `python -m pytest -q tests/dpost_v2`
-  - Intake revealed the expected staged-runtime blocker rather than additional cross-lane file drift.
+  - Intake initially revealed the staged-runtime blocker, which was then closed in:
+    - `docs/reports/20260305-v2-staged-runtime-seam-report.md`
 
 ---
 
@@ -91,8 +92,9 @@
 - How it was done:
   - `laneD-closeout` consumed the committed lane outputs after plugin lanes completed.
   - Published:
+    - `docs/reports/20260305-v2-staged-runtime-seam-report.md`
     - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
   - Final status:
     - plugin-local parity slices are committed and documented
-    - SEM runtime proof is green
-    - PSA and Zwick remain blocked on a shared deferred/staged runtime seam
+    - shared staged/deferred runtime seam is green
+    - cross-plugin closeout gates are green for the accepted phase scope

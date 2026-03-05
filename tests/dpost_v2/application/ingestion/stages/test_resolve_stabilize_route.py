@@ -220,7 +220,7 @@ def test_transform_stage_continues_to_route_with_validated_processor_result() ->
     }
 
 
-def test_transform_stage_rejects_candidate_when_processor_cannot_process() -> None:
+def test_transform_stage_defers_candidate_when_processor_is_not_ready() -> None:
     candidate = Candidate.from_event(
         {"path": "incoming/file.txt", "event_kind": "created", "observed_at": 100.0},
         {"modified_at": 90.0},
@@ -235,8 +235,8 @@ def test_transform_stage_rejects_candidate_when_processor_cannot_process() -> No
     directive = run_transform_stage(state)
 
     assert directive.kind == "terminal"
-    assert directive.outcome is PipelineTerminalOutcome.REJECTED
-    assert directive.state.diagnostics["transform"]["reason_code"] == "cannot_process"
+    assert directive.outcome is PipelineTerminalOutcome.RETRY
+    assert directive.state.diagnostics["transform"]["reason_code"] == "deferred"
 
 
 def test_route_stage_rejects_unsafe_force_path() -> None:
