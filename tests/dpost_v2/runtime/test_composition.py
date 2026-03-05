@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from hashlib import sha256
 from typing import Mapping
 
 import pytest
 
+from dpost_v2.application.ingestion.engine import IngestionOutcomeKind
 from dpost_v2.application.runtime.dpost_app import DPostApp
 from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
 from dpost_v2.runtime.composition import (
@@ -23,7 +25,13 @@ class FakeSettings:
     profile: str = "ci"
 
 
-def _build_context(factories, *, diagnostics=None, selected_backends=None):
+def _build_context(
+    factories,
+    *,
+    diagnostics=None,
+    selected_backends=None,
+    settings: object | None = None,
+):
     dependencies = StartupDependencies(
         factories=factories,
         selected_backends=selected_backends
@@ -34,7 +42,7 @@ def _build_context(factories, *, diagnostics=None, selected_backends=None):
         cleanup=None,
     )
     return build_startup_context(
-        settings=FakeSettings(),
+        settings=settings or FakeSettings(),
         dependencies=dependencies,
         launch_meta=LaunchMetadata(
             requested_mode="headless",
@@ -356,6 +364,39 @@ def test_composition_default_app_consumes_ui_event_source() -> None:
     assert event_sink.events[-1]["kind"] == "runtime_completed"
 
 
+def test_composition_default_app_uses_real_ingestion_engine_pipeline() -> None:
+    class EventSinkAdapter:
+        def emit(self, event: object) -> None:
+            return None
+
+    context = _build_context(
+        factories={
+            "observability": lambda: object(),
+            "storage": lambda: {"kind": "storage", "backend": "filesystem"},
+            "sync": lambda: {"kind": "sync", "backend": "noop"},
+            "ui": lambda: {"kind": "ui", "backend": "headless"},
+            "event_sink": lambda: EventSinkAdapter(),
+            "plugins": lambda: {"kind": "plugins", "backend": "builtin"},
+            "clock": lambda: {"kind": "clock"},
+            "filesystem": lambda: {"kind": "filesystem"},
+        }
+    )
+
+    bundle = compose_runtime(context)
+    engine = bundle.app._ingestion_engine
+    outcome = engine.process(
+        event={
+            "event_id": "evt-real-engine-001",
+            "path": "/tmp/source.txt",
+            "event_kind": "created",
+            "observed_at": 1.0,
+        }
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.final_stage_id == "post_persist"
+
+
 def test_composition_shutdown_hook_is_idempotent() -> None:
     shutdown_calls: list[str] = []
 
@@ -399,3 +440,65 @@ def test_composition_shutdown_hook_is_idempotent() -> None:
     bundle.shutdown_all()
 
     assert shutdown_calls == ["plugins", "ui"]
+
+
+def test_composition_headless_fallback_event_source_scans_watch_dir(
+    tmp_path,
+) -> None:
+    class EventSinkAdapter:
+        def __init__(self) -> None:
+            self.events: list[Mapping[str, object]] = []
+
+        def emit(self, event: Mapping[str, object]) -> None:
+            self.events.append(dict(event))
+
+    class Settings:
+        mode = "headless"
+        profile = "ci"
+
+        class paths:
+            watch = str(tmp_path / "incoming")
+            dest = str(tmp_path / "processed")
+
+    incoming = tmp_path / "incoming"
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed = tmp_path / "processed"
+    processed.mkdir(parents=True, exist_ok=True)
+
+    (incoming / "b-file.txt").write_text("b", encoding="utf-8")
+    (incoming / "a-file.txt").write_text("a", encoding="utf-8")
+
+    event_sink = EventSinkAdapter()
+    context = _build_context(
+        factories={
+            "observability": lambda: object(),
+            "storage": lambda: {"kind": "storage", "backend": "filesystem"},
+            "sync": lambda: {"kind": "sync", "backend": "noop"},
+            "ui": lambda: {"kind": "ui", "backend": "headless"},
+            "event_sink": lambda: event_sink,
+            "plugins": lambda: {"kind": "plugins", "backend": "builtin"},
+            "clock": lambda: {"kind": "clock"},
+            "filesystem": lambda: {"kind": "filesystem"},
+        },
+        settings=Settings(),
+    )
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    processed_events = [
+        event
+        for event in event_sink.events
+        if event.get("kind") == "runtime_event_processed"
+    ]
+    expected_ids: list[str] = []
+    for path in sorted(incoming.glob("*")):
+        stat = path.stat()
+        expected_ids.append(
+            sha256(
+                f"{path.resolve()}|{float(stat.st_mtime)}".encode("utf-8")
+            ).hexdigest()[:16]
+        )
+
+    assert result.processed_count == 2
+    assert [event["event_id"] for event in processed_events] == expected_ids

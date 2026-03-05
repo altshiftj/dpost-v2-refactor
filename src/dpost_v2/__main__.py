@@ -7,7 +7,7 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass
-from typing import Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from dpost_v2.application.startup import bootstrap as startup_bootstrap
 from dpost_v2.application.startup.bootstrap import BootstrapRequest
@@ -22,10 +22,16 @@ def run(*, request: BootstrapRequest, emit_event, **kwargs) -> BootstrapResult:
 
 
 _SUPPORTED_MODES = frozenset({"v2"})
+_RUNTIME_FAILURE_TERMINALS = frozenset({"failed_terminal", "hard_timeout"})
+_RUNTIME_SUCCESS_TERMINALS = frozenset({"end_of_stream", "cancelled", "soft_timeout"})
 
 
 class UnsupportedRuntimeModeError(ValueError):
     """Raised when CLI/environment mode token is unsupported."""
+
+
+class RuntimeContractError(RuntimeError):
+    """Raised when runtime handle/result violates required execution contract."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,7 +66,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"Startup bootstrap failed: {exc}", file=sys.stderr)
         return 1
 
+    if result.is_success and options.dry_run:
+        print(
+            f"dpost startup succeeded (mode={request.mode}, profile={request.profile or 'default'})."
+        )
+        return 0
     if result.is_success:
+        runtime_exit_code = _execute_runtime(result.runtime_handle)
+        if runtime_exit_code != 0:
+            return runtime_exit_code
         print(
             f"dpost startup succeeded (mode={request.mode}, profile={request.profile or 'default'})."
         )
@@ -157,6 +171,55 @@ def _coerce_system_exit_code(code: object) -> int:
         return int(code)
     except (TypeError, ValueError):
         return 1
+
+
+def _execute_runtime(runtime_handle: object) -> int:
+    try:
+        run_callable = _resolve_runtime_run_callable(runtime_handle)
+    except RuntimeContractError as exc:
+        print(f"dpost runtime contract violation: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        run_result = run_callable()
+    except KeyboardInterrupt:
+        print("Runtime interrupted by user.", file=sys.stderr)
+        return 1
+    except Exception as exc:  # noqa: BLE001
+        print(f"dpost runtime failed: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        terminal_reason = _resolve_terminal_reason(run_result)
+    except RuntimeContractError as exc:
+        print(f"dpost runtime contract violation: {exc}", file=sys.stderr)
+        return 1
+
+    if terminal_reason in _RUNTIME_FAILURE_TERMINALS:
+        print(f"dpost runtime failed (reason={terminal_reason}).", file=sys.stderr)
+        return 1
+    if terminal_reason in _RUNTIME_SUCCESS_TERMINALS:
+        return 0
+
+    print(
+        f"dpost runtime contract violation: unsupported terminal_reason {terminal_reason!r}",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def _resolve_runtime_run_callable(runtime_handle: object) -> Callable[[], Any]:
+    run_callable = getattr(runtime_handle, "run", None)
+    if not callable(run_callable):
+        raise RuntimeContractError("runtime handle must provide callable run()")
+    return run_callable
+
+
+def _resolve_terminal_reason(run_result: object) -> str:
+    terminal_reason = getattr(run_result, "terminal_reason", None)
+    if not isinstance(terminal_reason, str) or not terminal_reason.strip():
+        raise RuntimeContractError("runtime result missing terminal_reason")
+    return terminal_reason.strip().lower()
 
 
 def _emit_startup_event(event: startup_bootstrap.StartupEvent) -> None:

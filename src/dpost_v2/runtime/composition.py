@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import PurePath
+from hashlib import sha256
+from pathlib import Path, PurePath
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
@@ -14,10 +15,32 @@ from dpost_v2.application.contracts.ports import (
     SyncResponse,
     validate_port_bindings,
 )
-from dpost_v2.application.ingestion.engine import IngestionOutcome, IngestionOutcomeKind
+from dpost_v2.application.ingestion.engine import IngestionEngine, IngestionOutcome
+from dpost_v2.application.ingestion.models.candidate import Candidate
+from dpost_v2.application.ingestion.processor_factory import (
+    ProcessorNotFoundError,
+    ProcessorSelection,
+    SelectionDescriptor,
+)
+from dpost_v2.application.ingestion.runtime_services import (
+    RuntimeCallResult,
+    RuntimeCallStatus,
+)
+from dpost_v2.application.ingestion.stages.persist import run_persist_stage
+from dpost_v2.application.ingestion.stages.pipeline import (
+    DEFAULT_INGESTION_TRANSITION_TABLE,
+    PipelineRunner,
+)
+from dpost_v2.application.ingestion.stages.post_persist import run_post_persist_stage
+from dpost_v2.application.ingestion.stages.resolve import run_resolve_stage
+from dpost_v2.application.ingestion.stages.route import run_route_stage
+from dpost_v2.application.ingestion.stages.stabilize import run_stabilize_stage
+from dpost_v2.application.ingestion.state import IngestionState
 from dpost_v2.application.runtime.dpost_app import DPostApp
 from dpost_v2.application.session.session_manager import SessionManager, SessionPolicy
 from dpost_v2.application.startup.context import StartupContext
+from dpost_v2.application.startup.settings import StartupSettings
+from dpost_v2.plugins.host import PluginHostActivationError
 
 DEFAULT_REQUIRED_PORTS: tuple[str, ...] = (
     "observability",
@@ -235,10 +258,15 @@ def _default_app_factory(
         clock=clock,
     )
     session_id = f"session-{context.launch.trace_id}"
+    ingestion_engine = _build_runtime_ingestion_engine(
+        application_ports=application_ports,
+        context=context,
+        event_emitter=event_emitter,
+    )
     return DPostApp(
         session_manager=session_manager,
-        ingestion_engine=_NoopIngestionEngine(),
-        event_source=_resolve_event_source(ui_port),
+        ingestion_engine=ingestion_engine,
+        event_source=_resolve_event_source(ui_port, context=context, clock=clock),
         event_emitter=event_emitter,
         clock=clock,
         session_id=session_id,
@@ -450,13 +478,376 @@ def _coerce_filesystem_port(binding: object) -> object:
     raise CompositionBindingError("binding for 'filesystem' does not match protocol")
 
 
-def _resolve_event_source(ui_port: object) -> Iterable[Mapping[str, Any]]:
+def _resolve_event_source(
+    ui_port: object,
+    *,
+    context: StartupContext,
+    clock: object,
+) -> Iterable[Mapping[str, Any]]:
     candidate = getattr(ui_port, "iter_events", None)
     if callable(candidate):
         source = candidate()
         if isinstance(source, Iterable):
             return source
-    return ()
+    return _discover_headless_events(context=context, clock=clock)
+
+
+def _discover_headless_events(
+    *,
+    context: StartupContext,
+    clock: object,
+) -> tuple[Mapping[str, Any], ...]:
+    mode = str(getattr(context.settings, "mode", context.launch.requested_mode)).lower()
+    if mode != "headless":
+        return ()
+    paths = getattr(context.settings, "paths", None)
+    watch_path = getattr(paths, "watch", None)
+    if not isinstance(watch_path, str) or not watch_path.strip():
+        return ()
+
+    incoming_dir = Path(watch_path)
+    try:
+        if not incoming_dir.exists() or not incoming_dir.is_dir():
+            return ()
+        files = tuple(
+            sorted(
+                (path for path in incoming_dir.iterdir() if path.is_file()),
+                key=lambda path: str(path),
+            )
+        )
+    except OSError:
+        return ()
+
+    events: list[Mapping[str, Any]] = []
+    for path in files:
+        try:
+            stat = path.stat()
+            observed_at = float(stat.st_mtime)
+        except OSError:
+            observed_at = _clock_seconds(clock)
+        event_id = sha256(
+            f"{path.resolve()}|{observed_at}".encode("utf-8")
+        ).hexdigest()[:16]
+        events.append(
+            {
+                "event_id": event_id,
+                "path": str(path),
+                "event_kind": "created",
+            }
+        )
+    return tuple(events)
+
+
+def _build_runtime_ingestion_engine(
+    *,
+    application_ports: Mapping[str, object],
+    context: StartupContext,
+    event_emitter: Callable[[Mapping[str, Any]], None],
+) -> object:
+    plugin_host = application_ports["plugin_host"]
+    file_ops = application_ports["file_ops"]
+    record_store = application_ports["record_store"]
+    sync_port = application_ports["sync"]
+    filesystem = application_ports["filesystem"]
+    clock = application_ports["clock"]
+
+    gate_state = _ModifiedEventGateState()
+    settle_delay_seconds = _resolve_settle_delay_seconds(context.settings)
+    route_root = _resolve_route_root(context.settings)
+    allowed_roots = (route_root,)
+
+    def fs_facts_provider(path: str) -> Mapping[str, Any]:
+        normalized_path = _normalize_path(filesystem, path)
+        now_seconds = _clock_seconds(clock)
+        return {
+            "size": 0,
+            "modified_at": now_seconds,
+            "fingerprint": f"fp:{normalized_path}:{int(now_seconds)}",
+        }
+
+    def processor_selector(candidate: Candidate) -> ProcessorSelection:
+        selection = _select_runtime_processor(
+            plugin_host=plugin_host,
+            candidate=candidate,
+        )
+        return selection
+
+    def modified_event_gate(event_key: str, event_timestamp: float) -> object:
+        return gate_state.evaluate(event_key=event_key, event_timestamp=event_timestamp)
+
+    def now_provider() -> float:
+        return _clock_seconds(clock)
+
+    def route_selector(_candidate: Candidate) -> str | None:
+        return route_root
+
+    def filename_builder(candidate: Candidate) -> str:
+        filename = PurePath(candidate.source_path).name
+        if filename.strip():
+            return filename
+        return f"{candidate.identity_token}.dat"
+
+    def move_file(source: str, target: str) -> RuntimeCallResult:
+        try:
+            value = getattr(file_ops, "move")(source, target)
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.SUCCESS,
+                value=value,
+                diagnostics={"operation": "move"},
+            )
+        except Exception as exc:  # noqa: BLE001
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.FAILED,
+                value=None,
+                diagnostics={"reason_code": "move_failed", "error": str(exc)},
+            )
+
+    def save_record(record_payload: Mapping[str, Any]) -> RuntimeCallResult:
+        try:
+            saved = getattr(record_store, "save")(dict(record_payload))
+            record_id = _extract_record_id(saved, record_payload=record_payload)
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.SUCCESS,
+                value={"record_id": record_id},
+                diagnostics={"operation": "save_record"},
+            )
+        except Exception as exc:  # noqa: BLE001
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.FAILED,
+                value=None,
+                diagnostics={"reason_code": "record_save_failed", "error": str(exc)},
+            )
+
+    def retry_planner(reason: str, attempt: int) -> Mapping[str, Any]:
+        _ = attempt
+        return {"terminal_type": "stop_retrying", "reason_code": reason}
+
+    def update_bookkeeping(record_id: str, candidate: Any) -> RuntimeCallResult:
+        _ = candidate
+        try:
+            update = getattr(record_store, "update", None)
+            if callable(update):
+                update(record_id, {"bookkeeping": "updated"})
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.SUCCESS,
+                value=True,
+                diagnostics={"operation": "update_bookkeeping"},
+            )
+        except Exception as exc:  # noqa: BLE001
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.FAILED,
+                value=None,
+                diagnostics={"reason_code": "bookkeeping_failed", "error": str(exc)},
+            )
+
+    def trigger_sync(record_id: str) -> RuntimeCallResult:
+        try:
+            response = getattr(sync_port, "sync_record")(
+                SyncRequest(record_id=record_id, payload={"record_id": record_id})
+            )
+        except Exception as exc:  # noqa: BLE001
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.FAILED,
+                value=None,
+                diagnostics={"reason_code": "sync_failed", "error": str(exc)},
+            )
+
+        if getattr(response, "status", "").lower() == "synced":
+            return RuntimeCallResult(
+                status=RuntimeCallStatus.SUCCESS,
+                value=response,
+                diagnostics={"operation": "trigger_sync"},
+            )
+        return RuntimeCallResult(
+            status=RuntimeCallStatus.FAILED,
+            value=response,
+            diagnostics={
+                "reason_code": str(getattr(response, "reason_code", "sync_failed"))
+            },
+        )
+
+    def emit_sync_error(event_id: str, record_id: str, reason: str) -> None:
+        event_emitter(
+            {
+                "kind": "immediate_sync_error",
+                "event_id": event_id,
+                "record_id": record_id,
+                "reason_code": reason,
+            }
+        )
+
+    stage_handlers = {
+        "resolve": lambda state: run_resolve_stage(
+            state,
+            fs_facts_provider=fs_facts_provider,
+            processor_selector=processor_selector,
+        ),
+        "stabilize": lambda state: run_stabilize_stage(
+            state,
+            modified_event_gate=modified_event_gate,
+            now_provider=now_provider,
+            settle_delay_seconds=settle_delay_seconds,
+        ),
+        "route": lambda state: run_route_stage(
+            state,
+            allowed_roots=allowed_roots,
+            route_selector=route_selector,
+            filename_builder=filename_builder,
+        ),
+        "persist": lambda state: run_persist_stage(
+            state,
+            move_file=move_file,
+            save_record=save_record,
+            retry_planner=retry_planner,
+        ),
+        "post_persist": lambda state: run_post_persist_stage(
+            state,
+            update_bookkeeping=update_bookkeeping,
+            trigger_sync=trigger_sync,
+            emit_sync_error=emit_sync_error,
+            immediate_sync_enabled=True,
+        ),
+    }
+
+    engine = IngestionEngine[IngestionState](
+        pipeline_runner=PipelineRunner(
+            start_stage="resolve",
+            transition_table=DEFAULT_INGESTION_TRANSITION_TABLE,
+        ),
+        stage_handlers=stage_handlers,
+    )
+    return _RuntimeIngestionEngineAdapter(engine)
+
+
+def _resolve_route_root(settings: StartupSettings | object) -> str:
+    paths = getattr(settings, "paths", None)
+    candidate = getattr(paths, "dest", None)
+    if isinstance(candidate, str) and candidate.strip():
+        return str(PurePath(candidate))
+    return "processed"
+
+
+def _resolve_settle_delay_seconds(settings: StartupSettings | object) -> float:
+    ingestion = getattr(settings, "ingestion", None)
+    candidate = getattr(ingestion, "retry_delay_seconds", 0.0)
+    try:
+        value = float(candidate)
+    except (TypeError, ValueError):
+        return 0.0
+    if value < 0:
+        return 0.0
+    return value
+
+
+def _normalize_path(filesystem: object, value: str) -> str:
+    normalize = getattr(filesystem, "normalize_path", None)
+    if callable(normalize):
+        try:
+            return str(normalize(value))
+        except Exception:  # noqa: BLE001
+            return str(PurePath(value))
+    return str(PurePath(value))
+
+
+def _clock_seconds(clock: object) -> float:
+    now_fn = getattr(clock, "now", None)
+    if not callable(now_fn):
+        return 0.0
+    value = now_fn()
+    if isinstance(value, datetime):
+        return value.timestamp()
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _extract_record_id(saved: object, *, record_payload: Mapping[str, Any]) -> str:
+    if isinstance(saved, Mapping):
+        candidate = saved.get("record_id")
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate.strip()
+
+    candidate_payload = record_payload.get("candidate")
+    if isinstance(candidate_payload, Mapping):
+        identity = candidate_payload.get("identity_token")
+        if isinstance(identity, str) and identity.strip():
+            return f"record-{identity[:12]}"
+    return "record-generated"
+
+
+def _select_runtime_processor(
+    *,
+    plugin_host: object,
+    candidate: Candidate,
+) -> ProcessorSelection:
+    plugin_ids = _resolve_device_plugin_ids(plugin_host)
+    for plugin_id in plugin_ids:
+        processor = _build_runtime_processor(
+            plugin_host=plugin_host,
+            plugin_id=plugin_id,
+            candidate=candidate,
+        )
+        if processor is None:
+            continue
+        return ProcessorSelection(
+            processor=processor,
+            descriptor=SelectionDescriptor(
+                plugin_id=plugin_id,
+                processor_key=plugin_id,
+                capability_reason="pc_scope_default",
+                cache_hit=False,
+            ),
+        )
+    raise ProcessorNotFoundError("No runtime processor available for candidate.")
+
+
+def _resolve_device_plugin_ids(plugin_host: object) -> tuple[str, ...]:
+    getter = getattr(plugin_host, "get_device_plugins", None)
+    if not callable(getter):
+        return ("default_device",)
+    try:
+        raw = getter()
+    except Exception:  # noqa: BLE001
+        return ("default_device",)
+    plugin_ids = tuple(
+        str(item).strip() for item in tuple(raw) if str(item).strip()  # type: ignore[arg-type]
+    )
+    if plugin_ids:
+        return plugin_ids
+    return ("default_device",)
+
+
+def _build_runtime_processor(
+    *,
+    plugin_host: object,
+    plugin_id: str,
+    candidate: Candidate,
+) -> object | None:
+    factory = getattr(plugin_host, "create_device_processor", None)
+    processor = None
+    if callable(factory):
+        try:
+            processor = factory(plugin_id, settings={})
+        except PluginHostActivationError:
+            processor = None
+        except Exception:  # noqa: BLE001
+            processor = None
+    if processor is None:
+        processor = _DefaultDeviceProcessor(plugin_id)
+
+    can_process = getattr(processor, "can_process", None)
+    if callable(can_process):
+        try:
+            supported = bool(can_process({"source_path": candidate.source_path}))
+        except Exception:  # noqa: BLE001
+            supported = False
+        if not supported:
+            return None
+    process = getattr(processor, "process", None)
+    if not callable(process):
+        return None
+    return processor
 
 
 class _ClockPort:
@@ -473,27 +864,20 @@ class _SystemClock(_ClockPort):
         return datetime.now(UTC)
 
 
-class _NoopIngestionEngine:
+class _RuntimeIngestionEngineAdapter:
+    def __init__(self, engine: IngestionEngine[IngestionState]) -> None:
+        self._engine = engine
+
     def process(
         self,
         *,
         event: Mapping[str, Any],
         processing_context: Any | None = None,
     ) -> IngestionOutcome[object]:
-        return IngestionOutcome(
-            kind=IngestionOutcomeKind.SUCCEEDED,
-            final_stage_id=None,
-            state={
-                "event_id": event.get("event_id"),
-                "processing_context_event_id": getattr(
-                    processing_context,
-                    "event_id",
-                    None,
-                ),
-            },
-            stage_trace=(),
-            retry_plan=None,
-            emission_status="skipped",
+        _ = processing_context
+        return self._engine.process(
+            event=event,
+            initial_state_factory=IngestionState.from_event,
         )
 
 
@@ -584,13 +968,44 @@ class _SyncAdapter:
 
 class _PluginHostAdapter:
     def get_device_plugins(self) -> tuple[object, ...]:
-        return ()
+        return ("default_device",)
 
     def get_pc_plugins(self) -> tuple[object, ...]:
         return ()
 
     def get_by_capability(self, capability: str) -> tuple[object, ...]:
         return ()
+
+
+class _ModifiedEventGateState:
+    def __init__(self) -> None:
+        self._last_seen: dict[str, float] = {}
+
+    def evaluate(self, event_key: str, event_timestamp: float) -> object:
+        last_seen = self._last_seen.get(event_key)
+        self._last_seen[event_key] = event_timestamp
+        decision = "allow"
+        reason_code = "outside_debounce_window"
+        if last_seen is not None and event_timestamp <= last_seen:
+            decision = "drop_duplicate"
+            reason_code = "inside_debounce_window"
+        return MappingProxyType({"decision": decision, "reason_code": reason_code})
+
+
+class _DefaultDeviceProcessor:
+    def __init__(self, plugin_id: str) -> None:
+        self.plugin_id = plugin_id
+
+    def can_process(self, candidate: Mapping[str, Any]) -> bool:
+        source_path = str(candidate.get("source_path", "")).strip()
+        return bool(source_path)
+
+    def process(self, candidate: Mapping[str, Any], context: object) -> object:
+        _ = context
+        return {
+            "final_path": str(candidate.get("source_path", "")),
+            "plugin_id": self.plugin_id,
+        }
 
 
 class _FilesystemAdapter:

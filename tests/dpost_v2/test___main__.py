@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -7,6 +8,28 @@ import pytest
 import dpost.__main__ as dpost_entrypoint
 import dpost_v2.__main__ as entrypoint
 from dpost_v2.application.startup.bootstrap import BootstrapResult, StartupFailure
+
+
+class _RuntimeHandle:
+    def __init__(
+        self,
+        *,
+        terminal_reason: str = "end_of_stream",
+        error: Exception | None = None,
+        result: object | None = None,
+    ) -> None:
+        self.terminal_reason = terminal_reason
+        self.error = error
+        self.result = result
+        self.calls = 0
+
+    def run(self) -> object:
+        self.calls += 1
+        if self.error is not None:
+            raise self.error
+        if self.result is not None:
+            return self.result
+        return SimpleNamespace(terminal_reason=self.terminal_reason)
 
 
 def test_main_defaults_mode_to_v2_and_calls_bootstrap(
@@ -24,7 +47,7 @@ def test_main_defaults_mode_to_v2_and_calls_bootstrap(
     monkeypatch.delenv("DPOST_CONFIG", raising=False)
     monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
 
-    exit_code = entrypoint.main([])
+    exit_code = entrypoint.main(["--dry-run"])
 
     assert exit_code == 0
     assert captured["request"].mode == "v2"
@@ -142,7 +165,7 @@ def test_main_success_message_uses_dpost_command_name(
     monkeypatch.delenv("DPOST_MODE", raising=False)
     monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
 
-    exit_code = entrypoint.main([])
+    exit_code = entrypoint.main(["--dry-run"])
     captured = capsys.readouterr()
 
     assert exit_code == 0
@@ -212,7 +235,133 @@ def test_dpost_entrypoint_delegates_to_v2_main(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.delenv("DPOST_CONFIG", raising=False)
     monkeypatch.setattr(entrypoint, "run", _run)
 
-    exit_code = dpost_entrypoint.main([])
+    exit_code = dpost_entrypoint.main(["--dry-run"])
 
     assert exit_code == 0
     assert captured["request_mode"] == "v2"
+
+
+def test_main_non_dry_run_executes_runtime_handle_once(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runtime_handle = _RuntimeHandle(terminal_reason="end_of_stream")
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert runtime_handle.calls == 1
+    assert "dpost startup succeeded" in captured.out
+
+
+def test_main_dry_run_does_not_execute_runtime_handle(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime_handle = _RuntimeHandle(terminal_reason="end_of_stream")
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2", "--dry-run"])
+
+    assert exit_code == 0
+    assert runtime_handle.calls == 0
+
+
+def test_main_non_dry_run_fails_when_runtime_handle_missing_run(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=object())
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "runtime contract violation" in captured.err
+
+
+def test_main_non_dry_run_fails_when_runtime_result_missing_terminal_reason(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runtime_handle = _RuntimeHandle(result=SimpleNamespace())
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "runtime contract violation" in captured.err
+
+
+@pytest.mark.parametrize(
+    ("terminal_reason", "expected_exit_code"),
+    [
+        ("end_of_stream", 0),
+        ("cancelled", 0),
+        ("soft_timeout", 0),
+        ("failed_terminal", 1),
+        ("hard_timeout", 1),
+    ],
+)
+def test_main_maps_runtime_terminal_reason_to_exit_code(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    terminal_reason: str,
+    expected_exit_code: int,
+) -> None:
+    runtime_handle = _RuntimeHandle(terminal_reason=terminal_reason)
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == expected_exit_code
+    if expected_exit_code == 0:
+        assert "dpost startup succeeded" in captured.out
+    else:
+        assert "dpost startup succeeded" not in captured.out
+
+
+def test_main_maps_runtime_exception_to_exit_code_one(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runtime_handle = _RuntimeHandle(error=RuntimeError("runtime boom"))
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "runtime boom" in captured.err
