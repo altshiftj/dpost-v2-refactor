@@ -76,8 +76,8 @@ Concrete adapters live under `src/dpost_v2/infrastructure/sync/`.
 ## Compatibility and Deprecation Policy
 
 - Not supported for active contributor targets:
-  - legacy `src/dpost/**` runtime surfaces
-  - legacy test lanes (`tests/unit`, `tests/integration`, `tests/manual`)
+  - archived pre-V2 runtime source surfaces
+  - archived pre-V2 legacy test lanes
   - retired architecture modes (`v1`, `shadow`)
 - Historical migration docs may retain legacy references only when marked as
   archive.

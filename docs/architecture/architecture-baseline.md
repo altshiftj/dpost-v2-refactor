@@ -82,8 +82,8 @@ Plugins:
 ## Test Isolation Baseline
 
 - Active CI and local quality gates target `tests/dpost_v2/`.
-- Legacy test lanes under `tests/unit`, `tests/integration`, and `tests/manual`
-  are archived and not required for active V2 merge gates.
+- Legacy pre-V2 test lanes are archived and not required for active V2 merge
+  gates.
 - Marker `legacy` remains reserved for archived compatibility suites.
 
 ## Notable Constraints

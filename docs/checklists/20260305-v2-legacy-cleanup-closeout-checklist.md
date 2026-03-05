@@ -53,7 +53,7 @@
 - [x] Deleted merged lane branches on remote.
 - [x] Deleted merged lane branches locally.
 - [x] Removed stale local worktrees for completed lanes.
-- [ ] Kept only active branches/worktrees (`main` + next work lanes).
+- [x] Kept only active branches/worktrees (`main` + next work lanes).
 
 ### Manual Check
 - [x] `git branch`
@@ -65,7 +65,8 @@
 ### Completion Notes
 - [x] Removed merged cleanup wave branches (`legacy-runtime-cutover`, `legacy-code-retirement`, `legacy-tests-retirement`, `legacy-docs-tooling`) from local and remote.
 - [x] Removed corresponding cleanup wave worktrees under `.worktrees/`.
-- [x] Older pre-cleanup lane branches/worktrees still exist and need explicit retirement decision before checking the final item.
+- [x] Removed older pre-cleanup lane branches/worktrees from local and remote.
+- [x] Active branch/worktree set now focuses on `main`, `rewrite/v2`, and `rewrite/v2-lane-legacy-cleanup` (plus non-lane support branches).
 
 ---
 
@@ -91,16 +92,17 @@
 - Why this matters: active docs must describe the active system (`dpost_v2`) to avoid reintroducing legacy implementation paths.
 
 ### Checklist
-- [ ] Top-level docs point to `src/dpost_v2` and `tests/dpost_v2`.
+- [x] Top-level docs point to `src/dpost_v2` and `tests/dpost_v2`.
 - [ ] Runbooks and ops prompts reflect V2-only workflow.
 - [ ] Historical migration material is archived and clearly marked.
 
 ### Manual Check
-- [ ] `rg -n "src/dpost/|tests/unit|tests/integration|tests/manual" README.md DEVELOPER_README.md CONTRIBUTING.md AGENTS.md docs --glob '!**/archive/**'`
-- [ ] `rg -n "src/dpost_v2|tests/dpost_v2" README.md DEVELOPER_README.md CONTRIBUTING.md AGENTS.md docs`
+- [x] `rg -n "src/dpost/|tests/unit|tests/integration|tests/manual" README.md DEVELOPER_README.md CONTRIBUTING.md AGENTS.md docs/architecture --glob '!**/archive/**' --glob '!docs/architecture/adr/**'`
+- [x] `rg -n "src/dpost_v2|tests/dpost_v2" README.md DEVELOPER_README.md CONTRIBUTING.md AGENTS.md docs`
 
 ### Completion Notes
-- [ ] Pending
+- [x] Top-level and architecture guide docs are V2-aligned and no longer require legacy source/test path references in active guidance text.
+- [ ] Migration/planning/pseudocode references still contain legacy paths by design; archival strategy remains open.
 
 ---
 

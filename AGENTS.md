@@ -27,7 +27,7 @@
 ## Scope
 - Prefer edits under `src/dpost_v2/`, `tests/dpost_v2/`, `docs/`, and repo
   tooling/config files requested by the lane.
-- Do not edit archived legacy runtime (`src/dpost/`) or archived legacy tests
+- Do not edit archived pre-V2 runtime source surfaces or archived pre-V2 tests
   unless explicitly requested.
 - Do not touch `.venv/`, lockfiles, build artifacts, or generated files.
 

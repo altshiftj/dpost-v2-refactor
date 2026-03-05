@@ -112,7 +112,6 @@ python -m pytest -q tests/dpost_v2/application/startup/test_bootstrap.py tests/d
 
 ## Notes
 
-- Legacy test lanes (`tests/unit`, `tests/integration`, `tests/manual`) are
-  archived and not part of active V2 gates.
+- Legacy pre-V2 test lanes are archived and not part of active V2 gates.
 - Migration-era planning/pseudocode artifacts are historical references unless
   explicitly marked active.

@@ -74,8 +74,8 @@ Architecture-impacting changes must update, in the same change set:
 ## Test Isolation Rules
 
 - Active test target is `tests/dpost_v2/`.
-- Legacy test lanes (`tests/unit`, `tests/integration`, `tests/manual`) are
-  archived and excluded from active CI requirements.
+- Legacy pre-V2 test lanes are archived and excluded from active CI
+  requirements.
 - Archived compatibility tests may use marker `legacy`.
 
 ## Compliance Gate
