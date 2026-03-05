@@ -809,6 +809,47 @@ def test_composition_runtime_selects_allowed_device_with_selected_pc_scope(
     assert outcome.state.candidate.plugin_id == "sem_phenomxl2"
 
 
+@pytest.mark.parametrize(
+    ("pc_name", "filename", "expected_plugin_id"),
+    (
+        ("horiba_blb", "sample.ngb", "psa_horiba"),
+        ("tischrem_blb", "sample.tif", "sem_phenomxl2"),
+        ("zwick_blb", "sample.zs2", "utm_zwick"),
+    ),
+)
+def test_composition_runtime_processes_pc_scoped_device_pairs_end_to_end(
+    tmp_path,
+    pc_name: str,
+    filename: str,
+    expected_plugin_id: str,
+) -> None:
+    context = _build_real_runtime_context(tmp_path, pc_name=pc_name)
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+    sample = incoming / filename
+    sample.write_text("payload", encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert sample.exists() is False
+    assert (processed / filename).exists() is True
+
+    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
+    with sqlite3.connect(database_path) as connection:
+        row = connection.execute(
+            "select payload_json from records order by record_id"
+        ).fetchone()
+
+    assert row is not None
+    payload = json.loads(row[0])
+    assert payload["candidate"]["plugin_id"] == expected_plugin_id
+
+
 def test_composition_runtime_shapes_sync_payload_via_selected_pc_plugin(
     tmp_path,
 ) -> None:

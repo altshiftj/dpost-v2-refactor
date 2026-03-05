@@ -21,17 +21,22 @@
 - Why this matters: Prevent drift while wiring architecture seams and preserve a known reference point.
 
 ### Manual Check
-- [ ] `git status --short --branch` is captured in notes.
-- [ ] Runtime ceiling baseline is captured (standalone run + artifact side effects).
+- [x] `git status --short --branch` is captured in notes.
+- [x] Runtime ceiling baseline is captured (standalone run + artifact side effects).
 
 ### Checklist
-- [ ] Confirm active branch and cleanliness expectations for this lane.
-- [ ] Re-use `docs/reports/20260305-v2-standalone-runtime-ceiling-report.md` as baseline lock for this lane.
-- [ ] Re-run standalone ceiling probe only if environment/runtime assumptions changed.
-- [ ] Record exact command outputs and probe root paths.
+- [x] Confirm active branch and cleanliness expectations for this lane.
+- [x] Re-use `docs/reports/20260305-v2-standalone-runtime-ceiling-report.md` as baseline lock for this lane.
+- [x] Re-run standalone ceiling probe only if environment/runtime assumptions changed.
+- [x] Record exact command outputs and probe root paths.
 
 ### Completion Notes
 - How it was done:
+  - Captured lane-start status before this closeout slice:
+    - `git status --short --branch` -> `## main...origin/main [ahead 1]`
+  - Re-used the March 5, 2026 standalone ceiling report as the baseline lock.
+  - Closeout manual probes were recorded in the closeout report with exact temp probe roots under:
+    - `C:\\Users\\fitz\\AppData\\Local\\Temp\\dpost-v2-closeout-7b_a28e4`
 
 ---
 
@@ -43,12 +48,20 @@
 - [x] `tests/dpost_v2/application/startup` remains green after seam changes.
 
 ### Checklist
-- [ ] Add failing tests for settings-to-dependencies handshake (mode/profile/backends/provenance).
-- [ ] Add failing tests for strict startup failure mapping by stage (`settings`, `dependencies`, `composition`, `launch`).
-- [ ] Implement minimal wiring so startup emits stable diagnostics and runtime handle contract remains strict.
+- [x] Add failing tests for settings-to-dependencies handshake (mode/profile/backends/provenance).
+- [x] Add failing tests for strict startup failure mapping by stage (`settings`, `dependencies`, `composition`, `launch`).
+- [x] Implement minimal wiring so startup emits stable diagnostics and runtime handle contract remains strict.
 
 ### Completion Notes
-- How it was done: Startup settings now pass paths and backend context into dependency resolution, and the startup/application suites stayed green after the resolver stopped returning placeholder dicts for live headless wiring.
+- How it was done:
+  - Existing bootstrap/entrypoint coverage already proves this seam in:
+    - `tests/dpost_v2/application/startup/test_bootstrap.py`
+    - `tests/dpost_v2/test___main__.py`
+  - The closeout targeted suite revalidated:
+    - stable startup diagnostics (`settings_fingerprint`, `settings_provenance`, `selected_backends`, `plugin_backend`, `plugin_visibility`)
+    - strict failure stage mapping for `settings`, `composition`, and `launch`
+    - strict runtime-handle and terminal-reason contract mapping at the CLI entrypoint
+  - Startup settings continue to pass backend/context payloads into dependency resolution for composed headless runtime wiring.
 
 ---
 
@@ -193,15 +206,30 @@
 - Why this matters: Confirms architecture is wired correctly before functional plugin migration begins.
 
 ### Manual Check
-- [ ] Headless standalone run on temp files resolves concrete plugin ids (not `default_device`).
-- [ ] Filesystem side effects are visible (`incoming` reduced, `processed` populated as expected by wiring stage).
-- [ ] Runtime exits with deterministic terminal reason.
+- [x] Headless standalone run on temp files resolves concrete plugin ids (not `default_device`).
+- [x] Filesystem side effects are visible (`incoming` reduced, `processed` populated as expected by wiring stage).
+- [x] Runtime exits with deterministic terminal reason.
 
 ### Checklist
-- [ ] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
-- [ ] Run targeted suites for startup/runtime/ingestion/plugins.
-- [ ] Run `python -m pytest -q tests/dpost_v2`.
-- [ ] Publish a closeout report in `docs/reports/` with risks/deferred items.
+- [x] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
+- [x] Run targeted suites for startup/runtime/ingestion/plugins.
+- [x] Run `python -m pytest -q tests/dpost_v2`.
+- [x] Publish a closeout report in `docs/reports/` with risks/deferred items.
 
 ### Completion Notes
 - How it was done:
+  - Added runtime smoke proof in `tests/dpost_v2/runtime/test_composition.py` for all three workstation/device pairs:
+    - `horiba_blb -> psa_horiba`
+    - `tischrem_blb -> sem_phenomxl2`
+    - `zwick_blb -> utm_zwick`
+  - Manual installed-runtime probes confirmed for each pair:
+    - concrete `plugin_id`
+    - empty `incoming/`
+    - expected file present in `processed/`
+    - `terminal_reason='end_of_stream'`
+  - Validation runs:
+    - `python -m ruff check src/dpost_v2 tests/dpost_v2` -> passed
+    - `python -m pytest -q tests/dpost_v2/test___main__.py tests/dpost_v2/application/startup tests/dpost_v2/runtime tests/dpost_v2/application/runtime tests/dpost_v2/application/ingestion tests/dpost_v2/plugins` -> `189 passed`
+    - `python -m pytest -q tests/dpost_v2` -> `412 passed`
+  - Published closeout report:
+    - `docs/reports/20260305-v2-handshake-closeout-report.md`
