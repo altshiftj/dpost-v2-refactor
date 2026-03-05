@@ -99,7 +99,11 @@ def load_startup_settings(
     """Load, merge, validate, and normalize startup settings."""
     integrity_issue: SettingsCacheIntegrityError | None = None
     try:
-        source_payloads = _resolve_sources(request=request, explicit_sources=sources)
+        source_payloads = _resolve_sources(
+            request=request,
+            explicit_sources=sources,
+            root_hint=root_hint,
+        )
         fingerprint = _compute_fingerprint(source_payloads)
 
         if cache is not None and cache.entry is not None:
@@ -180,8 +184,11 @@ def _resolve_sources(
     *,
     request: SupportsBootstrapRequest,
     explicit_sources: Mapping[str, Any] | None,
+    root_hint: Path | str | None = None,
 ) -> dict[str, dict[str, Any]]:
-    raw_sources = dict(explicit_sources or _default_sources_from_request(request))
+    raw_sources = dict(
+        explicit_sources or _default_sources_from_request(request, root_hint)
+    )
     resolved: dict[str, dict[str, Any]] = {}
     for source_name in _SOURCE_ORDER:
         source_value = raw_sources.get(source_name, {})
@@ -205,6 +212,7 @@ def _resolve_sources(
 
 def _default_sources_from_request(
     request: SupportsBootstrapRequest,
+    root_hint: Path | str | None,
 ) -> dict[str, Mapping[str, Any]]:
     metadata_sources = request.metadata.get("settings_sources")
     normalized_mode = _normalized_settings_mode(request)
@@ -216,6 +224,12 @@ def _default_sources_from_request(
             "cli": metadata_sources.get("cli", {}),
         }
 
+    config_path = request.metadata.get("config_path")
+    config_settings = _load_file_config(config_path, root_hint=root_hint)
+    cli_settings: dict[str, Any] = {"mode": normalized_mode}
+    if request.profile is not None:
+        cli_settings["profile"] = request.profile
+
     return {
         "defaults": {
             "mode": normalized_mode,
@@ -226,10 +240,49 @@ def _default_sources_from_request(
             "ingestion": {"retry_limit": 3, "retry_delay_seconds": 1.0},
             "naming": {"prefix": "DPOST", "policy": "prefix_only"},
         },
-        "file": {},
+        "file": config_settings,
         "environment": {},
-        "cli": {"mode": normalized_mode, "profile": request.profile},
+        "cli": cli_settings,
     }
+
+
+def _load_file_config(
+    config_path: Any,
+    *,
+    root_hint: Path | str | None = None,
+) -> dict[str, Any]:
+    if not config_path:
+        return {}
+    normalized = str(config_path).strip()
+    if not normalized:
+        return {}
+
+    config_file = Path(normalized)
+    if not config_file.is_absolute() and root_hint is not None:
+        config_file = Path(root_hint) / config_file
+
+    if not config_file.exists():
+        raise SettingsSourceReadError(f"Config file not found: {config_file!s}.")
+    if not config_file.is_file():
+        raise SettingsSourceReadError(f"Config path is not a file: {config_file!s}.")
+
+    try:
+        with config_file.open("r", encoding="utf-8") as config_stream:
+            payload = json.load(config_stream)
+    except OSError as exc:
+        raise SettingsSourceReadError(
+            f"Failed reading config file {config_file!s}."
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise SettingsSourceReadError(
+            f"Invalid JSON in config file {config_file!s}."
+        ) from exc
+
+    if not isinstance(payload, Mapping):
+        raise SettingsSourceReadError(
+            f"Config file payload must be a mapping: {config_file!s}."
+        )
+    return dict(payload)
 
 
 def _normalized_settings_mode(request: SupportsBootstrapRequest) -> str:

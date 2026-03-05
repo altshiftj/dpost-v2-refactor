@@ -85,11 +85,20 @@
 - [x] `dpost --mode v2 --headless`
 - [x] `dpost --mode v2 --config .\configs\dpost-v2.config.json --dry-run`
 - [x] `dpost --mode v2 --config .\configs\dpost-v2.config.json --headless`
+- [x] `dpost --mode v2 --config .\configs\dpost-v2-prod.config.json --dry-run`
+- [x] `dpost --mode v2 --config .\configs\dpost-v2-prod.config.json --profile prod --dry-run`
 
 ### Completion Notes
 - [x] Observed startup mode was `headless` in CLI dry-run and non-dry-run checks.
 - [x] No startup warnings were observed during successful baseline runs.
-- [x] First-failing-stage check was not reached in successful baseline.
+- [x] `--config` now resolves config files as the `file` source in startup settings merge.
+- [x] Profile precedence works as intended: file profile applies when no CLI profile is provided; CLI profile still overrides file profile.
+- [x] With `--config .\configs\dpost-v2-prod.config.json` and no `--profile`, launch log still reports `profile=default` because the log prints request profile while effective settings profile resolves to `prod` internally (confirmed by direct settings load probe).
+
+### Notes
+- For transparent startup telemetry during manual validation, treat `request profile` and `effective settings profile` as distinct values:
+  - request profile is `None` unless `--profile` is passed,
+  - effective settings profile comes from defaults/file/CLI merge and is visible through `load_startup_settings(...)`.
 
 ## Section: Checklist Gate
 - Why this matters: explicit gate before moving into stabilization lane.

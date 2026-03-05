@@ -40,6 +40,10 @@
   - Result: success
 - [x] `python -m dpost --mode v2 --config .\configs\dpost-v2.config.json --headless`
   - Result: success
+- [x] `python -m dpost --mode v2 --config .\configs\dpost-v2-prod.config.json --headless --dry-run`
+  - Result: success
+- [x] `python -m dpost --mode v2 --config .\configs\dpost-v2-prod.config.json --headless --dry-run --profile prod`
+  - Result: success
 
 ## Check: Plugin Discovery Contract
 - [x] `python -c "from dpost_v2.plugins.discovery import discover_devices; discover_devices()"`
@@ -54,6 +58,11 @@
   - Result active pcs: `('eirich_blb', 'haake_blb', 'hioki_blb', 'horiba_blb', 'kinexus_blb', 'test_pc', 'tischrem_blb', 'zwick_blb')`
 - [x] `python -m dpost --mode v2 --profile prod --headless --dry-run`
   - Result: `dpost startup succeeded (mode=v2, profile=prod)`
+
+### Check: Config Merge and Effective Profile
+- [x] `python -c "from dpost_v2.application.startup.bootstrap import BootstrapRequest; from dpost_v2.application.startup.settings_service import load_startup_settings; from pathlib import Path; request = BootstrapRequest(mode='v2', profile=None, trace_id='manual', metadata={'config_path':'configs/dpost-v2-prod.config.json'}); result = load_startup_settings(request, root_hint=Path('.')); print(result.settings.profile, result.settings.mode)"`
+  - Result: `prod headless`
+  - Confirms file-based profile is active even when CLI banner reports request profile as default.
 
 ## Next Steps
 - [ ] Add/verify startup diagnostics visibility for selected profiles and plugin IDs.
@@ -70,5 +79,7 @@
 
 ## Completion Notes
 - Most recent run validated that V2-only CLI mode + plugin discovery surface are working.
+- Config-file source now wires successfully into startup merge path.
 - Deprecated public assumptions (e.g., `discover_devices()` / `discover_pcs()`) were confirmed as unsupported in current API; valid calls are via `discover_from_namespaces()` and host/profile activation.
+- Drift note: CLI banner prints request profile (CLI/env), while effective settings profile comes from merged startup settings and may differ when only config-provided profile is set.
 - Keep this checklist as the current launch baseline for the next manual/observability hardening wave.

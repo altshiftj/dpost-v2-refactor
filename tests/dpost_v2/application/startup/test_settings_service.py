@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from dpost_v2.application.startup.bootstrap import BootstrapRequest
@@ -113,6 +114,97 @@ def test_settings_service_maps_v2_request_mode_to_headless_runtime_mode(
     assert result.is_success is True
     assert result.settings is not None
     assert result.settings.mode == "headless"
+
+
+def test_settings_service_loads_config_file_source(tmp_path: Path) -> None:
+    config_file = tmp_path / "dpost-v2.config.json"
+    config_file.write_text(
+        json.dumps(
+            {
+                "mode": "headless",
+                "profile": "prod",
+                "paths": {
+                    "root": ".",
+                    "watch": "incoming",
+                    "dest": "processed",
+                    "staging": "tmp",
+                },
+                "ui": {"backend": "headless"},
+                "sync": {"backend": "noop"},
+                "ingestion": {"retry_limit": 2, "retry_delay_seconds": 1.5},
+                "naming": {"prefix": "CONFIG", "policy": "prefix_only"},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    request = BootstrapRequest(
+        mode="v2",
+        profile=None,
+        trace_id="trace-settings-config",
+        metadata={"config_path": str(config_file)},
+    )
+    result = load_startup_settings(request, root_hint=tmp_path)
+
+    assert result.is_success is True
+    assert result.settings is not None
+    assert result.settings.profile == "prod"
+    assert result.settings.naming.prefix == "CONFIG"
+    assert result.settings.mode == "headless"
+
+
+def test_settings_service_cli_profile_takes_precedence_over_config(
+    tmp_path: Path,
+) -> None:
+    config_file = tmp_path / "dpost-v2.config.json"
+    config_file.write_text(
+        json.dumps(
+            {
+                "mode": "headless",
+                "profile": "prod",
+                "paths": {
+                    "root": ".",
+                    "watch": "incoming",
+                    "dest": "processed",
+                    "staging": "tmp",
+                },
+                "ui": {"backend": "headless"},
+                "sync": {"backend": "noop"},
+                "ingestion": {"retry_limit": 2, "retry_delay_seconds": 1.5},
+                "naming": {"prefix": "CONFIG", "policy": "prefix_only"},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    request = BootstrapRequest(
+        mode="v2",
+        profile="ci",
+        trace_id="trace-settings-config-cli",
+        metadata={"config_path": str(config_file)},
+    )
+    result = load_startup_settings(request, root_hint=tmp_path)
+
+    assert result.is_success is True
+    assert result.settings is not None
+    assert result.settings.profile == "ci"
+
+
+def test_settings_service_fails_on_missing_config_path(tmp_path: Path) -> None:
+    request = BootstrapRequest(
+        mode="v2",
+        profile="ci",
+        trace_id="trace-settings-config-missing",
+        metadata={"config_path": str(tmp_path / "missing.json")},
+    )
+    result = load_startup_settings(request, root_hint=tmp_path)
+
+    assert result.is_success is False
+    assert result.failure is not None
+    assert result.failure.stage == "settings_service"
+    assert "Config file not found" in result.failure.message
 
 
 def test_settings_service_detects_cache_desync_and_recovers(tmp_path: Path) -> None:
