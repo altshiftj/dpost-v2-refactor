@@ -11,6 +11,8 @@ V2 surfaces.
   dependency group in `pyproject.toml`.
 - Documented local setup and hook installation in `README.md` and
   `DEVELOPER_README.md`.
+- Simplified `.pre-commit-config.yaml` to match the active CI quality policy:
+  Ruff plus Black, without a separate `isort` hook.
 - Created a local `.venv` and installed the repo with dev dependencies.
 - Installed the repository hook with `python -m pre_commit install`.
 - Ran `python -m pre_commit run --all-files` successfully.
@@ -30,5 +32,6 @@ V2 surfaces.
 
 ## Deferred
 
-- The hook stack still includes both `isort` and `black` alongside Ruff. That is
-  functional, but not yet rationalized against the active V2 lint policy.
+- CI still runs `black --check` and `ruff check` directly rather than invoking
+  `pre-commit`. Local and CI policy now match, but the execution path is still
+  separate.
