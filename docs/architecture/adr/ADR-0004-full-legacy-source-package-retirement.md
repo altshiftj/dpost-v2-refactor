@@ -1,5 +1,9 @@
 # ADR-0004: Full Legacy Source Package Retirement
 
+## Archive Status
+- Historical ADR from pre-V2-only cutover.
+- Retained for traceability; current active runtime source is `src/dpost_v2/**`.
+
 ## Status
 - Accepted
 

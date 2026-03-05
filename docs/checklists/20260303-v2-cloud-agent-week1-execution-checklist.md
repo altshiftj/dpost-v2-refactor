@@ -1,5 +1,9 @@
 # Checklist: V2 Cloud-Agent Week-1 Execution
 
+## Archive Status
+- Historical migration execution checklist retained for planning traceability.
+- Legacy runtime/test references in this file are not active V2 runtime policy.
+
 ## Section: Hosting and Governance Baseline
 - Why this matters: cloud-agent parallelization needs enforceable merge policies and auditable automation boundaries.
 

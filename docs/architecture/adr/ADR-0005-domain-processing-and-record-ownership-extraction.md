@@ -1,5 +1,10 @@
 # ADR-0005: Domain Processing and Record Ownership Extraction
 
+## Archive Status
+- Historical ADR from pre-V2-only cutover.
+- Retained for traceability of extraction strategy; active module ownership is
+  governed by `docs/architecture/responsibility-catalog.md`.
+
 ## Status
 - Accepted
 

@@ -27,7 +27,7 @@
 - [x] Verify `main.required-checks.json` contexts still map to unchanged `Public CI` job names.
 
 ### Completion Notes
-- How it was done: replaced stale `tests/unit|integration/dpost_v2` paths with active `tests/dpost_v2` targets while preserving required check job names (`workflow-lint`, `quality (py3.12/3.13)`, `unit-tests (py3.12/3.13)`, `integration-tests (py3.12)`, `bootstrap-smoke`, `artifact-hygiene`).
+- How it was done: replaced stale nested test-path assumptions with active `tests/dpost_v2` targets while preserving required check job names (`workflow-lint`, `quality (py3.12/3.13)`, `unit-tests (py3.12/3.13)`, `integration-tests (py3.12)`, `bootstrap-smoke`, `artifact-hygiene`).
 
 ---
 

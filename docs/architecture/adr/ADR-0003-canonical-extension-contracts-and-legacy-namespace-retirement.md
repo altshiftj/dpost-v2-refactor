@@ -1,5 +1,10 @@
 # ADR-0003: Canonical Extension Contracts and Legacy Namespace Retirement
 
+## Archive Status
+- Historical ADR from pre-V2-only cutover.
+- Retained for traceability; active contributor contracts are defined in
+  `docs/architecture/extension-contracts.md`.
+
 ## Status
 - Accepted
 
