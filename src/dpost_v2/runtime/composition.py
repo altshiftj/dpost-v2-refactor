@@ -559,12 +559,7 @@ def _build_runtime_ingestion_engine(
 
     def fs_facts_provider(path: str) -> Mapping[str, Any]:
         normalized_path = _normalize_path(filesystem, path)
-        now_seconds = _clock_seconds(clock)
-        return {
-            "size": 0,
-            "modified_at": now_seconds,
-            "fingerprint": f"fp:{normalized_path}:{int(now_seconds)}",
-        }
+        return _read_runtime_file_facts(normalized_path, clock=clock)
 
     def processor_selector(candidate: Candidate) -> ProcessorSelection:
         selection = _select_runtime_processor(
@@ -764,7 +759,9 @@ def _resolve_route_root(settings: StartupSettings | object) -> str:
 
 def _resolve_settle_delay_seconds(settings: StartupSettings | object) -> float:
     ingestion = getattr(settings, "ingestion", None)
-    candidate = getattr(ingestion, "retry_delay_seconds", 0.0)
+    candidate = getattr(ingestion, "settle_delay_seconds", None)
+    if candidate is None:
+        candidate = getattr(settings, "settle_delay_seconds", 0.0)
     try:
         value = float(candidate)
     except (TypeError, ValueError):
@@ -772,6 +769,24 @@ def _resolve_settle_delay_seconds(settings: StartupSettings | object) -> float:
     if value < 0:
         return 0.0
     return value
+
+
+def _read_runtime_file_facts(path: str, *, clock: object) -> Mapping[str, Any]:
+    path_obj = Path(path)
+    fallback_modified_at = _clock_seconds(clock)
+    try:
+        stat_result = path_obj.stat()
+        size = int(stat_result.st_size)
+        modified_at = float(stat_result.st_mtime)
+    except OSError:
+        size = 0
+        modified_at = fallback_modified_at
+
+    return {
+        "size": size,
+        "modified_at": modified_at,
+        "fingerprint": f"fp:{path_obj}:{size}:{int(modified_at)}",
+    }
 
 
 def _normalize_path(filesystem: object, value: str) -> str:

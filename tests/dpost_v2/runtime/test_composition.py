@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
+import os
 from pathlib import Path
+import sqlite3
+import time
 from typing import Mapping
 
 import pytest
@@ -72,7 +75,11 @@ def _build_context(
     )
 
 
-def _build_real_settings(tmp_path: Path) -> StartupSettings:
+def _build_real_settings(
+    tmp_path: Path,
+    *,
+    retry_delay_seconds: float = 0.0,
+) -> StartupSettings:
     return StartupSettings(
         runtime=RuntimeSettings(mode="headless", profile="prod"),
         paths=PathSettings(
@@ -82,14 +89,24 @@ def _build_real_settings(tmp_path: Path) -> StartupSettings:
             staging=str(tmp_path / "tmp"),
         ),
         naming=NamingSettings(prefix="DPOST", policy="prefix_only"),
-        ingestion=IngestionSettings(retry_limit=1, retry_delay_seconds=0.0),
+        ingestion=IngestionSettings(
+            retry_limit=1,
+            retry_delay_seconds=retry_delay_seconds,
+        ),
         sync=SyncSettings(backend="noop", api_token=None),
         ui=UiSettings(backend="headless"),
     )
 
 
-def _build_real_runtime_context(tmp_path: Path):
-    settings = _build_real_settings(tmp_path)
+def _build_real_runtime_context(
+    tmp_path: Path,
+    *,
+    retry_delay_seconds: float = 0.0,
+):
+    settings = _build_real_settings(
+        tmp_path,
+        retry_delay_seconds=retry_delay_seconds,
+    )
     dependencies = resolve_startup_dependencies(
         settings=settings.to_dependency_payload(),
         environment={},
@@ -611,3 +628,70 @@ def test_composition_default_runtime_moves_file_and_persists_record(tmp_path) ->
     assert result.terminal_reason == "end_of_stream"
     assert sample.exists() is False
     assert (processed / "sample.ngb").exists() is True
+
+
+def test_composition_runtime_uses_real_file_facts_for_stabilize_and_candidate(
+    tmp_path,
+) -> None:
+    context = _build_real_runtime_context(tmp_path, retry_delay_seconds=1.0)
+    incoming = Path(context.settings.paths.watch)
+    incoming.mkdir(parents=True, exist_ok=True)
+    sample = incoming / "sample.ngb"
+    sample.write_text("payload-ngb", encoding="utf-8")
+    aged_timestamp = time.time() - 5.0
+    os.utime(sample, (aged_timestamp, aged_timestamp))
+
+    bundle = compose_runtime(context)
+    outcome = bundle.app._ingestion_engine.process(
+        event={
+            "event_id": "evt-real-facts-001",
+            "path": str(sample),
+            "event_kind": "created",
+            "observed_at": aged_timestamp,
+        }
+    )
+
+    assert outcome.kind is IngestionOutcomeKind.SUCCEEDED
+    assert outcome.state is not None
+    assert outcome.state.candidate is not None
+    assert outcome.state.candidate.size == len("payload-ngb")
+    assert outcome.state.candidate.modified_at == pytest.approx(
+        aged_timestamp,
+        abs=1.0,
+    )
+
+
+def test_composition_stock_prod_headless_processes_fresh_files_in_one_pass(
+    tmp_path,
+) -> None:
+    context = _build_real_runtime_context(tmp_path, retry_delay_seconds=1.0)
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+
+    for name, payload in (
+        ("sample.ngb", "payload-ngb"),
+        ("sample.tif", "payload-tif"),
+        ("sample.zs2", "payload-zs2"),
+    ):
+        (incoming / name).write_text(payload, encoding="utf-8")
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.processed_count == 3
+    assert result.failed_count == 0
+    assert result.terminal_reason == "end_of_stream"
+    assert tuple(incoming.iterdir()) == ()
+    assert (processed / "sample.ngb").exists() is True
+    assert (processed / "sample.tif").exists() is True
+    assert (processed / "sample.zs2").exists() is True
+
+    database_path = Path(bundle.port_bindings["storage"].healthcheck()["path"])
+    with sqlite3.connect(database_path) as connection:
+        rows = connection.execute(
+            "select count(*) from records"
+        ).fetchone()
+
+    assert rows == (3,)
