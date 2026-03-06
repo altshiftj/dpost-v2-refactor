@@ -272,17 +272,42 @@
 - Why this matters: Source-level green tests are not enough for a background PC
   executable. A manual frozen probe must confirm the real operator posture.
 
+Operator runbook:
+- `docs/checklists/20260306-v2-standalone-manual-closeout-runbook.md`
+
 ### Manual Check
-- [ ] Source `python -m dpost` continuous mode processes files arriving after
+- [x] Source `python -m dpost` continuous mode processes files arriving after
   startup.
-- [ ] Frozen executable continuous mode processes files arriving after startup.
-- [ ] Shutdown is clean and does not leave the runtime in a bad state.
+- [x] Frozen executable continuous mode processes files arriving after startup.
+- [x] Shutdown is clean and does not leave the runtime in a bad state.
 
 ### Checklist
-- [ ] Run targeted runtime/build checks.
-- [ ] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
-- [ ] Run `python -m pytest -q tests/dpost_v2`.
-- [ ] Publish a standalone-executable slice report in `docs/reports/`.
+- [x] Run targeted runtime/build checks.
+- [x] Run `python -m ruff check src/dpost_v2 tests/dpost_v2`.
+- [x] Run `python -m pytest -q tests/dpost_v2`.
+- [x] Publish a standalone-executable slice report in `docs/reports/`.
 
 ### Completion Notes
 - How it was done:
+  - Added the operator runbook:
+    - `docs/checklists/20260306-v2-standalone-manual-closeout-runbook.md`
+  - Manual source continuous probe passed on:
+    - `C:\Users\fitz\AppData\Local\Temp\dpost-v2-source-closeout-146c3f2f87114ca4ac5735cbce5c1c50`
+  - Source probe outcome:
+    - late file `late-sem.tif` was processed after startup
+    - `incoming/` drained
+    - `processed/late-sem.tif` existed
+    - sqlite persisted `candidate.plugin_id = sem_phenomxl2`
+    - the app returned to the prompt on its own
+  - Manual frozen continuous probe passed on:
+    - `C:\Users\fitz\AppData\Local\Temp\dpost-v2-frozen-closeout-920ff25c1c6b4686b92637502b0bfa01`
+  - Frozen probe outcome:
+    - late file `late-sem-frozen.tif` was processed after startup
+    - `incoming/` drained
+    - `processed/late-sem-frozen.tif` existed
+    - sqlite persisted `candidate.plugin_id = sem_phenomxl2`
+  - The operator accepted the current silent runtime posture for this phase.
+    Explicit completion/progress console messaging remains a deferred
+    observability improvement, not a functional blocker.
+  - See closeout report:
+    - `docs/reports/20260306-v2-standalone-manual-closeout-report.md`
