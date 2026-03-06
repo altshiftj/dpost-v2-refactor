@@ -96,6 +96,24 @@ $env:DPOST_SYNC_ADAPTER = "noop"
 dpost
 ```
 
+## Frozen Build Workflow
+
+Build the canonical V2 PyInstaller baseline:
+
+```powershell
+pwsh -NoProfile -File .\scripts\build-v2-headless.ps1
+```
+
+Smoke the built executable:
+
+```powershell
+pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1
+```
+
+The smoke probe intentionally places the config in a nested `config\` directory
+with `paths.root = "."` so the frozen executable must honor the config-file
+anchoring contract instead of the current shell working directory.
+
 ## Quality Gates
 
 ```powershell

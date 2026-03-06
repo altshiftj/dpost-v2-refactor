@@ -80,6 +80,27 @@ $env:DPOST_SYNC_ADAPTER = "noop"
 dpost
 ```
 
+## Build V2 Executable
+
+Build the canonical V2 headless executable:
+
+```powershell
+pwsh -NoProfile -File .\scripts\build-v2-headless.ps1
+```
+
+Run the frozen smoke probe against the built artifact:
+
+```powershell
+pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1
+```
+
+The smoke script builds a temporary probe workspace, runs the frozen executable
+with `tischrem_blb`, and verifies:
+
+- `sample.tif` moved from `incoming/` to `processed/`
+- `records.sqlite3` was created next to the config file
+- the persisted record resolved `plugin_id = sem_phenomxl2`
+
 ## Plugin Surface
 
 - Device plugin namespace: `src/dpost_v2/plugins/devices/<plugin_name>/`

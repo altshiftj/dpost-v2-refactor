@@ -228,19 +228,40 @@
   standalone executable, not legacy workstation-specific specs.
 
 ### Manual Check
-- [ ] A V2 PyInstaller build completes from the canonical build path.
-- [ ] The built artifact can process a temp probe file in headless mode.
+- [x] A V2 PyInstaller build completes from the canonical build path.
+- [x] The built artifact can process a temp probe file in headless mode.
 
 ### Checklist
-- [ ] Add a V2-specific spec or build script for the canonical `dpost` entrypoint.
-- [ ] Add packaging smoke checks for the built executable.
-- [ ] Validate required hidden imports/plugin surfaces for the accepted plugin set.
-- [ ] Document the exact build and smoke commands in repo docs.
-- [ ] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
+- [x] Add a V2-specific spec or build script for the canonical `dpost` entrypoint.
+- [x] Add packaging smoke checks for the built executable.
+- [x] Validate required hidden imports/plugin surfaces for the accepted plugin set.
+- [x] Document the exact build and smoke commands in repo docs.
+- [x] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
   green.
 
 ### Completion Notes
 - How it was done:
+  - Added the canonical packaging helper/test surface:
+    - `src/dpost_v2/infrastructure/build/pyinstaller_baseline.py`
+    - `tests/dpost_v2/infrastructure/build/test_pyinstaller_baseline.py`
+  - Added the canonical V2 build entrypoints:
+    - `build/specs/dpost_v2_headless.spec`
+    - `scripts/build-v2-headless.ps1`
+    - `scripts/smoke-v2-headless-exe.ps1`
+  - The spec now targets `src/dpost/__main__.py`, not legacy
+    `ipat_watchdog` entrypoints.
+  - Hidden-import collection is restricted to the accepted plugin baseline:
+    - `psa_horiba`
+    - `sem_phenomxl2`
+    - `utm_zwick`
+    - `horiba_blb`
+    - `tischrem_blb`
+    - `zwick_blb`
+  - A real PyInstaller build completed and the built executable processed a
+    temp `.tif` probe under `tischrem_blb`, proving:
+    - frozen plugin discovery worked
+    - frozen config-file-relative path anchoring worked
+    - the persisted record resolved `plugin_id = sem_phenomxl2`
 
 ---
 
