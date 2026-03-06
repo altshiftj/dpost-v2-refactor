@@ -21,7 +21,6 @@
 - [x] Allow parallelization only after those two sections are green:
   - `Section: Frozen bootstrap/config path contract (TDD)`
   - `Section: PyInstaller build baseline (TDD)`
-- [ ] Start execution with:
 - [x] Start execution with:
   - `Section: Runtime loop contract (TDD)`
   - `Section: Shutdown and lifecycle contract (TDD)`
@@ -91,6 +90,8 @@
     - `oneshot`
     - `continuous`
     - `poll_interval_seconds`
+    - `idle_timeout_seconds`
+    - `max_runtime_seconds`
   - Headless composition now re-discovers files per cycle in continuous mode.
   - One-shot runtime behavior remains green across the existing suite.
 
@@ -107,7 +108,7 @@
 
 ### Checklist
 - [x] Add failing tests for stop/cancel handling in continuous headless mode.
-- [ ] Add failing tests for clean adapter shutdown after continuous runs.
+- [x] Add failing tests for clean adapter shutdown after continuous runs.
 - [x] Add failing tests for idle/backoff timing behavior that do not depend on
   wall-clock sleeps.
 - [x] Implement minimal lifecycle changes without introducing legacy runtime
@@ -115,14 +116,24 @@
 
 ### Completion Notes
 - How it was done:
-  - Continuous runtime now uses an injected idle wait hook that prefers the
+  - Added lifecycle red tests in:
+    - `tests/dpost_v2/application/runtime/test_dpost_app.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+    - `tests/dpost_v2/test___main__.py`
+  - `DPostApp` now exposes an idempotent `shutdown()` hook.
+  - Runtime composition passes one shared shutdown hook into both:
+    - the default `DPostApp`
+    - `CompositionBundle.shutdown_all`
+  - The CLI now invokes runtime shutdown in a `finally` path after non-dry-run
+    execution, covering:
+    - successful runtime completion
+    - runtime exception
+    - `KeyboardInterrupt`
+  - Shutdown failure after an otherwise successful runtime now returns exit code
+    `1` and prints a deterministic `runtime shutdown failed` error.
+  - Continuous runtime still uses the injected idle wait hook that prefers the
     clock adapter's `sleep()` when available, keeping timeout tests
     deterministic.
-  - Added lifecycle coverage for:
-    - cancellation after late-arriving work
-    - idle `soft_timeout` during continuous polling
-  - Clean adapter shutdown after continuous runs is still open as a distinct
-    check.
 
 ---
 

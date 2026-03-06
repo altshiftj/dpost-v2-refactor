@@ -180,13 +180,36 @@ def _execute_runtime(runtime_handle: object) -> int:
         print(f"dpost runtime contract violation: {exc}", file=sys.stderr)
         return 1
 
+    shutdown_callable = _resolve_runtime_shutdown_callable(runtime_handle)
+    run_result: object | None = None
+    runtime_exception: BaseException | None = None
+
     try:
         run_result = run_callable()
     except KeyboardInterrupt:
+        runtime_exception = KeyboardInterrupt()
+    except Exception as exc:  # noqa: BLE001
+        runtime_exception = exc
+    finally:
+        try:
+            shutdown_callable()
+        except Exception as exc:  # noqa: BLE001
+            if runtime_exception is None:
+                print(f"dpost runtime shutdown failed: {exc}", file=sys.stderr)
+                return 1
+
+    if isinstance(runtime_exception, KeyboardInterrupt):
         print("Runtime interrupted by user.", file=sys.stderr)
         return 1
-    except Exception as exc:  # noqa: BLE001
-        print(f"dpost runtime failed: {exc}", file=sys.stderr)
+    if runtime_exception is not None:
+        print(f"dpost runtime failed: {runtime_exception}", file=sys.stderr)
+        return 1
+
+    if run_result is None:
+        print(
+            "dpost runtime contract violation: runtime run() returned no result",
+            file=sys.stderr,
+        )
         return 1
 
     try:
@@ -213,6 +236,15 @@ def _resolve_runtime_run_callable(runtime_handle: object) -> Callable[[], Any]:
     if not callable(run_callable):
         raise RuntimeContractError("runtime handle must provide callable run()")
     return run_callable
+
+
+def _resolve_runtime_shutdown_callable(runtime_handle: object) -> Callable[[], None]:
+    shutdown_callable = getattr(runtime_handle, "shutdown", None)
+    if shutdown_callable is None:
+        return lambda: None
+    if not callable(shutdown_callable):
+        raise RuntimeContractError("runtime handle shutdown must be callable when set")
+    return shutdown_callable
 
 
 def _resolve_terminal_reason(run_result: object) -> str:

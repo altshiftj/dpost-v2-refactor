@@ -581,6 +581,104 @@ def test_composition_shutdown_hook_is_idempotent() -> None:
     assert shutdown_calls == ["plugins", "ui"]
 
 
+def test_composition_default_app_shutdown_uses_bundle_shutdown_hook() -> None:
+    shutdown_calls: list[str] = []
+
+    class ShutdownUiAdapter:
+        def __init__(self, name: str) -> None:
+            self._name = name
+            self._called = False
+
+        def initialize(self) -> None:
+            return None
+
+        def notify(self, *, severity: str, title: str, message: str) -> None:
+            _ = (severity, title, message)
+            return None
+
+        def prompt(
+            self, *, prompt_type: str, payload: dict[str, object]
+        ) -> dict[str, object]:
+            _ = (prompt_type, payload)
+            return {"accepted": True}
+
+        def show_status(self, *, message: str) -> None:
+            _ = message
+            return None
+
+        def shutdown(self) -> None:
+            if self._called:
+                raise RuntimeError(f"{self._name} called twice")
+            self._called = True
+            shutdown_calls.append(self._name)
+
+    class ShutdownSyncAdapter:
+        def __init__(self, name: str) -> None:
+            self._name = name
+            self._called = False
+
+        def sync_record(self, request: SyncRequest) -> SyncResponse:
+            _ = request
+            return SyncResponse(status="synced", metadata={"adapter": self._name})
+
+        def shutdown(self) -> None:
+            if self._called:
+                raise RuntimeError(f"{self._name} called twice")
+            self._called = True
+            shutdown_calls.append(self._name)
+
+    class ShutdownPluginHost:
+        def __init__(self, name: str) -> None:
+            self._name = name
+            self._called = False
+
+        def get_device_plugins(self) -> tuple[str, ...]:
+            return ("default_device",)
+
+        def get_pc_plugins(self) -> tuple[str, ...]:
+            return ()
+
+        def get_by_capability(self, capability: str) -> tuple[object, ...]:
+            _ = capability
+            return ()
+
+        def shutdown(self) -> None:
+            if self._called:
+                raise RuntimeError(f"{self._name} called twice")
+            self._called = True
+            shutdown_calls.append(self._name)
+
+    class EventSinkAdapter:
+        def emit(self, event: object) -> None:
+            _ = event
+            return None
+
+    class FixedClock:
+        def now(self) -> datetime:
+            return datetime(2026, 3, 6, 10, 30, tzinfo=UTC)
+
+    context = _build_context(
+        factories={
+            "observability": lambda: object(),
+            "storage": lambda: {"kind": "storage", "backend": "filesystem"},
+            "sync": lambda: ShutdownSyncAdapter("sync"),
+            "ui": lambda: ShutdownUiAdapter("ui"),
+            "event_sink": lambda: EventSinkAdapter(),
+            "plugins": lambda: ShutdownPluginHost("plugins"),
+            "clock": lambda: FixedClock(),
+            "filesystem": lambda: {"kind": "filesystem"},
+        }
+    )
+
+    bundle = compose_runtime(context)
+
+    bundle.app.shutdown()
+    bundle.app.shutdown()
+    bundle.shutdown_all()
+
+    assert shutdown_calls == ["plugins", "ui", "sync"]
+
+
 def test_composition_headless_fallback_event_source_scans_watch_dir(
     tmp_path,
 ) -> None:

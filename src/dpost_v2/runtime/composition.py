@@ -123,6 +123,7 @@ def compose_runtime(
         scoped_device_plugins=(),
         pc_scope_applied=False,
     )
+    shutdown_all = _build_shutdown_hook(bindings)
     if app_factory is None:
         application_ports = _build_application_ports(bindings, context)
         plugin_policy = _resolve_runtime_plugin_policy(
@@ -139,6 +140,7 @@ def compose_runtime(
                 context,
                 application_ports,
                 plugin_policy=plugin_policy,
+                shutdown_hook=shutdown_all,
             )
         )
     except Exception as exc:
@@ -186,7 +188,7 @@ def compose_runtime(
             "warnings": tuple(context.dependencies.warnings),
             "application_ports": app_port_names,
         },
-        shutdown_all=_build_shutdown_hook(bindings),
+        shutdown_all=shutdown_all,
     )
 
 
@@ -270,6 +272,7 @@ def _default_app_factory(
     application_ports: Mapping[str, object] | None,
     *,
     plugin_policy: _RuntimePluginPolicy,
+    shutdown_hook: Callable[[], None],
 ) -> DPostApp:
     if application_ports is None:
         raise CompositionBindingError(
@@ -316,6 +319,7 @@ def _default_app_factory(
         },
         loop_mode=_resolve_runtime_loop_mode(context.settings),
         poll_interval_seconds=_resolve_runtime_poll_interval_seconds(context.settings),
+        shutdown_hook=shutdown_hook,
     )
 
 

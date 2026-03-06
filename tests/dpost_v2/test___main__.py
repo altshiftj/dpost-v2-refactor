@@ -17,11 +17,14 @@ class _RuntimeHandle:
         terminal_reason: str = "end_of_stream",
         error: Exception | None = None,
         result: object | None = None,
+        shutdown_error: Exception | None = None,
     ) -> None:
         self.terminal_reason = terminal_reason
         self.error = error
         self.result = result
+        self.shutdown_error = shutdown_error
         self.calls = 0
+        self.shutdown_calls = 0
 
     def run(self) -> object:
         self.calls += 1
@@ -30,6 +33,11 @@ class _RuntimeHandle:
         if self.result is not None:
             return self.result
         return SimpleNamespace(terminal_reason=self.terminal_reason)
+
+    def shutdown(self) -> None:
+        self.shutdown_calls += 1
+        if self.shutdown_error is not None:
+            raise self.shutdown_error
 
 
 def test_main_defaults_mode_to_v2_and_calls_bootstrap(
@@ -258,6 +266,7 @@ def test_main_non_dry_run_executes_runtime_handle_once(
 
     assert exit_code == 0
     assert runtime_handle.calls == 1
+    assert runtime_handle.shutdown_calls == 1
     assert "dpost startup succeeded" in captured.out
 
 
@@ -364,4 +373,49 @@ def test_main_maps_runtime_exception_to_exit_code_one(
     captured = capsys.readouterr()
 
     assert exit_code == 1
+    assert runtime_handle.shutdown_calls == 1
     assert "runtime boom" in captured.err
+
+
+def test_main_invokes_runtime_shutdown_when_runtime_is_interrupted(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runtime_handle = _RuntimeHandle(error=KeyboardInterrupt())
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert runtime_handle.shutdown_calls == 1
+    assert "Runtime interrupted by user." in captured.err
+
+
+def test_main_non_dry_run_fails_when_runtime_shutdown_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    runtime_handle = _RuntimeHandle(
+        terminal_reason="end_of_stream",
+        shutdown_error=RuntimeError("shutdown boom"),
+    )
+
+    def _run(*, request, emit_event, **_kwargs):  # type: ignore[no-untyped-def]
+        _ = (request, emit_event)
+        return BootstrapResult(is_success=True, runtime_handle=runtime_handle)
+
+    monkeypatch.setattr(entrypoint.startup_bootstrap, "run", _run)
+
+    exit_code = entrypoint.main(["--mode", "v2"])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert runtime_handle.calls == 1
+    assert runtime_handle.shutdown_calls == 1
+    assert "runtime shutdown failed" in captured.err
