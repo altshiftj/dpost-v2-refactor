@@ -196,17 +196,30 @@
 - [ ] Frozen execution does not depend on legacy `ipat_watchdog` entrypoints.
 
 ### Checklist
-- [ ] Add failing tests for frozen-safe config path resolution and root handling.
-- [ ] Add failing tests for packaging entrypoint expectations around
+- [x] Add failing tests for frozen-safe config path resolution and root handling.
+- [x] Add failing tests for packaging entrypoint expectations around
   `src/dpost/__main__.py`.
-- [ ] Implement minimal startup/build changes needed for frozen-safe path
+- [x] Implement minimal startup/build changes needed for frozen-safe path
   behavior.
-- [ ] Keep `python -m dpost` behavior unchanged for source execution.
-- [ ] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
+- [x] Keep `python -m dpost` behavior unchanged for source execution.
+- [x] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
   green.
 
 ### Completion Notes
 - How it was done:
+  - Added frozen-path red tests in:
+    - `tests/dpost_v2/application/startup/test_settings_service.py`
+    - `tests/dpost_v2/test___main__.py`
+  - When `config_path` is supplied, relative `paths.*` now anchor to the config
+    file directory instead of the bootstrap root hint.
+  - The V2 CLI now computes a deterministic bootstrap root hint:
+    - source mode -> current working directory
+    - frozen mode -> executable directory
+  - Existing canonical-entrypoint delegation coverage for `src/dpost/__main__.py`
+    remains green while the V2 CLI contract now carries the frozen-safe path
+    behavior.
+  - No PyInstaller spec/build work was done in this section; this slice stops at
+    source/frozen startup-path parity.
 
 ---
 

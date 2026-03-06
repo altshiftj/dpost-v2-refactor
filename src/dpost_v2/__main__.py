@@ -7,6 +7,7 @@ import os
 import sys
 import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from dpost_v2.application.startup import bootstrap as startup_bootstrap
@@ -58,7 +59,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     request = _build_bootstrap_request(options)
 
     try:
-        result = run(request=request, emit_event=_emit_startup_event)
+        result = run(
+            request=request,
+            emit_event=_emit_startup_event,
+            root_hint=_resolve_bootstrap_root_hint(),
+        )
     except KeyboardInterrupt:
         print("Startup interrupted by user.", file=sys.stderr)
         return 1
@@ -162,6 +167,16 @@ def _build_bootstrap_request(options: CliOptions) -> BootstrapRequest:
         trace_id=uuid.uuid4().hex,
         metadata=metadata,
     )
+
+
+def _resolve_bootstrap_root_hint() -> Path:
+    if bool(getattr(sys, "frozen", False)):
+        return Path(sys.executable).resolve().parent
+    return _current_working_directory()
+
+
+def _current_working_directory() -> Path:
+    return Path.cwd().resolve()
 
 
 def _coerce_system_exit_code(code: object) -> int:

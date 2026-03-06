@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
@@ -94,6 +95,57 @@ def test_main_parses_explicit_args_into_bootstrap_request(
     assert request.metadata["config_path"] == "D:/configs/sample.yaml"
     assert request.metadata["headless"] is True
     assert request.metadata["dry_run"] is True
+
+
+def test_main_passes_resolved_bootstrap_root_hint_into_startup_run(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def _run(*, request, emit_event, **kwargs):  # type: ignore[no-untyped-def]
+        captured["request"] = request
+        captured["root_hint"] = kwargs.get("root_hint")
+        emit_event(type("Event", (), {"name": "startup_started", "payload": {}})())
+        return BootstrapResult(is_success=True)
+
+    monkeypatch.setattr(entrypoint, "run", _run)
+    monkeypatch.setattr(
+        entrypoint,
+        "_resolve_bootstrap_root_hint",
+        lambda: Path("D:/runtime-root"),
+    )
+
+    exit_code = entrypoint.main(["--dry-run"])
+
+    assert exit_code == 0
+    assert captured["root_hint"] == Path("D:/runtime-root")
+
+
+def test_resolve_bootstrap_root_hint_uses_executable_dir_for_frozen_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(entrypoint.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(
+        entrypoint.sys,
+        "executable",
+        r"D:\Apps\dpost\dpost.exe",
+        raising=False,
+    )
+
+    root_hint = entrypoint._resolve_bootstrap_root_hint()
+
+    assert root_hint == Path(r"D:\Apps\dpost")
+
+
+def test_resolve_bootstrap_root_hint_uses_cwd_for_source_mode(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delattr(entrypoint.sys, "frozen", raising=False)
+    monkeypatch.setattr(entrypoint, "_current_working_directory", lambda: Path("D:/ws"))
+
+    root_hint = entrypoint._resolve_bootstrap_root_hint()
+
+    assert root_hint == Path("D:/ws")
 
 
 @pytest.mark.parametrize("legacy_mode", ["v1", "shadow"])

@@ -140,7 +140,10 @@ def load_startup_settings(
 
         settings = from_raw(
             validated_payload,
-            root_hint=root_hint,
+            root_hint=_resolve_settings_root_hint(
+                request,
+                root_hint=root_hint,
+            ),
             source_fingerprint=fingerprint,
         )
 
@@ -246,6 +249,26 @@ def _default_sources_from_request(
         "environment": _load_environment_settings(os.environ),
         "cli": cli_settings,
     }
+
+
+def _resolve_settings_root_hint(
+    request: SupportsBootstrapRequest,
+    *,
+    root_hint: Path | str | None,
+) -> Path | str | None:
+    config_path = request.metadata.get("config_path")
+    if not config_path:
+        return root_hint
+
+    normalized = str(config_path).strip()
+    if not normalized:
+        return root_hint
+
+    config_file = Path(normalized)
+    if not config_file.is_absolute() and root_hint is not None:
+        config_file = Path(root_hint) / config_file
+
+    return config_file.resolve().parent
 
 
 def _load_file_config(

@@ -185,6 +185,50 @@ def test_settings_service_loads_config_file_source(tmp_path: Path) -> None:
     assert result.settings.runtime.poll_interval_seconds == 0.5
 
 
+def test_settings_service_anchors_relative_runtime_paths_to_config_directory(
+    tmp_path: Path,
+) -> None:
+    bundle_root = tmp_path / "bundle"
+    config_dir = bundle_root / "configs"
+    config_dir.mkdir(parents=True)
+    config_file = config_dir / "dpost-v2.config.json"
+    config_file.write_text(
+        json.dumps(
+            {
+                "mode": "headless",
+                "profile": "prod",
+                "paths": {
+                    "root": ".",
+                    "watch": "incoming",
+                    "dest": "processed",
+                    "staging": "tmp",
+                },
+                "ui": {"backend": "headless"},
+                "sync": {"backend": "noop"},
+                "ingestion": {"retry_limit": 2, "retry_delay_seconds": 1.5},
+                "naming": {"prefix": "CONFIG", "policy": "prefix_only"},
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    request = BootstrapRequest(
+        mode="v2",
+        profile=None,
+        trace_id="trace-settings-config-root",
+        metadata={"config_path": "configs/dpost-v2.config.json"},
+    )
+    result = load_startup_settings(request, root_hint=bundle_root)
+
+    assert result.is_success is True
+    assert result.settings is not None
+    assert result.settings.paths.root == str(config_dir.resolve())
+    assert result.settings.paths.watch == str((config_dir / "incoming").resolve())
+    assert result.settings.paths.dest == str((config_dir / "processed").resolve())
+    assert result.settings.paths.staging == str((config_dir / "tmp").resolve())
+
+
 def test_settings_service_cli_profile_takes_precedence_over_config(
     tmp_path: Path,
 ) -> None:
