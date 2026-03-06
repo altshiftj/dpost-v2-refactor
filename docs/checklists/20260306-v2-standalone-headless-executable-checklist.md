@@ -22,11 +22,14 @@
   - `Section: Frozen bootstrap/config path contract (TDD)`
   - `Section: PyInstaller build baseline (TDD)`
 - [ ] Start execution with:
+- [x] Start execution with:
   - `Section: Runtime loop contract (TDD)`
   - `Section: Shutdown and lifecycle contract (TDD)`
 
 ### Completion Notes
 - How it was done:
+  - Started implementation on `main` after checkpointing the standalone-slice
+    planning docs in commit `b2f54f8`.
 
 ---
 
@@ -35,20 +38,27 @@
   closed V2 runtime, not from partial lane assumptions.
 
 ### Manual Check
-- [ ] `git status --short --branch` is captured in notes.
-- [ ] Existing runtime closeout artifacts are referenced in notes.
+- [x] `git status --short --branch` is captured in notes.
+- [x] Existing runtime closeout artifacts are referenced in notes.
 
 ### Checklist
-- [ ] Re-use the current three-plugin closeout report as the functional baseline.
-- [ ] Record current packaging/build baseline:
+- [x] Re-use the current three-plugin closeout report as the functional baseline.
+- [x] Record current packaging/build baseline:
   - `pyproject.toml`
   - `build/specs/*.spec`
   - canonical entrypoint `src/dpost/__main__.py`
-- [ ] Avoid changing device parity behavior in this slice unless required by the
+- [x] Avoid changing device parity behavior in this slice unless required by the
   resident-runtime contract.
 
 ### Completion Notes
 - How it was done:
+  - Baseline inputs were re-checked before code changes:
+    - `docs/reports/20260305-v2-three-plugin-closeout-report.md`
+    - `pyproject.toml`
+    - `build/specs/gen.spec`
+    - `src/dpost/__main__.py`
+  - Device-plugin behavior was not changed directly; the slice stayed in shared
+    startup/runtime surfaces.
 
 ---
 
@@ -62,15 +72,27 @@
   appears after startup.
 
 ### Checklist
-- [ ] Add failing tests for explicit one-shot vs continuous runtime behavior.
-- [ ] Add failing tests for repeated scan cycles without duplicate processing.
-- [ ] Add failing tests for deterministic event ordering within a scan cycle.
-- [ ] Implement minimal runtime loop changes under `src/dpost_v2/application/runtime/`
+- [x] Add failing tests for explicit one-shot vs continuous runtime behavior.
+- [x] Add failing tests for repeated scan cycles without duplicate processing.
+- [x] Add failing tests for deterministic event ordering within a scan cycle.
+- [x] Implement minimal runtime loop changes under `src/dpost_v2/application/runtime/`
   and `src/dpost_v2/runtime/`.
-- [ ] Keep current one-shot manual smoke path intact.
+- [x] Keep current one-shot manual smoke path intact.
 
 ### Completion Notes
 - How it was done:
+  - Added runtime-loop red tests in:
+    - `tests/dpost_v2/application/runtime/test_dpost_app.py`
+    - `tests/dpost_v2/application/startup/test_settings_schema.py`
+    - `tests/dpost_v2/application/startup/test_settings.py`
+    - `tests/dpost_v2/application/startup/test_settings_service.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+  - Implemented explicit runtime loop policy via startup/runtime settings:
+    - `oneshot`
+    - `continuous`
+    - `poll_interval_seconds`
+  - Headless composition now re-discovers files per cycle in continuous mode.
+  - One-shot runtime behavior remains green across the existing suite.
 
 ---
 
@@ -84,15 +106,23 @@
   failure paths.
 
 ### Checklist
-- [ ] Add failing tests for stop/cancel handling in continuous headless mode.
+- [x] Add failing tests for stop/cancel handling in continuous headless mode.
 - [ ] Add failing tests for clean adapter shutdown after continuous runs.
-- [ ] Add failing tests for idle/backoff timing behavior that do not depend on
+- [x] Add failing tests for idle/backoff timing behavior that do not depend on
   wall-clock sleeps.
-- [ ] Implement minimal lifecycle changes without introducing legacy runtime
+- [x] Implement minimal lifecycle changes without introducing legacy runtime
   loops or hidden globals.
 
 ### Completion Notes
 - How it was done:
+  - Continuous runtime now uses an injected idle wait hook that prefers the
+    clock adapter's `sleep()` when available, keeping timeout tests
+    deterministic.
+  - Added lifecycle coverage for:
+    - cancellation after late-arriving work
+    - idle `soft_timeout` during continuous polling
+  - Clean adapter shutdown after continuous runs is still open as a distinct
+    check.
 
 ---
 

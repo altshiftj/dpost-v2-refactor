@@ -157,6 +157,7 @@ def test_settings_service_loads_config_file_source(tmp_path: Path) -> None:
                     "dest": "processed",
                     "staging": "tmp",
                 },
+                "runtime": {"loop_mode": "continuous", "poll_interval_seconds": 0.5},
                 "ui": {"backend": "headless"},
                 "sync": {"backend": "noop"},
                 "ingestion": {"retry_limit": 2, "retry_delay_seconds": 1.5},
@@ -180,6 +181,8 @@ def test_settings_service_loads_config_file_source(tmp_path: Path) -> None:
     assert result.settings.profile == "prod"
     assert result.settings.naming.prefix == "CONFIG"
     assert result.settings.mode == "headless"
+    assert result.settings.runtime.loop_mode == "continuous"
+    assert result.settings.runtime.poll_interval_seconds == 0.5
 
 
 def test_settings_service_cli_profile_takes_precedence_over_config(

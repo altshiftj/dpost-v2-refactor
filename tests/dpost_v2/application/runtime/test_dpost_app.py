@@ -23,6 +23,9 @@ class FakeClock:
     def now(self) -> datetime:
         return self.current
 
+    def sleep(self, seconds: float) -> None:
+        self.current = self.current + timedelta(seconds=float(seconds))
+
 
 @dataclass
 class FakeEngine:
@@ -67,6 +70,20 @@ def _event(event_id: str, *, path: str = "/tmp/file.txt") -> Mapping[str, object
         "path": path,
         "event_kind": "created",
     }
+
+
+@dataclass
+class PollingSource:
+    batches: list[list[Mapping[str, object]]]
+
+    def __post_init__(self) -> None:
+        self.calls = 0
+
+    def __call__(self) -> list[Mapping[str, object]]:
+        self.calls += 1
+        if self.calls <= len(self.batches):
+            return self.batches[self.calls - 1]
+        return []
 
 
 def test_runtime_app_processes_events_in_order_and_emits_terminal_event() -> None:
@@ -331,3 +348,140 @@ def test_runtime_app_hard_timeout_aborts_before_next_event() -> None:
     assert result.terminal_reason == "hard_timeout"
     assert emitted[-1]["kind"] == "runtime_failed"
     assert emitted[-1]["reason_code"] == "hard_timeout"
+
+
+def test_runtime_app_oneshot_mode_consumes_single_polled_batch() -> None:
+    clock = FakeClock(datetime(2026, 3, 6, 9, 0, tzinfo=UTC))
+    session_manager = SessionManager(policy=SessionPolicy(), clock=clock)
+    engine = FakeEngine(outcomes=[_outcome(IngestionOutcomeKind.SUCCEEDED)])
+    source = PollingSource(
+        batches=[
+            [_event("evt-loop-001")],
+            [_event("evt-loop-002")],
+        ]
+    )
+
+    app = DPostApp(
+        session_manager=session_manager,
+        ingestion_engine=engine,
+        event_source=source,
+        event_emitter=lambda _event: None,
+        clock=clock,
+        session_id="session-loop-001",
+        trace_id="trace-loop-001",
+        loop_mode="oneshot",
+    )
+
+    result = app.run()
+
+    assert source.calls == 1
+    assert engine.seen_event_ids == ["evt-loop-001"]
+    assert result.processed_count == 1
+    assert result.terminal_reason == "end_of_stream"
+
+
+def test_runtime_app_continuous_mode_polls_until_cancellation_and_processes_late_event() -> (
+    None
+):
+    clock = FakeClock(datetime(2026, 3, 6, 9, 5, tzinfo=UTC))
+    session_manager = SessionManager(policy=SessionPolicy(), clock=clock)
+    engine = FakeEngine(outcomes=[_outcome(IngestionOutcomeKind.SUCCEEDED)])
+    source = PollingSource(
+        batches=[
+            [],
+            [_event("evt-loop-late-001")],
+            [],
+        ]
+    )
+    cancellation_checks = {"count": 0}
+
+    def cancellation_signal() -> bool:
+        cancellation_checks["count"] += 1
+        return source.calls >= 3 and cancellation_checks["count"] > 3
+
+    app = DPostApp(
+        session_manager=session_manager,
+        ingestion_engine=engine,
+        event_source=source,
+        event_emitter=lambda _event: None,
+        clock=clock,
+        session_id="session-loop-late-001",
+        trace_id="trace-loop-late-001",
+        loop_mode="continuous",
+        poll_interval_seconds=0.5,
+        cancellation_signal=cancellation_signal,
+    )
+
+    result = app.run()
+
+    assert source.calls >= 3
+    assert engine.seen_event_ids == ["evt-loop-late-001"]
+    assert result.processed_count == 1
+    assert result.terminal_reason == "cancelled"
+
+
+def test_runtime_app_continuous_mode_soft_times_out_while_idle_without_wall_clock_sleep() -> (
+    None
+):
+    clock = FakeClock(datetime(2026, 3, 6, 9, 10, tzinfo=UTC))
+    session_manager = SessionManager(
+        policy=SessionPolicy(idle_timeout_seconds=2.0),
+        clock=clock,
+    )
+    engine = FakeEngine(outcomes=[])
+    source = PollingSource(batches=[[], [], []])
+
+    app = DPostApp(
+        session_manager=session_manager,
+        ingestion_engine=engine,
+        event_source=source,
+        event_emitter=lambda _event: None,
+        clock=clock,
+        session_id="session-loop-idle-001",
+        trace_id="trace-loop-idle-001",
+        loop_mode="continuous",
+        poll_interval_seconds=1.0,
+    )
+
+    result = app.run()
+
+    assert source.calls >= 2
+    assert result.processed_count == 0
+    assert result.terminal_reason == "soft_timeout"
+
+
+def test_runtime_app_continuous_mode_skips_duplicate_event_ids_across_poll_cycles() -> (
+    None
+):
+    clock = FakeClock(datetime(2026, 3, 6, 9, 15, tzinfo=UTC))
+    session_manager = SessionManager(policy=SessionPolicy(), clock=clock)
+    engine = FakeEngine(outcomes=[_outcome(IngestionOutcomeKind.SUCCEEDED)])
+    source = PollingSource(
+        batches=[
+            [_event("evt-loop-dup-001")],
+            [_event("evt-loop-dup-001")],
+            [],
+        ]
+    )
+
+    def cancellation_signal() -> bool:
+        return source.calls >= 3
+
+    app = DPostApp(
+        session_manager=session_manager,
+        ingestion_engine=engine,
+        event_source=source,
+        event_emitter=lambda _event: None,
+        clock=clock,
+        session_id="session-loop-dup-001",
+        trace_id="trace-loop-dup-001",
+        loop_mode="continuous",
+        poll_interval_seconds=0.0,
+        cancellation_signal=cancellation_signal,
+    )
+
+    result = app.run()
+
+    assert engine.seen_event_ids == ["evt-loop-dup-001"]
+    assert result.processed_count == 1
+    assert result.skipped_count == 1

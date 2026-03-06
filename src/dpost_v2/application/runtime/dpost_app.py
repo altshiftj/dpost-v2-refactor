@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from types import MappingProxyType
@@ -43,6 +44,9 @@ class DPostApp:
         settings_snapshot: Mapping[str, Any] | None = None,
         cancellation_signal: Callable[[], bool] | None = None,
         stop_on_failure: bool = True,
+        loop_mode: str = "oneshot",
+        poll_interval_seconds: float = 1.0,
+        idle_wait: Callable[[float], None] | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._ingestion_engine = ingestion_engine
@@ -64,11 +68,20 @@ class DPostApp:
         self._settings_snapshot = dict(settings_snapshot or {})
         self._cancellation_signal = cancellation_signal or (lambda: False)
         self._stop_on_failure = stop_on_failure
+        normalized_loop_mode = str(loop_mode).strip().lower() or "oneshot"
+        if normalized_loop_mode not in {"oneshot", "continuous"}:
+            raise ValueError("loop_mode must be 'oneshot' or 'continuous'")
+        self._loop_mode = normalized_loop_mode
+        self._poll_interval_seconds = float(poll_interval_seconds)
+        if self._poll_interval_seconds < 0:
+            raise ValueError("poll_interval_seconds must be >= 0")
+        self._idle_wait = idle_wait or _resolve_idle_wait(clock)
         self._seen_event_ids: set[str] = set()
         self._engine_accepts_processing_context = _accepts_processing_context(
             self._ingestion_engine.process
         )
         self._runtime_context = self._build_runtime_context()
+        self._event_source_consumed = False
 
     def run(self) -> RunResult:
         """Run ingestion loop from event source until completion, cancellation, or failure."""
@@ -81,7 +94,7 @@ class DPostApp:
         self._emit("runtime_started")
 
         try:
-            for event in self._event_source:
+            while True:
                 timeout_state = self._session_manager.evaluate_timeouts()
                 if timeout_state.outcome is TimeoutOutcome.HARD_TIMEOUT:
                     terminal_reason = "hard_timeout"
@@ -90,49 +103,32 @@ class DPostApp:
                     terminal_reason = "soft_timeout"
                     break
 
-                if self._cancellation_signal():
-                    terminal_reason = "cancelled"
-                    break
-
-                event_id = _extract_event_id(event)
-                if event_id in self._seen_event_ids:
-                    skipped_count += 1
-                    self._emit(
-                        "runtime_event_skipped",
-                        event_id=event_id,
-                        reason_code="duplicate_event_id",
-                    )
-                    continue
-                self._seen_event_ids.add(event_id)
-
-                processing_context = self._build_processing_context(
-                    event, event_id=event_id
-                )
-                self._session_manager.record_activity(session_id=self._session_id)
-                outcome = self._process_event(
-                    event=event,
-                    processing_context=processing_context,
-                )
-                processed_count += 1
-
-                self._emit(
-                    "runtime_event_processed",
-                    event_id=event_id,
-                    outcome_kind=str(outcome.kind),
-                )
-                self._emit_canonical_outcome_event(
-                    outcome_kind=outcome.kind,
-                    processing_context=processing_context,
-                )
-
-                if outcome.kind in {
-                    IngestionOutcomeKind.REJECTED,
-                    IngestionOutcomeKind.FAILED_TERMINAL,
-                }:
-                    failed_count += 1
-                    if self._stop_on_failure:
-                        terminal_reason = "failed_terminal"
+                batch = self._next_event_batch()
+                if not batch:
+                    if self._cancellation_signal():
+                        terminal_reason = "cancelled"
                         break
+                    if self._loop_mode == "oneshot":
+                        terminal_reason = "end_of_stream"
+                        break
+                    self._idle_wait(self._poll_interval_seconds)
+                    continue
+
+                (
+                    batch_processed_count,
+                    batch_skipped_count,
+                    batch_failed_count,
+                    batch_terminal_reason,
+                ) = self._process_event_batch(batch)
+                processed_count += batch_processed_count
+                skipped_count += batch_skipped_count
+                failed_count += batch_failed_count
+                if batch_terminal_reason is not None:
+                    terminal_reason = batch_terminal_reason
+                    break
+                if self._loop_mode == "oneshot":
+                    terminal_reason = "end_of_stream"
+                    break
         except Exception:
             self._session_manager.abort_session(
                 session_id=self._session_id,
@@ -163,6 +159,82 @@ class DPostApp:
             failed_count=failed_count,
             terminal_reason=terminal_reason,
         )
+
+    def _next_event_batch(self) -> tuple[Mapping[str, Any], ...]:
+        if callable(self._event_source):
+            source = self._event_source()
+            if source is None:
+                return ()
+            return tuple(source)
+
+        if self._event_source_consumed:
+            return ()
+        self._event_source_consumed = True
+        return tuple(self._event_source)
+
+    def _process_event_batch(
+        self,
+        batch: Iterable[Mapping[str, Any]],
+    ) -> tuple[int, int, int, str | None]:
+        processed_count = 0
+        skipped_count = 0
+        failed_count = 0
+
+        for event in batch:
+            timeout_state = self._session_manager.evaluate_timeouts()
+            if timeout_state.outcome is TimeoutOutcome.HARD_TIMEOUT:
+                return processed_count, skipped_count, failed_count, "hard_timeout"
+            if timeout_state.outcome is TimeoutOutcome.SOFT_TIMEOUT:
+                return processed_count, skipped_count, failed_count, "soft_timeout"
+
+            if self._cancellation_signal():
+                return processed_count, skipped_count, failed_count, "cancelled"
+
+            event_id = _extract_event_id(event)
+            if event_id in self._seen_event_ids:
+                skipped_count += 1
+                self._emit(
+                    "runtime_event_skipped",
+                    event_id=event_id,
+                    reason_code="duplicate_event_id",
+                )
+                continue
+            self._seen_event_ids.add(event_id)
+
+            processing_context = self._build_processing_context(
+                event, event_id=event_id
+            )
+            self._session_manager.record_activity(session_id=self._session_id)
+            outcome = self._process_event(
+                event=event,
+                processing_context=processing_context,
+            )
+            processed_count += 1
+
+            self._emit(
+                "runtime_event_processed",
+                event_id=event_id,
+                outcome_kind=str(outcome.kind),
+            )
+            self._emit_canonical_outcome_event(
+                outcome_kind=outcome.kind,
+                processing_context=processing_context,
+            )
+
+            if outcome.kind in {
+                IngestionOutcomeKind.REJECTED,
+                IngestionOutcomeKind.FAILED_TERMINAL,
+            }:
+                failed_count += 1
+                if self._stop_on_failure:
+                    return (
+                        processed_count,
+                        skipped_count,
+                        failed_count,
+                        "failed_terminal",
+                    )
+
+        return processed_count, skipped_count, failed_count, None
 
     def _emit(self, kind: str, **extra_payload: Any) -> None:
         payload: dict[str, Any] = {
@@ -283,3 +355,10 @@ def _accepts_processing_context(method: Callable[..., Any]) -> bool:
     except (TypeError, ValueError):
         return False
     return "processing_context" in signature.parameters
+
+
+def _resolve_idle_wait(clock: object) -> Callable[[float], None]:
+    candidate = getattr(clock, "sleep", None)
+    if callable(candidate):
+        return candidate
+    return time.sleep

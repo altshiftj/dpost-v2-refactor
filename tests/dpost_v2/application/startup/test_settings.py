@@ -61,3 +61,28 @@ def test_to_redacted_dict_masks_sync_secret(tmp_path: Path) -> None:
 
     assert redacted["sync"]["backend"] == "noop"
     assert redacted["sync"]["api_token"] == "<redacted>"
+
+
+def test_from_raw_normalizes_runtime_loop_settings(tmp_path: Path) -> None:
+    payload = _raw_payload()
+    payload["runtime"] = {
+        "loop_mode": "CONTINUOUS",
+        "poll_interval_seconds": 0.25,
+        "idle_timeout_seconds": 5,
+        "max_runtime_seconds": 60,
+    }
+
+    settings = from_raw(payload, root_hint=tmp_path)
+
+    assert settings.runtime.loop_mode == "continuous"
+    assert settings.runtime.poll_interval_seconds == 0.25
+    assert settings.runtime.idle_timeout_seconds == 5.0
+    assert settings.runtime.max_runtime_seconds == 60.0
+
+
+def test_from_raw_rejects_negative_runtime_poll_interval(tmp_path: Path) -> None:
+    payload = _raw_payload()
+    payload["runtime"] = {"poll_interval_seconds": -1}
+
+    with pytest.raises(SettingsRangeError, match="poll_interval_seconds"):
+        from_raw(payload, root_hint=tmp_path)

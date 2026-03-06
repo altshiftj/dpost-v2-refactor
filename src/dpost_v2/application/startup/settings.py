@@ -33,6 +33,43 @@ class RuntimeSettings:
 
     mode: str
     profile: str | None
+    loop_mode: str = "oneshot"
+    poll_interval_seconds: float = 1.0
+    idle_timeout_seconds: float | None = None
+    max_runtime_seconds: float | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "mode", normalize_mode(self.mode))
+        object.__setattr__(self, "profile", _normalize_profile(self.profile))
+
+        loop_mode = (_normalize_optional_string(self.loop_mode) or "oneshot").lower()
+        if loop_mode not in {"oneshot", "continuous"}:
+            raise SettingsNormalizationError(
+                f"Unsupported runtime loop mode: {self.loop_mode!r}."
+            )
+        object.__setattr__(self, "loop_mode", loop_mode)
+
+        poll_interval_seconds = float(self.poll_interval_seconds)
+        if poll_interval_seconds < 0:
+            raise SettingsRangeError("runtime.poll_interval_seconds must be >= 0.")
+        object.__setattr__(self, "poll_interval_seconds", poll_interval_seconds)
+
+        object.__setattr__(
+            self,
+            "idle_timeout_seconds",
+            _normalize_optional_float(
+                self.idle_timeout_seconds,
+                field_name="runtime.idle_timeout_seconds",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "max_runtime_seconds",
+            _normalize_optional_float(
+                self.max_runtime_seconds,
+                field_name="runtime.max_runtime_seconds",
+            ),
+        )
 
 
 @dataclass(frozen=True)
@@ -132,6 +169,12 @@ class StartupSettings:
         return {
             "mode": self.mode,
             "profile": self.profile,
+            "runtime": {
+                "loop_mode": self.runtime.loop_mode,
+                "poll_interval_seconds": self.runtime.poll_interval_seconds,
+                "idle_timeout_seconds": self.runtime.idle_timeout_seconds,
+                "max_runtime_seconds": self.runtime.max_runtime_seconds,
+            },
             "paths": {
                 "root": self.paths.root,
                 "watch": self.paths.watch,
@@ -174,6 +217,9 @@ def from_raw(
     sync_block = _required_block(raw_config, "sync")
     ingestion_block = _required_block(raw_config, "ingestion")
     naming_block = _required_block(raw_config, "naming")
+    runtime_block = raw_config.get("runtime") or {}
+    if not isinstance(runtime_block, Mapping):
+        raise SettingsShapeError("Settings block 'runtime' must be a mapping.")
     plugins_block = raw_config.get("plugins") or {}
     if not isinstance(plugins_block, Mapping):
         raise SettingsShapeError("Settings block 'plugins' must be a mapping.")
@@ -204,7 +250,14 @@ def from_raw(
         )
 
     return StartupSettings(
-        runtime=RuntimeSettings(mode=mode, profile=profile),
+        runtime=RuntimeSettings(
+            mode=mode,
+            profile=profile,
+            loop_mode=runtime_block.get("loop_mode", "oneshot"),
+            poll_interval_seconds=runtime_block.get("poll_interval_seconds", 1.0),
+            idle_timeout_seconds=runtime_block.get("idle_timeout_seconds"),
+            max_runtime_seconds=runtime_block.get("max_runtime_seconds"),
+        ),
         paths=PathSettings(root=root, watch=watch, dest=dest, staging=staging),
         naming=NamingSettings(prefix=prefix, policy=policy),
         ingestion=IngestionSettings(
@@ -339,3 +392,12 @@ def _normalize_device_plugin_ids(value: Any) -> tuple[str, ...]:
             )
         normalized.append(token.lower())
     return tuple(normalized)
+
+
+def _normalize_optional_float(value: Any, *, field_name: str) -> float | None:
+    if value is None:
+        return None
+    normalized = float(value)
+    if normalized < 0:
+        raise SettingsRangeError(f"{field_name} must be >= 0.")
+    return normalized

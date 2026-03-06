@@ -312,7 +312,10 @@ def _default_app_factory(
             "profile": context.settings.profile or "default",
             "selected_pc_plugin": plugin_policy.selected_pc_plugin,
             "scoped_device_plugins": plugin_policy.scoped_device_plugins,
+            "runtime_loop_mode": _resolve_runtime_loop_mode(context.settings),
         },
+        loop_mode=_resolve_runtime_loop_mode(context.settings),
+        poll_interval_seconds=_resolve_runtime_poll_interval_seconds(context.settings),
     )
 
 
@@ -387,6 +390,29 @@ def _extract_optional_timeout(settings: object, field_name: str) -> float | None
     if candidate is None:
         return None
     return float(candidate)
+
+
+def _resolve_runtime_loop_mode(settings: object) -> str:
+    runtime_block = getattr(settings, "runtime", None)
+    candidate = getattr(runtime_block, "loop_mode", None)
+    if candidate is None:
+        candidate = getattr(settings, "loop_mode", None)
+    if candidate is None:
+        return "oneshot"
+    normalized = str(candidate).strip().lower()
+    if normalized in {"oneshot", "continuous"}:
+        return normalized
+    return "oneshot"
+
+
+def _resolve_runtime_poll_interval_seconds(settings: object) -> float:
+    runtime_block = getattr(settings, "runtime", None)
+    candidate = getattr(runtime_block, "poll_interval_seconds", None)
+    if candidate is None:
+        candidate = getattr(settings, "poll_interval_seconds", None)
+    if candidate is None:
+        return 1.0
+    return max(0.0, float(candidate))
 
 
 def _resolve_clock_binding(
@@ -514,12 +540,16 @@ def _resolve_event_source(
     *,
     context: StartupContext,
     clock: object,
-) -> Iterable[Mapping[str, Any]]:
+) -> Iterable[Mapping[str, Any]] | Callable[[], Iterable[Mapping[str, Any]]]:
     candidate = getattr(ui_port, "iter_events", None)
     if callable(candidate):
         source = candidate()
         if isinstance(source, Iterable):
             return source
+
+    mode = str(getattr(context.settings, "mode", context.launch.requested_mode)).lower()
+    if mode == "headless":
+        return lambda: _discover_headless_events(context=context, clock=clock)
     return _discover_headless_events(context=context, clock=clock)
 
 

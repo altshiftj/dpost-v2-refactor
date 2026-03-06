@@ -5,7 +5,7 @@ import os
 import sqlite3
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from pathlib import Path
 from typing import Mapping
@@ -84,9 +84,20 @@ def _build_real_settings(
     retry_delay_seconds: float = 0.0,
     pc_name: str | None = None,
     device_plugins: tuple[str, ...] = (),
+    runtime_loop_mode: str = "oneshot",
+    runtime_poll_interval_seconds: float = 1.0,
+    runtime_idle_timeout_seconds: float | None = None,
+    runtime_max_runtime_seconds: float | None = None,
 ) -> StartupSettings:
     return StartupSettings(
-        runtime=RuntimeSettings(mode="headless", profile="prod"),
+        runtime=RuntimeSettings(
+            mode="headless",
+            profile="prod",
+            loop_mode=runtime_loop_mode,
+            poll_interval_seconds=runtime_poll_interval_seconds,
+            idle_timeout_seconds=runtime_idle_timeout_seconds,
+            max_runtime_seconds=runtime_max_runtime_seconds,
+        ),
         paths=PathSettings(
             root=str(tmp_path),
             watch=str(tmp_path / "incoming"),
@@ -113,6 +124,10 @@ def _build_real_runtime_context(
     retry_delay_seconds: float = 0.0,
     pc_name: str | None = None,
     device_plugins: tuple[str, ...] = (),
+    runtime_loop_mode: str = "oneshot",
+    runtime_poll_interval_seconds: float = 1.0,
+    runtime_idle_timeout_seconds: float | None = None,
+    runtime_max_runtime_seconds: float | None = None,
     dependency_overrides: Mapping[str, object] | None = None,
 ):
     settings = _build_real_settings(
@@ -120,6 +135,10 @@ def _build_real_runtime_context(
         retry_delay_seconds=retry_delay_seconds,
         pc_name=pc_name,
         device_plugins=device_plugins,
+        runtime_loop_mode=runtime_loop_mode,
+        runtime_poll_interval_seconds=runtime_poll_interval_seconds,
+        runtime_idle_timeout_seconds=runtime_idle_timeout_seconds,
+        runtime_max_runtime_seconds=runtime_max_runtime_seconds,
     )
 
     def _override_factory(adapter: object):
@@ -922,6 +941,53 @@ def test_composition_runtime_processes_pc_scoped_sem_pair_end_to_end(
     assert result.terminal_reason == "end_of_stream"
     assert sample.exists() is False
     assert (processed / "sample.tif").exists() is True
+
+    payloads = _load_record_payloads(bundle)
+    assert len(payloads) == 1
+    assert payloads[0]["candidate"]["plugin_id"] == "sem_phenomxl2"
+
+
+def test_composition_runtime_continuous_headless_processes_file_arriving_after_startup(
+    tmp_path,
+) -> None:
+    class PollingClock:
+        def __init__(self) -> None:
+            self.current = datetime(2026, 3, 6, 10, 0, tzinfo=UTC)
+            self.sleep_calls = 0
+
+        def now(self) -> datetime:
+            return self.current
+
+        def sleep(self, seconds: float) -> None:
+            self.sleep_calls += 1
+            self.current = self.current + timedelta(seconds=seconds)
+            if self.sleep_calls == 1:
+                late_file = incoming / "late-file.tif"
+                late_file.write_text("payload", encoding="utf-8")
+                modified_at = self.current.timestamp()
+                os.utime(late_file, (modified_at, modified_at))
+
+    clock = PollingClock()
+    context = _build_real_runtime_context(
+        tmp_path,
+        pc_name="tischrem_blb",
+        runtime_loop_mode="continuous",
+        runtime_poll_interval_seconds=1.0,
+        runtime_idle_timeout_seconds=2.0,
+        dependency_overrides={"clock": clock},
+    )
+    incoming = Path(context.settings.paths.watch)
+    processed = Path(context.settings.paths.dest)
+    incoming.mkdir(parents=True, exist_ok=True)
+    processed.mkdir(parents=True, exist_ok=True)
+
+    bundle = compose_runtime(context)
+    result = bundle.app.run()
+
+    assert result.processed_count == 1
+    assert result.failed_count == 0
+    assert result.terminal_reason == "soft_timeout"
+    assert (processed / "late-file.tif").exists() is True
 
     payloads = _load_record_payloads(bundle)
     assert len(payloads) == 1

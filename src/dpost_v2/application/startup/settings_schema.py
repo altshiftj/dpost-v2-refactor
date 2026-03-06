@@ -15,6 +15,12 @@ _ALIAS_TO_CANONICAL: dict[str, str] = {
 
 _CANONICAL_TEMPLATE: dict[str, Any] = {
     "profile": None,
+    "runtime": {
+        "loop_mode": "oneshot",
+        "poll_interval_seconds": 1.0,
+        "idle_timeout_seconds": None,
+        "max_runtime_seconds": None,
+    },
     "paths": {
         "root": None,
         "watch": "incoming",
@@ -30,6 +36,7 @@ _CANONICAL_TEMPLATE: dict[str, Any] = {
 
 _ENUMS: dict[str, set[str]] = {
     "mode": {"headless", "desktop"},
+    "runtime.loop_mode": {"oneshot", "continuous"},
     "ui.backend": {"headless", "desktop"},
     "sync.backend": {"noop", "kadi"},
     "naming.policy": {"prefix_only", "prefix_date"},
@@ -139,6 +146,7 @@ def _merge_with_template(raw: dict[str, Any]) -> dict[str, Any]:
         if key not in {
             "mode",
             "profile",
+            "runtime",
             "paths",
             "ui",
             "sync",
@@ -232,6 +240,22 @@ def _normalize_tokens(payload: dict[str, Any]) -> None:
 
     profile = payload.get("profile")
     payload["profile"] = None if profile is None else str(profile).strip().lower()
+
+    payload["runtime"]["loop_mode"] = (
+        str(payload["runtime"]["loop_mode"]).strip().lower()
+    )
+    payload["runtime"]["poll_interval_seconds"] = _coerce_non_negative_float(
+        payload["runtime"].get("poll_interval_seconds", 1.0),
+        path="runtime.poll_interval_seconds",
+    )
+    payload["runtime"]["idle_timeout_seconds"] = _coerce_optional_non_negative_float(
+        payload["runtime"].get("idle_timeout_seconds"),
+        path="runtime.idle_timeout_seconds",
+    )
+    payload["runtime"]["max_runtime_seconds"] = _coerce_optional_non_negative_float(
+        payload["runtime"].get("max_runtime_seconds"),
+        path="runtime.max_runtime_seconds",
+    )
 
     payload["ui"]["backend"] = str(payload["ui"]["backend"]).strip().lower()
     payload["sync"]["backend"] = str(payload["sync"]["backend"]).strip().lower()
@@ -336,3 +360,36 @@ def _set_path(payload: dict[str, Any], dotted_path: str, value: Any) -> None:
             cursor[part] = {}
         cursor = cursor[part]
     cursor[parts[-1]] = value
+
+
+def _coerce_non_negative_float(value: Any, *, path: str) -> float:
+    try:
+        normalized = float(value)
+    except (TypeError, ValueError) as exc:
+        issue = SettingsSchemaIssue(
+            code="invalid_type",
+            path=path,
+            message=f"{path} must be numeric.",
+            hint="Provide a numeric seconds value.",
+        )
+        raise SettingsSchemaValueError(
+            "Invalid startup settings field type.", issues=(issue,)
+        ) from exc
+
+    if normalized < 0:
+        issue = SettingsSchemaIssue(
+            code="invalid_value",
+            path=path,
+            message=f"{path} must be >= 0.",
+            hint="Use a non-negative seconds value.",
+        )
+        raise SettingsSchemaValueError(
+            "Invalid startup settings field value.", issues=(issue,)
+        )
+    return normalized
+
+
+def _coerce_optional_non_negative_float(value: Any, *, path: str) -> float | None:
+    if value is None:
+        return None
+    return _coerce_non_negative_float(value, path=path)

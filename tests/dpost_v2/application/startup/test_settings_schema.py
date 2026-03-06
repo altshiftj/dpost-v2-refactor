@@ -97,3 +97,24 @@ def test_schema_accepts_optional_plugin_policy_block() -> None:
 
     assert validated["plugins"]["pc_name"] == "tischrem_blb"
     assert validated["plugins"]["device_plugins"] == ("sem_phenomxl2",)
+
+
+def test_schema_accepts_runtime_loop_policy_block() -> None:
+    validated = validate_raw_settings(
+        {
+            "mode": "headless",
+            "profile": "prod",
+            "paths": {"root": "./sandbox"},
+            "runtime": {
+                "loop_mode": "CONTINUOUS",
+                "poll_interval_seconds": 0.5,
+                "idle_timeout_seconds": 30,
+                "max_runtime_seconds": 120,
+            },
+        }
+    )
+
+    assert validated["runtime"]["loop_mode"] == "continuous"
+    assert validated["runtime"]["poll_interval_seconds"] == 0.5
+    assert validated["runtime"]["idle_timeout_seconds"] == 30.0
+    assert validated["runtime"]["max_runtime_seconds"] == 120.0
