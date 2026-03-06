@@ -19,16 +19,24 @@
   - `Section: Runtime loop contract (TDD)`
   - `Section: Shutdown and lifecycle contract (TDD)`
 - [x] Allow parallelization only after those two sections are green:
+  - `Section: RuntimeHost refactor (TDD)`
   - `Section: Frozen bootstrap/config path contract (TDD)`
   - `Section: PyInstaller build baseline (TDD)`
 - [x] Start execution with:
   - `Section: Runtime loop contract (TDD)`
   - `Section: Shutdown and lifecycle contract (TDD)`
+- [x] Treat the current shutdown implementation as a behavioral checkpoint, not
+  the final architecture for packaging/service work.
+- [x] Insert `Section: RuntimeHost refactor (TDD)` before frozen/bootstrap and
+  PyInstaller work.
 
 ### Completion Notes
 - How it was done:
   - Started implementation on `main` after checkpointing the standalone-slice
     planning docs in commit `b2f54f8`.
+  - After the lifecycle slice went green, the next architecture step was
+    corrected: frozen/bootstrap work is now blocked on a clean `RuntimeHost`
+    refactor.
 
 ---
 
@@ -134,6 +142,32 @@
   - Continuous runtime still uses the injected idle wait hook that prefers the
     clock adapter's `sleep()` when available, keeping timeout tests
     deterministic.
+  - This section is accepted as a behavioral checkpoint, but not as the final
+    packaging/service architecture. The active follow-on is now
+    `Section: RuntimeHost refactor (TDD)`.
+
+---
+
+## Section: RuntimeHost refactor (TDD)
+- Why this matters: The current app-owned shutdown seam is good enough for
+  behavior, but not the cleanest lifecycle ownership model for a robust
+  workstation executable or future service posture.
+
+### Manual Check
+- [ ] CLI/bootstrap consume a first-class runtime host rather than treating the
+  app object as the lifecycle owner.
+- [ ] `DPostApp` is no longer the canonical owner of adapter cleanup.
+
+### Checklist
+- [ ] Add failing tests for a first-class `RuntimeHost` contract.
+- [ ] Add failing tests for composition returning a host-owned runtime handle.
+- [ ] Add failing CLI/bootstrap tests that consume the host contract.
+- [ ] Refactor runtime composition/bootstrap/CLI to use `RuntimeHost` as the
+  lifecycle owner.
+- [ ] Remove or de-canonicalize the current app-owned shutdown seam.
+
+### Completion Notes
+- How it was done:
 
 ---
 
@@ -154,6 +188,8 @@
 - [ ] Implement minimal startup/build changes needed for frozen-safe path
   behavior.
 - [ ] Keep `python -m dpost` behavior unchanged for source execution.
+- [ ] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
+  green.
 
 ### Completion Notes
 - How it was done:
@@ -173,6 +209,8 @@
 - [ ] Add packaging smoke checks for the built executable.
 - [ ] Validate required hidden imports/plugin surfaces for the accepted plugin set.
 - [ ] Document the exact build and smoke commands in repo docs.
+- [ ] Do not start this section until `Section: RuntimeHost refactor (TDD)` is
+  green.
 
 ### Completion Notes
 - How it was done:

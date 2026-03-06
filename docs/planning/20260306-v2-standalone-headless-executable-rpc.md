@@ -24,7 +24,7 @@
   and exits.
 - The next blocker is runtime posture, not more plugin behavior.
 - Frozen packaging should be wired only after the resident headless contract is
-  explicit and tested.
+  explicit, tested, and hosted behind a clean lifecycle boundary.
 
 ## Target Outcome
 - A V2-built executable launched on a workstation can:
@@ -46,13 +46,19 @@
 - Polling is simpler to freeze, easier to test, and keeps deterministic behavior.
 - Add explicit stop semantics and clean shutdown for background usage.
 
-3. Frozen bootstrap/config contract
+3. Runtime host refactor
+- Promote runtime lifecycle ownership into a first-class `RuntimeHost`.
+- Keep `DPostApp` focused on application/runtime-loop orchestration only.
+- Avoid compatibility bridges or shims that would need later cleanup.
+- Make the CLI/bootstrap path talk to the host contract directly.
+
+4. Frozen bootstrap/config contract
 - Make config and path resolution work the same in source and frozen execution.
 - Package the canonical entrypoint:
   - `src/dpost/__main__.py`
 - Do not keep legacy `ipat_watchdog` PyInstaller specs as the authoritative path.
 
-4. PyInstaller build baseline
+5. PyInstaller build baseline
 - Add a V2-specific spec or build script.
 - Build a first frozen artifact from the canonical `dpost` entrypoint.
 - Prove a smoke path:
@@ -63,14 +69,18 @@
 ## TDD Order
 1. Add failing runtime tests for continuous watch behavior.
 2. Add failing tests for stop/shutdown lifecycle.
-3. Add failing startup/path tests for frozen-safe config resolution.
-4. Add failing packaging smoke harness/tests where practical.
-5. Implement minimal runtime/build changes to satisfy each layer in order.
+3. Add failing tests for the `RuntimeHost` contract and composition/bootstrap
+   ownership.
+4. Add failing startup/path tests for frozen-safe config resolution.
+5. Add failing packaging smoke harness/tests where practical.
+6. Implement minimal runtime/build changes to satisfy each layer in order.
 
 ## Definition Of Done
 - `python -m dpost` supports both:
   - deterministic one-shot mode
   - continuous headless watch mode
+- Runtime lifecycle ownership is explicit in a first-class `RuntimeHost`, not
+  implicit in the app object.
 - Continuous mode processes files that arrive after startup.
 - A V2 PyInstaller artifact can run the headless watch path from a temp probe.
 - The frozen build uses the canonical `dpost` entrypoint, not legacy
@@ -92,26 +102,32 @@
   - optional idle timeout for tests/manual probes
 - Keep headless event ordering deterministic per scan cycle.
 - Preserve the current one-pass manual probe path for smoke tests.
+- Treat the current app-owned shutdown hook as a validated behavior checkpoint,
+  not the final architecture.
 
 ## Key Risks
 - Frozen plugin discovery and hidden imports
 - Logging/diagnostics visibility when running without a console window
 - clean exit semantics under Ctrl+C and process termination
 - avoiding accidental behavioral drift between source and frozen execution
+- baking the current app-owned shutdown seam into packaging if the host refactor
+  is skipped
 
 ## Recommended Execution Sections
 1. Runtime loop contract
 2. Shutdown/lifecycle contract
-3. Frozen bootstrap/config path contract
-4. V2 PyInstaller build baseline
-5. Manual workstation probe closeout
+3. Runtime host refactor
+4. Frozen bootstrap/config path contract
+5. V2 PyInstaller build baseline
+6. Manual workstation probe closeout
 
 ## Parallelization Posture
 - Start single-lane.
-- Do not parallelize sections 1 and 2:
+- Do not parallelize sections 1, 2, and 3:
   - they share the same runtime/app/composition surfaces and will create
     semantic merge churn.
-- After sections 1 and 2 are green, partial parallelization becomes reasonable:
+- After sections 1, 2, and 3 are green, partial parallelization becomes
+  reasonable:
   - lane A: frozen bootstrap/config path contract
   - lane B: PyInstaller build baseline
 - Manual workstation closeout should reunify into one lane again.
