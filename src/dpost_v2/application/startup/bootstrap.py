@@ -89,7 +89,9 @@ def run(
     environment: Mapping[str, str] | None = None,
 ) -> BootstrapResult:
     """Run bootstrap using default V2 settings/dependency/composition services."""
-    runtime_launcher = launch_runtime or (lambda app, _context: app)
+    runtime_launcher = launch_runtime or (
+        lambda runtime_handle, _context: runtime_handle
+    )
 
     def _load_settings(received_request: BootstrapRequest) -> SettingsLoadResult:
         return load_startup_settings(
@@ -221,7 +223,7 @@ def run_bootstrap(
     _update_diagnostics_with_composition(event_diagnostics, composition=composition)
 
     try:
-        runtime_handle = launch_runtime(composition.app, context)
+        runtime_handle = launch_runtime(composition.runtime_handle, context)
     except Exception as exc:
         return _build_failure_result(
             stage="launch",

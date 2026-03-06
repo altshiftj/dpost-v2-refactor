@@ -47,7 +47,6 @@ class DPostApp:
         loop_mode: str = "oneshot",
         poll_interval_seconds: float = 1.0,
         idle_wait: Callable[[float], None] | None = None,
-        shutdown_hook: Callable[[], None] | None = None,
     ) -> None:
         self._session_manager = session_manager
         self._ingestion_engine = ingestion_engine
@@ -77,8 +76,6 @@ class DPostApp:
         if self._poll_interval_seconds < 0:
             raise ValueError("poll_interval_seconds must be >= 0")
         self._idle_wait = idle_wait or _resolve_idle_wait(clock)
-        self._shutdown_hook = shutdown_hook
-        self._shutdown_completed = False
         self._seen_event_ids: set[str] = set()
         self._engine_accepts_processing_context = _accepts_processing_context(
             self._ingestion_engine.process
@@ -162,14 +159,6 @@ class DPostApp:
             failed_count=failed_count,
             terminal_reason=terminal_reason,
         )
-
-    def shutdown(self) -> None:
-        """Release runtime-owned adapters exactly once per app instance."""
-        if self._shutdown_completed:
-            return
-        self._shutdown_completed = True
-        if self._shutdown_hook is not None:
-            self._shutdown_hook()
 
     def _next_event_batch(self) -> tuple[Mapping[str, Any], ...]:
         if callable(self._event_source):

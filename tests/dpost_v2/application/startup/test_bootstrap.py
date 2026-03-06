@@ -85,14 +85,15 @@ def test_bootstrap_orchestrates_startup_in_fixed_order() -> None:
         assert context.dependencies is dependencies
         return CompositionBundle(
             app=DummyApp(),
+            runtime_handle="composed-runtime-handle",
             port_bindings={"ui": object(), "event_sink": object()},
             diagnostics={"ui_backend": "headless"},
             shutdown_all=lambda: stage_calls.append("composition_shutdown"),
         )
 
-    def launch_runtime(app, context):
+    def launch_runtime(runtime_handle, context):
         stage_calls.append("launch")
-        assert isinstance(app, DummyApp)
+        assert runtime_handle == "composed-runtime-handle"
         assert context.settings is settings
         return "runtime-handle"
 
@@ -194,12 +195,13 @@ def test_bootstrap_cleans_up_composition_then_dependencies_on_launch_failure() -
     def compose(_context):
         return CompositionBundle(
             app=DummyApp(),
+            runtime_handle=DummyApp(),
             port_bindings={"ui": object(), "event_sink": object()},
             diagnostics={},
             shutdown_all=lambda: cleanup_calls.append("composition_shutdown"),
         )
 
-    def launch_runtime(_app, _context):
+    def launch_runtime(_runtime_handle, _context):
         raise RuntimeError("launch failed")
 
     result = run_bootstrap(
@@ -293,9 +295,9 @@ def test_bootstrap_integration_with_settings_service_and_runtime_modules(
             environment={},
         )
 
-    def launch_runtime(app, context):
+    def launch_runtime(runtime_handle, context):
         seen_context.append(context)
-        return {"app": app, "trace_id": context.launch.trace_id}
+        return {"runtime_handle": runtime_handle, "trace_id": context.launch.trace_id}
 
     result = run_bootstrap(
         request=request,
@@ -330,11 +332,12 @@ def test_bootstrap_started_event_includes_request_metadata() -> None:
         resolve_dependencies=lambda _settings, _request: dependencies,
         compose_runtime=lambda _context: CompositionBundle(
             app=DummyApp(),
+            runtime_handle=DummyApp(),
             port_bindings={"ui": object(), "event_sink": object()},
             diagnostics={},
             shutdown_all=lambda: None,
         ),
-        launch_runtime=lambda app, _context: app,
+        launch_runtime=lambda runtime_handle, _context: runtime_handle,
         emit_event=events.append,
     )
 
@@ -361,11 +364,12 @@ def test_bootstrap_success_event_includes_request_metadata_and_boot_timestamp() 
         resolve_dependencies=lambda _settings, _request: dependencies,
         compose_runtime=lambda _context: CompositionBundle(
             app=DummyApp(),
+            runtime_handle=DummyApp(),
             port_bindings={"ui": object(), "event_sink": object()},
             diagnostics={},
             shutdown_all=lambda: None,
         ),
-        launch_runtime=lambda app, _context: app,
+        launch_runtime=lambda runtime_handle, _context: runtime_handle,
         emit_event=events.append,
         now_utc=lambda: fixed_now,
     )
@@ -420,6 +424,7 @@ def test_bootstrap_emits_stable_diagnostics_fields_on_success() -> None:
         resolve_dependencies=lambda _settings, _request: dependencies,
         compose_runtime=lambda _context: CompositionBundle(
             app=DummyApp(),
+            runtime_handle=DummyApp(),
             port_bindings={"plugins": object(), "event_sink": object()},
             diagnostics={
                 "plugin_visibility": "bound",
@@ -428,7 +433,7 @@ def test_bootstrap_emits_stable_diagnostics_fields_on_success() -> None:
             },
             shutdown_all=lambda: None,
         ),
-        launch_runtime=lambda app, _context: app,
+        launch_runtime=lambda runtime_handle, _context: runtime_handle,
         emit_event=events.append,
     )
 
@@ -572,12 +577,13 @@ def test_bootstrap_cleanup_order_is_stable_for_dry_run_and_non_dry_run(
     def compose(_context):
         return CompositionBundle(
             app=DummyApp(),
+            runtime_handle=DummyApp(),
             port_bindings={"ui": object(), "event_sink": object()},
             diagnostics={},
             shutdown_all=lambda: cleanup_calls.append("composition_shutdown"),
         )
 
-    def launch_runtime(_app, _context):
+    def launch_runtime(_runtime_handle, _context):
         raise RuntimeError("launch failed")
 
     result = run_bootstrap(

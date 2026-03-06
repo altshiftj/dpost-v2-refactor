@@ -20,9 +20,9 @@ def test_bootstrap_smoke_runs_with_harness_fixtures(
         load_settings=lambda _request: settings,
         resolve_dependencies=lambda _settings, _request: dependencies,
         compose_runtime=compose_runtime,
-        launch_runtime=lambda app, context: {
+        launch_runtime=lambda runtime_handle, context: {
             "trace_id": context.launch.trace_id,
-            "app": app,
+            "runtime_handle": runtime_handle,
         },
         emit_event=events.append,
         now_utc=v2_now_utc,

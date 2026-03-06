@@ -15,6 +15,7 @@ import pytest
 from dpost_v2.application.contracts.ports import SyncRequest, SyncResponse
 from dpost_v2.application.ingestion.engine import IngestionOutcomeKind
 from dpost_v2.application.runtime.dpost_app import DPostApp
+from dpost_v2.application.runtime.runtime_host import RuntimeHost
 from dpost_v2.application.startup.context import LaunchMetadata, build_startup_context
 from dpost_v2.application.startup.settings import (
     IngestionSettings,
@@ -325,9 +326,11 @@ def test_composition_default_factory_returns_runtime_app_surface() -> None:
     )
 
     bundle = compose_runtime(context)
-    result = bundle.app.run()
+    result = bundle.runtime_handle.run()
 
     assert isinstance(bundle.app, DPostApp)
+    assert isinstance(bundle.runtime_handle, RuntimeHost)
+    assert bundle.runtime_handle.app is bundle.app
     assert result.terminal_reason == "end_of_stream"
     assert event_sink.emitted[0]["kind"] == "runtime_started"
     assert event_sink.emitted[-1]["kind"] == "runtime_completed"
@@ -581,7 +584,7 @@ def test_composition_shutdown_hook_is_idempotent() -> None:
     assert shutdown_calls == ["plugins", "ui"]
 
 
-def test_composition_default_app_shutdown_uses_bundle_shutdown_hook() -> None:
+def test_composition_runtime_handle_shutdown_uses_bundle_shutdown_hook() -> None:
     shutdown_calls: list[str] = []
 
     class ShutdownUiAdapter:
@@ -672,8 +675,8 @@ def test_composition_default_app_shutdown_uses_bundle_shutdown_hook() -> None:
 
     bundle = compose_runtime(context)
 
-    bundle.app.shutdown()
-    bundle.app.shutdown()
+    bundle.runtime_handle.shutdown()
+    bundle.runtime_handle.shutdown()
     bundle.shutdown_all()
 
     assert shutdown_calls == ["plugins", "ui", "sync"]

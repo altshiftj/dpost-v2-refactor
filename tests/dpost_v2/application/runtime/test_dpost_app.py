@@ -485,26 +485,3 @@ def test_runtime_app_continuous_mode_skips_duplicate_event_ids_across_poll_cycle
     assert engine.seen_event_ids == ["evt-loop-dup-001"]
     assert result.processed_count == 1
     assert result.skipped_count == 1
-
-
-def test_runtime_app_shutdown_hook_is_idempotent() -> None:
-    clock = FakeClock(datetime(2026, 3, 6, 9, 20, tzinfo=UTC))
-    session_manager = SessionManager(policy=SessionPolicy(), clock=clock)
-    engine = FakeEngine(outcomes=[])
-    shutdown_calls: list[str] = []
-
-    app = DPostApp(
-        session_manager=session_manager,
-        ingestion_engine=engine,
-        event_source=[],
-        event_emitter=lambda _event: None,
-        clock=clock,
-        session_id="session-shutdown-001",
-        trace_id="trace-shutdown-001",
-        shutdown_hook=lambda: shutdown_calls.append("shutdown"),
-    )
-
-    app.shutdown()
-    app.shutdown()
-
-    assert shutdown_calls == ["shutdown"]

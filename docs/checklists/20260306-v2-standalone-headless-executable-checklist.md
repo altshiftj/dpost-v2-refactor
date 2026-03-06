@@ -18,7 +18,7 @@
 - [x] Treat the first two sections as single-lane only:
   - `Section: Runtime loop contract (TDD)`
   - `Section: Shutdown and lifecycle contract (TDD)`
-- [x] Allow parallelization only after those two sections are green:
+- [x] Allow parallelization only after the runtime/lifecycle/host sections are green:
   - `Section: RuntimeHost refactor (TDD)`
   - `Section: Frozen bootstrap/config path contract (TDD)`
   - `Section: PyInstaller build baseline (TDD)`
@@ -142,9 +142,8 @@
   - Continuous runtime still uses the injected idle wait hook that prefers the
     clock adapter's `sleep()` when available, keeping timeout tests
     deterministic.
-  - This section is accepted as a behavioral checkpoint, but not as the final
-    packaging/service architecture. The active follow-on is now
-    `Section: RuntimeHost refactor (TDD)`.
+  - This section is accepted as the behavior checkpoint that was then promoted
+    into the cleaner `RuntimeHost` architecture in the next section.
 
 ---
 
@@ -159,15 +158,30 @@
 - [ ] `DPostApp` is no longer the canonical owner of adapter cleanup.
 
 ### Checklist
-- [ ] Add failing tests for a first-class `RuntimeHost` contract.
-- [ ] Add failing tests for composition returning a host-owned runtime handle.
-- [ ] Add failing CLI/bootstrap tests that consume the host contract.
-- [ ] Refactor runtime composition/bootstrap/CLI to use `RuntimeHost` as the
+- [x] Add failing tests for a first-class `RuntimeHost` contract.
+- [x] Add failing tests for composition returning a host-owned runtime handle.
+- [x] Add failing CLI/bootstrap tests that consume the host contract.
+- [x] Refactor runtime composition/bootstrap/CLI to use `RuntimeHost` as the
   lifecycle owner.
-- [ ] Remove or de-canonicalize the current app-owned shutdown seam.
+- [x] Remove or de-canonicalize the current app-owned shutdown seam.
 
 ### Completion Notes
 - How it was done:
+  - Added host-contract red tests in:
+    - `tests/dpost_v2/application/runtime/test_runtime_host.py`
+    - `tests/dpost_v2/runtime/test_composition.py`
+    - `tests/dpost_v2/application/startup/test_bootstrap.py`
+    - `tests/dpost_v2/smoke/test_bootstrap_harness_smoke.py`
+  - Introduced first-class `RuntimeHost` ownership in:
+    - `src/dpost_v2/application/runtime/runtime_host.py`
+    - `src/dpost_v2/runtime/composition.py`
+    - `src/dpost_v2/application/startup/bootstrap.py`
+  - `DPostApp` no longer carries the final shutdown responsibility.
+  - `CompositionBundle.app` remains available for diagnostics and tests, but the
+    canonical runtime handle now reaches bootstrap/CLI through
+    `CompositionBundle.runtime_handle`.
+  - This section is now the architectural gate before frozen/bootstrap and
+    PyInstaller work.
 
 ---
 

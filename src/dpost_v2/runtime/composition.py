@@ -39,6 +39,7 @@ from dpost_v2.application.ingestion.stages.stabilize import run_stabilize_stage
 from dpost_v2.application.ingestion.stages.transform import run_transform_stage
 from dpost_v2.application.ingestion.state import IngestionState
 from dpost_v2.application.runtime.dpost_app import DPostApp
+from dpost_v2.application.runtime.runtime_host import RuntimeHost
 from dpost_v2.application.session.session_manager import SessionManager, SessionPolicy
 from dpost_v2.application.startup.context import StartupContext
 from dpost_v2.application.startup.settings import StartupSettings
@@ -88,6 +89,7 @@ class CompositionBundle:
     """Fully wired runtime application bundle."""
 
     app: Any
+    runtime_handle: Any
     port_bindings: Mapping[str, object]
     diagnostics: Mapping[str, Any]
     shutdown_all: Callable[[], None]
@@ -140,11 +142,12 @@ def compose_runtime(
                 context,
                 application_ports,
                 plugin_policy=plugin_policy,
-                shutdown_hook=shutdown_all,
             )
         )
     except Exception as exc:
         raise CompositionInitializationError("Failed to build runtime app.") from exc
+
+    runtime_handle = RuntimeHost(app=app, shutdown_hook=shutdown_all)
 
     app_port_names = (
         tuple(sorted(application_ports)) if application_ports is not None else ()
@@ -157,6 +160,7 @@ def compose_runtime(
     )
     return CompositionBundle(
         app=app,
+        runtime_handle=runtime_handle,
         port_bindings=bindings,
         diagnostics={
             "requested_mode": context.launch.requested_mode,
@@ -272,7 +276,6 @@ def _default_app_factory(
     application_ports: Mapping[str, object] | None,
     *,
     plugin_policy: _RuntimePluginPolicy,
-    shutdown_hook: Callable[[], None],
 ) -> DPostApp:
     if application_ports is None:
         raise CompositionBindingError(
@@ -319,7 +322,6 @@ def _default_app_factory(
         },
         loop_mode=_resolve_runtime_loop_mode(context.settings),
         poll_interval_seconds=_resolve_runtime_poll_interval_seconds(context.settings),
-        shutdown_hook=shutdown_hook,
     )
 
 

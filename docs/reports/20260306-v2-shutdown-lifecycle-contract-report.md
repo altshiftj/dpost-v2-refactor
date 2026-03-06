@@ -7,12 +7,16 @@
   - preserve existing success/failure terminal semantics while adding clean
     lifecycle handling
 
+## Status Note
+- This behavioral checkpoint was later promoted into the cleaner `RuntimeHost`
+  lifecycle owner in the next slice.
+- Current canonical ownership is:
+  - `RuntimeHost` owns `run()` / `shutdown()`
+  - `DPostApp` owns runtime-loop orchestration only
+
 ## Changes
-- Added an idempotent `shutdown()` method to `DPostApp`.
-- Refactored runtime composition to build one shared shutdown hook and expose it
-  through both:
-  - the default `DPostApp`
-  - `CompositionBundle.shutdown_all`
+- Made runtime shutdown explicit for non-dry-run execution.
+- Refactored runtime composition to build one shared shutdown hook.
 - Updated the V2 CLI entrypoint so `_execute_runtime()` always invokes runtime
   shutdown in a `finally` path after calling `run()`.
 - Kept shutdown optional on runtime handles for compatibility. When absent, the
@@ -22,10 +26,8 @@
   - a prior runtime failure still owns the exit path
 
 ## Tests Added First
-- `tests/dpost_v2/application/runtime/test_dpost_app.py`
-  - shutdown hook is idempotent
 - `tests/dpost_v2/runtime/test_composition.py`
-  - default composed app shares the bundle shutdown hook
+  - the composed runtime surface shares one shutdown hook
 - `tests/dpost_v2/test___main__.py`
   - non-dry-run success calls runtime shutdown
   - runtime exception still triggers shutdown
@@ -44,11 +46,14 @@
 - The canonical V2 runtime now has an explicit lifecycle seam:
   - `run()`
   - `shutdown()`
-- Adapter cleanup is idempotent at both the app and composition-bundle levels.
+- Adapter cleanup is idempotent at the host and composition-bundle levels.
 - Non-dry-run CLI execution now cleans up deterministically after:
   - normal completion
   - runtime failure
   - interruption
+
+## See Also
+- `docs/reports/20260306-v2-runtime-host-refactor-report.md`
 
 ## Remaining Follow-On
 - frozen bootstrap/path contract
