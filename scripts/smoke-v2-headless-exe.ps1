@@ -1,17 +1,28 @@
 param(
-    [string]$ExePath = "dist\pyinstaller-v2\dpost-v2-headless\dpost-v2-headless.exe"
+    [string]$ExePath,
+    [switch]$DebugConsole
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
-$resolvedExePath = if ([System.IO.Path]::IsPathRooted($ExePath)) {
-    Resolve-Path $ExePath
+$defaultExePath = if ($DebugConsole) {
+    "dist\pyinstaller-v2\dpost-v2-headless-debug\dpost-v2-headless-debug.exe"
 } else {
-    Resolve-Path (Join-Path $repoRoot $ExePath)
+    "dist\pyinstaller-v2\dpost-v2-headless\dpost-v2-headless.exe"
 }
-$probeRoot = Join-Path $env:TEMP ("dpost-v2-frozen-smoke-" + (Get-Date -Format "yyyyMMdd-HHmmss"))
+$selectedExePath = if ($PSBoundParameters.ContainsKey("ExePath")) {
+    $ExePath
+} else {
+    $defaultExePath
+}
+$resolvedExePath = if ([System.IO.Path]::IsPathRooted($selectedExePath)) {
+    Resolve-Path $selectedExePath
+} else {
+    Resolve-Path (Join-Path $repoRoot $selectedExePath)
+}
+$probeRoot = Join-Path $env:TEMP ("dpost-v2-frozen-smoke-" + [guid]::NewGuid().ToString("N"))
 $configRoot = Join-Path $probeRoot "config"
 $incomingPath = Join-Path $configRoot "incoming"
 $processedPath = Join-Path $configRoot "processed"

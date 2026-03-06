@@ -2,6 +2,8 @@
 
 ## Summary
 - Added one canonical V2 PyInstaller baseline for the headless executable.
+- Added an explicit console-visible debug build variant on the same canonical
+  spec surface.
 - Replaced the legacy packaging assumption that specs should target
   `ipat_watchdog` entrypoints.
 - Verified both:
@@ -18,7 +20,11 @@
 
 ## Build Contract
 - Canonical entrypoint: `src/dpost/__main__.py`
-- Executable name: `dpost-v2-headless`
+- Default executable name: `dpost-v2-headless`
+- Debug executable name: `dpost-v2-headless-debug`
+- Build toggle:
+  - env var `DPOST_PYINSTALLER_DEBUG_CONSOLE=1`
+  - script flag `-DebugConsole`
 - Accepted plugin baseline:
   - `dpost_v2.plugins.devices.psa_horiba`
   - `dpost_v2.plugins.devices.sem_phenomxl2`
@@ -42,6 +48,14 @@ python -m PyInstaller --noconfirm --clean --distpath C:\Users\fitz\AppData\Local
   - `C:\Users\fitz\AppData\Local\Temp\dpost-v2-pyinstaller-work-20260306-100537`
 - Built executable:
   - `C:\Users\fitz\AppData\Local\Temp\dpost-v2-pyinstaller-dist-20260306-100537\dpost-v2-headless\dpost-v2-headless.exe`
+- Debug build command:
+
+```powershell
+pwsh -NoProfile -File .\scripts\build-v2-headless.ps1 -DebugConsole
+```
+
+- Debug built executable:
+  - `D:\Repos\dpost-v2-refactor\dist\pyinstaller-v2\dpost-v2-headless-debug\dpost-v2-headless-debug.exe`
 
 ## Frozen Smoke Evidence
 - Probe root:
@@ -61,12 +75,27 @@ python -m PyInstaller --noconfirm --clean --distpath C:\Users\fitz\AppData\Local
   - `config\records.sqlite3` exists
   - sqlite row count: `1`
   - persisted `candidate.plugin_id`: `sem_phenomxl2`
+- Debug smoke command:
+
+```powershell
+pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1 -DebugConsole
+```
+
+- Debug smoke also produced:
+  - processed `sample.tif`
+  - persisted `candidate.plugin_id = sem_phenomxl2`
 
 ## Why This Matters
 - The build surface is now aligned to the canonical V2 command entrypoint.
 - Packaging no longer depends on legacy workstation-specific specs.
 - Frozen execution already proves the current config anchoring contract against a
   real built artifact.
+- Operators and contributors can now choose between:
+  - a background-style windowless artifact
+  - a console-visible debug artifact
+  without maintaining a second spec file.
+- Build work directories are variant-scoped so switching between debug and
+  background builds does not reuse the same PyInstaller work cache.
 
 ## Residual Risk
 - This is a baseline `onedir` build, not a final workstation installer/service

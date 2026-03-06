@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import sys
 
@@ -9,12 +10,13 @@ if str(SRC_PATH) not in sys.path:
     sys.path.insert(0, str(SRC_PATH))
 
 from dpost_v2.infrastructure.build.pyinstaller_baseline import (
-    EXECUTABLE_NAME,
     canonical_entry_script,
     collect_hiddenimports,
+    resolve_build_variant_from_env,
 )
 
 ENTRY_SCRIPT = canonical_entry_script(ROOT)
+BUILD_VARIANT = resolve_build_variant_from_env(os.environ)
 
 a = Analysis(
     [str(ENTRY_SCRIPT)],
@@ -34,12 +36,12 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name=EXECUTABLE_NAME,
+    name=BUILD_VARIANT.executable_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=False,
+    console=BUILD_VARIANT.console,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -54,5 +56,5 @@ coll = COLLECT(
     strip=False,
     upx=False,
     upx_exclude=[],
-    name=EXECUTABLE_NAME,
+    name=BUILD_VARIANT.executable_name,
 )

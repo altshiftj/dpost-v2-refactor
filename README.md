@@ -88,10 +88,22 @@ Build the canonical V2 headless executable:
 pwsh -NoProfile -File .\scripts\build-v2-headless.ps1
 ```
 
+Build a console-visible debug variant:
+
+```powershell
+pwsh -NoProfile -File .\scripts\build-v2-headless.ps1 -DebugConsole
+```
+
 Run the frozen smoke probe against the built artifact:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1
+```
+
+Smoke the console-visible debug variant:
+
+```powershell
+pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1 -DebugConsole
 ```
 
 The smoke script builds a temporary probe workspace, runs the frozen executable
@@ -100,6 +112,10 @@ with `tischrem_blb`, and verifies:
 - `sample.tif` moved from `incoming/` to `processed/`
 - `records.sqlite3` was created next to the config file
 - the persisted record resolved `plugin_id = sem_phenomxl2`
+
+The default build is a windowless background-style artifact. The debug variant
+keeps a console attached for local diagnosis without changing the packaged entry
+surface.
 
 ## Plugin Surface
 

@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 
 from dpost_v2.infrastructure.build.pyinstaller_baseline import (
-    EXECUTABLE_NAME,
     accepted_plugin_packages,
     canonical_entry_script,
     collect_hiddenimports,
+    resolve_build_variant,
+    resolve_build_variant_from_env,
 )
 
 
@@ -32,8 +33,25 @@ def test_pyinstaller_baseline_collects_hiddenimports_for_accepted_plugin_set() -
     assert "dpost_v2.plugins.pcs.zwick_blb.plugin" in hiddenimports
 
 
-def test_pyinstaller_baseline_uses_stable_executable_name() -> None:
-    assert EXECUTABLE_NAME == "dpost-v2-headless"
+def test_pyinstaller_baseline_uses_stable_default_build_variant() -> None:
+    variant = resolve_build_variant()
+
+    assert variant.executable_name == "dpost-v2-headless"
+    assert variant.console is False
+
+
+def test_pyinstaller_baseline_uses_stable_debug_build_variant() -> None:
+    variant = resolve_build_variant(debug_console=True)
+
+    assert variant.executable_name == "dpost-v2-headless-debug"
+    assert variant.console is True
+
+
+def test_pyinstaller_baseline_resolves_debug_variant_from_environment() -> None:
+    variant = resolve_build_variant_from_env({"DPOST_PYINSTALLER_DEBUG_CONSOLE": "1"})
+
+    assert variant.executable_name == "dpost-v2-headless-debug"
+    assert variant.console is True
 
 
 def test_pyinstaller_baseline_lists_accepted_plugin_packages_deterministically() -> (

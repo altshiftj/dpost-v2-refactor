@@ -248,6 +248,9 @@
     - `build/specs/dpost_v2_headless.spec`
     - `scripts/build-v2-headless.ps1`
     - `scripts/smoke-v2-headless-exe.ps1`
+  - The canonical build surface now supports two explicit variants:
+    - default background/windowless build
+    - debug console build via `-DebugConsole`
   - The spec now targets `src/dpost/__main__.py`, not legacy
     `ipat_watchdog` entrypoints.
   - Hidden-import collection is restricted to the accepted plugin baseline:

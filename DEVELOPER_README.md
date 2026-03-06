@@ -104,10 +104,22 @@ Build the canonical V2 PyInstaller baseline:
 pwsh -NoProfile -File .\scripts\build-v2-headless.ps1
 ```
 
+Build the console-visible debug variant:
+
+```powershell
+pwsh -NoProfile -File .\scripts\build-v2-headless.ps1 -DebugConsole
+```
+
 Smoke the built executable:
 
 ```powershell
 pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1
+```
+
+Smoke the debug variant:
+
+```powershell
+pwsh -NoProfile -File .\scripts\smoke-v2-headless-exe.ps1 -DebugConsole
 ```
 
 The smoke probe intentionally places the config in a nested `config\` directory
